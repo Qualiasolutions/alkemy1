@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
+import DirectorWidget from './components/DirectorWidget';
 import { TABS, THEME_COLORS } from './constants';
 import ScriptTab from './tabs/ScriptTab';
 import MoodboardTab from './tabs/MoodboardTab';
@@ -16,7 +17,6 @@ import SchedulerTab from './tabs/SchedulerTab';
 import AnalyticsTab from './tabs/AnalyticsTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, TimelineClip } from './types';
 import { analyzeScript } from './services/aiService';
-import TheDirectorTab from './tabs/TheDirectorTab';
 import Button from './components/Button';
 
 const ENV_GEMINI_API_KEY = (process.env.GEMINI_API_KEY ?? process.env.API_KEY ?? '').trim();
@@ -83,9 +83,17 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
-        const saved = localStorage.getItem(UI_STATE_STORAGE_KEY);
-        return saved ? JSON.parse(saved).activeTab : 'script';
-    } catch { return 'script'; }
+      const saved = localStorage.getItem(UI_STATE_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved).activeTab;
+        if (typeof parsed === 'string' && TABS.some(tab => tab.id === parsed)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load active tab from storage", e);
+    }
+    return 'script';
   });
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
     try {
@@ -465,8 +473,6 @@ const App: React.FC = () => {
                   onUpdateMoodboard={handleSetMoodboard}
                   scriptAnalyzed={!!scriptAnalysis}
                 />;
-      case 'the_director':
-        return <TheDirectorTab scriptAnalysis={scriptAnalysis} />;
       case 'presentation':
         return <PresentationTab scriptAnalysis={scriptAnalysis} />;
       case 'cast_locations':
@@ -545,6 +551,7 @@ const App: React.FC = () => {
           {renderContent()}
         </div>
       </main>
+      <DirectorWidget scriptAnalysis={scriptAnalysis} />
       {toast && (
         <div className={`fixed bottom-8 right-8 z-50 px-5 py-3 rounded-lg shadow-2xl text-white font-semibold transition-all duration-300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
             {toast.message}

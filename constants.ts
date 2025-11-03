@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, SparklesIcon, CalendarIcon, BarChartIcon, PaletteIcon, BrainIcon } from './components/icons/Icons';
+import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, SparklesIcon, CalendarIcon, BarChartIcon, PaletteIcon } from './components/icons/Icons';
 
 export const THEME_COLORS = {
   background_primary: "#0B0B0B",
@@ -25,7 +25,6 @@ export const TABS_CONFIG = [
     tabs: [
       { id: 'script', name: 'Script', icon: React.createElement(ScriptIcon) },
       { id: 'moodboard', name: 'Moodboard', icon: React.createElement(PaletteIcon) },
-      { id: 'the_director', name: 'The Director', icon: React.createElement(BrainIcon) },
       { id: 'cast_locations', name: 'Cast & Locations', icon: React.createElement(UsersIcon) },
       { id: 'compositing', name: 'Compositing', icon: React.createElement(ClapperboardIcon) },
       { id: 'presentation', name: 'Presentation', icon: React.createElement(PresentationIcon) },
