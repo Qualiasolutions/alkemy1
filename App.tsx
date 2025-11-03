@@ -19,6 +19,9 @@ import { analyzeScript } from './services/aiService';
 import TheDirectorTab from './tabs/TheDirectorTab';
 import Button from './components/Button';
 
+const ENV_GEMINI_API_KEY = (process.env.API_KEY ?? '').trim();
+const HAS_ENV_GEMINI_KEY = ENV_GEMINI_API_KEY.length > 0;
+
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
 
@@ -121,8 +124,8 @@ const App: React.FC = () => {
   const [analysisMessage, setAnalysisMessage] = useState<string>('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   
-  const [isKeyReady, setIsKeyReady] = useState<boolean>(false);
-  const [isCheckingKey, setIsCheckingKey] = useState<boolean>(true);
+  const [isKeyReady, setIsKeyReady] = useState<boolean>(() => HAS_ENV_GEMINI_KEY);
+  const [isCheckingKey, setIsCheckingKey] = useState<boolean>(() => !HAS_ENV_GEMINI_KEY);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
       setToast({ message, type });
@@ -137,6 +140,12 @@ const App: React.FC = () => {
 
   // --- API Key Management ---
     useEffect(() => {
+        if (HAS_ENV_GEMINI_KEY) {
+            setIsKeyReady(true);
+            setIsCheckingKey(false);
+            return;
+        }
+
         const checkApiKey = async () => {
             setIsCheckingKey(true);
             try {
@@ -150,11 +159,17 @@ const App: React.FC = () => {
                 setIsCheckingKey(false);
             }
         };
-        setTimeout(checkApiKey, 100); // Delay check slightly to ensure aistudio is available
+
+        const timer = window.setTimeout(checkApiKey, 100); // Delay to ensure aistudio is available
+        return () => window.clearTimeout(timer);
     }, []);
 
     useEffect(() => {
         const handleKeyError = () => {
+            if (HAS_ENV_GEMINI_KEY) {
+                showToast("The server-configured Gemini API key appears invalid. Please update the Vercel environment variable.", 'error');
+                return;
+            }
             setIsKeyReady(false);
             showToast("Your API key seems invalid. Please select another.", 'error');
         };
