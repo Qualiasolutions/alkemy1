@@ -1,0 +1,5 @@
+{
+  "name": "Alkemy AI Studio",
+  "description": "An intelligent AI Film Studio that automates the entire production chain—from scriptwriting to scheduled social publishing. It leverages generative AI for creating stills and videos, manages assets, and orchestrates the production workflow.",
+  "requestFramePermissions": []
+}
