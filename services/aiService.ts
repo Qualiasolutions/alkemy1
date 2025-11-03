@@ -5,6 +5,9 @@ import { Type, GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from '@
 
 const MOCK_API_DELAY = 1500;
 
+const GEMINI_API_KEY = (process.env.API_KEY ?? process.env.GEMINI_API_KEY ?? '').trim();
+const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
+
 const handleApiError = (error: unknown, model: string): Error => {
     console.error(`Error with ${model} API:`, error);
     let message = `An unknown error occurred with ${model}.`;
@@ -171,13 +174,13 @@ export const animateFrame = async (
     aspectRatio: string = '16:9',
     onProgress?: (progress: number) => void
 ): Promise<Blob[]> => {
-    if (!process.env.API_KEY) {
+    if (!GEMINI_API_KEY) {
         throw new Error("API Key is not configured.");
     }
     console.log("[API Action] Animating frame with Veo", { prompt, hasLastFrame: !!last_frame_image_url, n });
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
         
         const { mimeType, data } = await image_url_to_base64(reference_image_url);
 
@@ -238,7 +241,7 @@ export const animateFrame = async (
         }
 
         const videoBlobs = await Promise.all(downloadLinks.map(async (downloadLink) => {
-            const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+            const response = await fetch(`${downloadLink}&key=${GEMINI_API_KEY}`);
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Failed to download video: ${response.statusText} - ${errorText}`);
@@ -346,7 +349,7 @@ export const generateVisual = async (
     aspect_ratio: string,
     onProgress?: (progress: number) => void
 ): Promise<string> => {
-    if (!process.env.API_KEY) throw new Error("API Key is not configured.");
+    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
     
     const effectiveModel = ((model === 'Imagen' || model === 'Flux') && reference_images.length > 0) ? 'Gemini Flash Image' : model;
 
@@ -356,7 +359,7 @@ export const generateVisual = async (
         }
         
         const { GoogleGenAI, Modality } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
         onProgress?.(10);
         await new Promise(res => setTimeout(res, 200));
@@ -462,12 +465,12 @@ export const generateVisual = async (
 };
 
 export const generateMoodboardDescription = async (section: MoodboardSection): Promise<string> => {
-    if (!process.env.API_KEY) throw new Error("API Key is not configured.");
+    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
     console.log("[API Action] generateMoodboardDescription", { notes: section.notes, itemCount: section.items.length });
     
     try {
         const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
         
         const textPart = { text: `Analyze the following moodboard section and generate a concise, evocative description of its overall aesthetic, tone, and visual direction.
         
@@ -499,12 +502,12 @@ export const generateMoodboardDescription = async (section: MoodboardSection): P
 };
 
 export const askTheDirector = async (analysis: ScriptAnalysis, query: string): Promise<string> => {
-    if (!process.env.API_KEY) throw new Error("API Key is not configured.");
+    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
     console.log("[API Action] askTheDirector", { query });
 
     try {
         const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
         
         const systemInstruction = `You are "The Director," an expert AI assistant for filmmakers and the creative brain for a film project. You have been provided with a complete analysis of the current script, including characters, scenes, locations, and moodboards. Your role is to be a creative partner. You DO NOT rewrite or change the script analysis. Instead, you answer questions, provide creative suggestions, and generate detailed, context-aware prompts for visual AI models.
 
@@ -553,11 +556,11 @@ USER QUERY: "${query}"
 // --- Existing AI Services adapted for new spec ---
 
 export const analyzeScript = async (scriptContent: string, onProgress?: (message: string) => void): Promise<ScriptAnalysis> => {
-     if (!process.env.API_KEY) throw new Error("API Key is not configured.");
+     if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
     console.log("Analyzing script with Gemini API...");
      try {
         const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
         const analysisSchema = {
              type: Type.OBJECT,
              properties: {
@@ -665,12 +668,12 @@ export const analyzeScript = async (scriptContent: string, onProgress?: (message
 };
 
 export const generateFramesForScene = async (scene: AnalyzedScene, directorialNotes?: string): Promise<Partial<Frame>[]> => {
-    if (!process.env.API_KEY) throw new Error("API Key is not configured.");
+    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
     console.log(`[API Action] Generating frames for Scene ${scene.sceneNumber} with notes: ${directorialNotes || 'None'}`);
 
     try {
         const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
         
         const frameSchema = {
             type: Type.OBJECT,
