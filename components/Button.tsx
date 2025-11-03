@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { THEME_COLORS } from '../constants';
+import { motion } from 'framer-motion';
+import { useTheme } from '../theme/ThemeContext';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'default';
@@ -15,12 +16,20 @@ const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   ...props
 }) => {
+  const { colors, isDark } = useTheme();
+
   const baseClasses = 'px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variantClasses = {
-    primary: `bg-[${THEME_COLORS.accent_primary}] text-[${THEME_COLORS.background_primary}] hover:bg-[${THEME_COLORS.accent_secondary}]`,
-    secondary: `bg-transparent text-[${THEME_COLORS.text_primary}] border border-[${THEME_COLORS.border_color}] hover:bg-[${THEME_COLORS.hover_background}] hover:border-[${THEME_COLORS.accent_primary}]`,
-    default: `bg-[${THEME_COLORS.surface_card}] text-[${THEME_COLORS.text_primary}] border border-[${THEME_COLORS.border_color}] hover:bg-[${THEME_COLORS.hover_background}]`,
+    primary: isDark
+      ? `bg-gradient-to-r from-[#1AD8B1] via-[${colors.accent_primary}] to-[#0B8070] text-black hover:shadow-lg hover:shadow-[#10A37F]/30`
+      : `bg-gradient-to-r from-[#0FB98D] via-[${colors.accent_primary}] to-[#0D8F74] text-white hover:shadow-lg hover:shadow-[#0FB98D]/30`,
+    secondary: isDark
+      ? `bg-transparent text-white border border-[#2A2A2A] hover:bg-[#1C1C1C] hover:border-[${colors.accent_primary}]`
+      : `bg-transparent text-black border border-[#D4D4D4] hover:bg-[#EBEBEB] hover:border-[${colors.accent_primary}]`,
+    default: isDark
+      ? `bg-[#161616] text-white border border-[#2A2A2A] hover:bg-[#1C1C1C]`
+      : `bg-white text-black border border-[#D4D4D4] hover:bg-[#F5F5F5]`,
   };
 
   const loadingSpinner = (
@@ -31,14 +40,16 @@ const Button: React.FC<ButtonProps> = ({
   );
 
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       className={`${baseClasses} ${variantClasses[variant]} ${className}`}
       disabled={isLoading || props.disabled}
       {...props}
     >
       {isLoading && loadingSpinner}
       {children}
-    </button>
+    </motion.button>
   );
 };
 

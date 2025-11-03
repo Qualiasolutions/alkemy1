@@ -1,14 +1,17 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import Sidebar from './components/Sidebar';
 import DirectorWidget from './components/DirectorWidget';
-import { TABS, THEME_COLORS } from './constants';
+import { TABS } from './constants';
+import { SunIcon, MoonIcon } from './components/icons/Icons';
 import ScriptTab from './tabs/ScriptTab';
 import MoodboardTab from './tabs/MoodboardTab';
 import PresentationTab from './tabs/PresentationTab';
 import CastLocationsTab from './tabs/CastLocationsTab';
 import CompositingTab from './tabs/SceneAssemblerTab';
-import FramesTab from './tabs/FramesTab';
+import FramesTab from './tabs/FramesTab.simple';
 import WanTransferTab from './tabs/WanTransferTab';
 import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
@@ -48,6 +51,8 @@ const createEmptyScriptAnalysis = (): ScriptAnalysis => ({
 });
 
 const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }) => {
+    const { colors, isDark } = useTheme();
+
     const handleSelectKey = async () => {
         if (window.aistudio) {
             await window.aistudio.openSelectKey();
@@ -59,28 +64,34 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
     };
 
     return (
-        <div className="flex items-center justify-center h-screen bg-[#121212]">
-            <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-2xl p-10 text-center max-w-lg shadow-2xl`}>
+        <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className={`${isDark ? 'bg-[#161616] border-[#2A2A2A]' : 'bg-white border-[#D4D4D4]'} border rounded-2xl p-10 text-center max-w-lg shadow-2xl`}
+            >
                 <h2 className="text-3xl font-bold mb-4">Alkemy AI Studio</h2>
-                <p className={`text-lg text-[${THEME_COLORS.text_secondary}] mb-6`}>
+                <p className={`text-lg ${isDark ? 'text-[#A0A0A0]' : 'text-[#505050]'} mb-6`}>
                     To begin, please select your Gemini API key. This key will be used for all generative AI features within the studio.
                 </p>
                 <Button onClick={handleSelectKey} variant="primary" className="w-full !py-3 !text-base">
                     Select Gemini API Key
                 </Button>
-                <p className="text-xs text-gray-500 mt-4">
+                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} mt-4`}>
                     By using this service, you agree to the Gemini API's terms and pricing. For more information on billing, please visit{' '}
-                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:underline">
+                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-teal-400' : 'text-teal-600'} hover:underline`}>
                         ai.google.dev/gemini-api/docs/billing
                     </a>.
                 </p>
-            </div>
+            </motion.div>
         </div>
     );
 };
 
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { colors, toggleTheme, isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
       const saved = localStorage.getItem(UI_STATE_STORAGE_KEY);
@@ -505,7 +516,7 @@ const App: React.FC = () => {
       case 'post_production':
         return <PostProductionTab />;
       case 'exports':
-        return <ExportsTab />;
+        return <ExportsTab timelineClips={timelineClips} />;
       case 'social_spots':
         return <SocialSpotsTab />;
       case 'scheduler':
@@ -527,8 +538,12 @@ const App: React.FC = () => {
 
   if (isCheckingKey) {
     return (
-        <div className="flex items-center justify-center h-screen bg-[#121212]">
-            <div className="w-12 h-12 border-4 border-t-transparent border-teal-500 rounded-full animate-spin"></div>
+        <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
+            <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className={`w-12 h-12 border-4 border-t-transparent ${isDark ? 'border-teal-500' : 'border-teal-600'} rounded-full`}
+            />
         </div>
     );
   }
@@ -537,27 +552,105 @@ const App: React.FC = () => {
     return <ApiKeyPrompt onKeySelected={() => setIsKeyReady(true)} />;
   }
 
+  const mainBg = isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]';
+  const contentBg = isDark
+    ? 'bg-gradient-to-br from-[#0B0B0B] via-[#121212] to-[#0B0B0B]'
+    : 'bg-gradient-to-br from-[#FFFFFF] via-[#F8F8F8] to-[#FFFFFF]';
+  const textPrimary = isDark ? 'text-white' : 'text-black';
+  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-600';
+
   return (
-    <div className="flex h-screen bg-[#0B0B0B] text-[#FFFFFF]">
-      <Sidebar 
-        activeTab={activeTab} 
+    <div className={`flex h-screen ${mainBg} ${textPrimary} relative overflow-hidden`}>
+      {/* Gradient Halos */}
+      <div className={`absolute top-0 left-1/4 w-96 h-96 ${isDark ? 'bg-[#10A37F]/10' : 'bg-[#0FB98D]/15'} rounded-full blur-3xl pointer-events-none`} />
+      <div className={`absolute bottom-0 right-1/3 w-80 h-80 ${isDark ? 'bg-[#1AD8B1]/8' : 'bg-[#0D8F74]/12'} rounded-full blur-3xl pointer-events-none`} />
+
+      <Sidebar
+        activeTab={activeTab}
         setActiveTab={setActiveTab}
         isSidebarExpanded={isSidebarExpanded}
         setIsSidebarExpanded={setIsSidebarExpanded}
         onNewProject={handleNewProject}
       />
-      <main className="relative flex-1 overflow-y-auto p-8 bg-[#121212]">
-        <div className="max-w-7xl mx-auto h-full">
-          {renderContent()}
+
+      <main className={`relative flex-1 overflow-y-auto p-8 ${contentBg}`}>
+        <div className="max-w-7xl mx-auto h-full relative z-10">
+          {/* Active Surface Header */}
+          <motion.header
+            initial={{ opacity: 0, y: -14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="flex justify-between items-center mb-6"
+          >
+            <div>
+              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} uppercase tracking-wider`}>Active Surface</p>
+              <h2 className="text-2xl font-bold">{TABS.find(t => t.id === activeTab)?.label || 'Alkemy'}</h2>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-2 h-2 bg-green-500 rounded-full"
+                />
+                <span className={textSecondary}>Realtime sync active</span>
+              </div>
+
+              <motion.button
+                onClick={toggleTheme}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                  isDark ? 'border-gray-700 hover:border-gray-600' : 'border-gray-300 hover:border-gray-400'
+                } transition-colors backdrop-blur-sm ${isDark ? 'bg-[#161616]/50' : 'bg-white/50'}`}
+              >
+                {isDark ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
+                <span className="text-sm">{isDark ? 'Light mode' : 'Dark mode'}</span>
+              </motion.button>
+            </div>
+          </motion.header>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 24, scale: 0.985 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -18, scale: 0.985 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
+
       <DirectorWidget scriptAnalysis={scriptAnalysis} />
-      {toast && (
-        <div className={`fixed bottom-8 right-8 z-50 px-5 py-3 rounded-lg shadow-2xl text-white font-semibold transition-all duration-300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className={`fixed bottom-8 right-8 z-50 px-5 py-3 rounded-lg shadow-2xl text-white font-semibold ${
+              toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+            }`}
+          >
             {toast.message}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };
 

@@ -1,11 +1,13 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { TimelineClip } from '../types';
-import { THEME_COLORS } from '../constants';
-import Button from '../components/Button';
-// FIX: Corrected and added icon imports
-import { PlayIcon, Trash2Icon, ScissorsIcon, PlusIcon, FilmIcon, UsersIcon, AlertCircleIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, UploadIcon, SquareIcon, Volume2Icon, LinkIcon, SettingsIcon, Music2Icon, SearchIcon, SaveIcon, Maximize2Icon, Minimize2Icon } from '../components/icons/Icons';
-import { motion } from "framer-motion";
+
+// Simple button component for timeline to avoid circular dependency
+const TimelineButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({ children, className = '', ...props }) => (
+  <button className={`px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors ${className}`} {...props}>
+    {children}
+  </button>
+);
 
 // --- Helper Components from Spec ---
 const PanelHeader: React.FC<{ title: string, actions?: React.ReactNode }> = ({ title, actions }) => (
@@ -31,8 +33,7 @@ const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title
     <div className="rounded-xl border border-zinc-800 overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 bg-zinc-900/60 cursor-pointer" onClick={() => setOpen(!open)}>
         <div className="text-xs uppercase tracking-wider text-zinc-400">{title}</div>
-        {/* FIX: Replaced incorrect component names and invalid `size` prop */}
-        {open ? <Minimize2Icon className="w-3.5 h-3.5 text-zinc-500"/> : <Maximize2Icon className="w-3.5 h-3.5 text-zinc-500"/>}
+        <span className="text-zinc-500">{open ? '−' : '+'}</span>
       </div>
       {open && <div className="p-3 space-y-3 bg-zinc-950">{children}</div>}
     </div>
@@ -220,7 +221,7 @@ const FramesTab: React.FC<{
 
     return (
     <div className="w-full h-full bg-zinc-950 text-zinc-100 select-none overflow-hidden flex flex-col">
-      {/* Top Bar with Save Button */}
+      {/* Top Bar with Save TimelineButton */}
       <div className="flex items-center justify-between px-3 sm:px-4 h-10 border-b border-zinc-800 bg-zinc-900/70 backdrop-blur-sm">
         <div className="flex items-center gap-3 text-sm">
           <span className="font-semibold">Cowboy – Edited</span>
@@ -230,8 +231,7 @@ const FramesTab: React.FC<{
         </div>
         <div className="flex items-center gap-2 text-xs">
           <div className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">{timecode(playhead)} / {timecode(totalDuration)}</div>
-          {/* FIX: Replaced incorrect component name and invalid `size` prop */}
-          <Button onClick={onSave} className="bg-emerald-700 hover:bg-emerald-600 shadow-lg !py-1 !px-2"><SaveIcon className="w-3.5 h-3.5"/> Save Project</Button>
+          <TimelineButton onClick={onSave} className="bg-emerald-700 hover:bg-emerald-600 shadow-lg !py-1 !px-2">💾 Save Project</TimelineButton>
         </div>
       </div>
 
@@ -243,9 +243,8 @@ const FramesTab: React.FC<{
             title="Project Bin"
             actions={
               <div className="flex gap-2">
-                {/* FIX: Replaced incorrect component names and invalid `size` prop */}
-                <Button onClick={() => videoInputRef.current?.click()} className="!py-1 !px-2"><UploadIcon className="w-3.5 h-3.5"/>Import</Button>
-                <Button className="!py-1 !px-2"><LinkIcon className="w-3.5 h-3.5"/>From URL</Button>
+                <TimelineButton onClick={() => videoInputRef.current?.click()} className="!py-1 !px-2">⬆ Import</TimelineButton>
+                <TimelineButton className="!py-1 !px-2">🔗 From URL</TimelineButton>
               </div>
             }
           />
@@ -253,8 +252,7 @@ const FramesTab: React.FC<{
 
           <div className="p-2">
             <div className="flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-xl px-2 py-1 text-sm">
-              {/* FIX: Replaced incorrect component name and invalid `size` prop */}
-              <SearchIcon className="w-4 h-4 text-zinc-400"/>
+              <span className="text-zinc-400">🔍</span>
               <input placeholder="Search clips" className="w-full bg-transparent outline-none"/>
             </div>
           </div>
@@ -278,8 +276,7 @@ const FramesTab: React.FC<{
         <div className="flex-1 h-full flex flex-col">
           {/* Viewer */}
           <div className="relative flex-1 min-h-[200px] flex flex-col">
-            {/* FIX: Replaced incorrect component name and invalid `size` prop */}
-            <PanelHeader title="Program: Cowboy" actions={<Button className="px-2 py-1"><SettingsIcon className="w-3.5 h-3.5"/></Button>} />
+            <PanelHeader title="Program: Cowboy" actions={<TimelineButton className="px-2 py-1">⚙</TimelineButton>} />
             <div className="flex-1 grid place-items-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black">
               <div className="relative w-[72%] max-w-[920px] aspect-video bg-black border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
                 <video ref={videoRef} className="w-full h-full object-contain" />
@@ -288,12 +285,11 @@ const FramesTab: React.FC<{
             </div>
             {/* Transport Controls */}
             <div className="flex items-center justify-center gap-2 py-3 border-t border-zinc-800 bg-zinc-900/60">
-              {/* FIX: Replaced incorrect component names and invalid `size` prop, and corrected onClick handlers */}
-              <Button onClick={() => setPlayhead(0)}><SquareIcon className="w-4 h-4"/>Stop</Button>
-              <Button onClick={() => setPlayhead(playhead - 1)}><SkipBackIcon className="w-4 h-4"/> -1s</Button>
-              <Button onClick={() => setIsPlaying(p => !p)} className="bg-emerald-700 hover:bg-emerald-600">{isPlaying ? <PauseIcon className="w-4 h-4"/> : <PlayIcon className="w-4 h-4"/>}</Button>
-              <Button onClick={() => setPlayhead(playhead + 1)}>+1s <SkipForwardIcon className="w-4 h-4"/></Button>
-              <div className="flex items-center gap-2 ml-4 text-sm"><Volume2Icon className="w-4 h-4 text-zinc-400"/><input type="range" min="0" max="100" defaultValue="80" className="w-32"/></div>
+              <TimelineButton onClick={() => setPlayhead(0)}>■ Stop</TimelineButton>
+              <TimelineButton onClick={() => setPlayhead(playhead - 1)}>⏮ -1s</TimelineButton>
+              <TimelineButton onClick={() => setIsPlaying(p => !p)} className="bg-emerald-700 hover:bg-emerald-600">{isPlaying ? '⏸' : '▶'}</TimelineButton>
+              <TimelineButton onClick={() => setPlayhead(playhead + 1)}>+1s ⏭</TimelineButton>
+              <div className="flex items-center gap-2 ml-4 text-sm"><span className="text-zinc-400">🔊</span><input type="range" min="0" max="100" defaultValue="80" className="w-32"/></div>
               <div className="flex items-center gap-2 ml-6 text-sm">
                 <div className="text-zinc-400">Zoom</div>
                 <input type="range" min="0.5" max="4" step="0.1" value={zoom} onChange={(e)=>setUiState(p => ({...p, zoom: parseFloat(e.target.value)}))} className="w-40"/>
@@ -307,8 +303,7 @@ const FramesTab: React.FC<{
           />
           {/* Timeline */}
           <div style={{ height: timelineHeight }} className="w-full bg-zinc-900/60 border-t border-zinc-800 flex flex-col">
-            {/* FIX: Replaced incorrect component name and invalid `size` prop */}
-            <PanelHeader title="Timeline: V1 / A1" actions={<Button className="!py-1 !px-2" onClick={handleSplitClip}><ScissorsIcon className="w-3.5 h-3.5"/>Split</Button>} />
+            <PanelHeader title="Timeline: V1 / A1" actions={<TimelineButton className="!py-1 !px-2" onClick={handleSplitClip}>✂ Split</TimelineButton>} />
             <div className="flex-1 overflow-auto" ref={timelineContainerRef}>
                 <div className="relative h-full" style={{ width: totalDuration * 80 * zoom }}>
                     {/* Ruler */}
@@ -352,8 +347,7 @@ const FramesTab: React.FC<{
 
         {/* Right Inspector */}
         <div style={{ width: rightWidth }} className="h-full border-l border-zinc-800 bg-zinc-900/40 flex flex-col">
-          {/* FIX: Replaced incorrect component name and invalid `size` prop */}
-          <PanelHeader title="Inspector" actions={<Button className="!py-1 !px-2"><SettingsIcon className="w-3.5 h-3.5"/></Button>} />
+          <PanelHeader title="Inspector" actions={<TimelineButton className="!py-1 !px-2">⚙</TimelineButton>} />
           <div className="p-4 space-y-4 overflow-auto text-sm">
             {selectedClipData ? (
                 <>
