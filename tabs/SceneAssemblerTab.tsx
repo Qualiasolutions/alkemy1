@@ -216,23 +216,23 @@ const RefinementStudio: React.FC<{
 
                 <div className="flex-shrink-0 flex justify-center pb-2">
                      <div className="w-full max-w-4xl">
-                         <div className="bg-[#1C1C1C] p-3 rounded-2xl flex flex-col gap-2 shadow-2xl w-full border border-gray-700">
-                             <div className="flex items-center gap-3">
+                         <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-2xl w-full border border-gray-700/50 hover:border-gray-600/50 transition-all">
+                             <div className="flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
                                 <textarea
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="e.g., make the character smile, add cinematic lighting"
+                                    placeholder="e.g., make the character smile, add cinematic lighting..."
                                     rows={1}
-                                    className="flex-1 bg-transparent text-sm resize-none focus:outline-none max-h-24 text-gray-200 placeholder-gray-500"
+                                    className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
                                 />
-                                <div className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 whitespace-nowrap">
-                                    Model: Gemini Flash Image
+                                <div className="bg-gray-700/80 text-white text-xs rounded-xl font-semibold px-4 py-2 whitespace-nowrap border border-gray-600/50">
+                                    Gemini Flash Image
                                 </div>
-                                <Button 
-                                    onClick={handleGenerate} 
-                                    disabled={isGenerating || !prompt.trim()} 
-                                    isLoading={isGenerating} 
-                                    className="!bg-gray-300 !text-black !font-bold !py-2 !px-4 rounded-lg flex-shrink-0"
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || !prompt.trim()}
+                                    isLoading={isGenerating}
+                                    className="!bg-gradient-to-r !from-white !to-gray-100 !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-lg hover:!scale-105 !transition-all flex-shrink-0 disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100"
                                 >
                                     Generate
                                 </Button>
@@ -432,51 +432,52 @@ const StillStudio: React.FC<{
 
             <footer className="flex-shrink-0 p-4">
                  <div className="max-w-4xl mx-auto">
-                    <div className="bg-[#1C1C1C] p-3 rounded-2xl flex flex-col gap-2.5 shadow-2xl border border-gray-700">
+                    <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all">
                         {promptWasAdjusted && (
-                            <div className="text-xs text-yellow-400/80 px-4">Note: Your prompt was adjusted for safety.</div>
+                            <div className="text-xs text-yellow-400/90 px-4 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
+                                <span className="font-semibold">Note:</span> Your prompt was adjusted for safety.
+                            </div>
                         )}
                         {attachedImage && (
-                            <div className="relative self-start p-1 bg-black/20 rounded-lg ml-3">
-                                <img src={attachedImage} alt="Attached reference" className="w-16 h-16 object-cover rounded"/>
-                                <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-black/70 text-white rounded-full p-0.5 hover:bg-red-500 transition-colors">
-                                    <XIcon className="w-3 h-3" />
+                            <div className="relative self-start p-1.5 bg-gray-800/60 backdrop-blur-sm rounded-2xl ml-3 border border-gray-700/50">
+                                <img src={attachedImage} alt="Attached reference" className="w-20 h-20 object-cover rounded-xl"/>
+                                <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1 hover:bg-red-600 hover:scale-110 transition-all shadow-lg">
+                                    <XIcon className="w-3.5 h-3.5" />
                                 </button>
                             </div>
                         )}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 rounded-lg hover:bg-white/10 transition-colors">
-                                <PaperclipIcon className="w-6 h-6"/>
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 rounded-xl hover:bg-gray-700/50 hover:text-white transition-all">
+                                <PaperclipIcon className="w-5 h-5"/>
                             </button>
                             <textarea
                                 value={detailedPrompt}
                                 onChange={(e) => setDetailedPrompt(e.target.value)}
-                                placeholder="Describe the shot..."
+                                placeholder="Describe your shot in detail..."
                                 rows={1}
-                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-24 pt-1 text-gray-200 placeholder-gray-500"
+                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
                             />
                         </div>
-                         <div className="flex items-center justify-between pl-10">
-                             <div className="flex items-center gap-2">
-                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                         <div className="flex items-center justify-between gap-3">
+                             <div className="flex items-center gap-2 flex-wrap">
+                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 transition-all">
                                     <option>Imagen</option><option>Gemini Flash Image</option><option>Flux</option>
                                 </select>
-                                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 transition-all">
                                     <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
                                 </select>
-                                <select value={selectedLocationId} onChange={e => setSelectedLocationId(e.target.value)} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer max-w-[120px]">
-                                    <option value="">Select Location</option>
+                                <select value={selectedLocationId} onChange={e => setSelectedLocationId(e.target.value)} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 transition-all">
+                                    <option value="">Location</option>
                                     {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                                 </select>
-                                {/* FIX: Explicitly type `option` as HTMLOptionElement to prevent TypeScript from inferring it as `unknown`. */}
-                                <select multiple value={selectedCharacterIds} onChange={e => setSelectedCharacterIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer max-w-[120px]">
+                                <select multiple value={selectedCharacterIds} onChange={e => setSelectedCharacterIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 transition-all">
                                     {characters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
 
                             </div>
                             <div className="flex items-center">
-                                <Button onClick={handleGenerate} disabled={!detailedPrompt.trim()} className="!bg-white !text-black !font-bold !py-2 !px-5 rounded-lg">Generate</Button>
+                                <Button onClick={handleGenerate} disabled={!detailedPrompt.trim()} className="!bg-gradient-to-r !from-white !to-gray-100 !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-lg hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100">Generate</Button>
                             </div>
                         </div>
                     </div>
@@ -670,52 +671,52 @@ const AnimateStudio: React.FC<{
             </main>
             <footer className="absolute bottom-0 left-0 right-0 p-4">
                  <div className="max-w-3xl mx-auto">
-                    <div className="bg-[#1C1C1C] p-3 rounded-2xl flex flex-col gap-2.5 shadow-2xl border border-gray-700">
+                    <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all">
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                         <div className="flex items-center justify-center gap-4 px-2 mb-2">
                             <div className="text-center relative group">
-                                <div className="w-24 h-14 object-cover rounded-md border-2 border-green-500 flex items-center justify-center bg-black/20 overflow-hidden">
+                                <div className="w-28 h-16 object-cover rounded-xl border-2 border-green-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-green-400 transition-all">
                                     {(frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url) ? (
                                         <img src={frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url} alt="Starting frame" className="w-full h-full object-cover"/>
                                     ) : (
-                                        <p className="text-[10px] text-gray-500 p-1">Not Set</p>
+                                        <p className="text-xs text-gray-500 p-1">Not Set</p>
                                     )}
-                                    <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                                        <button onClick={() => handleFrameControlClick('start')} className="p-1.5 text-white bg-white/10 rounded-full hover:bg-white/20" title="Upload Start Frame"><ImagePlusIcon className="w-4 h-4"/></button>
+                                    <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 backdrop-blur-sm">
+                                        <button onClick={() => handleFrameControlClick('start')} className="p-2 text-white bg-green-500/20 rounded-xl hover:bg-green-500/30 hover:scale-110 transition-all border border-green-500/50" title="Upload Start Frame"><ImagePlusIcon className="w-4 h-4"/></button>
                                         {(frame.media?.start_frame_url || frame.media?.upscaled_start_frame_url) && (
-                                            <button onClick={() => handleRemoveFrame('start')} className="p-1.5 text-white bg-white/10 rounded-full hover:bg-white/20" title="Remove Start Frame"><Trash2Icon className="w-4 h-4"/></button>
+                                            <button onClick={() => handleRemoveFrame('start')} className="p-2 text-white bg-red-500/20 rounded-xl hover:bg-red-500/30 hover:scale-110 transition-all border border-red-500/50" title="Remove Start Frame"><Trash2Icon className="w-4 h-4"/></button>
                                         )}
                                     </div>
                                 </div>
-                                <label className="text-xs text-gray-400 mt-1 block">Hero Frame</label>
+                                <label className="text-xs text-gray-400 mt-2 block font-semibold">Hero Frame</label>
                             </div>
-                            <div className="text-gray-500 self-center pb-4"><ArrowRightIcon className="w-6 h-6"/></div>
+                            <div className="text-gray-500 self-center pb-4"><ArrowRightIcon className="w-7 h-7"/></div>
                              <div className="text-center relative group">
-                                <div className="w-24 h-14 object-cover rounded-md border-2 border-blue-500 flex items-center justify-center bg-black/20 overflow-hidden">
+                                <div className="w-28 h-16 object-cover rounded-xl border-2 border-blue-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-blue-400 transition-all">
                                     {frame.media?.end_frame_url ? (
                                         <img src={frame.media.end_frame_url} alt="Ending frame" className="w-full h-full object-cover"/>
                                     ) : (
-                                        <p className="text-[10px] text-gray-500 p-1">Not Set</p>
+                                        <p className="text-xs text-gray-500 p-1">Not Set</p>
                                     )}
-                                     <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                                        <button onClick={() => handleFrameControlClick('end')} className="p-1.5 text-white bg-white/10 rounded-full hover:bg-white/20" title="Upload End Frame"><ImagePlusIcon className="w-4 h-4"/></button>
+                                     <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 backdrop-blur-sm">
+                                        <button onClick={() => handleFrameControlClick('end')} className="p-2 text-white bg-blue-500/20 rounded-xl hover:bg-blue-500/30 hover:scale-110 transition-all border border-blue-500/50" title="Upload End Frame"><ImagePlusIcon className="w-4 h-4"/></button>
                                         {frame.media?.end_frame_url && (
-                                            <button onClick={() => handleRemoveFrame('end')} className="p-1.5 text-white bg-white/10 rounded-full hover:bg-white/20" title="Remove End Frame"><Trash2Icon className="w-4 h-4"/></button>
+                                            <button onClick={() => handleRemoveFrame('end')} className="p-2 text-white bg-red-500/20 rounded-xl hover:bg-red-500/30 hover:scale-110 transition-all border border-red-500/50" title="Remove End Frame"><Trash2Icon className="w-4 h-4"/></button>
                                         )}
                                     </div>
                                 </div>
-                                <label className="text-xs text-gray-400 mt-1 block">End Frame</label>
+                                <label className="text-xs text-gray-400 mt-2 block font-semibold">End Frame</label>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 border-t border-gray-700/50 pt-2">
+                        <div className="flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
                             <textarea
                                 value={motionPrompt}
                                 onChange={(e) => setMotionPrompt(e.target.value)}
-                                placeholder="Describe the motion, e.g., slow dolly zoom in..."
+                                placeholder="Describe the motion, e.g., slow dolly zoom in, camera pans left..."
                                 rows={1}
-                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-24 pt-1 text-gray-200 placeholder-gray-500"
+                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
                             />
-                             <Button onClick={handleGenerate} disabled={isGenerating} isLoading={isGenerating} className="!bg-white !text-black !font-bold !py-2 !px-5 rounded-lg">Animate</Button>
+                             <Button onClick={handleGenerate} disabled={isGenerating} isLoading={isGenerating} className="!bg-gradient-to-r !from-white !to-gray-100 !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-lg hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100">Animate</Button>
                         </div>
                     </div>
                  </div>
