@@ -19,7 +19,7 @@ import { analyzeScript } from './services/aiService';
 import TheDirectorTab from './tabs/TheDirectorTab';
 import Button from './components/Button';
 
-const ENV_GEMINI_API_KEY = (process.env.API_KEY ?? '').trim();
+const ENV_GEMINI_API_KEY = (process.env.GEMINI_API_KEY ?? process.env.API_KEY ?? '').trim();
 const HAS_ENV_GEMINI_KEY = ENV_GEMINI_API_KEY.length > 0;
 
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
