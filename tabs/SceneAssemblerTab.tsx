@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, AnalyzedLocation, Moodboard, FrameStatus } from '../types';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo } from '../services/aiService';
 import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon } from '../components/icons/Icons';
@@ -218,26 +218,50 @@ const RefinementStudio: React.FC<{
 
                 <div className="flex-shrink-0 flex justify-center pb-2">
                      <div className="w-full max-w-4xl">
-                         <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-2xl w-full border border-gray-700/50 hover:border-gray-600/50 transition-all">
-                             <div className="flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
-                                <textarea
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="e.g., make the character smile, add cinematic lighting..."
-                                    rows={1}
-                                    className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
-                                />
-                                <div className="bg-gray-700/80 text-white text-xs rounded-xl font-semibold px-4 py-2 whitespace-nowrap border border-gray-600/50">
-                                    Gemini Flash Image
+                        {/* Multi-layered animated gradient glow container */}
+                        <div className="relative group">
+                            {/* Animated gradient glow */}
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-[28px] opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500"></div>
+
+                            {/* Main content container with glassmorphism */}
+                            <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 rounded-3xl p-5 border border-gray-700/30 shadow-2xl">
+                                {/* Input area with gradient border on focus */}
+                                <div className="relative group/input">
+                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/20 group-focus-within/input:via-purple-500/20 group-focus-within/input:to-pink-500/20 rounded-2xl blur transition-all duration-300"></div>
+                                    <div className="relative flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
+                                        <textarea
+                                            value={prompt}
+                                            onChange={(e) => setPrompt(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    if (prompt.trim() && !isGenerating) handleGenerate();
+                                                }
+                                            }}
+                                            placeholder="e.g., make the character smile, add cinematic lighting... (Press Enter)"
+                                            rows={1}
+                                            className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
+                                        />
+                                        <div className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 text-white text-xs rounded-xl font-semibold px-4 py-2.5 whitespace-nowrap border border-gray-600/50 shadow-lg backdrop-blur-sm">
+                                            Gemini Flash Image
+                                        </div>
+                                        <Button
+                                            onClick={handleGenerate}
+                                            disabled={isGenerating || !prompt.trim()}
+                                            isLoading={isGenerating}
+                                            className="!bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all flex-shrink-0 disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg"
+                                        >
+                                            <span>Refine</span>
+                                            <motion.span
+                                                animate={{ x: [0, 3, 0] }}
+                                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                                className="text-lg"
+                                            >
+                                                →
+                                            </motion.span>
+                                        </Button>
+                                    </div>
                                 </div>
-                                <Button
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating || !prompt.trim()}
-                                    isLoading={isGenerating}
-                                    className="!bg-gradient-to-r !from-white !to-gray-100 !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-lg hover:!scale-105 !transition-all flex-shrink-0 disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100"
-                                >
-                                    Generate
-                                </Button>
                             </div>
                         </div>
                     </div>
@@ -390,7 +414,7 @@ const StillStudio: React.FC<{
                  <div className="px-4">
                     {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
                         <div className="mb-8">
-                            <h4 className={`text-lg font-semibold mb-3 text-[${THEME_COLORS.text_primary}]`}>Hero Frames</h4>
+                            <h4 className={`text-lg font-semibold mb-3 text-[var(--color-text-primary)]`}>Hero Frames</h4>
                             <div className="flex gap-4 justify-center">
                                 {frame.media.start_frame_url && (
                                     <div className="text-center">
@@ -432,54 +456,86 @@ const StillStudio: React.FC<{
                 </div>
             </main>
 
-            <footer className="flex-shrink-0 p-4">
+            <footer className="flex-shrink-0 p-6">
                  <div className="max-w-4xl mx-auto">
-                    <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all">
-                        {promptWasAdjusted && (
-                            <div className="text-xs text-yellow-400/90 px-4 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
-                                <span className="font-semibold">Note:</span> Your prompt was adjusted for safety.
-                            </div>
-                        )}
-                        {attachedImage && (
-                            <div className="relative self-start p-1.5 bg-gray-800/60 backdrop-blur-sm rounded-2xl ml-3 border border-gray-700/50">
-                                <img src={attachedImage} alt="Attached reference" className="w-20 h-20 object-cover rounded-xl"/>
-                                <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1 hover:bg-red-600 hover:scale-110 transition-all shadow-lg">
-                                    <XIcon className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 rounded-xl hover:bg-gray-700/50 hover:text-white transition-all">
-                                <PaperclipIcon className="w-5 h-5"/>
-                            </button>
-                            <textarea
-                                value={detailedPrompt}
-                                onChange={(e) => setDetailedPrompt(e.target.value)}
-                                placeholder="Describe your shot in detail..."
-                                rows={1}
-                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
-                            />
-                        </div>
-                         <div className="flex items-center justify-between gap-3">
-                             <div className="flex items-center gap-2 flex-wrap">
-                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 transition-all">
-                                    <option>Imagen</option><option>Gemini Flash Image</option><option>Flux</option>
-                                </select>
-                                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 transition-all">
-                                    <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
-                                </select>
-                                <select value={selectedLocationId} onChange={e => setSelectedLocationId(e.target.value)} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 transition-all">
-                                    <option value="">Location</option>
-                                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                                </select>
-                                <select multiple value={selectedCharacterIds} onChange={e => setSelectedCharacterIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))} className="bg-gray-700/80 hover:bg-gray-700 text-white text-xs rounded-xl font-semibold px-4 py-2 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 transition-all">
-                                    {characters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                    {/* Multi-layered animated gradient glow container */}
+                    <div className="relative group">
+                        {/* Animated gradient glow */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-[28px] opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500"></div>
 
+                        {/* Main content container with glassmorphism */}
+                        <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 rounded-3xl p-5 border border-gray-700/30 shadow-2xl">
+                            {promptWasAdjusted && (
+                                <div className="text-xs text-yellow-400/90 px-4 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mb-3 backdrop-blur-sm">
+                                    <span className="font-semibold">Note:</span> Your prompt was adjusted for safety.
+                                </div>
+                            )}
+                            {attachedImage && (
+                                <div className="relative self-start p-1.5 bg-gray-800/60 backdrop-blur-sm rounded-2xl ml-3 mb-3 border border-gray-700/50 shadow-lg">
+                                    <img src={attachedImage} alt="Attached reference" className="w-20 h-20 object-cover rounded-xl"/>
+                                    <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1 hover:bg-red-600 hover:scale-110 transition-all shadow-lg">
+                                        <XIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Input area with gradient border on focus */}
+                            <div className="relative group/input mb-3">
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/20 group-focus-within/input:via-purple-500/20 group-focus-within/input:to-pink-500/20 rounded-2xl blur transition-all duration-300"></div>
+                                <div className="relative flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
+                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 rounded-xl hover:bg-gray-700/50 hover:text-white transition-all hover:scale-110">
+                                        <PaperclipIcon className="w-5 h-5"/>
+                                    </button>
+                                    <textarea
+                                        value={detailedPrompt}
+                                        onChange={(e) => setDetailedPrompt(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                if (detailedPrompt.trim()) handleGenerate();
+                                            }
+                                        }}
+                                        placeholder="Describe your shot in detail... (Press Enter to generate)"
+                                        rows={1}
+                                        className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex items-center">
-                                <Button onClick={handleGenerate} disabled={!detailedPrompt.trim()} className="!bg-gradient-to-r !from-white !to-gray-100 !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-lg hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100">Generate</Button>
+
+                            {/* Controls row */}
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                        <option>Imagen</option><option>Gemini Flash Image</option><option>Flux</option>
+                                    </select>
+                                    <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                        <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
+                                    </select>
+                                    <select value={selectedLocationId} onChange={e => setSelectedLocationId(e.target.value)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                        <option value="">Location</option>
+                                        {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                                    </select>
+                                    <select multiple value={selectedCharacterIds} onChange={e => setSelectedCharacterIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                        {characters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Modern Generate button with animated arrow */}
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={!detailedPrompt.trim()}
+                                    className="!bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg"
+                                >
+                                    <span>Generate</span>
+                                    <motion.span
+                                        animate={{ x: [0, 3, 0] }}
+                                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                        className="text-lg"
+                                    >
+                                        →
+                                    </motion.span>
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -796,7 +852,7 @@ const ShotCard: React.FC<{
             case FrameStatus.UpscaledVideoReady:
                 return 'border-red-500';
             default:
-                return `border-[${THEME_COLORS.border_color}]`;
+                return `border-[var(--color-border-color)]`;
         }
     };
 
@@ -804,7 +860,7 @@ const ShotCard: React.FC<{
         <div 
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className={`group bg-[${THEME_COLORS.surface_card}] rounded-lg border-2 p-3 flex flex-col gap-3 ${getBorderColorClass(status)}`}
+            className={`group bg-[var(--color-surface-card)] rounded-lg border-2 p-3 flex flex-col gap-3 ${getBorderColorClass(status)}`}
         >
             {/* Media Display */}
             <div className="relative aspect-video bg-[#0B0B0B] rounded-md flex items-center justify-center overflow-hidden">
@@ -834,7 +890,7 @@ const ShotCard: React.FC<{
             {/* Info and Actions */}
             <div>
                 <h5 className="font-semibold truncate">Shot {frame.shot_number}</h5>
-                <p className={`text-sm text-[${THEME_COLORS.text_secondary}] h-10 overflow-hidden`}>{frame.description}</p>
+                <p className={`text-sm text-[var(--color-text-secondary)] h-10 overflow-hidden`}>{frame.description}</p>
             </div>
             
             <div className="mt-auto grid grid-cols-3 gap-2 text-center">
@@ -943,7 +999,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
     };
 
     if (!scriptAnalysis) {
-        return <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center"><div className={`p-10 border border-dashed border-[${THEME_COLORS.border_color}] rounded-2xl`}><h2 className="text-3xl font-bold mb-2">Compositing</h2><p className="text-lg text-gray-400 max-w-md">Analyze a script or manually add scenes to begin.</p><Button onClick={onAddScene} variant="primary" className="mt-6"><PlusIcon className="w-5 h-5" />Add First Scene</Button></div></div>;
+        return <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center"><div className={`p-10 border border-dashed border-[var(--color-border-color)] rounded-2xl`}><h2 className="text-3xl font-bold mb-2">Compositing</h2><p className="text-lg text-gray-400 max-w-md">Analyze a script or manually add scenes to begin.</p><Button onClick={onAddScene} variant="primary" className="mt-6"><PlusIcon className="w-5 h-5" />Add First Scene</Button></div></div>;
     }
     
     const renderWorkspace = () => {
@@ -979,8 +1035,8 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
 
             <header className="space-y-4">
               <div>
-                <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Compositing</h2>
-                <p className={`text-md text-[${THEME_COLORS.text_secondary}]`}>Compose stills, then upscale and animate each shot to build your film.</p>
+                <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Compositing</h2>
+                <p className={`text-md text-[var(--color-text-secondary)]`}>Compose stills, then upscale and animate each shot to build your film.</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button onClick={onAddScene} variant="secondary" className="!py-2 !px-4"><PlusIcon className="w-4 h-4" /><span>Add Scene</span></Button>
@@ -992,7 +1048,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
             {scriptAnalysis.scenes.map(scene => (
                  <section key={scene.id}>
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className={`text-xl font-semibold text-[${THEME_COLORS.text_primary}]`}>Scene {scene.sceneNumber}: <span className="font-normal text-gray-400">{scene.setting}</span></h3>
+                        <h3 className={`text-xl font-semibold text-[var(--color-text-primary)]`}>Scene {scene.sceneNumber}: <span className="font-normal text-gray-400">{scene.setting}</span></h3>
                         <Button onClick={() => handleAddShot(scene.id)} variant="secondary" className="!py-2 !px-4"><PlusIcon className="w-4 h-4" /><span>Add Shot</span></Button>
                     </div>
                     {(scene.frames && scene.frames.length > 0) ? (
@@ -1011,8 +1067,8 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
                             ))}
                         </div>
                     ) : (
-                        <div className={`text-center py-8 bg-[${THEME_COLORS.surface_card}] border border-dashed border-[${THEME_COLORS.border_color}] rounded-lg`}>
-                            <p className={`text-[${THEME_COLORS.text_secondary}]`}>No shots defined for this scene yet.</p>
+                        <div className={`text-center py-8 bg-[var(--color-surface-card)] border border-dashed border-[var(--color-border-color)] rounded-lg`}>
+                            <p className={`text-[var(--color-text-secondary)]`}>No shots defined for this scene yet.</p>
                         </div>
                     )}
                 </section>

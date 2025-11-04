@@ -13,7 +13,8 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.FLUX_API_KEY': JSON.stringify(env.FLUX_API_KEY)
+        'process.env.FLUX_API_KEY': JSON.stringify(env.FLUX_API_KEY),
+        'process.env.WAN_API_KEY': JSON.stringify(env.WAN_API_KEY)
       },
       resolve: {
         alias: {

@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Moodboard, MoodboardSection, MoodboardItem } from '../types';
-import { THEME_COLORS } from '../constants';
 import { UploadCloudIcon, CameraIcon, PaletteIcon, SparklesIcon, ImageIcon, Trash2Icon, EnterIcon, BrainIcon, ArrowLeftIcon } from '../components/icons/Icons';
 import Button from '../components/Button';
 import { generateMoodboardDescription } from '../services/aiService';
@@ -148,12 +147,12 @@ const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, sta
     const remainingCount = sectionData.items.length - 4;
 
     return (
-        <div className={`group relative bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl overflow-hidden hover:border-[${THEME_COLORS.accent_primary}]/50 transition-all hover:shadow-lg hover:shadow-teal-500/10`}>
+        <div className={`group relative bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl overflow-hidden hover:border-[var(--color-accent-primary)]/50 transition-all hover:shadow-lg hover:shadow-teal-500/10`}>
             {/* Header */}
-            <div className="p-4 border-b border-[${THEME_COLORS.border_color}]">
+            <div className="p-4 border-b border-[var(--color-border-color)]">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 flex-shrink-0 bg-[${THEME_COLORS.background_primary}] rounded-lg flex items-center justify-center text-[${THEME_COLORS.accent_primary}]`}>
+                        <div className={`w-8 h-8 flex-shrink-0 bg-[var(--color-background-primary)] rounded-lg flex items-center justify-center text-[var(--color-accent-primary)]`}>
                             {icon}
                         </div>
                         <h3 className="text-lg font-bold">{title}</h3>
@@ -168,7 +167,7 @@ const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, sta
                         </span>
                     </div>
                 </div>
-                <p className={`text-xs text-[${THEME_COLORS.text_secondary}] line-clamp-2 leading-relaxed`}>
+                <p className={`text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed`}>
                     {displayDescription}
                 </p>
             </div>
@@ -176,7 +175,7 @@ const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, sta
             {/* Image Grid Preview */}
             <div
                 onClick={onEnterStudio}
-                className="relative cursor-pointer h-48 bg-[${THEME_COLORS.background_primary}] overflow-hidden"
+                className="relative cursor-pointer h-48 bg-[var(--color-background-primary)] overflow-hidden"
             >
                 {sectionData.items.length > 0 ? (
                     <div className="grid grid-cols-2 gap-1 h-full p-1">
@@ -226,7 +225,7 @@ const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, sta
             </div>
 
             {/* Footer Actions */}
-            <div className="p-3 border-t border-[${THEME_COLORS.border_color}] flex items-center justify-between">
+            <div className="p-3 border-t border-[var(--color-border-color)] flex items-center justify-between">
                 <Button
                     onClick={handleGenerateDescription}
                     isLoading={isGeneratingDesc}
@@ -262,7 +261,7 @@ const MoodboardTab: React.FC<{
   if (!scriptAnalyzed) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-        <div className={`p-10 border border-dashed border-[${THEME_COLORS.border_color}] rounded-2xl`}>
+        <div className={`p-10 border border-dashed border-[var(--color-border-color)] rounded-2xl`}>
           <h2 className="text-3xl font-bold mb-2">Awaiting Script Analysis</h2>
           <p className="text-lg text-gray-400 max-w-md">Please analyze a script in the 'Script' tab to unlock the Moodboard.</p>
         </div>
@@ -324,8 +323,8 @@ const MoodboardTab: React.FC<{
                 onUpdate={(updater) => handleUpdateSection(activeStudio, updater)}
             />
         )}
-      <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Moodboard</h2>
-      <p className={`text-md text-[${THEME_COLORS.text_secondary}] mb-6`}>Define the visual and tonal direction for your project. References added here will influence all AI generations.</p>
+      <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Moodboard</h2>
+      <p className={`text-md text-[var(--color-text-secondary)] mb-6`}>Define the visual and tonal direction for your project. References added here will influence all AI generations.</p>
       
       <div className="space-y-8">
         {sections.map(sec => (

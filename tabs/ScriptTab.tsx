@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../theme/ThemeContext';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { ScriptAnalysis } from '../types';
 import { UploadCloudIcon, XIcon, UsersIcon, MapPinIcon, ClapperboardIcon } from '../components/icons/Icons';
@@ -15,13 +14,13 @@ interface AnalysisInfoCardProps {
 }
 
 const AnalysisInfoCard: React.FC<AnalysisInfoCardProps> = ({ icon, label, value }) => (
-    <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-lg p-4 flex items-center gap-4`}>
-        <div className={`w-10 h-10 flex-shrink-0 bg-[${THEME_COLORS.background_primary}] rounded-md flex items-center justify-center text-[${THEME_COLORS.accent_primary}]`}>
+    <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-lg p-4 flex items-center gap-4`}>
+        <div className={`w-10 h-10 flex-shrink-0 bg-[var(--color-background-primary)] rounded-md flex items-center justify-center text-[var(--color-accent-primary)]`}>
             {icon}
         </div>
         <div>
             <div className="text-2xl font-bold">{value}</div>
-            <div className={`text-sm text-[${THEME_COLORS.text_secondary}] uppercase tracking-wider`}>{label}</div>
+            <div className={`text-sm text-[var(--color-text-secondary)] uppercase tracking-wider`}>{label}</div>
         </div>
     </div>
 );
@@ -32,8 +31,8 @@ interface AnalysisSectionProps {
 }
 
 const AnalysisSection: React.FC<AnalysisSectionProps> = ({ title, children }) => (
-    <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-lg p-6`}>
-        <h4 className={`text-lg font-semibold mb-4 text-[${THEME_COLORS.text_primary}]`}>{title}</h4>
+    <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-lg p-6`}>
+        <h4 className={`text-lg font-semibold mb-4 text-[var(--color-text-primary)]`}>{title}</h4>
         {children}
     </div>
 );
@@ -47,6 +46,7 @@ interface ScriptTabProps {
     analysisError: string | null;
     analysisMessage: string;
     onAnalyze: () => void;
+    setActiveTab?: (tabId: string) => void;
 }
 
 const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScriptUpdate, isAnalyzing, analysisError, analysisMessage, onAnalyze }) => {
@@ -206,7 +206,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
              return (
                 <div className="mt-8">
                     <AnalysisSection title="Analysis Failed">
-                        <div className={`text-[${THEME_COLORS.error}] space-y-2`}>
+                        <div className={`text-[var(--color-error)] space-y-2`}>
                             <p className="font-semibold">There was an error analyzing the script.</p>
                             <p className="text-sm font-mono bg-red-900/20 p-2 rounded">{analysisError}</p>
                         </div>
@@ -225,31 +225,31 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                     <AnalysisInfoCard icon={<ClapperboardIcon />} label="Scenes" value={analysis.scenes.length} />
                 </div>
                  <AnalysisSection title="Summary">
-                    <p className={`text-[${THEME_COLORS.text_secondary}]`}>{analysis.summary}</p>
+                    <p className={`text-[var(--color-text-secondary)]`}>{analysis.summary}</p>
                 </AnalysisSection>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <AnalysisSection title="Key Props">
-                        <ul className={`list-disc list-inside text-[${THEME_COLORS.text_secondary}] space-y-1 h-32 overflow-y-auto`}>
+                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
                             {analysis.props?.length > 0 ? analysis.props.map((prop, i) => <li key={i}>{prop}</li>) : <li className="list-none">None specified.</li>}
                         </ul>
                     </AnalysisSection>
                     <AnalysisSection title="Styling & Wardrobe">
-                        <ul className={`list-disc list-inside text-[${THEME_COLORS.text_secondary}] space-y-1 h-32 overflow-y-auto`}>
+                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
                              {analysis.styling?.length > 0 ? analysis.styling.map((style, i) => <li key={i}>{style}</li>) : <li className="list-none">None specified.</li>}
                         </ul>
                     </AnalysisSection>
                      <AnalysisSection title="Set Dressing">
-                        <ul className={`list-disc list-inside text-[${THEME_COLORS.text_secondary}] space-y-1 h-32 overflow-y-auto`}>
+                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
                              {analysis.setDressing?.length > 0 ? analysis.setDressing.map((item, i) => <li key={i}>{item}</li>) : <li className="list-none">None specified.</li>}
                         </ul>
                     </AnalysisSection>
                     <AnalysisSection title="Makeup & Hair">
-                        <ul className={`list-disc list-inside text-[${THEME_COLORS.text_secondary}] space-y-1 h-32 overflow-y-auto`}>
+                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
                              {analysis.makeupAndHair?.length > 0 ? analysis.makeupAndHair.map((item, i) => <li key={i}>{item}</li>) : <li className="list-none">None specified.</li>}
                         </ul>
                     </AnalysisSection>
                     <AnalysisSection title="Sound Cues">
-                         <ul className={`list-disc list-inside text-[${THEME_COLORS.text_secondary}] space-y-1 h-32 overflow-y-auto`}>
+                         <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
                              {analysis.sound?.length > 0 ? analysis.sound.map((item, i) => <li key={i}>{item}</li>) : <li className="list-none">None specified.</li>}
                         </ul>
                     </AnalysisSection>
@@ -519,10 +519,10 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
         <div>
             <header className="flex justify-between items-start">
                 <div>
-                    <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>{analysis ? analysis.title : 'Script'}</h2>
-                    <p className={`text-md text-[${THEME_COLORS.text_secondary}]`}>{analysis ? analysis.logline : 'Analyze your script to prepare for production.'}</p>
+                    <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>{analysis ? analysis.title : 'Script'}</h2>
+                    <p className={`text-md text-[var(--color-text-secondary)]`}>{analysis ? analysis.logline : 'Analyze your script to prepare for production.'}</p>
                 </div>
-                 <button onClick={handleClearScript} aria-label="Clear script" className={`flex items-center gap-2 text-sm text-[${THEME_COLORS.text_secondary}] hover:text-white bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-lg px-3 py-2`}>
+                 <button onClick={handleClearScript} aria-label="Clear script" className={`flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-white bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-lg px-3 py-2`}>
                     <XIcon />
                     <span>Clear</span>
                 </button>
@@ -530,7 +530,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
             
             <div className="mt-6 space-y-8">
                 <section aria-labelledby="script-viewer-heading">
-                     <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-4 h-96`}>
+                     <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-4 h-96`}>
                         {isParsing ? (
                             <div className="flex items-center justify-center h-full text-center text-gray-400">
                                 <div>

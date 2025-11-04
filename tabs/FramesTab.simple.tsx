@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, ScissorsIcon, Trash2Icon, SaveIcon, PlusIcon, UndoIcon, RedoIcon, GridIcon } from '../components/icons/Icons';
 import { commandHistory, createStateCommand } from '../services/commandHistory';

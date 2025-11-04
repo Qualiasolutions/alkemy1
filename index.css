@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-background-primary: #0B0B0B;
+    --color-background-secondary: #121212;
+    --color-surface-card: #161616;
+    --color-accent-primary: #10A37F;
+    --color-accent-secondary: #0E8C6D;
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: #B5B5B5;
+    --color-border-color: #242424;
+    --color-divider-color: #1A1A1A;
+    --color-hover-background: #1B1B1B;
+    --color-active-background: #202020;
+    --color-success: #10A37F;
+    --color-warning: #F5A524;
+    --color-error: #F04438;
+  }
+
+  [data-theme='light'] {
+    --color-background-primary: #FFFFFF;
+    --color-background-secondary: #F5F5F5;
+    --color-surface-card: #EBEBEB;
+    --color-accent-primary: #0FB98D;
+    --color-accent-secondary: #0D8F74;
+    --color-text-primary: #0B0B0B;
+    --color-text-secondary: #505050;
+    --color-border-color: #D4D4D4;
+    --color-divider-color: #B0B0B0;
+    --color-hover-background: #E4E4E4;
+    --color-active-background: #DADADA;
+    --color-success: #0FB98D;
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
+  }
+}
+
+@layer utilities {
+  .text-theme-primary { color: var(--color-text-primary); }
+  .text-theme-secondary { color: var(--color-text-secondary); }
+  .text-theme-accent { color: var(--color-accent-primary); }
+  .text-theme-error { color: var(--color-error); }
+  .bg-theme-surface { background-color: var(--color-surface-card); }
+  .bg-theme-background { background-color: var(--color-background-primary); }
+  .bg-theme-hover { background-color: var(--color-hover-background); }
+  .bg-theme-active { background-color: var(--color-active-background); }
+  .border-theme-default { border-color: var(--color-border-color); }
+  .border-theme-accent { border-color: var(--color-accent-primary); }
+  .focus-ring-theme-accent:focus { --tw-ring-color: var(--color-accent-primary); }
+}

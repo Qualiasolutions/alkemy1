@@ -1,12 +1,54 @@
 
 import { ScriptAnalysis, AnalyzedScene, Frame, AnalyzedCharacter, AnalyzedLocation, FrameStatus, Generation, Moodboard, MoodboardSection } from '../types';
 import { Type, GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { fallbackScriptAnalysis, fallbackMoodboardDescription, fallbackDirectorResponse, getFallbackImageUrl, getFallbackVideoBlobs } from './fallbackContent';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
-
-const MOCK_API_DELAY = 1500;
 
 const GEMINI_API_KEY = (process.env.API_KEY ?? process.env.GEMINI_API_KEY ?? '').trim();
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
+
+const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
+const truthyStrings = new Set(['true', '1', 'yes', 'on']);
+
+const resolveBooleanEnv = (...keys: string[]): boolean => {
+    for (const key of keys) {
+        const candidates = [
+            typeof importMetaEnv[key] === 'string' ? importMetaEnv[key] : undefined,
+            typeof process !== 'undefined' ? process.env?.[key] : undefined
+        ];
+        for (const candidate of candidates) {
+            if (typeof candidate === 'string') {
+                const normalized = candidate.trim().toLowerCase();
+                if (truthyStrings.has(normalized)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+};
+
+const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
+
+const shouldUseFallbackForError = (error: unknown): boolean => {
+    if (FORCE_DEMO_MODE) return true;
+    if (!error) return false;
+    const message = error instanceof Error ? error.message : String(error);
+    const normalized = message.toLowerCase();
+    return [
+        'quota',
+        'resource_exhausted',
+        '429',
+        'rate limit',
+        'api key is not configured',
+        'unauthorized',
+        'forbidden'
+    ].some(fragment => normalized.includes(fragment));
+};
+
+const prefersLiveGemini = (): boolean => {
+    return !!GEMINI_API_KEY && !FORCE_DEMO_MODE;
+};
 
 const handleApiError = (error: unknown, model: string): Error => {
     console.error(`Error with ${model} API:`, error);
@@ -147,18 +189,24 @@ export const generateStillVariants = async (
     const generationPromises = Array.from({ length: n }).map((_, index) => 
         generateVisual(finalPrompt, model, allReferenceImages, aspect_ratio, (progress) => {
             onProgress?.(index, progress);
-        })
+        }, `${frame_id}-${index}-${aspect_ratio}`)
     );
 
     const results = await Promise.allSettled(generationPromises);
     
-    results.forEach(result => {
+    results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-            urls.push(result.value);
-            errors.push(null);
+            urls.push(result.value.url);
+            errors.push(result.value.fromFallback ? 'Fallback image generated – live AI service unavailable.' : (prefersLiveGemini() ? null : 'Fallback image generated – demo mode active.'));
         } else {
-            urls.push(''); 
-            errors.push(result.reason instanceof Error ? result.reason.message : 'Unknown error during generation');
+            if (shouldUseFallbackForError(result.reason)) {
+                const fallbackUrl = getFallbackImageUrl(aspect_ratio, `${frame_id}-fallback-${index}`);
+                urls.push(fallbackUrl);
+                errors.push('Fallback image generated due to API quota or authorization failure.');
+            } else {
+                urls.push(''); 
+                errors.push(result.reason instanceof Error ? result.reason.message : 'Unknown error during generation');
+            }
         }
     });
 
@@ -174,8 +222,10 @@ export const animateFrame = async (
     aspectRatio: string = '16:9',
     onProgress?: (progress: number) => void
 ): Promise<Blob[]> => {
-    if (!GEMINI_API_KEY) {
-        throw new Error("API Key is not configured.");
+    if (!prefersLiveGemini()) {
+        console.warn('[API Action] animateFrame using fallback videos because live service is unavailable.');
+        onProgress?.(100);
+        return getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url}`);
     }
     console.log("[API Action] Animating frame with Veo", { prompt, hasLastFrame: !!last_frame_image_url, n });
 
@@ -253,6 +303,10 @@ export const animateFrame = async (
 
     } catch (error) {
         onProgress?.(100);
+        if (shouldUseFallbackForError(error)) {
+            console.warn('[API Action] animateFrame fallback triggered due to API failure.');
+            return getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url ?? 'none'}`);
+        }
         throw handleApiError(error, 'Veo (Animate)');
     }
 };
@@ -267,7 +321,8 @@ export const refineVariant = async (prompt: string, base_image_url: string, aspe
     // Apply the same safety and context wrapper as other generation calls to prevent safety blocks.
     const { finalPrompt } = buildSafePrompt(prompt, hasVisualReferences);
 
-    return await generateVisual(finalPrompt, refinementModel, [base_image_url], aspect_ratio);
+    const result = await generateVisual(finalPrompt, refinementModel, [base_image_url], aspect_ratio, undefined, `refine-${base_image_url}`);
+    return result.url;
 };
 
 
@@ -315,42 +370,44 @@ export const upscaleVideo = (
     });
 };
 
-export const transferMotion = (
+/**
+ * Transfer motion from reference video to target avatar
+ * This function now uses the real Wan API for motion transfer
+ * @deprecated - Use transferMotionWan from wanService.ts directly for better control
+ */
+export const transferMotion = async (
     referenceVideo: File,
     targetAvatarImageUrl: string,
     onProgress: (progress: number) => void
 ): Promise<string> => {
-    console.log("[API Action] transferMotion (simulated)", { 
+    console.log("[API Action] transferMotion - delegating to Wan API", {
         videoName: referenceVideo.name,
-        avatarUrl: targetAvatarImageUrl 
+        avatarUrl: targetAvatarImageUrl.substring(0, 50) + '...'
     });
 
-    return new Promise((resolve) => {
-        let progress = 0;
-        onProgress(progress);
-
-        const interval = setInterval(() => {
-            progress += 5; 
-            if (progress <= 100) {
-                onProgress(progress);
-            } else {
-                clearInterval(interval);
-                const videoUrl = URL.createObjectURL(referenceVideo);
-                resolve(videoUrl);
-            }
-        }, 800); // Simulate a 16-second process
-    });
+    // Import dynamically to avoid circular dependencies
+    const { transferMotionWan } = await import('./wanService');
+    return transferMotionWan(referenceVideo, targetAvatarImageUrl, onProgress);
 };
+
+interface VisualGenerationResult {
+    url: string;
+    fromFallback: boolean;
+}
 
 export const generateVisual = async (
     prompt: string, 
     model: string, 
     reference_images: string[], 
     aspect_ratio: string,
-    onProgress?: (progress: number) => void
-): Promise<string> => {
-    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
-    
+    onProgress?: (progress: number) => void,
+    seed: string = `${model}-${prompt}`
+): Promise<VisualGenerationResult> => {
+    if (!prefersLiveGemini()) {
+        onProgress?.(100);
+        return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+    }
+
     const effectiveModel = ((model === 'Imagen' || model === 'Flux') && reference_images.length > 0) ? 'Gemini Flash Image' : model;
 
     try {
@@ -380,7 +437,7 @@ export const generateVisual = async (
             if (!response.generatedImages || response.generatedImages.length === 0) {
                 throw new Error(`${effectiveModel} API returned no image data.`);
             }
-            return `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`;
+            return { url: `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`, fromFallback: false };
         
         } else if (effectiveModel === 'Gemini Flash Image') {
             const safetySettings = [
@@ -443,8 +500,8 @@ export const generateVisual = async (
             for (const part of candidate?.content?.parts || []) {
                 if (part.inlineData) {
                     const base64ImageBytes: string = part.inlineData.data;
-                    return `data:image/png;base64,${base64ImageBytes}`;
-                }
+                    return { url: `data:image/png;base64,${base64ImageBytes}`, fromFallback: false };
+            }
             }
             
             // If no image is found, check for other non-STOP finish reasons.
@@ -460,12 +517,18 @@ export const generateVisual = async (
         }
     } catch (error) {
         onProgress?.(100);
+        if (shouldUseFallbackForError(error)) {
+            console.warn(`[API Action] generateVisual fallback triggered for ${effectiveModel}.`);
+            return { url: getFallbackImageUrl(aspect_ratio, `${seed}-fallback`), fromFallback: true };
+        }
         throw handleApiError(error, effectiveModel);
     }
 };
 
 export const generateMoodboardDescription = async (section: MoodboardSection): Promise<string> => {
-    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
+    if (!prefersLiveGemini()) {
+        return fallbackMoodboardDescription(section);
+    }
     console.log("[API Action] generateMoodboardDescription", { notes: section.notes, itemCount: section.items.length });
     
     try {
@@ -497,26 +560,50 @@ export const generateMoodboardDescription = async (section: MoodboardSection): P
 
         return response.text;
     } catch (error) {
+        if (shouldUseFallbackForError(error)) {
+            console.warn('[API Action] generateMoodboardDescription using fallback content.');
+            return fallbackMoodboardDescription(section);
+        }
         throw handleApiError(error, 'Gemini');
     }
 };
 
+import { ENHANCED_DIRECTOR_KNOWLEDGE } from './directorKnowledge';
+
 export const askTheDirector = async (analysis: ScriptAnalysis, query: string): Promise<string> => {
-    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
+    if (!prefersLiveGemini()) {
+        return fallbackDirectorResponse(analysis, query);
+    }
     console.log("[API Action] askTheDirector", { query });
 
     try {
         const { GoogleGenAI } = await import('@google/genai');
         const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-        
-        const systemInstruction = `You are "The Director," an expert AI assistant for filmmakers and the creative brain for a film project. You have been provided with a complete analysis of the current script, including characters, scenes, locations, and moodboards. Your role is to be a creative partner. You DO NOT rewrite or change the script analysis. Instead, you answer questions, provide creative suggestions, and generate detailed, context-aware prompts for visual AI models.
 
-You must:
-- Answer questions about any aspect of the project (e.g., "What is the mood of scene 5?", "Describe the character Elena.").
-- Provide creative suggestions based on the project's established tone (e.g., "Suggest a camera angle for the first shot of Scene 2 to create suspense.").
-- Generate detailed, ready-to-use prompts for AI image generators when asked (e.g., "Give me a prompt for a wide shot of the cafe location."). The prompts should incorporate details from the moodboard and script.
-- Be concise, professional, and knowledgeable in your responses.`;
+        // Use the enhanced system instructions from the knowledge base
+        const systemInstruction = ENHANCED_DIRECTOR_KNOWLEDGE.systemInstructions;
         
+        // Check if query needs technical calculations
+        let technicalContext = '';
+        const queryLower = query.toLowerCase();
+
+        // Add technical context if query involves specific technical aspects
+        if (queryLower.includes('lens') || queryLower.includes('focal')) {
+            technicalContext += '\n\nYou have access to comprehensive lens data including focal lengths from 8mm to 800mm with their characteristics.';
+        }
+        if (queryLower.includes('depth of field') || queryLower.includes('dof')) {
+            technicalContext += '\n\nYou can calculate precise depth of field using hyperfocal distance formulas.';
+        }
+        if (queryLower.includes('lighting') || queryLower.includes('light')) {
+            technicalContext += '\n\nYou have knowledge of three-point lighting, Rembrandt, high-key, low-key setups with specific ratios.';
+        }
+        if (queryLower.includes('color') || queryLower.includes('grade') || queryLower.includes('lut')) {
+            technicalContext += '\n\nYou understand color grading including LUTs, color temperature (1800K-10000K), and genre-specific looks.';
+        }
+        if (queryLower.includes('movement') || queryLower.includes('dolly') || queryLower.includes('tracking')) {
+            technicalContext += '\n\nYou know all camera movements: pan, tilt, dolly, tracking, crane, Steadicam, gimbal with specific speeds and techniques.';
+        }
+
         let context = `
 PROJECT CONTEXT:
 Title: ${analysis.title}
@@ -525,15 +612,18 @@ Summary: ${analysis.summary}
 Characters: ${analysis.characters.map(c => `${c.name}: ${c.description}`).join('\n')}
 Locations: ${analysis.locations.map(l => `${l.name}: ${l.description}`).join('\n')}
 Scenes Summary:
-${analysis.scenes.map(s => `Scene ${s.sceneNumber} (${s.setting}): ${s.summary}`).join('\n')}
+${analysis.scenes.map(s => `Scene ${s.sceneNumber} (${s.setting}): ${s.summary} | Mood: ${s.mood || 'Not specified'} | Time: ${s.time_of_day || 'Not specified'}`).join('\n')}
 
 MOODBOARD NOTES:
 Cinematography: ${analysis.moodboard?.cinematography.aiDescription || analysis.moodboard?.cinematography.notes || 'Not defined.'}
 Color: ${analysis.moodboard?.color.aiDescription || analysis.moodboard?.color.notes || 'Not defined.'}
 Style: ${analysis.moodboard?.style.aiDescription || analysis.moodboard?.style.notes || 'Not defined.'}
+
+TECHNICAL KNOWLEDGE AVAILABLE:${technicalContext || '\nFull cinematography database including lenses, lighting, movement, composition, and color grading.'}
 ---
 
-Based on all the above context, respond to the following user query.
+Based on all the above context and your comprehensive cinematography expertise, respond to the following user query.
+IMPORTANT: Always provide specific technical parameters (focal length in mm, f-stop, ISO, Kelvin) when relevant.
 
 USER QUERY: "${query}"
 `;
@@ -548,6 +638,10 @@ USER QUERY: "${query}"
 
         return response.text;
     } catch (error) {
+        if (shouldUseFallbackForError(error)) {
+            console.warn('[API Action] askTheDirector returning fallback response.');
+            return fallbackDirectorResponse(analysis, query);
+        }
         throw handleApiError(error, 'Gemini (Director)');
     }
 };
@@ -556,8 +650,11 @@ USER QUERY: "${query}"
 // --- Existing AI Services adapted for new spec ---
 
 export const analyzeScript = async (scriptContent: string, onProgress?: (message: string) => void): Promise<ScriptAnalysis> => {
-     if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
-    console.log("Analyzing script with Gemini API...");
+     if (!prefersLiveGemini()) {
+        console.warn('[API Action] analyzeScript using fallback parser because live service is unavailable.');
+        return fallbackScriptAnalysis(scriptContent);
+     }
+     console.log("Analyzing script with Gemini API...");
      try {
         const { GoogleGenAI } = await import('@google/genai');
         const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -663,11 +760,33 @@ export const analyzeScript = async (scriptContent: string, onProgress?: (message
 
         return { ...result, scenes: scenesWithFrames };
     } catch (error) {
+        if (shouldUseFallbackForError(error)) {
+            console.warn('[API Action] analyzeScript falling back to heuristic parser due to API failure.');
+            return fallbackScriptAnalysis(scriptContent);
+        }
         throw handleApiError(error, 'Gemini (Analysis)');
     }
 };
 
 export const generateFramesForScene = async (scene: AnalyzedScene, directorialNotes?: string): Promise<Partial<Frame>[]> => {
+    if (!prefersLiveGemini()) {
+        console.warn('[API Action] generateFramesForScene using fallback frame templates.');
+        return [
+            {
+                shot_number: 1,
+                description: `Fallback establishing shot for ${scene.setting}. Focus on the key emotion: ${scene.mood || 'unspecified mood'}.`,
+                type: 'Wide Shot',
+                camera_package: {
+                    lens_mm: 35,
+                    aperture: 'f/2.8',
+                    iso: 800,
+                    height: 'Eye Level',
+                    angle: 'Straight On',
+                    movement: 'Slow Push In'
+                }
+            }
+        ];
+    }
     if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
     console.log(`[API Action] Generating frames for Scene ${scene.sceneNumber} with notes: ${directorialNotes || 'None'}`);
 

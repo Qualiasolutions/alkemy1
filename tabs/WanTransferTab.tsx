@@ -1,10 +1,9 @@
 
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { ScriptAnalysis, AnalyzedCharacter } from '../types';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { UploadCloudIcon, UsersIcon, FilmIcon, XIcon, AlkemyLoadingIcon, ArrowRightIcon, AlertCircleIcon } from '../components/icons/Icons';
-import { transferMotion } from '../services/aiService';
+import { transferMotionWan, isWanApiAvailable } from '../services/wanService';
 
 interface WanTransferTabProps {
   scriptAnalysis: ScriptAnalysis | null;
@@ -83,11 +82,17 @@ const WanTransferTab: React.FC<WanTransferTabProps> = ({ scriptAnalysis }) => {
         alert("Please provide a reference video and a target avatar.");
         return;
     }
+
+    if (!isWanApiAvailable()) {
+        alert("Wan API is not configured. Please add WAN_API_KEY to your environment variables.");
+        return;
+    }
+
     setIsGenerating(true);
     setProgress(0);
     setGeneratedVideoUrl(null);
     try {
-        const resultUrl = await transferMotion(referenceVideo, targetImageUrl, setProgress);
+        const resultUrl = await transferMotionWan(referenceVideo, targetImageUrl, setProgress);
         setGeneratedVideoUrl(resultUrl);
     } catch (error) {
         alert(error instanceof Error ? error.message : "An unknown error occurred during motion transfer.");
@@ -101,7 +106,7 @@ const WanTransferTab: React.FC<WanTransferTabProps> = ({ scriptAnalysis }) => {
   if (!scriptAnalysis) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-        <div className={`p-10 border border-dashed border-[${THEME_COLORS.border_color}] rounded-2xl`}>
+        <div className={`p-10 border border-dashed border-[var(--color-border-color)] rounded-2xl`}>
           <h2 className="text-3xl font-bold mb-2">Wan 2.5 Motion-Transfer</h2>
           <p className="text-lg text-gray-400 max-w-md">Please analyze a script in the 'Script' tab to access characters for motion transfer.</p>
         </div>
@@ -112,20 +117,14 @@ const WanTransferTab: React.FC<WanTransferTabProps> = ({ scriptAnalysis }) => {
   return (
     <div className="h-full flex flex-col">
       <header className="mb-6">
-        <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Wan 2.5 Motion-Transfer</h2>
-        <p className={`text-md text-[${THEME_COLORS.text_secondary}] max-w-3xl`}>Upload a reference video of a real actor and transfer their motion and expressions to your target Avatar.</p>
+        <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Wan 2.5 Motion-Transfer</h2>
+        <p className={`text-md text-[var(--color-text-secondary)] max-w-3xl`}>Upload a reference video of a real actor and transfer their motion and expressions to your target Avatar.</p>
       </header>
 
-      <div className={`bg-yellow-900/20 border border-yellow-700 text-yellow-300 text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
-        <AlertCircleIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
-        <div>
-            <span className="font-semibold">Technology Demonstration:</span> This motion transfer feature is a simulation. The AI processing is mocked, and the final output will be the source video you uploaded.
-        </div>
-      </div>
 
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Step 1: Reference Motion */}
-        <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6`}>
+        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6`}>
             <h3 className="text-lg font-semibold mb-4">1. Reference Motion</h3>
             {referenceVideoUrl ? (
                  <div className="relative">
@@ -138,7 +137,7 @@ const WanTransferTab: React.FC<WanTransferTabProps> = ({ scriptAnalysis }) => {
                 <div 
                     onDrop={onDrop} onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}
                     onClick={() => videoInputRef.current?.click()}
-                    className={`p-10 border-2 border-dashed border-[${THEME_COLORS.border_color}] rounded-2xl w-full aspect-video cursor-pointer transition-colors duration-300 flex flex-col items-center justify-center text-center ${isDragging ? `border-[${THEME_COLORS.accent_primary}] bg-[${THEME_COLORS.hover_background}]` : ''}`}
+                    className={`p-10 border-2 border-dashed border-[var(--color-border-color)] rounded-2xl w-full aspect-video cursor-pointer transition-colors duration-300 flex flex-col items-center justify-center text-center ${isDragging ? `border-[var(--color-accent-primary)] bg-[var(--color-hover-background)]` : ''}`}
                 >
                     <UploadCloudIcon className="w-10 h-10 text-gray-500 mb-2" />
                     <p className="font-semibold text-gray-400">Upload Reference Video</p>
@@ -149,13 +148,13 @@ const WanTransferTab: React.FC<WanTransferTabProps> = ({ scriptAnalysis }) => {
         </div>
 
         {/* Step 2: Target Avatar */}
-        <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6`}>
+        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6`}>
             <h3 className="text-lg font-semibold mb-4">2. Target Avatar</h3>
             <div className="flex items-center gap-2 mb-4">
                 <select
                     value={selectedCharacterId}
                     onChange={e => { setSelectedCharacterId(e.target.value); setCustomAvatarUrl(null); }}
-                    className={`flex-1 bg-[${THEME_COLORS.background_primary}] border border-[${THEME_COLORS.border_color}] rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[${THEME_COLORS.accent_primary}]`}
+                    className={`flex-1 bg-[var(--color-background-primary)] border border-[var(--color-border-color)] rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]`}
                 >
                     <option value="">Select from cast...</option>
                     {charactersWithImages.map(char => (
@@ -178,7 +177,7 @@ const WanTransferTab: React.FC<WanTransferTabProps> = ({ scriptAnalysis }) => {
         </div>
         
         {/* Step 3: Generate */}
-        <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6`}>
+        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6`}>
              <h3 className="text-lg font-semibold mb-4">3. Generate Output</h3>
              <div className="aspect-video bg-[#0B0B0B] rounded-md flex items-center justify-center overflow-hidden mb-4">
                 {isGenerating ? (
