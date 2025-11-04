@@ -237,11 +237,11 @@ const RefinementStudio: React.FC<{
     };
 
     return (
-        <div className="absolute inset-0 bg-[#0B0B0B] flex flex-col z-20 p-4 pt-20">
-            <header className="absolute top-0 left-0 right-0 p-4 z-10 flex justify-between items-center">
+        <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50 p-6">
+            <header className="flex-shrink-0 mb-4 flex justify-between items-center">
                 <Button onClick={onClose} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to Studio</Button>
             </header>
-            
+
             <div className="flex-1 flex flex-col overflow-hidden gap-6">
                 <div className="flex-1 flex flex-row overflow-hidden gap-6">
                     <div className="w-2/3 h-full bg-black flex items-center justify-center rounded-lg overflow-hidden">
@@ -333,8 +333,8 @@ const RefinementStudio: React.FC<{
                                                 value={prompt}
                                                 onChange={(e) => setPrompt(e.target.value)}
                                                 placeholder="e.g., make the character smile, add cinematic lighting..."
-                                                rows={1}
-                                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500 leading-relaxed"
+                                                rows={3}
+                                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-40 py-2 text-gray-100 placeholder-gray-500 leading-relaxed"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter' && !e.shiftKey && prompt.trim()) {
                                                         e.preventDefault();
@@ -524,7 +524,7 @@ const GenerationView: React.FC<{
     }
 
     return (
-        <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-10 overflow-hidden">
+        <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
             {viewingGeneration && (
                 <FullScreenImagePlayer
                     generation={viewingGeneration}
@@ -539,10 +539,10 @@ const GenerationView: React.FC<{
                     }}
                 />
             )}
-            <header className="flex-shrink-0 p-4 z-20"><Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to List</Button></header>
+            <header className="flex-shrink-0 p-6 pb-4"><Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to List</Button></header>
 
-            <main className="flex-1 overflow-y-auto pb-40 px-4">
-                <div className="max-w-7xl mx-auto">
+            <main className="flex-1 overflow-y-auto px-6 pb-8">
+                <div className="w-full mx-auto">
                     {item.data.imageUrl && (
                         <div className="mb-8">
                             <h4 className={`text-lg font-semibold mb-3 text-[var(--color-text-primary)]`}>Main Visual</h4>
@@ -574,7 +574,7 @@ const GenerationView: React.FC<{
                 </div>
             </main>
 
-            <footer className="flex-shrink-0 p-6 z-20 bg-gradient-to-t from-[#0B0B0B] via-[#0B0B0B]/95 to-transparent">
+            <footer className="flex-shrink-0 p-6 pt-4 z-20 bg-gradient-to-t from-[#0B0B0B] via-[#0B0B0B]/95 to-transparent border-t border-gray-800/50">
                  <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -627,8 +627,8 @@ const GenerationView: React.FC<{
                                             value={detailedPrompt}
                                             onChange={(e) => setDetailedPrompt(e.target.value)}
                                             placeholder={`Describe a visual for ${item.data.name}...`}
-                                            rows={1}
-                                            className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500 leading-relaxed"
+                                            rows={3}
+                                            className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-40 py-2 text-gray-100 placeholder-gray-500 leading-relaxed"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey && detailedPrompt.trim()) {
                                                     e.preventDefault();
