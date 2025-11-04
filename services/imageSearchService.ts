@@ -3,7 +3,7 @@
  * Handles searching and fetching images from the web based on prompts
  */
 
-import { GoogleGenerativeAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 export interface SearchedImage {
     url: string;
@@ -36,7 +36,7 @@ export const searchImages = async (
         throw new Error('Gemini API key not found');
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     try {
@@ -176,7 +176,7 @@ export const searchSimilarImages = async (
         throw new Error('Gemini API key not found');
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     try {
