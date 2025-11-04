@@ -122,10 +122,10 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
 
   return (
     <div className="grid h-full gap-6 lg:grid-cols-[320px_1fr]">
-      <aside className={`flex h-full flex-col rounded-3xl border ${isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white'} p-5 shadow-sm`}> 
+      <aside className={`flex h-full flex-col rounded-3xl border ${isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white'} p-5 shadow-sm`}>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold {isDark ? 'text-white' : 'text-slate-900'}">Moodboard Templates</h2>
+            <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Moodboard Templates</h2>
             <p className={`text-xs ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Each board subtly informs all visual generations.</p>
           </div>
           <Button variant="primary" onClick={handleCreateBoard} className="!px-3 !py-2 !text-xs">
@@ -207,15 +207,19 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                   placeholder="Describe the emotion, lighting, composition, or references you're targeting."
                 />
               </div>
-              <div className="flex w-full max-w-[260px] flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/70">
-                <div className="flex items-center gap-2 text-white">
+              <div className={`flex w-full max-w-[260px] flex-col gap-2 rounded-2xl border p-4 text-xs ${
+                isDark
+                  ? 'border-white/10 bg-white/5 text-white/70'
+                  : 'border-slate-200 bg-slate-50 text-slate-600'
+              }`}>
+                <div className={`flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   <SparklesIcon className="h-4 w-4" />
                   AI Summary
                 </div>
                 {activeBoard.aiSummary ? (
-                  <p className="leading-relaxed text-white/80">{activeBoard.aiSummary}</p>
+                  <p className={`leading-relaxed ${isDark ? 'text-white/80' : 'text-slate-700'}`}>{activeBoard.aiSummary}</p>
                 ) : (
-                  <p className="leading-relaxed text-white/60">Generate a quick synopsis to align collaborators on tone.</p>
+                  <p className={`leading-relaxed ${isDark ? 'text-white/60' : 'text-slate-500'}`}>Generate a quick synopsis to align collaborators on tone.</p>
                 )}
                 <Button
                   variant="secondary"
@@ -259,10 +263,12 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                 {activeBoard.items.length === 0 ? (
                   <label
                     htmlFor="moodboard-file-input"
-                    className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-white/60 cursor-pointer"
+                    className={`flex h-full flex-col items-center justify-center gap-3 text-center text-sm cursor-pointer ${
+                      isDark ? 'text-white/60' : 'text-slate-500'
+                    }`}
                   >
                     <UploadCloudIcon className="h-10 w-10" />
-                    <p className="text-base font-medium">Drop images or click to upload</p>
+                    <p className={`text-base font-medium ${isDark ? 'text-white/80' : 'text-slate-700'}`}>Drop images or click to upload</p>
                     <p className="text-xs opacity-70">High-quality stills, lighting references, frames, palette swatches. Up to {MAX_ITEMS} items.</p>
                   </label>
                 ) : (
@@ -285,7 +291,11 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                       </div>
                     ))}
                     {activeBoard.items.length < MAX_ITEMS && (
-                      <label htmlFor="moodboard-file-input" className="flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 text-xs text-white/60 transition hover:border-teal-400/40 hover:text-teal-200">
+                      <label htmlFor="moodboard-file-input" className={`flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs transition ${
+                        isDark
+                          ? 'border-white/20 text-white/60 hover:border-teal-400/40 hover:text-teal-200'
+                          : 'border-slate-300 text-slate-500 hover:border-teal-400 hover:text-teal-600'
+                      }`}>
                         <UploadCloudIcon className="h-6 w-6" />
                         Add more references
                       </label>
