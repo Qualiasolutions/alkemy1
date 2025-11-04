@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
-import { SettingsIcon, SaveIcon, SparklesIcon } from '../components/icons/Icons';
+import { SettingsIcon, SaveIcon, SparklesIcon, EyeIcon, EyeOffIcon } from '../components/icons/Icons';
 
 interface ColorGradeSettings {
   exposure: number;
@@ -36,11 +36,17 @@ const PostProductionTab: React.FC = () => {
     preset: 'none',
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showScopes, setShowScopes] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const animationFrameRef = useRef<number>();
+
+  // Scope canvases
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+  const vectorscopeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const histogramCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -126,21 +132,231 @@ const PostProductionTab: React.FC = () => {
     ctx.putImageData(imageData, 0, 0);
   };
 
+  const renderWaveform = () => {
+    if (!canvasRef.current || !waveformCanvasRef.current) return;
+
+    const sourceCanvas = canvasRef.current;
+    const waveformCanvas = waveformCanvasRef.current;
+    const ctx = waveformCanvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = 300;
+    const height = 150;
+    waveformCanvas.width = width;
+    waveformCanvas.height = height;
+
+    // Clear with dark background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw grid
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = (i / 5) * height;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    // Get image data from main canvas
+    const sourceCtx = sourceCanvas.getContext('2d');
+    if (!sourceCtx) return;
+
+    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    const data = imageData.data;
+
+    // Calculate luminance for each horizontal position
+    const samplesPerColumn = Math.ceil(sourceCanvas.width / width);
+    ctx.fillStyle = 'rgba(100, 255, 100, 0.3)';
+
+    for (let x = 0; x < width; x++) {
+      const sourceX = Math.floor((x / width) * sourceCanvas.width);
+      const luminanceValues: number[] = [];
+
+      // Sample column
+      for (let y = 0; y < sourceCanvas.height; y += 2) {
+        const idx = (y * sourceCanvas.width + sourceX) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        luminanceValues.push(luma);
+      }
+
+      // Draw column
+      luminanceValues.forEach(luma => {
+        const y = height - (luma * height);
+        ctx.fillRect(x, y, 1, 2);
+      });
+    }
+  };
+
+  const renderVectorscope = () => {
+    if (!canvasRef.current || !vectorscopeCanvasRef.current) return;
+
+    const sourceCanvas = canvasRef.current;
+    const vectorCanvas = vectorscopeCanvasRef.current;
+    const ctx = vectorCanvas.getContext('2d');
+    if (!ctx) return;
+
+    const size = 150;
+    vectorCanvas.width = size;
+    vectorCanvas.height = size;
+
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const radius = size / 2 - 10;
+
+    // Clear with dark background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, size, size);
+
+    // Draw circle guides
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, (radius / 3) * i, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Draw crosshairs
+    ctx.beginPath();
+    ctx.moveTo(0, centerY);
+    ctx.lineTo(size, centerY);
+    ctx.moveTo(centerX, 0);
+    ctx.lineTo(centerX, size);
+    ctx.stroke();
+
+    // Get image data
+    const sourceCtx = sourceCanvas.getContext('2d');
+    if (!sourceCtx) return;
+
+    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    const data = imageData.data;
+
+    // Plot colors
+    ctx.fillStyle = 'rgba(100, 255, 100, 0.1)';
+    for (let i = 0; i < data.length; i += 40) { // Sample every 10 pixels for performance
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      // Convert RGB to U and V (chroma)
+      const u = 0.492 * (b - (0.299 * r + 0.587 * g + 0.114 * b));
+      const v = 0.877 * (r - (0.299 * r + 0.587 * g + 0.114 * b));
+
+      const x = centerX + (u * radius / 128);
+      const y = centerY - (v * radius / 128);
+
+      ctx.fillRect(x, y, 2, 2);
+    }
+  };
+
+  const renderHistogram = () => {
+    if (!canvasRef.current || !histogramCanvasRef.current) return;
+
+    const sourceCanvas = canvasRef.current;
+    const histogramCanvas = histogramCanvasRef.current;
+    const ctx = histogramCanvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = 300;
+    const height = 150;
+    histogramCanvas.width = width;
+    histogramCanvas.height = height;
+
+    // Clear with dark background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, width, height);
+
+    // Get image data
+    const sourceCtx = sourceCanvas.getContext('2d');
+    if (!sourceCtx) return;
+
+    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    const data = imageData.data;
+
+    // Calculate histograms for R, G, B
+    const histR = new Array(256).fill(0);
+    const histG = new Array(256).fill(0);
+    const histB = new Array(256).fill(0);
+
+    for (let i = 0; i < data.length; i += 4) {
+      histR[data[i]]++;
+      histG[data[i + 1]]++;
+      histB[data[i + 2]]++;
+    }
+
+    // Find max value for normalization
+    const maxR = Math.max(...histR);
+    const maxG = Math.max(...histG);
+    const maxB = Math.max(...histB);
+    const max = Math.max(maxR, maxG, maxB);
+
+    // Draw histograms
+    const drawHist = (hist: number[], color: string) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+
+      for (let i = 0; i < 256; i++) {
+        const x = (i / 256) * width;
+        const barHeight = (hist[i] / max) * height;
+        const y = height - barHeight;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    };
+
+    drawHist(histR, 'rgba(255, 100, 100, 0.7)');
+    drawHist(histG, 'rgba(100, 255, 100, 0.7)');
+    drawHist(histB, 'rgba(100, 150, 255, 0.7)');
+  };
+
+  const renderScopes = () => {
+    if (!showScopes) return;
+    renderWaveform();
+    renderVectorscope();
+    renderHistogram();
+  };
+
   useEffect(() => {
     if (sourceVideoUrl && videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+
       const renderLoop = () => {
         if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
           applyColorGrade();
+          renderScopes();
           animationFrameRef.current = requestAnimationFrame(renderLoop);
         }
       };
 
-      videoRef.current.addEventListener('play', renderLoop);
+      const renderSingleFrame = () => {
+        applyColorGrade();
+        renderScopes();
+      };
+
+      video.addEventListener('play', renderLoop);
+      video.addEventListener('pause', renderSingleFrame);
+      video.addEventListener('seeked', renderSingleFrame);
+
       return () => {
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        video.removeEventListener('play', renderLoop);
+        video.removeEventListener('pause', renderSingleFrame);
+        video.removeEventListener('seeked', renderSingleFrame);
       };
     }
-  }, [sourceVideoUrl, settings]);
+  }, [sourceVideoUrl, settings, showScopes]);
 
   const handleSliderChange = (key: keyof ColorGradeSettings, value: number) => {
     setSettings(prev => ({ ...prev, [key]: value, preset: 'none' }));
@@ -234,10 +450,23 @@ const PostProductionTab: React.FC = () => {
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="video/*" className="hidden" />
         </div>
 
-        {/* Center: Preview with Color Grade */}
+        {/* Center: Preview with Color Grade and Scopes */}
         <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6 flex flex-col`}>
-          <h3 className="text-lg font-semibold mb-4">Graded Preview</h3>
-          <div className="flex-1 bg-black rounded-lg overflow-hidden flex items-center justify-center">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Graded Preview</h3>
+            <Button
+              onClick={() => setShowScopes(!showScopes)}
+              variant={showScopes ? "primary" : "secondary"}
+              className="!px-3 !py-1.5"
+              disabled={!sourceVideoUrl}
+              title={showScopes ? "Hide Scopes" : "Show Scopes"}
+            >
+              {showScopes ? <EyeIcon className="w-4 h-4" /> : <EyeOffIcon className="w-4 h-4" />}
+              <span className="ml-2 text-xs">Scopes</span>
+            </Button>
+          </div>
+
+          <div className="flex-1 bg-black rounded-lg overflow-hidden flex items-center justify-center mb-4">
             {sourceVideoUrl ? (
               <canvas ref={canvasRef} className="max-w-full max-h-full" />
             ) : (
@@ -245,7 +474,25 @@ const PostProductionTab: React.FC = () => {
             )}
           </div>
 
-          <div className="mt-4 flex gap-2">
+          {/* Scopes Panel */}
+          {showScopes && sourceVideoUrl && (
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="bg-zinc-950 rounded-lg p-2">
+                <p className="text-xs font-semibold text-zinc-400 mb-1">Waveform</p>
+                <canvas ref={waveformCanvasRef} className="w-full rounded" />
+              </div>
+              <div className="bg-zinc-950 rounded-lg p-2">
+                <p className="text-xs font-semibold text-zinc-400 mb-1">Vectorscope</p>
+                <canvas ref={vectorscopeCanvasRef} className="w-full rounded" />
+              </div>
+              <div className="bg-zinc-950 rounded-lg p-2">
+                <p className="text-xs font-semibold text-zinc-400 mb-1">Histogram</p>
+                <canvas ref={histogramCanvasRef} className="w-full rounded" />
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2">
             <Button onClick={handleReset} variant="secondary" className="flex-1" disabled={!sourceVideoUrl}>
               <SettingsIcon className="w-4 h-4" />
               Reset

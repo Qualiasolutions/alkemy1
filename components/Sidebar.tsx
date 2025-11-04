@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TABS_CONFIG, TABS } from '../constants';
-import { LogoIcon, ChevronDownIcon, ChevronsLeftIcon, ChevronsRightIcon, PlusIcon } from './icons/Icons';
+import { LogoIcon, ChevronDownIcon, ChevronsLeftIcon, ChevronsRightIcon, PlusIcon, DownloadIcon, UploadIcon } from './icons/Icons';
 import Button from './Button';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -11,11 +11,14 @@ interface SidebarProps {
   isSidebarExpanded: boolean;
   setIsSidebarExpanded: (isExpanded: boolean) => void;
   onNewProject: () => void;
+  onDownloadProject: () => void;
+  onLoadProject: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExpanded, setIsSidebarExpanded, onNewProject }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExpanded, setIsSidebarExpanded, onNewProject, onDownloadProject, onLoadProject }) => {
   const [expandedSections, setExpandedSections] = useState<string[]>(['Development', 'Production', 'Media']);
   const { colors, isDark } = useTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleSection = (sectionName: string) => {
     setExpandedSections(prev =>
@@ -150,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         )}
       </ul>
       
-      <div className={`mt-auto pt-4 border-t ${borderColor}`}>
+      <div className={`mt-auto pt-4 border-t ${borderColor} space-y-2`}>
         <Button
             onClick={onNewProject}
             variant="secondary"
@@ -159,6 +162,31 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
             <PlusIcon className="w-4 h-4 flex-shrink-0" />
             {isSidebarExpanded && <span className="whitespace-nowrap">New Project</span>}
         </Button>
+        <Button
+            onClick={onDownloadProject}
+            variant="secondary"
+            className={`w-full ${isSidebarExpanded ? '' : '!px-0'}`}
+            title="Save Project As..."
+        >
+            <DownloadIcon className="w-4 h-4 flex-shrink-0" />
+            {isSidebarExpanded && <span className="whitespace-nowrap">Save As...</span>}
+        </Button>
+        <Button
+            onClick={() => fileInputRef.current?.click()}
+            variant="secondary"
+            className={`w-full ${isSidebarExpanded ? '' : '!px-0'}`}
+            title="Load Project"
+        >
+            <UploadIcon className="w-4 h-4 flex-shrink-0" />
+            {isSidebarExpanded && <span className="whitespace-nowrap">Load Project</span>}
+        </Button>
+        <input
+            ref={fileInputRef}
+            type="file"
+            accept=".alkemy.json,application/json"
+            onChange={onLoadProject}
+            className="hidden"
+        />
       </div>
 
       <motion.button

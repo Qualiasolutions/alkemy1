@@ -419,8 +419,8 @@ export const generateVisual = async (
                 contents: { parts: parts },
                 config: {
                     responseModalities: [Modality.IMAGE],
+                    safetySettings: safetySettings,
                 },
-                safetySettings: safetySettings,
             });
             
             onProgress?.(100);

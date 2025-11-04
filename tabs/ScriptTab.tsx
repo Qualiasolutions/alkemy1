@@ -3,6 +3,7 @@ import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { ScriptAnalysis } from '../types';
 import { UploadCloudIcon, XIcon, UsersIcon, MapPinIcon, ClapperboardIcon } from '../components/icons/Icons';
+import { SkeletonAnalysis } from '../components/SkeletonLoader';
 
 
 interface AnalysisInfoCardProps {
@@ -185,14 +186,15 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
     const renderAnalysisSummary = () => {
         if (isAnalyzing) {
             return (
-                <div className="mt-8">
-                    <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-lg p-4 flex items-center gap-4`}>
+                <div>
+                    <div className="mb-6 flex items-center gap-4">
                         <div className="w-8 h-8 border-4 border-t-transparent border-[#10A37F] rounded-full animate-spin"></div>
                         <div>
                             <p className="font-semibold text-white">Analyzing Script...</p>
                             <p className="text-sm text-gray-400">{analysisMessage}</p>
                         </div>
                     </div>
+                    <SkeletonAnalysis />
                 </div>
             );
         }
