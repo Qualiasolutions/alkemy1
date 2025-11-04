@@ -1,9 +1,11 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import Sidebar from './components/Sidebar';
 import DirectorWidget from './components/DirectorWidget';
+import SplashScreen from './components/SplashScreen';
+import WelcomeScreen from './components/WelcomeScreen';
 import { TABS } from './constants';
 import { SunIcon, MoonIcon } from './components/icons/Icons';
 import ScriptTab from './tabs/ScriptTab';
@@ -20,6 +22,7 @@ import SchedulerTab from './tabs/SchedulerTab';
 import AnalyticsTab from './tabs/AnalyticsTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, TimelineClip } from './types';
 import { analyzeScript } from './services/aiService';
+import { commandHistory } from './services/commandHistory';
 import Button from './components/Button';
 
 const ENV_GEMINI_API_KEY = (process.env.GEMINI_API_KEY ?? process.env.API_KEY ?? '').trim();
@@ -33,7 +36,9 @@ const getVideoDuration = (url: string): Promise<number> => {
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.onloadedmetadata = () => {
-            window.URL.revokeObjectURL(video.src);
+            // DO NOT revoke blob URLs here - they need to persist for video playback
+            // Only revoke if it's a temporary blob URL created specifically for duration check
+            // In this case, we keep blob URLs alive for timeline playback
             resolve(video.duration);
         };
         video.onerror = () => {
@@ -92,6 +97,9 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
 
 const AppContent: React.FC = () => {
   const { colors, toggleTheme, isDark } = useTheme();
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const loadProjectInputRef = useRef<HTMLInputElement>(null);
+
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
       const saved = localStorage.getItem(UI_STATE_STORAGE_KEY);
@@ -204,7 +212,42 @@ const AppContent: React.FC = () => {
     } catch (e) { console.error("Failed to save UI state to storage", e); }
   }, [activeTab, isSidebarExpanded]);
   
-  const getSerializableState = useCallback(() => {
+  // Convert blob URL to base64 for persistence
+  const blobUrlToBase64 = async (blobUrl: string): Promise<string | null> => {
+    try {
+      const response = await fetch(blobUrl);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Failed to convert blob URL to base64:', error);
+      return null;
+    }
+  };
+
+  // Convert base64 back to blob URL for playback
+  const base64ToBlobUrl = (base64: string): string => {
+    try {
+      const byteString = atob(base64.split(',')[1]);
+      const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('Failed to convert base64 to blob URL:', error);
+      return '';
+    }
+  };
+
+  const getSerializableState = useCallback(async () => {
     // Create a lightweight version of the state for storage by stripping
     // out large, non-essential data like generated image variants to prevent
     // exceeding localStorage quota.
@@ -233,38 +276,163 @@ const AppContent: React.FC = () => {
         });
     }
 
+    // Convert blob URLs to base64 for timeline clips
+    if (stateCopy.timelineClips && stateCopy.timelineClips.length > 0) {
+      const clipConversions = stateCopy.timelineClips.map(async (clip: TimelineClip) => {
+        if (clip.url && clip.url.startsWith('blob:')) {
+          const base64 = await blobUrlToBase64(clip.url);
+          if (base64) {
+            // Don't revoke blob URL here - FramesTab still needs it for playback
+            // Cleanup happens in FramesTab when clips are removed or component unmounts
+            return { ...clip, url: base64, _isBlobConverted: true };
+          }
+        }
+        return clip;
+      });
+      stateCopy.timelineClips = await Promise.all(clipConversions);
+    }
+
     return stateCopy;
   }, [projectState]);
 
 
+  // --- Splash Screen Management ---
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
   // --- Project Management ---
-  const handleNewProject = () => {
-    if (window.confirm("Are you sure you want to start a new project? Your current project will be cleared from this browser's storage.")) {
-        const defaultState = {
-            scriptContent: null, scriptAnalysis: null, timelineClips: [], 
-            ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
-        };
-        setProjectState(defaultState);
-        setActiveTab('script');
-        try {
-            localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(defaultState));
-        } catch (e) {
-            console.error("Failed to clear project from storage", e);
-        }
+  const handleNewProject = (skipConfirm: boolean = false) => {
+    const hasExistingProject = scriptContent || scriptAnalysis;
+    if (!skipConfirm && hasExistingProject && !window.confirm("Are you sure you want to start a new project? Your current project will be cleared from this browser's storage.")) {
+        return;
+    }
+
+    const defaultState = {
+        scriptContent: null, scriptAnalysis: null, timelineClips: [],
+        ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
+    };
+    setProjectState(defaultState);
+    setActiveTab('script');
+    try {
+        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(defaultState));
+    } catch (e) {
+        console.error("Failed to clear project from storage", e);
+    }
+    if (hasExistingProject || skipConfirm) {
         showToast("New project started.");
     }
   };
   
-  const handleSaveProject = () => {
+  const handleSaveProject = async () => {
       try {
-        const dataToSave = getSerializableState();
+        const dataToSave = await getSerializableState();
         localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
         showToast("Project saved successfully!");
       } catch(e) {
           console.error("Failed to save project", e);
-          showToast("Failed to save project.", 'error');
+          if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+            showToast("Storage quota exceeded. Try removing some clips or clearing browser data.", 'error');
+          } else {
+            showToast("Failed to save project.", 'error');
+          }
       }
   };
+
+  // Download project as JSON file
+  const handleDownloadProject = async () => {
+      try {
+        const dataToSave = await getSerializableState();
+        const json = JSON.stringify(dataToSave, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const projectTitle = scriptAnalysis?.title || 'Untitled_Project';
+        const sanitizedTitle = projectTitle.replace(/[^a-zA-Z0-9_-]/g, '_');
+        link.download = `${sanitizedTitle}_${new Date().toISOString().split('T')[0]}.alkemy.json`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast("Project downloaded successfully!");
+      } catch(e) {
+          console.error("Failed to download project", e);
+          showToast("Failed to download project.", 'error');
+      }
+  };
+
+  // Load project from JSON file
+  const handleLoadProject = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (!file.name.endsWith('.alkemy.json')) {
+          showToast("Please select a valid .alkemy.json file.", 'error');
+          return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          try {
+              const loadedData = JSON.parse(e.target?.result as string);
+
+              if (window.confirm(`Load project "${loadedData.scriptAnalysis?.title || 'Untitled'}"? Your current project will be replaced.`)) {
+                  // Convert base64 back to blob URLs for timeline clips
+                  if (loadedData.timelineClips && loadedData.timelineClips.length > 0) {
+                    loadedData.timelineClips = loadedData.timelineClips.map((clip: any) => {
+                      if (clip._isBlobConverted && clip.url && clip.url.startsWith('data:')) {
+                        return { ...clip, url: base64ToBlobUrl(clip.url), _isBlobConverted: undefined };
+                      }
+                      return clip;
+                    });
+                  }
+
+                  setProjectState(loadedData);
+
+                  // Don't save to localStorage here - let auto-save handle it with proper serialization
+                  // This prevents saving blob URLs (which are created above) instead of base64
+
+                  // Clear command history when loading a new project
+                  commandHistory.clear();
+
+                  showToast("Project loaded successfully!");
+                  setActiveTab('script');
+              }
+          } catch(error) {
+              console.error("Failed to load project", error);
+              showToast("Failed to load project. File may be corrupted.", 'error');
+          }
+      };
+      reader.onerror = () => showToast("Failed to read file.", 'error');
+      reader.readAsText(file);
+
+      // Reset input so same file can be loaded again
+      if (event.target) event.target.value = '';
+  };
+
+  // Trigger load project from WelcomeScreen
+  const handleLoadProjectFromWelcome = () => {
+      loadProjectInputRef.current?.click();
+  };
+
+  // Auto-save to localStorage every 2 minutes
+  useEffect(() => {
+      const autoSaveInterval = setInterval(async () => {
+          try {
+              const dataToSave = await getSerializableState();
+              localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
+              console.log('[Auto-save] Project saved to localStorage');
+          } catch(e) {
+              console.error('[Auto-save] Failed:', e);
+              if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+                console.warn('[Auto-save] Storage quota exceeded');
+              }
+          }
+      }, 120000); // 2 minutes
+
+      return () => clearInterval(autoSaveInterval);
+  }, [getSerializableState]);
 
 
   const handleScriptUpdate = (content: string | null) => {
@@ -536,6 +704,11 @@ const AppContent: React.FC = () => {
     }
   };
 
+  // Show splash screen on initial load
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
   if (isCheckingKey) {
     return (
         <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
@@ -550,6 +723,27 @@ const AppContent: React.FC = () => {
 
   if (!isKeyReady) {
     return <ApiKeyPrompt onKeySelected={() => setIsKeyReady(true)} />;
+  }
+
+  // Show welcome screen if no project exists
+  const hasActiveProject = scriptContent || scriptAnalysis;
+  if (!hasActiveProject) {
+    return (
+      <>
+        <WelcomeScreen
+          onStartNewProject={() => handleNewProject(true)}
+          onLoadProject={handleLoadProjectFromWelcome}
+        />
+        {/* Hidden file input for loading projects */}
+        <input
+          ref={loadProjectInputRef}
+          type="file"
+          accept=".alkemy.json"
+          onChange={handleLoadProject}
+          className="hidden"
+        />
+      </>
+    );
   }
 
   const mainBg = isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]';
@@ -571,6 +765,8 @@ const AppContent: React.FC = () => {
         isSidebarExpanded={isSidebarExpanded}
         setIsSidebarExpanded={setIsSidebarExpanded}
         onNewProject={handleNewProject}
+        onDownloadProject={handleDownloadProject}
+        onLoadProject={handleLoadProject}
       />
 
       <main className={`relative flex-1 overflow-y-auto p-8 ${contentBg}`}>
@@ -584,7 +780,7 @@ const AppContent: React.FC = () => {
           >
             <div>
               <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} uppercase tracking-wider`}>Active Surface</p>
-              <h2 className="text-2xl font-bold">{TABS.find(t => t.id === activeTab)?.label || 'Alkemy'}</h2>
+              <h2 className="text-2xl font-bold">{TABS.find(t => t.id === activeTab)?.name || 'Alkemy'}</h2>
             </div>
 
             <div className="flex items-center gap-4">
