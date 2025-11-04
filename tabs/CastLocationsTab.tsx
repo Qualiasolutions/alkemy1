@@ -973,22 +973,23 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     const { isDark } = useTheme();
 
     return (
-        <div className="space-y-12">
-            <AddItemModal
-                isOpen={!!isAddModalOpen}
-                type={isAddModalOpen!}
-                onClose={() => setIsAddModalOpen(null)}
-                onSubmit={handleAddNewItem}
-            />
-            <input type="file" ref={attachImageInputRef} onChange={handleFileAttached} className="hidden" accept="image/*" />
+        <div className="h-full overflow-y-auto">
+            <div className="space-y-12 pb-12">
+                <AddItemModal
+                    isOpen={!!isAddModalOpen}
+                    type={isAddModalOpen!}
+                    onClose={() => setIsAddModalOpen(null)}
+                    onSubmit={handleAddNewItem}
+                />
+                <input type="file" ref={attachImageInputRef} onChange={handleFileAttached} className="hidden" accept="image/*" />
 
-            {/* Hero Header */}
-            <motion.header
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="relative"
-            >
+                {/* Hero Header */}
+                <motion.header
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative"
+                >
                 <div className="relative z-10">
                     <h2 className={`text-3xl font-bold mb-2 ${
                         isDark ? 'text-white' : 'text-gray-900'
@@ -1188,6 +1189,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                     </motion.div>
                 )}
             </motion.section>
+            </div>
         </div>
     );
 };
