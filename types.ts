@@ -133,6 +133,11 @@ export interface MoodboardItem {
   id: string;
   url: string;
   type: 'image' | 'video';
+  metadata?: {
+    source?: string;
+    title?: string;
+    description?: string;
+  };
 }
 
 export interface MoodboardSection {
