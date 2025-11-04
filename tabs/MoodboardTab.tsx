@@ -2,9 +2,10 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Moodboard, MoodboardSection, MoodboardItem } from '../types';
-import { UploadCloudIcon, CameraIcon, PaletteIcon, SparklesIcon, ImageIcon, Trash2Icon, EnterIcon, BrainIcon, ArrowLeftIcon } from '../components/icons/Icons';
+import { UploadCloudIcon, CameraIcon, PaletteIcon, SparklesIcon, ImageIcon, Trash2Icon, EnterIcon, BrainIcon, ArrowLeftIcon, SearchIcon, GridIcon } from '../components/icons/Icons';
 import Button from '../components/Button';
 import { generateMoodboardDescription } from '../services/aiService';
+import { searchImages, searchCinematographyReferences, SearchedImage } from '../services/imageSearchService';
 import { useTheme } from '../theme/ThemeContext';
 
 // --- Collage Studio Modal ---
@@ -250,6 +251,335 @@ const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, sta
 };
 
 
+// --- Research Tab Component ---
+const ResearchTab: React.FC<{
+    moodboard?: Moodboard;
+    onUpdateMoodboard: (updater: React.SetStateAction<Moodboard | undefined>) => void;
+}> = ({ moodboard, onUpdateMoodboard }) => {
+    const { isDark } = useTheme();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState<SearchedImage[]>([]);
+    const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+    const [searchProgress, setSearchProgress] = useState<{ stage: string; message: string; progress: number } | null>(null);
+    const [targetSection, setTargetSection] = useState<keyof Moodboard>('cinematography');
+    const [advancedOptions, setAdvancedOptions] = useState({
+        mood: '',
+        lighting: '',
+        composition: '',
+        colorPalette: '',
+        reference: ''
+    });
+    const [showAdvanced, setShowAdvanced] = useState(false);
+
+    const handleSearch = async () => {
+        if (!searchQuery.trim() && !Object.values(advancedOptions).some(v => v.trim())) return;
+
+        setIsSearching(true);
+        setSearchProgress(null);
+        try {
+            const results = showAdvanced && Object.values(advancedOptions).some(v => v.trim())
+                ? await searchCinematographyReferences(
+                    targetSection as any,
+                    advancedOptions,
+                    (progress) => setSearchProgress(progress)
+                )
+                : await searchImages(
+                    searchQuery,
+                    `Finding references for ${targetSection}`,
+                    (progress) => setSearchProgress(progress)
+                );
+
+            setSearchResults(results);
+            setSelectedImages(new Set());
+        } catch (error) {
+            console.error('Search error:', error);
+            alert(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setIsSearching(false);
+            setSearchProgress(null);
+        }
+    };
+
+    const handleSelectImage = (url: string) => {
+        const newSelected = new Set(selectedImages);
+        if (newSelected.has(url)) {
+            newSelected.delete(url);
+        } else {
+            newSelected.add(url);
+        }
+        setSelectedImages(newSelected);
+    };
+
+    const handleAddToMoodboard = async () => {
+        if (!moodboard || selectedImages.size === 0) return;
+
+        const selectedResults = searchResults.filter(img => selectedImages.has(img.url));
+
+        // Convert selected images to MoodboardItems
+        const newItems: MoodboardItem[] = await Promise.all(
+            selectedResults.map(async (img) => {
+                try {
+                    // Fetch and convert to data URL for persistence
+                    const response = await fetch(img.url);
+                    const blob = await response.blob();
+                    const dataUrl = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsDataURL(blob);
+                    });
+
+                    return {
+                        id: `research-${Date.now()}-${Math.random()}`,
+                        url: dataUrl,
+                        type: 'image' as const,
+                        metadata: {
+                            source: img.source || 'Web Search',
+                            title: img.title,
+                            description: img.description
+                        }
+                    };
+                } catch (error) {
+                    console.error(`Failed to fetch image ${img.url}:`, error);
+                    // Fallback to direct URL if fetch fails
+                    return {
+                        id: `research-${Date.now()}-${Math.random()}`,
+                        url: img.url,
+                        type: 'image' as const,
+                        metadata: {
+                            source: img.source || 'Web Search',
+                            title: img.title,
+                            description: img.description
+                        }
+                    };
+                }
+            })
+        );
+
+        // Add to selected moodboard section
+        onUpdateMoodboard(prev => {
+            if (!prev) return undefined;
+            return {
+                ...prev,
+                [targetSection]: {
+                    ...prev[targetSection],
+                    items: [...prev[targetSection].items, ...newItems]
+                }
+            };
+        });
+
+        // Clear selection and show success
+        setSelectedImages(new Set());
+        alert(`Added ${newItems.length} images to ${targetSection} moodboard`);
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Search Header */}
+            <div className="bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <SearchIcon className="w-6 h-6 text-[var(--color-accent-primary)]" />
+                    Research Visual References
+                </h3>
+
+                <div className="space-y-4">
+                    {/* Main Search Input */}
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder="Describe the visual style, mood, or reference you're looking for..."
+                            className={`flex-1 px-4 py-3 rounded-lg border ${
+                                isDark
+                                    ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
+                                    : 'bg-white border-gray-300 text-black placeholder-gray-500'
+                            } focus:outline-none focus:border-[var(--color-accent-primary)] transition-colors`}
+                        />
+                        <select
+                            value={targetSection}
+                            onChange={(e) => setTargetSection(e.target.value as keyof Moodboard)}
+                            className={`px-4 py-3 rounded-lg border ${
+                                isDark
+                                    ? 'bg-black/50 border-gray-700 text-white'
+                                    : 'bg-white border-gray-300 text-black'
+                            } focus:outline-none focus:border-[var(--color-accent-primary)]`}
+                        >
+                            <option value="cinematography">Cinematography</option>
+                            <option value="color">Color</option>
+                            <option value="style">Style</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <Button
+                            onClick={handleSearch}
+                            isLoading={isSearching}
+                            disabled={isSearching || (!searchQuery.trim() && !Object.values(advancedOptions).some(v => v.trim()))}
+                            variant="primary"
+                        >
+                            <SearchIcon className="w-4 h-4" />
+                            Search
+                        </Button>
+                    </div>
+
+                    {/* Advanced Options Toggle */}
+                    <button
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        className={`text-sm font-medium transition-colors ${
+                            isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'
+                        }`}
+                    >
+                        {showAdvanced ? '− Hide' : '+ Show'} Advanced Options
+                    </button>
+
+                    {/* Advanced Search Options */}
+                    {showAdvanced && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 border-t border-[var(--color-border-color)]">
+                            <input
+                                type="text"
+                                value={advancedOptions.mood}
+                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, mood: e.target.value }))}
+                                placeholder="Mood (e.g., dramatic, peaceful)"
+                                className={`px-3 py-2 rounded-lg border text-sm ${
+                                    isDark
+                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
+                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
+                                }`}
+                            />
+                            <input
+                                type="text"
+                                value={advancedOptions.lighting}
+                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, lighting: e.target.value }))}
+                                placeholder="Lighting (e.g., golden hour)"
+                                className={`px-3 py-2 rounded-lg border text-sm ${
+                                    isDark
+                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
+                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
+                                }`}
+                            />
+                            <input
+                                type="text"
+                                value={advancedOptions.composition}
+                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, composition: e.target.value }))}
+                                placeholder="Composition (e.g., symmetrical)"
+                                className={`px-3 py-2 rounded-lg border text-sm ${
+                                    isDark
+                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
+                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
+                                }`}
+                            />
+                            <input
+                                type="text"
+                                value={advancedOptions.colorPalette}
+                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, colorPalette: e.target.value }))}
+                                placeholder="Colors (e.g., teal and orange)"
+                                className={`px-3 py-2 rounded-lg border text-sm ${
+                                    isDark
+                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
+                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
+                                }`}
+                            />
+                            <input
+                                type="text"
+                                value={advancedOptions.reference}
+                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, reference: e.target.value }))}
+                                placeholder="Reference (e.g., Blade Runner)"
+                                className={`px-3 py-2 rounded-lg border text-sm col-span-2 ${
+                                    isDark
+                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
+                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
+                                }`}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Progress Indicator */}
+                {searchProgress && (
+                    <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-[var(--color-text-secondary)]">{searchProgress.message}</span>
+                            <span className="text-[var(--color-accent-primary)]">{searchProgress.progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                            <div
+                                className="bg-gradient-to-r from-teal-500 to-green-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${searchProgress.progress}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+                <div className="bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold">
+                            Search Results ({searchResults.length})
+                        </h4>
+                        {selectedImages.size > 0 && (
+                            <Button
+                                onClick={handleAddToMoodboard}
+                                variant="primary"
+                                className="!text-sm"
+                            >
+                                Add {selectedImages.size} to {targetSection}
+                            </Button>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {searchResults.map((image) => (
+                            <div
+                                key={image.url}
+                                onClick={() => handleSelectImage(image.url)}
+                                className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                                    selectedImages.has(image.url)
+                                        ? 'border-teal-500 scale-95'
+                                        : 'border-transparent hover:border-gray-600'
+                                }`}
+                            >
+                                <img
+                                    src={image.url}
+                                    alt={image.title}
+                                    className="w-full h-48 object-cover"
+                                    loading="lazy"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                                        <p className="text-white text-xs font-medium line-clamp-2">{image.title}</p>
+                                        {image.source && (
+                                            <p className="text-gray-300 text-xs mt-1">{image.source}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                {selectedImages.has(image.url) && (
+                                    <div className="absolute top-2 right-2 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white text-xs">✓</span>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Empty State */}
+            {!isSearching && searchResults.length === 0 && (
+                <div className="bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-12 text-center">
+                    <SearchIcon className="w-16 h-16 mx-auto mb-4 text-gray-500 opacity-50" />
+                    <h3 className="text-xl font-semibold mb-2">Discover Visual References</h3>
+                    <p className="text-[var(--color-text-secondary)] max-w-md mx-auto">
+                        Use AI-powered search to find the perfect visual references for your film.
+                        Describe the mood, style, or specific cinematographic elements you're looking for.
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // --- Main Moodboard Tab Component ---
 const MoodboardTab: React.FC<{
   moodboard?: Moodboard;
@@ -257,6 +587,8 @@ const MoodboardTab: React.FC<{
   scriptAnalyzed: boolean;
 }> = ({ moodboard, onUpdateMoodboard, scriptAnalyzed }) => {
   const [activeStudio, setActiveStudio] = useState<keyof Moodboard | null>(null);
+  const [activeTab, setActiveTab] = useState<'gallery' | 'research'>('gallery');
+  const { isDark } = useTheme();
 
   if (!scriptAnalyzed) {
     return (
@@ -284,27 +616,27 @@ const MoodboardTab: React.FC<{
   };
 
   const sections: { key: keyof Moodboard, title: string, desc: string, icon: React.ReactNode }[] = [
-    { 
-      key: 'cinematography', 
-      title: 'Cinematography', 
+    {
+      key: 'cinematography',
+      title: 'Cinematography',
       desc: "Define the film's visual language. Add references for lighting (e.g., chiaroscuro, high-key), camera work (handheld, static), composition (rule of thirds, symmetry), and lens choices (wide-angle, anamorphic).",
       icon: <CameraIcon />
     },
-    { 
-      key: 'color', 
-      title: 'Color', 
+    {
+      key: 'color',
+      title: 'Color',
       desc: "Establish the color palette and grade. Upload swatches or frames that capture the desired hue, saturation, and contrast.",
       icon: <PaletteIcon />
     },
-    { 
-      key: 'style', 
-      title: 'Style', 
+    {
+      key: 'style',
+      title: 'Style',
       desc: "Set the overall art direction and aesthetic. This could be a specific art movement (Bauhaus, Film Noir), a director's style (Wes Anderson, David Fincher), or a general feel (gritty realism, ethereal fantasy).",
       icon: <SparklesIcon />
     },
-    { 
-      key: 'other', 
-      title: 'Other', 
+    {
+      key: 'other',
+      title: 'Other',
       desc: "A space for miscellaneous visual ideas that don't fit elsewhere, such as specific textures, architectural details, or abstract concepts.",
       icon: <ImageIcon />
     },
@@ -324,21 +656,65 @@ const MoodboardTab: React.FC<{
             />
         )}
       <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Moodboard</h2>
-      <p className={`text-md text-[var(--color-text-secondary)] mb-6`}>Define the visual and tonal direction for your project. References added here will influence all AI generations.</p>
-      
-      <div className="space-y-8">
-        {sections.map(sec => (
-          <MoodboardSectionComponent 
-            key={sec.key}
-            title={sec.title}
-            staticDescription={sec.desc}
-            icon={sec.icon}
-            sectionData={moodboard[sec.key]}
-            onEnterStudio={() => setActiveStudio(sec.key)}
-            onUpdate={(newSectionData) => handleUpdateSection(sec.key, newSectionData)}
-          />
-        ))}
+      <p className={`text-md text-[var(--color-text-secondary)] mb-4`}>Define the visual and tonal direction for your project. References added here will influence all AI generations.</p>
+
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-2 mb-6 border-b border-[var(--color-border-color)]">
+        <button
+          onClick={() => setActiveTab('gallery')}
+          className={`px-4 py-2 font-medium transition-all relative ${
+            activeTab === 'gallery'
+              ? 'text-[var(--color-accent-primary)]'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <GridIcon className="w-4 h-4" />
+            Gallery
+          </div>
+          {activeTab === 'gallery' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-accent-primary)]" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('research')}
+          className={`px-4 py-2 font-medium transition-all relative ${
+            activeTab === 'research'
+              ? 'text-[var(--color-accent-primary)]'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <SearchIcon className="w-4 h-4" />
+            Research
+          </div>
+          {activeTab === 'research' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-accent-primary)]" />
+          )}
+        </button>
       </div>
+
+      {/* Tab Content */}
+      {activeTab === 'gallery' ? (
+        <div className="space-y-8">
+          {sections.map(sec => (
+            <MoodboardSectionComponent
+              key={sec.key}
+              title={sec.title}
+              staticDescription={sec.desc}
+              icon={sec.icon}
+              sectionData={moodboard[sec.key]}
+              onEnterStudio={() => setActiveStudio(sec.key)}
+              onUpdate={(newSectionData) => handleUpdateSection(sec.key, newSectionData)}
+            />
+          ))}
+        </div>
+      ) : (
+        <ResearchTab
+          moodboard={moodboard}
+          onUpdateMoodboard={onUpdateMoodboard}
+        />
+      )}
     </div>
   );
 };
