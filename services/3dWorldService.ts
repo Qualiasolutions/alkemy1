@@ -47,7 +47,8 @@ export async function generate3DWorld(options: Generate3DWorldOptions): Promise<
                 method: 'POST',
                 body: {
                     prompt: enhancedPrompt,
-                    aspect_ratio: '16:9'
+                    aspect_ratio: '16:9',
+                    model: 'photon-1'
                 }
             }),
         });
