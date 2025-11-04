@@ -26,22 +26,26 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         {
             icon: <ScriptIcon className="w-8 h-8" />,
             title: 'Script Analysis',
-            description: 'AI-powered screenplay breakdown with scene and character analysis'
+            description: 'Upload your screenplay and let AI break it down into scenes, characters, locations, and production elements with stunning accuracy',
+            badge: 'Powered by Gemini 2.5 Pro'
         },
         {
             icon: <ClapperboardIcon className="w-8 h-8" />,
             title: 'Shot Composition',
-            description: 'Generate cinematic stills with Imagen and Gemini Flash Image'
+            description: 'Transform script descriptions into photorealistic cinematic frames with professional cinematography and lighting',
+            badge: 'Imagen & Flash Image'
         },
         {
             icon: <FilmIcon className="w-8 h-8" />,
             title: 'Video Animation',
-            description: 'Animate shots with Veo 3.1 and assemble on the timeline'
+            description: 'Bring your stills to life with state-of-the-art video generation, creating smooth 5-second clips ready for your timeline',
+            badge: 'Veo 3.1'
         },
         {
             icon: <SparklesIcon className="w-8 h-8" />,
-            title: 'AI Assistant',
-            description: 'Get creative guidance from The Director AI throughout production'
+            title: 'AI Director',
+            description: 'Get expert creative guidance on framing, mood, pacing, and storytelling decisions throughout your entire production',
+            badge: 'Real-time Assistance'
         }
     ];
 
@@ -137,9 +141,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                     isDark
                                         ? 'bg-gradient-to-br from-gray-900/50 to-gray-800/30 border-gray-700/50 hover:border-teal-500/50'
                                         : 'bg-white border-gray-200 hover:border-teal-500/50'
-                                } backdrop-blur-sm transition-all duration-300 cursor-default`}
+                                } backdrop-blur-sm transition-all duration-300 cursor-default flex flex-col`}
                             >
-                                <div className={`inline-flex p-3 rounded-xl mb-4 ${
+                                <div className={`inline-flex p-3 rounded-xl mb-4 w-fit ${
                                     isDark ? 'bg-teal-500/10 text-teal-400' : 'bg-teal-100 text-teal-600'
                                 }`}>
                                     {feature.icon}
@@ -149,23 +153,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                 }`}>
                                     {feature.title}
                                 </h3>
-                                <p className={`text-sm ${
+                                <p className={`text-sm mb-4 flex-1 ${
                                     isDark ? 'text-gray-400' : 'text-gray-600'
                                 }`}>
                                     {feature.description}
                                 </p>
+                                <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium w-fit ${
+                                    isDark ? 'bg-teal-500/10 text-teal-400' : 'bg-teal-100 text-teal-700'
+                                }`}>
+                                    {feature.badge}
+                                </div>
                             </motion.div>
                         ))}
                     </div>
                 </motion.div>
-
-                {/* Footer note */}
-                <motion.p
-                    variants={itemVariants}
-                    className={`text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}
-                >
-                    Powered by Google Gemini, Imagen, and Veo AI models
-                </motion.p>
             </motion.div>
         </div>
     );
