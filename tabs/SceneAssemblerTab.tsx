@@ -332,7 +332,7 @@ const StillStudio: React.FC<{
                 });
             };
 
-            const { urls, errors, wasAdjusted } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, characterNames, locationName, onProgress);
+            const { urls, errors, wasAdjusted } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, scriptAnalysis?.moodboard, scriptAnalysis?.moodboardTemplates || [], characterNames, locationName, onProgress);
             
             if (wasAdjusted) {
                 setPromptWasAdjusted(true);

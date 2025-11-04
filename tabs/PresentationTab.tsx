@@ -207,6 +207,35 @@ const MoodboardCategory: React.FC<{ title: string; items: MoodboardItem[] }> = (
     );
 };
 
+const MoodboardTemplateCard: React.FC<{ board: MoodboardTemplate }> = ({ board }) => {
+    return (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_45px_rgba(15,23,42,0.35)]">
+            <div className="flex items-center justify-between gap-2">
+                <div>
+                    <h3 className="text-lg font-semibold text-white">{board.title}</h3>
+                    {board.description && <p className="text-xs text-white/50 mt-1">{board.description}</p>}
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-white/50">{board.items.length} refs</span>
+            </div>
+            {board.aiSummary && (
+                <p className="mt-3 text-sm leading-relaxed text-white/70">{board.aiSummary}</p>
+            )}
+            {board.items.length > 0 ? (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                    {board.items.slice(0, 6).map(item => (
+                        <div key={item.id} className="relative overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                            <img src={item.url} alt={item.metadata?.title || 'Moodboard reference'} className="h-28 w-full object-cover" />
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="mt-4 flex h-28 items-center justify-center rounded-xl border border-dashed border-white/10 text-xs text-white/40">No references yet</div>
+            )}
+        </div>
+    );
+};
+
+
 
 const PresentationTab: React.FC<{ scriptAnalysis: ScriptAnalysis | null }> = ({ scriptAnalysis }) => {
     const [viewingItem, setViewingItem] = useState<AnalyzedCharacter | AnalyzedLocation | null>(null);
@@ -241,7 +270,13 @@ const PresentationTab: React.FC<{ scriptAnalysis: ScriptAnalysis | null }> = ({ 
             <section>
                 <h2 className="text-2xl font-bold mb-4">Moodboard</h2>
                 <div className="space-y-8">
-                     {moodboard && hasMoodboardItems ? (
+                    {scriptAnalysis.moodboardTemplates && scriptAnalysis.moodboardTemplates.some(board => board.items.length > 0) ? (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {scriptAnalysis.moodboardTemplates.map(board => (
+                                <MoodboardTemplateCard key={board.id} board={board} />
+                            ))}
+                        </div>
+                    ) : moodboard && hasMoodboardItems ? (
                         <>
                             <MoodboardCategory title="Cinematography" items={moodboard.cinematography.items} />
                             <MoodboardCategory title="Color" items={moodboard.color.items} />

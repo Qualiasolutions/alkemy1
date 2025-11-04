@@ -39,7 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className={`relative group ${sidebarBg} border-r ${borderColor} flex flex-col p-4 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-20'}`}
+      className={`relative group ${sidebarBg} border-r ${borderColor} sticky top-0 flex h-screen flex-col p-4 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-20'}`}
     >
       {/* Subtle accent glow effects */}
       <div className={`absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none ${

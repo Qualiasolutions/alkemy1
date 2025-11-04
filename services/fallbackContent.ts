@@ -1,4 +1,4 @@
-import { Frame, FrameStatus, Moodboard, MoodboardItem, MoodboardSection, ScriptAnalysis, AnalyzedScene, AnalyzedCharacter, AnalyzedLocation } from '../types';
+import { Frame, FrameStatus, Moodboard, MoodboardItem, MoodboardSection, MoodboardTemplate, ScriptAnalysis, AnalyzedScene, AnalyzedCharacter, AnalyzedLocation } from '../types';
 import { DEMO_PROJECT_DATA } from '../data/demoProject';
 
 const landscapeImages = [
@@ -98,6 +98,24 @@ const defaultMoodboard = (title: string): Moodboard => ({
     style: createMoodboardSection(`${title}-style`, 'Tailored, modern styling with hints of noir-inspired silhouettes.', '3:4'),
     other: createMoodboardSection(`${title}-other`, 'Supporting textures and atmospheric references for tone.', '16:9')
 });
+const defaultMoodboardTemplates = (title: string, moodboard: Moodboard): MoodboardTemplate[] => {
+    const aggregated = [
+        ...moodboard.cinematography.items,
+        ...moodboard.color.items,
+        ...moodboard.style.items,
+        ...moodboard.other.items
+    ].slice(0, 12);
+
+    return [{
+        id: `fallback-board-${hashString(title)}` ,
+        title: `${title} Moodboard`,
+        description: 'Automatic fallback template generated from screenplay cues.',
+        items: aggregated,
+        aiSummary: 'A quick offline palette blending cinematography, color, styling, and texture references.',
+        createdAt: new Date().toISOString()
+    }];
+};
+
 
 const extractSceneHeadings = (lines: string[]): { index: number; heading: string }[] => {
     const headingRegex = /^(INT\.?|EXT\.?|I\/E\.?|INT\/EXT\.?)[^a-zA-Z0-9]?/i;
@@ -235,6 +253,7 @@ export const fallbackScriptAnalysis = (scriptContent: string): ScriptAnalysis =>
     const locations = extractLocations(scenes);
 
     const moodboard = defaultMoodboard(title);
+    const moodboardTemplates = defaultMoodboardTemplates(title, moodboard);
 
     return {
         title,
@@ -249,5 +268,6 @@ export const fallbackScriptAnalysis = (scriptContent: string): ScriptAnalysis =>
         makeupAndHair: [],
         sound: [],
         moodboard,
+        moodboardTemplates,
     };
 };

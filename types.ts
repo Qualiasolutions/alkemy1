@@ -140,6 +140,17 @@ export interface MoodboardItem {
   };
 }
 
+export interface MoodboardTemplate {
+  id: string;
+  title: string;
+  description?: string;
+  items: MoodboardItem[];
+  aiSummary?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+
 export interface MoodboardSection {
   notes: string;
   items: MoodboardItem[];
@@ -166,4 +177,5 @@ export interface ScriptAnalysis {
   makeupAndHair: string[];
   sound: string[];
   moodboard?: Moodboard;
+  moodboardTemplates?: MoodboardTemplate[];
 }

@@ -85,7 +85,7 @@ const FramesTab: React.FC<{
             map.set(clip.timelineId, { start: accumulatedTime, end: accumulatedTime + duration });
             accumulatedTime += duration;
         });
-        return { totalDuration: Math.max(50, accumulatedTime), clipTimeMap }; // Ensure minimum duration for ruler
+        return { totalDuration: Math.max(50, accumulatedTime), clipTimeMap: map }; // Ensure minimum duration for ruler
     }, [clips]);
     
     const setPlayhead = (time: number) => {
