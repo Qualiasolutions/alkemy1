@@ -392,7 +392,7 @@ const GenerationView: React.FC<{
     onUpdateBatch: (updater: (prev: AnalyzedCharacter | AnalyzedLocation) => AnalyzedCharacter | AnalyzedLocation) => void;
     moodboard?: Moodboard;
     moodboardTemplates?: MoodboardTemplate[];
-}> = ({ item, onBack, onUpdateBatch, moodboard }) => {
+}> = ({ item, onBack, onUpdateBatch, moodboard, moodboardTemplates = [] }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Flash Image' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -571,7 +571,6 @@ const GenerationView: React.FC<{
                             </div>
                         ))}
                     </div>
-                </div>
                 </div>
             </main>
 
@@ -963,11 +962,12 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
 
 
     if (selectedItem) {
-        return <GenerationView 
-                  item={selectedItem} 
-                  onBack={() => setSelectedItem(null)} 
+        return <GenerationView
+                  item={selectedItem}
+                  onBack={() => setSelectedItem(null)}
                   onUpdateBatch={handleItemUpdateBatch}
                   moodboard={moodboard}
+                  moodboardTemplates={moodboardTemplates}
                 />;
     }
 
