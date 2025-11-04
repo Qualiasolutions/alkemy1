@@ -1,720 +1,307 @@
-
-
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Moodboard, MoodboardSection, MoodboardItem } from '../types';
-import { UploadCloudIcon, CameraIcon, PaletteIcon, SparklesIcon, ImageIcon, Trash2Icon, EnterIcon, BrainIcon, ArrowLeftIcon, SearchIcon, GridIcon } from '../components/icons/Icons';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { MoodboardTemplate, MoodboardItem, MoodboardSection } from '../types';
 import Button from '../components/Button';
-import { generateMoodboardDescription } from '../services/aiService';
-import { searchImages, searchCinematographyReferences, SearchedImage } from '../services/imageSearchService';
 import { useTheme } from '../theme/ThemeContext';
+import { PlusIcon, UploadCloudIcon, Trash2Icon, SparklesIcon, ImageIcon } from '../components/icons/Icons';
+import { generateMoodboardDescription } from '../services/aiService';
 
-// --- Collage Studio Modal ---
-const CollageStudio: React.FC<{
-    title: string;
-    isOpen: boolean;
-    onClose: () => void;
-    sectionData: MoodboardSection;
-    onUpdate: (updater: (prev: MoodboardSection) => MoodboardSection) => void;
-}> = ({ title, isOpen, onClose, sectionData, onUpdate }) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+const MAX_ITEMS = 20;
 
-    const handleFiles = useCallback((files: FileList) => {
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const url = event.target?.result as string;
-                const type = file.type.startsWith('video') ? 'video' : 'image';
-                const newItem: MoodboardItem = { id: `item-${Date.now()}-${Math.random()}`, url, type };
-                // Use functional update to ensure we're updating the latest state
-                onUpdate(prevSectionData => ({ ...prevSectionData, items: [...prevSectionData.items, newItem] }));
-            };
-            reader.readAsDataURL(file);
-        });
-    }, [onUpdate]);
+const createTemplate = (count: number): MoodboardTemplate => ({
+  id: `moodboard-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  title: count === 0 ? 'Master Moodboard' : `Moodboard ${count + 1}`,
+  description: count === 0 ? 'Primary visual language for the project.' : '',
+  items: [],
+  createdAt: new Date().toISOString(),
+});
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            handleFiles(e.target.files);
-        }
-        if (e.target) e.target.value = ''; // Reset file input to allow re-uploading the same file
-    };
-
-    const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleFiles(e.dataTransfer.files);
-        }
-    }, [handleFiles]);
-    
-    const onDragOver = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); };
-    const onDragEnter = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
-    const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
-
-    const handleDeleteItem = (itemId: string) => {
-        onUpdate(prevSectionData => ({
-            ...prevSectionData,
-            items: prevSectionData.items.filter(item => item.id !== itemId)
-        }));
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col p-8" onDrop={onDrop} onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}>
-             <header className="flex justify-between items-center mb-6 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center gap-4">
-                    <Button onClick={onClose} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2">
-                        <ArrowLeftIcon className="w-4 h-4" /> Back
-                    </Button>
-                    <h2 className="text-2xl font-bold text-white">Moodboard Studio: <span className="text-teal-400">{title}</span></h2>
-                </div>
-                <Button onClick={onClose} variant="secondary">Close Studio</Button>
-            </header>
-            <main
-                onClick={() => fileInputRef.current?.click()}
-                className={`flex-1 overflow-y-auto rounded-lg p-4 transition-colors cursor-pointer ${isDragging ? `bg-teal-500/10 border-2 border-dashed border-teal-400` : 'bg-transparent border-2 border-dashed border-transparent'}`}
-            >
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={handleFileSelect}
-                />
-                
-                {sectionData.items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 rounded-lg">
-                        <UploadCloudIcon className="w-12 h-12 mb-4" />
-                        <p className="text-xl font-semibold text-gray-400">Drag & drop or click to upload</p>
-                        <p>You can select multiple images and videos at once.</p>
-                    </div>
-                ) : (
-                    <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4">
-                        {sectionData.items.map(item => (
-                            <div key={item.id} className="relative group mb-4 break-inside-avoid rounded-lg overflow-hidden" onClick={e => e.stopPropagation()}>
-                                {item.type === 'image' ? (
-                                    <img src={item.url} alt="moodboard reference" className="w-full h-auto" />
-                                ) : (
-                                    <video src={item.url} muted loop autoPlay playsInline className="w-full h-auto" />
-                                )}
-                                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                                     <button onClick={() => handleDeleteItem(item.id)} className="w-10 h-10 bg-red-500/50 text-white rounded-full flex items-center justify-center hover:bg-red-500/80 transition-colors" title="Delete Item">
-                                        <Trash2Icon className="w-5 h-5"/>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </main>
-        </div>
-    );
-};
-
-
-// --- Reusable Moodboard Section Component ---
-interface MoodboardSectionProps {
-  title: string;
-  staticDescription: string;
-  icon: React.ReactNode;
-  sectionData: MoodboardSection;
-  onEnterStudio: () => void;
-  onUpdate: (newSectionData: MoodboardSection) => void;
-}
-
-const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, staticDescription, icon, sectionData, onEnterStudio, onUpdate }) => {
-    const { isDark } = useTheme();
-    const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
-
-    const handleGenerateDescription = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIsGeneratingDesc(true);
-        try {
-            const description = await generateMoodboardDescription(sectionData);
-            onUpdate({ ...sectionData, aiDescription: description });
-        } catch (error) {
-            alert(`Error generating description: ${error instanceof Error ? error.message : 'Unknown Error'}`);
-        } finally {
-            setIsGeneratingDesc(false);
-        }
-    };
-
-    const displayDescription = sectionData.aiDescription || staticDescription;
-    const visibleItems = sectionData.items.slice(0, 4); // Show max 4 images
-    const remainingCount = sectionData.items.length - 4;
-
-    return (
-        <div className={`group relative bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl overflow-hidden hover:border-[var(--color-accent-primary)]/50 transition-all hover:shadow-lg hover:shadow-teal-500/10`}>
-            {/* Header */}
-            <div className="p-4 border-b border-[var(--color-border-color)]">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 flex-shrink-0 bg-[var(--color-background-primary)] rounded-lg flex items-center justify-center text-[var(--color-accent-primary)]`}>
-                            {icon}
-                        </div>
-                        <h3 className="text-lg font-bold">{title}</h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                            sectionData.items.length > 0
-                                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-                                : 'bg-gray-500/10 text-gray-500 border border-gray-500/20'
-                        }`}>
-                            {sectionData.items.length} {sectionData.items.length === 1 ? 'item' : 'items'}
-                        </span>
-                    </div>
-                </div>
-                <p className={`text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed`}>
-                    {displayDescription}
-                </p>
-            </div>
-
-            {/* Image Grid Preview */}
-            <div
-                onClick={onEnterStudio}
-                className="relative cursor-pointer h-48 bg-[var(--color-background-primary)] overflow-hidden"
-            >
-                {sectionData.items.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-1 h-full p-1">
-                        {visibleItems.map((item, index) => (
-                            <div
-                                key={item.id}
-                                className="relative overflow-hidden rounded-md group/item"
-                            >
-                                {item.type === 'video' ? (
-                                    <video
-                                        src={item.url}
-                                        muted
-                                        loop
-                                        autoPlay
-                                        playsInline
-                                        className="w-full h-full object-cover transition-transform duration-300 group-hover/item:scale-110"
-                                    />
-                                ) : (
-                                    <img
-                                        src={item.url}
-                                        alt={`${title} reference ${index + 1}`}
-                                        className="w-full h-full object-cover transition-transform duration-300 group-hover/item:scale-110"
-                                    />
-                                )}
-                                {index === 3 && remainingCount > 0 && (
-                                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
-                                        <span className="text-white text-2xl font-bold">+{remainingCount}</span>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                        <ImageIcon className="w-12 h-12 mb-2 opacity-40" />
-                        <p className="text-sm font-medium">No references</p>
-                        <p className="text-xs text-gray-600 mt-1">Click to add</p>
-                    </div>
-                )}
-
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                    <EnterIcon className="w-10 h-10 text-white" />
-                    <p className="font-bold text-white text-sm">Open Studio</p>
-                    <p className="text-xs text-gray-300">Add & manage references</p>
-                </div>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="p-3 border-t border-[var(--color-border-color)] flex items-center justify-between">
-                <Button
-                    onClick={handleGenerateDescription}
-                    isLoading={isGeneratingDesc}
-                    disabled={isGeneratingDesc}
-                    variant="secondary"
-                    className="!text-xs !gap-1.5 !px-2.5 !py-1.5"
-                >
-                    <BrainIcon className="w-3.5 h-3.5" />
-                    <span>AI Description</span>
-                </Button>
-                <button
-                    onClick={onEnterStudio}
-                    className={`text-xs font-medium transition-colors ${
-                        isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'
-                    }`}
-                >
-                    Manage →
-                </button>
-            </div>
-        </div>
-    );
-};
-
-
-// --- Research Tab Component ---
-const ResearchTab: React.FC<{
-    moodboard?: Moodboard;
-    onUpdateMoodboard: (updater: React.SetStateAction<Moodboard | undefined>) => void;
-}> = ({ moodboard, onUpdateMoodboard }) => {
-    const { isDark } = useTheme();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isSearching, setIsSearching] = useState(false);
-    const [searchResults, setSearchResults] = useState<SearchedImage[]>([]);
-    const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-    const [searchProgress, setSearchProgress] = useState<{ stage: string; message: string; progress: number } | null>(null);
-    const [targetSection, setTargetSection] = useState<keyof Moodboard>('cinematography');
-    const [advancedOptions, setAdvancedOptions] = useState({
-        mood: '',
-        lighting: '',
-        composition: '',
-        colorPalette: '',
-        reference: ''
-    });
-    const [showAdvanced, setShowAdvanced] = useState(false);
-
-    const handleSearch = async () => {
-        if (!searchQuery.trim() && !Object.values(advancedOptions).some(v => v.trim())) return;
-
-        setIsSearching(true);
-        setSearchProgress(null);
-        try {
-            const results = showAdvanced && Object.values(advancedOptions).some(v => v.trim())
-                ? await searchCinematographyReferences(
-                    targetSection as any,
-                    advancedOptions,
-                    (progress) => setSearchProgress(progress)
-                )
-                : await searchImages(
-                    searchQuery,
-                    `Finding references for ${targetSection}`,
-                    (progress) => setSearchProgress(progress)
-                );
-
-            setSearchResults(results);
-            setSelectedImages(new Set());
-        } catch (error) {
-            console.error('Search error:', error);
-            alert(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        } finally {
-            setIsSearching(false);
-            setSearchProgress(null);
-        }
-    };
-
-    const handleSelectImage = (url: string) => {
-        const newSelected = new Set(selectedImages);
-        if (newSelected.has(url)) {
-            newSelected.delete(url);
-        } else {
-            newSelected.add(url);
-        }
-        setSelectedImages(newSelected);
-    };
-
-    const handleAddToMoodboard = async () => {
-        if (!moodboard || selectedImages.size === 0) return;
-
-        const selectedResults = searchResults.filter(img => selectedImages.has(img.url));
-
-        // Convert selected images to MoodboardItems
-        const newItems: MoodboardItem[] = await Promise.all(
-            selectedResults.map(async (img) => {
-                try {
-                    // Fetch and convert to data URL for persistence
-                    const response = await fetch(img.url);
-                    const blob = await response.blob();
-                    const dataUrl = await new Promise<string>((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.readAsDataURL(blob);
-                    });
-
-                    return {
-                        id: `research-${Date.now()}-${Math.random()}`,
-                        url: dataUrl,
-                        type: 'image' as const,
-                        metadata: {
-                            source: img.source || 'Web Search',
-                            title: img.title,
-                            description: img.description
-                        }
-                    };
-                } catch (error) {
-                    console.error(`Failed to fetch image ${img.url}:`, error);
-                    // Fallback to direct URL if fetch fails
-                    return {
-                        id: `research-${Date.now()}-${Math.random()}`,
-                        url: img.url,
-                        type: 'image' as const,
-                        metadata: {
-                            source: img.source || 'Web Search',
-                            title: img.title,
-                            description: img.description
-                        }
-                    };
-                }
-            })
-        );
-
-        // Add to selected moodboard section
-        onUpdateMoodboard(prev => {
-            if (!prev) return undefined;
-            return {
-                ...prev,
-                [targetSection]: {
-                    ...prev[targetSection],
-                    items: [...prev[targetSection].items, ...newItems]
-                }
-            };
-        });
-
-        // Clear selection and show success
-        setSelectedImages(new Set());
-        alert(`Added ${newItems.length} images to ${targetSection} moodboard`);
-    };
-
-    return (
-        <div className="space-y-6">
-            {/* Search Header */}
-            <div className="bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6">
-                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <SearchIcon className="w-6 h-6 text-[var(--color-accent-primary)]" />
-                    Research Visual References
-                </h3>
-
-                <div className="space-y-4">
-                    {/* Main Search Input */}
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            placeholder="Describe the visual style, mood, or reference you're looking for..."
-                            className={`flex-1 px-4 py-3 rounded-lg border ${
-                                isDark
-                                    ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
-                                    : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                            } focus:outline-none focus:border-[var(--color-accent-primary)] transition-colors`}
-                        />
-                        <select
-                            value={targetSection}
-                            onChange={(e) => setTargetSection(e.target.value as keyof Moodboard)}
-                            className={`px-4 py-3 rounded-lg border ${
-                                isDark
-                                    ? 'bg-black/50 border-gray-700 text-white'
-                                    : 'bg-white border-gray-300 text-black'
-                            } focus:outline-none focus:border-[var(--color-accent-primary)]`}
-                        >
-                            <option value="cinematography">Cinematography</option>
-                            <option value="color">Color</option>
-                            <option value="style">Style</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <Button
-                            onClick={handleSearch}
-                            isLoading={isSearching}
-                            disabled={isSearching || (!searchQuery.trim() && !Object.values(advancedOptions).some(v => v.trim()))}
-                            variant="primary"
-                        >
-                            <SearchIcon className="w-4 h-4" />
-                            Search
-                        </Button>
-                    </div>
-
-                    {/* Advanced Options Toggle */}
-                    <button
-                        onClick={() => setShowAdvanced(!showAdvanced)}
-                        className={`text-sm font-medium transition-colors ${
-                            isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'
-                        }`}
-                    >
-                        {showAdvanced ? '− Hide' : '+ Show'} Advanced Options
-                    </button>
-
-                    {/* Advanced Search Options */}
-                    {showAdvanced && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 border-t border-[var(--color-border-color)]">
-                            <input
-                                type="text"
-                                value={advancedOptions.mood}
-                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, mood: e.target.value }))}
-                                placeholder="Mood (e.g., dramatic, peaceful)"
-                                className={`px-3 py-2 rounded-lg border text-sm ${
-                                    isDark
-                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                                }`}
-                            />
-                            <input
-                                type="text"
-                                value={advancedOptions.lighting}
-                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, lighting: e.target.value }))}
-                                placeholder="Lighting (e.g., golden hour)"
-                                className={`px-3 py-2 rounded-lg border text-sm ${
-                                    isDark
-                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                                }`}
-                            />
-                            <input
-                                type="text"
-                                value={advancedOptions.composition}
-                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, composition: e.target.value }))}
-                                placeholder="Composition (e.g., symmetrical)"
-                                className={`px-3 py-2 rounded-lg border text-sm ${
-                                    isDark
-                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                                }`}
-                            />
-                            <input
-                                type="text"
-                                value={advancedOptions.colorPalette}
-                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, colorPalette: e.target.value }))}
-                                placeholder="Colors (e.g., teal and orange)"
-                                className={`px-3 py-2 rounded-lg border text-sm ${
-                                    isDark
-                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                                }`}
-                            />
-                            <input
-                                type="text"
-                                value={advancedOptions.reference}
-                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, reference: e.target.value }))}
-                                placeholder="Reference (e.g., Blade Runner)"
-                                className={`px-3 py-2 rounded-lg border text-sm col-span-2 ${
-                                    isDark
-                                        ? 'bg-black/50 border-gray-700 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                                }`}
-                            />
-                        </div>
-                    )}
-                </div>
-
-                {/* Progress Indicator */}
-                {searchProgress && (
-                    <div className="mt-4 space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-[var(--color-text-secondary)]">{searchProgress.message}</span>
-                            <span className="text-[var(--color-accent-primary)]">{searchProgress.progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2">
-                            <div
-                                className="bg-gradient-to-r from-teal-500 to-green-500 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${searchProgress.progress}%` }}
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-                <div className="bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold">
-                            Search Results ({searchResults.length})
-                        </h4>
-                        {selectedImages.size > 0 && (
-                            <Button
-                                onClick={handleAddToMoodboard}
-                                variant="primary"
-                                className="!text-sm"
-                            >
-                                Add {selectedImages.size} to {targetSection}
-                            </Button>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {searchResults.map((image) => (
-                            <div
-                                key={image.url}
-                                onClick={() => handleSelectImage(image.url)}
-                                className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-                                    selectedImages.has(image.url)
-                                        ? 'border-teal-500 scale-95'
-                                        : 'border-transparent hover:border-gray-600'
-                                }`}
-                            >
-                                <img
-                                    src={image.url}
-                                    alt={image.title}
-                                    className="w-full h-48 object-cover"
-                                    loading="lazy"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                                        <p className="text-white text-xs font-medium line-clamp-2">{image.title}</p>
-                                        {image.source && (
-                                            <p className="text-gray-300 text-xs mt-1">{image.source}</p>
-                                        )}
-                                    </div>
-                                </div>
-                                {selectedImages.has(image.url) && (
-                                    <div className="absolute top-2 right-2 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
-                                        <span className="text-white text-xs">✓</span>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Empty State */}
-            {!isSearching && searchResults.length === 0 && (
-                <div className="bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-12 text-center">
-                    <SearchIcon className="w-16 h-16 mx-auto mb-4 text-gray-500 opacity-50" />
-                    <h3 className="text-xl font-semibold mb-2">Discover Visual References</h3>
-                    <p className="text-[var(--color-text-secondary)] max-w-md mx-auto">
-                        Use AI-powered search to find the perfect visual references for your film.
-                        Describe the mood, style, or specific cinematographic elements you're looking for.
-                    </p>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// --- Main Moodboard Tab Component ---
-const MoodboardTab: React.FC<{
-  moodboard?: Moodboard;
-  onUpdateMoodboard: (updater: React.SetStateAction<Moodboard | undefined>) => void;
+type MoodboardTabProps = {
+  moodboardTemplates: MoodboardTemplate[];
+  onUpdateMoodboardTemplates: (updater: React.SetStateAction<MoodboardTemplate[]>) => void;
   scriptAnalyzed: boolean;
-}> = ({ moodboard, onUpdateMoodboard, scriptAnalyzed }) => {
-  const [activeStudio, setActiveStudio] = useState<keyof Moodboard | null>(null);
-  const [activeTab, setActiveTab] = useState<'gallery' | 'research'>('gallery');
+};
+
+const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdateMoodboardTemplates, scriptAnalyzed }) => {
   const { isDark } = useTheme();
+  const [activeId, setActiveId] = useState<string | null>(moodboardTemplates[0]?.id ?? null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    if (!scriptAnalyzed) return;
+    if (moodboardTemplates.length === 0) {
+      const template = createTemplate(0);
+      onUpdateMoodboardTemplates(prev => [...prev, template]);
+      setActiveId(template.id);
+    } else if (!activeId || !moodboardTemplates.some(board => board.id === activeId)) {
+      setActiveId(moodboardTemplates[0]?.id ?? null);
+    }
+  }, [scriptAnalyzed, moodboardTemplates, activeId, onUpdateMoodboardTemplates]);
+
+  const activeBoard = useMemo(() => moodboardTemplates.find(board => board.id === activeId) ?? null, [moodboardTemplates, activeId]);
+
+  const handleCreateBoard = () => {
+    onUpdateMoodboardTemplates(prev => {
+      const template = createTemplate(prev.length);
+      setActiveId(template.id);
+      return [...prev, template];
+    });
+  };
+
+  const handleDeleteBoard = (id: string) => {
+    onUpdateMoodboardTemplates(prev => {
+      const updated = prev.filter(board => board.id !== id);
+      if (id === activeId) {
+        setActiveId(updated[0]?.id ?? null);
+      }
+      return updated;
+    });
+  };
+
+  const updateBoard = useCallback((id: string, updater: (board: MoodboardTemplate) => MoodboardTemplate) => {
+    onUpdateMoodboardTemplates(prev => prev.map(board => (board.id === id ? updater(board) : board)));
+  }, [onUpdateMoodboardTemplates]);
+
+  const handleFiles = (files: FileList) => {
+    if (!activeBoard) return;
+    const remainingSlots = MAX_ITEMS - activeBoard.items.length;
+    const fileArray = Array.from(files).slice(0, remainingSlots);
+    fileArray.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = event => {
+        const url = event.target?.result as string;
+        const type: MoodboardItem['type'] = file.type.startsWith('video') ? 'video' : 'image';
+        const newItem: MoodboardItem = {
+          id: `item-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          url,
+          type,
+          metadata: { title: file.name },
+        };
+        updateBoard(activeBoard.id, board => ({ ...board, items: [...board.items, newItem] }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDrop: React.DragEventHandler<HTMLDivElement> = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragActive(false);
+    if (!event.dataTransfer.files?.length) return;
+    handleFiles(event.dataTransfer.files);
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!activeBoard || activeBoard.items.length === 0) return;
+    setIsGeneratingSummary(true);
+    try {
+      const section: MoodboardSection = {
+        notes: activeBoard.description ?? '',
+        items: activeBoard.items,
+        aiDescription: activeBoard.aiSummary,
+      };
+      const summary = await generateMoodboardDescription(section);
+      updateBoard(activeBoard.id, board => ({ ...board, aiSummary: summary }));
+    } catch (error) {
+      console.error('Failed to generate moodboard summary', error);
+      alert(`Could not generate summary: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
 
   if (!scriptAnalyzed) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-        <div className={`p-10 border border-dashed border-[var(--color-border-color)] rounded-2xl`}>
-          <h2 className="text-3xl font-bold mb-2">Awaiting Script Analysis</h2>
-          <p className="text-lg text-gray-400 max-w-md">Please analyze a script in the 'Script' tab to unlock the Moodboard.</p>
-        </div>
+      <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300/40 bg-white/40 text-center text-slate-500 dark:border-slate-700/60 dark:bg-white/5 dark:text-slate-400">
+        <ImageIcon className="mb-4 h-10 w-10" />
+        <p className="max-w-md text-lg font-medium">Analyze a script first to unlock the Moodboard studio.</p>
+        <p className="max-w-sm text-sm opacity-80">Once the script is processed, you can craft visual templates that influence every generation.</p>
       </div>
     );
   }
 
-  if (!moodboard) return null;
-
-  const handleUpdateSection = (
-    sectionName: keyof Moodboard,
-    updater: MoodboardSection | ((prev: MoodboardSection) => MoodboardSection)
-  ) => {
-    onUpdateMoodboard(prevMoodboard => {
-        if (!prevMoodboard) return undefined;
-        const prevSection = prevMoodboard[sectionName];
-        const newSectionData = typeof updater === 'function' ? updater(prevSection) : updater;
-        return { ...prevMoodboard, [sectionName]: newSectionData };
-    });
-  };
-
-  const sections: { key: keyof Moodboard, title: string, desc: string, icon: React.ReactNode }[] = [
-    {
-      key: 'cinematography',
-      title: 'Cinematography',
-      desc: "Define the film's visual language. Add references for lighting (e.g., chiaroscuro, high-key), camera work (handheld, static), composition (rule of thirds, symmetry), and lens choices (wide-angle, anamorphic).",
-      icon: <CameraIcon />
-    },
-    {
-      key: 'color',
-      title: 'Color',
-      desc: "Establish the color palette and grade. Upload swatches or frames that capture the desired hue, saturation, and contrast.",
-      icon: <PaletteIcon />
-    },
-    {
-      key: 'style',
-      title: 'Style',
-      desc: "Set the overall art direction and aesthetic. This could be a specific art movement (Bauhaus, Film Noir), a director's style (Wes Anderson, David Fincher), or a general feel (gritty realism, ethereal fantasy).",
-      icon: <SparklesIcon />
-    },
-    {
-      key: 'other',
-      title: 'Other',
-      desc: "A space for miscellaneous visual ideas that don't fit elsewhere, such as specific textures, architectural details, or abstract concepts.",
-      icon: <ImageIcon />
-    },
-  ];
-
-  const activeSectionDetails = sections.find(sec => sec.key === activeStudio);
-
   return (
-    <div>
-        {activeStudio && activeSectionDetails && (
-            <CollageStudio
-                title={activeSectionDetails.title}
-                isOpen={!!activeStudio}
-                onClose={() => setActiveStudio(null)}
-                sectionData={moodboard[activeStudio]}
-                onUpdate={(updater) => handleUpdateSection(activeStudio, updater)}
-            />
-        )}
-      <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Moodboard</h2>
-      <p className={`text-md text-[var(--color-text-secondary)] mb-4`}>Define the visual and tonal direction for your project. References added here will influence all AI generations.</p>
-
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-2 mb-6 border-b border-[var(--color-border-color)]">
-        <button
-          onClick={() => setActiveTab('gallery')}
-          className={`px-4 py-2 font-medium transition-all relative ${
-            activeTab === 'gallery'
-              ? 'text-[var(--color-accent-primary)]'
-              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <GridIcon className="w-4 h-4" />
-            Gallery
+    <div className="grid h-full gap-6 lg:grid-cols-[320px_1fr]">
+      <aside className={`flex h-full flex-col rounded-3xl border ${isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white'} p-5 shadow-sm`}> 
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold {isDark ? 'text-white' : 'text-slate-900'}">Moodboard Templates</h2>
+            <p className={`text-xs ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Each board subtly informs all visual generations.</p>
           </div>
-          {activeTab === 'gallery' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-accent-primary)]" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('research')}
-          className={`px-4 py-2 font-medium transition-all relative ${
-            activeTab === 'research'
-              ? 'text-[var(--color-accent-primary)]'
-              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <SearchIcon className="w-4 h-4" />
-            Research
-          </div>
-          {activeTab === 'research' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-accent-primary)]" />
-          )}
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'gallery' ? (
-        <div className="space-y-8">
-          {sections.map(sec => (
-            <MoodboardSectionComponent
-              key={sec.key}
-              title={sec.title}
-              staticDescription={sec.desc}
-              icon={sec.icon}
-              sectionData={moodboard[sec.key]}
-              onEnterStudio={() => setActiveStudio(sec.key)}
-              onUpdate={(newSectionData) => handleUpdateSection(sec.key, newSectionData)}
-            />
-          ))}
+          <Button variant="primary" onClick={handleCreateBoard} className="!px-3 !py-2 !text-xs">
+            <PlusIcon className="h-4 w-4" />
+            Add
+          </Button>
         </div>
-      ) : (
-        <ResearchTab
-          moodboard={moodboard}
-          onUpdateMoodboard={onUpdateMoodboard}
-        />
-      )}
+        <div className="mt-4 space-y-3 overflow-y-auto pr-2">
+          {moodboardTemplates.map(board => {
+            const isActive = board.id === activeId;
+            return (
+              <button
+                key={board.id}
+                onClick={() => setActiveId(board.id)}
+                className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                  isActive
+                    ? 'border-teal-500/40 bg-teal-500/10 text-teal-100 shadow-[0_12px_30px_rgba(15,118,110,0.35)]'
+                    : isDark
+                      ? 'border-white/5 bg-white/5 text-white/70 hover:border-white/15 hover:bg-white/10'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-teal-400/40 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="truncate text-sm font-semibold">{board.title}</div>
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${
+                    board.items.length > 0
+                      ? 'bg-emerald-500/15 text-emerald-300'
+                      : 'bg-slate-500/15 text-slate-400'
+                  }`}>
+                    {board.items.length}/{MAX_ITEMS}
+                  </span>
+                </div>
+                {board.description && (
+                  <p className="mt-1 truncate text-[11px] opacity-70">{board.description}</p>
+                )}
+                {moodboardTemplates.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDeleteBoard(board.id);
+                    }}
+                    className="mt-3 inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white/50 hover:text-white"
+                  >
+                    <Trash2Icon className="h-3 w-3" /> Remove
+                  </button>
+                )}
+              </button>
+            );
+          })}
+          {moodboardTemplates.length === 0 && (
+            <p className={`text-sm ${isDark ? 'text-white/40' : 'text-slate-500'}`}>
+              Create a board to begin collecting references.
+            </p>
+          )}
+        </div>
+      </aside>
+
+      <section className={`flex h-full flex-col rounded-3xl border ${isDark ? 'border-white/10 bg-[#0C101A]' : 'border-slate-200 bg-white'} shadow-lg`}> 
+        {activeBoard ? (
+          <div className="flex h-full flex-col">
+            <header className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 p-6">
+              <div className="flex-1 space-y-3">
+                <input
+                  value={activeBoard.title}
+                  onChange={(event) => updateBoard(activeBoard.id, board => ({ ...board, title: event.target.value }))}
+                  className={`w-full text-2xl font-semibold outline-none transition ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-slate-900'}`}
+                  placeholder="Moodboard title"
+                />
+                <textarea
+                  value={activeBoard.description ?? ''}
+                  onChange={(event) => updateBoard(activeBoard.id, board => ({ ...board, description: event.target.value }))}
+                  className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                    isDark
+                      ? 'border-white/10 bg-white/5 text-white/80 focus:border-teal-400/40'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-teal-400/40'
+                  }`}
+                  rows={3}
+                  placeholder="Describe the emotion, lighting, composition, or references you're targeting."
+                />
+              </div>
+              <div className="flex w-full max-w-[260px] flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/70">
+                <div className="flex items-center gap-2 text-white">
+                  <SparklesIcon className="h-4 w-4" />
+                  AI Summary
+                </div>
+                {activeBoard.aiSummary ? (
+                  <p className="leading-relaxed text-white/80">{activeBoard.aiSummary}</p>
+                ) : (
+                  <p className="leading-relaxed text-white/60">Generate a quick synopsis to align collaborators on tone.</p>
+                )}
+                <Button
+                  variant="secondary"
+                  onClick={handleGenerateSummary}
+                  disabled={isGeneratingSummary || activeBoard.items.length === 0}
+                  className="!mt-2 !py-2 text-xs"
+                >
+                  {isGeneratingSummary ? 'Summarizing…' : 'Generate AI Summary'}
+                </Button>
+              </div>
+            </header>
+
+            <div
+              className={`relative m-6 flex-1 overflow-y-auto rounded-3xl border-2 border-dashed transition ${
+                dragActive
+                  ? 'border-teal-400 bg-teal-500/10'
+                  : isDark
+                    ? 'border-white/10 bg-white/5'
+                    : 'border-slate-200 bg-slate-50'
+              }`}
+              onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setDragActive(true); }}
+              onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }}
+              onDragLeave={(event) => { event.preventDefault(); event.stopPropagation(); setDragActive(false); }}
+              onDrop={handleDrop}
+            >
+              <input
+                id="moodboard-file-input"
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  const files = event.target.files;
+                  if (files?.length) {
+                    handleFiles(files);
+                    event.target.value = '';
+                  }
+                }}
+              />
+              <div className="flex h-full flex-col">
+                {activeBoard.items.length === 0 ? (
+                  <label
+                    htmlFor="moodboard-file-input"
+                    className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-white/60 cursor-pointer"
+                  >
+                    <UploadCloudIcon className="h-10 w-10" />
+                    <p className="text-base font-medium">Drop images or click to upload</p>
+                    <p className="text-xs opacity-70">High-quality stills, lighting references, frames, palette swatches. Up to {MAX_ITEMS} items.</p>
+                  </label>
+                ) : (
+                  <div className="grid w-full grid-cols-2 gap-4 p-4 md:grid-cols-3 xl:grid-cols-4">
+                    {activeBoard.items.map(item => (
+                      <div key={item.id} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                        {item.type === 'video' ? (
+                          <video src={item.url} className="h-48 w-full object-cover" autoPlay muted loop />
+                        ) : (
+                          <img src={item.url} alt={item.metadata?.title || 'Moodboard reference'} className="h-48 w-full object-cover" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => updateBoard(activeBoard.id, board => ({ ...board, items: board.items.filter(i => i.id !== item.id) }))}
+                          className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/70 opacity-0 transition group-hover:opacity-100"
+                          aria-label="Remove reference"
+                        >
+                          <Trash2Icon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {activeBoard.items.length < MAX_ITEMS && (
+                      <label htmlFor="moodboard-file-input" className="flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 text-xs text-white/60 transition hover:border-teal-400/40 hover:text-teal-200">
+                        <UploadCloudIcon className="h-6 w-6" />
+                        Add more references
+                      </label>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center text-sm text-slate-500 dark:text-white/50">
+            <ImageIcon className="mb-4 h-10 w-10" />
+            <p>No moodboard selected. Create one to begin.</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 };

@@ -372,5 +372,21 @@ export const DEMO_PROJECT_DATA = (): ScriptAnalysis => ({
             notes: 'Focus on details - hands, objects, symbolic imagery. Use shallow depth of field to isolate subjects.',
             items: []
         }
-    }
+    },
+
+    moodboardTemplates: [
+        {
+            id: 'demo-board-master',
+            title: 'Master Moodboard',
+            description: 'Primary visual template mixing corporate tension with intimate interiors.',
+            items: [
+                { id: 'demo-board-img-1', url: 'https://images.unsplash.com/photo-1536240478700-b869070f9279?w=800&h=600&fit=crop', type: 'image' },
+                { id: 'demo-board-img-2', url: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800&h=600&fit=crop', type: 'image' },
+                { id: 'demo-board-img-3', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=600&fit=crop', type: 'image' },
+                { id: 'demo-board-img-4', url: 'https://images.unsplash.com/photo-1534670007418-fbb7f6cf32c3?w=800&h=600&fit=crop', type: 'image' }
+            ],
+            aiSummary: 'A psychological thriller palette: cold corporate lighting, nostalgic library warmth, and vibrant exterior confrontation accents.',
+            createdAt: '2024-01-01T00:00:00.000Z'
+        }
+    ]
 });

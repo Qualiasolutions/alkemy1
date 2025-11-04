@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 import DirectorWidget from './components/DirectorWidget';
 import SplashScreen from './components/SplashScreen';
 import WelcomeScreen from './components/WelcomeScreen';
-import { TABS } from './constants';
+import { TABS, TABS_CONFIG } from './constants';
 import { SunIcon, MoonIcon } from './components/icons/Icons';
 import ScriptTab from './tabs/ScriptTab';
 import MoodboardTab from './tabs/MoodboardTab';
@@ -20,16 +20,14 @@ import ExportsTab from './tabs/ExportsTab';
 import SocialSpotsTab from './tabs/SocialSpotsTab';
 import SchedulerTab from './tabs/SchedulerTab';
 import AnalyticsTab from './tabs/AnalyticsTab';
-import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, TimelineClip } from './types';
+import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip } from './types';
 import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
 import Button from './components/Button';
 import { DEMO_PROJECT_DATA, DEMO_SCRIPT } from './data/demoProject';
 import Toast, { ToastMessage } from './components/Toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-
-const ENV_GEMINI_API_KEY = (process.env.GEMINI_API_KEY ?? process.env.API_KEY ?? '').trim();
-const HAS_ENV_GEMINI_KEY = ENV_GEMINI_API_KEY.length > 0;
+import { hasGeminiApiKey, hasEnvGeminiApiKey, onGeminiApiKeyChange, clearGeminiApiKey, setGeminiApiKey } from './services/apiKeys';
 
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
@@ -55,20 +53,54 @@ const getVideoDuration = (url: string): Promise<number> => {
 const createEmptyScriptAnalysis = (): ScriptAnalysis => ({
     title: 'Untitled Project', logline: '', summary: '',
     scenes: [], characters: [], locations: [],
-    props: [], styling: [], setDressing: [], makeupAndHair: [], sound: []
+    props: [], styling: [], setDressing: [], makeupAndHair: [], sound: [],
+    moodboardTemplates: []
 });
+const createDefaultMoodboardTemplates = (): MoodboardTemplate[] => ([
+    {
+        id: `moodboard-${Date.now()}`,
+        title: 'Master Moodboard',
+        description: 'Upload up to 20 hero references. These visuals influence look & feel across the project.',
+        items: [],
+        createdAt: new Date().toISOString()
+    }
+]);
+
+
 
 const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }) => {
-    const { colors, isDark } = useTheme();
+    const { isDark } = useTheme();
+    const [manualKey, setManualKey] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isSelecting, setIsSelecting] = useState(false);
 
     const handleSelectKey = async () => {
-        if (window.aistudio) {
-            await window.aistudio.openSelectKey();
-            // As per guidelines, assume success after the dialog is invoked.
-            onKeySelected();
-        } else {
-            alert("API key selection utility is not available in this environment.");
+        if (!window.aistudio?.openSelectKey) {
+            setError('API key selection utility is not available in this environment. Paste your key below instead.');
+            return;
         }
+        try {
+            setIsSelecting(true);
+            await window.aistudio.openSelectKey();
+            onKeySelected();
+        } catch (selectError) {
+            console.warn('Failed to launch AI Studio key selector', selectError);
+            setError('Unable to open the AI Studio key selector. Paste your key below instead.');
+        } finally {
+            setIsSelecting(false);
+        }
+    };
+
+    const handleManualSubmit = (event: React.FormEvent) => {
+        event.preventDefault();
+        const trimmed = manualKey.trim();
+        if (!trimmed) {
+            setError('Enter a valid Gemini API key.');
+            return;
+        }
+        setGeminiApiKey(trimmed);
+        setError(null);
+        onKeySelected();
     };
 
     return (
@@ -77,17 +109,53 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
-                className={`${isDark ? 'bg-[#161616] border-[#2A2A2A]' : 'bg-white border-[#D4D4D4]'} border rounded-2xl p-10 text-center max-w-lg shadow-2xl`}
+                className={`${isDark ? 'bg-[#161616] border-[#2A2A2A]' : 'bg-white border-[#D4D4D4]'} border rounded-2xl p-10 text-center max-w-xl shadow-2xl space-y-6`}
             >
-                <h2 className="text-3xl font-bold mb-4">Alkemy AI Studio</h2>
-                <p className={`text-lg ${isDark ? 'text-[#A0A0A0]' : 'text-[#505050]'} mb-6`}>
-                    To begin, please select your Gemini API key. This key will be used for all generative AI features within the studio.
-                </p>
-                <Button onClick={handleSelectKey} variant="primary" className="w-full !py-3 !text-base">
-                    Select Gemini API Key
-                </Button>
-                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} mt-4`}>
-                    By using this service, you agree to the Gemini API's terms and pricing. For more information on billing, please visit{' '}
+                <div className="space-y-2">
+                    <h2 className="text-3xl font-bold">Alkemy AI Studio</h2>
+                    <p className={`text-lg ${isDark ? 'text-[#A0A0A0]' : 'text-[#505050]'}`}>
+                        Choose how you would like to provide your Gemini API key. This key powers all generative features in the studio.
+                    </p>
+                </div>
+
+                <div className="space-y-3">
+                    <Button onClick={handleSelectKey} variant="primary" className="w-full !py-3 !text-base" disabled={isSelecting}>
+                        {isSelecting ? 'Opening AI Studio…' : 'Select Key via AI Studio'}
+                    </Button>
+                    <p className={`text-sm ${isDark ? 'text-[#808080]' : 'text-[#606060]'}`}>
+                        Requires running inside Google AI Studio with key selector support.
+                    </p>
+                </div>
+
+                <div className="relative">
+                    <div className={`w-full h-px ${isDark ? 'bg-[#2A2A2A]' : 'bg-[#E5E5E5]'}`} />
+                    <span className={`absolute left-1/2 -translate-x-1/2 -top-3 px-3 text-xs uppercase ${isDark ? 'bg-[#161616] text-[#808080]' : 'bg-white text-[#606060]'}`}>or</span>
+                </div>
+
+                <form onSubmit={handleManualSubmit} className="space-y-3 text-left">
+                    <label className={`block text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        Paste Gemini API key
+                    </label>
+                    <input
+                        value={manualKey}
+                        onChange={(event) => {
+                            setManualKey(event.target.value);
+                            if (error) setError(null);
+                        }}
+                        placeholder="AIza..."
+                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-teal-500/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-teal-500/40'}`}
+                        autoComplete="off"
+                        spellCheck={false}
+                    />
+                    <Button type="submit" variant="secondary" className="w-full !py-2.5">Use This Key</Button>
+                </form>
+
+                {error && (
+                    <div className={`text-sm ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</div>
+                )}
+
+                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                    By using this service, you agree to the Gemini API's terms and pricing. Learn more at{' '}
                     <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-teal-400' : 'text-teal-600'} hover:underline`}>
                         ai.google.dev/gemini-api/docs/billing
                     </a>.
@@ -99,9 +167,12 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
 
 
 const AppContent: React.FC = () => {
-  const { colors, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const loadProjectInputRef = useRef<HTMLInputElement>(null);
+
+  const envHasGeminiKey = hasEnvGeminiApiKey();
+  const initialHasGeminiKey = hasGeminiApiKey();
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
@@ -154,8 +225,47 @@ const AppContent: React.FC = () => {
   const [analysisMessage, setAnalysisMessage] = useState<string>('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const [isKeyReady, setIsKeyReady] = useState<boolean>(() => HAS_ENV_GEMINI_KEY);
-  const [isCheckingKey, setIsCheckingKey] = useState<boolean>(() => !HAS_ENV_GEMINI_KEY);
+  const [isKeyReady, setIsKeyReady] = useState<boolean>(initialHasGeminiKey);
+  const [isCheckingKey, setIsCheckingKey] = useState<boolean>(() => !initialHasGeminiKey);
+
+  const verifyGeminiKey = useCallback(async () => {
+    setIsCheckingKey(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      if (hasGeminiApiKey()) {
+        setIsKeyReady(true);
+        return;
+      }
+
+      const aistudio = window.aistudio;
+      if (aistudio?.getSelectedApiKey) {
+        try {
+          const selectedKey = await aistudio.getSelectedApiKey();
+          if (typeof selectedKey === 'string' && selectedKey.trim()) {
+            setGeminiApiKey(selectedKey);
+            setIsKeyReady(true);
+            return;
+          }
+        } catch (getKeyError) {
+          console.warn('Failed to retrieve Gemini API key from AI Studio', getKeyError);
+        }
+      }
+
+      if (aistudio?.hasSelectedApiKey && await aistudio.hasSelectedApiKey()) {
+        if (hasGeminiApiKey()) {
+          setIsKeyReady(true);
+          return;
+        }
+      }
+
+      setIsKeyReady(false);
+    } catch (error) {
+      console.warn('Could not verify Gemini API key', error);
+      setIsKeyReady(false);
+    } finally {
+      setIsCheckingKey(false);
+    }
+  }, []);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
       setToast({ id: `toast-${Date.now()}`, message, type });
@@ -170,42 +280,38 @@ const AppContent: React.FC = () => {
 
   // --- API Key Management ---
     useEffect(() => {
-        if (HAS_ENV_GEMINI_KEY) {
+        if (initialHasGeminiKey) {
             setIsKeyReady(true);
             setIsCheckingKey(false);
             return;
         }
+        verifyGeminiKey();
+    }, [initialHasGeminiKey, verifyGeminiKey]);
 
-        const checkApiKey = async () => {
-            setIsCheckingKey(true);
-            try {
-                if (window.aistudio && await window.aistudio.hasSelectedApiKey()) {
-                    setIsKeyReady(true);
-                }
-            } catch (e) {
-                console.warn("Could not check for API key:", e);
-                setIsKeyReady(false);
-            } finally {
+    useEffect(() => {
+        const unsubscribe = onGeminiApiKeyChange((value) => {
+            setIsKeyReady(value.length > 0);
+            if (value.length > 0) {
                 setIsCheckingKey(false);
             }
-        };
-
-        const timer = window.setTimeout(checkApiKey, 100); // Delay to ensure aistudio is available
-        return () => window.clearTimeout(timer);
+        });
+        return unsubscribe;
     }, []);
 
     useEffect(() => {
         const handleKeyError = () => {
-            if (HAS_ENV_GEMINI_KEY) {
+            if (envHasGeminiKey) {
                 showToast("The server-configured Gemini API key appears invalid. Please update the Vercel environment variable.", 'error');
                 return;
             }
+            clearGeminiApiKey();
             setIsKeyReady(false);
+            setIsCheckingKey(false);
             showToast("Your API key seems invalid. Please select another.", 'error');
         };
         window.addEventListener('invalid-api-key', handleKeyError);
         return () => window.removeEventListener('invalid-api-key', handleKeyError);
-    }, [showToast]);
+    }, [envHasGeminiKey, showToast]);
 
   // --- Saving UI state (sidebar/tab) on change ---
   useEffect(() => {
@@ -393,6 +499,9 @@ const AppContent: React.FC = () => {
                     });
                   }
 
+                  if (loadedData.scriptAnalysis && !loadedData.scriptAnalysis.moodboardTemplates) {
+                      loadedData.scriptAnalysis.moodboardTemplates = createDefaultMoodboardTemplates();
+                  }
                   setProjectState(loadedData);
 
                   // Don't save to localStorage here - let auto-save handle it with proper serialization
@@ -495,8 +604,11 @@ const AppContent: React.FC = () => {
           style: { notes: '', items: [] },
           other: { notes: '', items: [] },
         };
+        const initialTemplates = analysisResult.moodboardTemplates && analysisResult.moodboardTemplates.length > 0
+          ? analysisResult.moodboardTemplates
+          : createDefaultMoodboardTemplates();
 
-        setScriptAnalysis({ ...analysisResult, moodboard: initialMoodboard });
+        setScriptAnalysis({ ...analysisResult, moodboard: initialMoodboard, moodboardTemplates: initialTemplates });
 
     } catch (error) {
         console.error('Failed to analyze script:', error);
@@ -549,6 +661,14 @@ const AppContent: React.FC = () => {
         if (!prev) return null;
         const newMoodboard = typeof updater === 'function' ? updater(prev.moodboard) : updater;
         return { ...prev, moodboard: newMoodboard };
+    });
+  };
+
+  const handleSetMoodboardTemplates = (updater: React.SetStateAction<MoodboardTemplate[]>) => {
+    setScriptAnalysis((prev: ScriptAnalysis | null) => {
+        if (!prev) return null;
+        const nextTemplates = typeof updater === 'function' ? updater(prev.moodboardTemplates || []) : updater;
+        return { ...prev, moodboardTemplates: nextTemplates };
     });
   };
 
@@ -683,8 +803,8 @@ const AppContent: React.FC = () => {
                 />;
       case 'moodboard':
         return <MoodboardTab 
-                  moodboard={scriptAnalysis?.moodboard}
-                  onUpdateMoodboard={handleSetMoodboard}
+                  moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
+                  onUpdateMoodboardTemplates={handleSetMoodboardTemplates}
                   scriptAnalyzed={!!scriptAnalysis}
                 />;
       case 'presentation':
@@ -696,6 +816,7 @@ const AppContent: React.FC = () => {
                   locations={scriptAnalysis?.locations || []}
                   setLocations={handleSetLocations}
                   moodboard={scriptAnalysis?.moodboard}
+                  moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
                 />;
       case 'compositing':
         return <CompositingTab 
@@ -757,7 +878,7 @@ const AppContent: React.FC = () => {
   }
 
   if (!isKeyReady) {
-    return <ApiKeyPrompt onKeySelected={() => setIsKeyReady(true)} />;
+    return <ApiKeyPrompt onKeySelected={verifyGeminiKey} />;
   }
 
   // Show welcome screen if no project exists
@@ -783,99 +904,91 @@ const AppContent: React.FC = () => {
     );
   }
 
-  const mainBg = isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]';
-  const contentBg = isDark
-    ? 'bg-gradient-to-br from-[#0B0B0B] via-[#121212] to-[#0B0B0B]'
-    : 'bg-gradient-to-br from-[#FFFFFF] via-[#F8F8F8] to-[#FFFFFF]';
-  const textPrimary = isDark ? 'text-white' : 'text-black';
-  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-600';
 
-  return (
-    <div className={`flex h-screen ${mainBg} ${textPrimary} relative overflow-hidden`}>
-      {/* Gradient Halos */}
-      <div className={`absolute top-0 left-1/4 w-96 h-96 ${isDark ? 'bg-[#10A37F]/10' : 'bg-[#0FB98D]/15'} rounded-full blur-3xl pointer-events-none`} />
-      <div className={`absolute bottom-0 right-1/3 w-80 h-80 ${isDark ? 'bg-[#1AD8B1]/8' : 'bg-[#0D8F74]/12'} rounded-full blur-3xl pointer-events-none`} />
+const mainBg = isDark ? 'bg-[#05070D]' : 'bg-[#F8FAFC]';
+const contentBg = isDark
+  ? 'bg-gradient-to-b from-[#0B0F1A] via-[#0D111C] to-[#080A12]'
+  : 'bg-gradient-to-b from-[#FFFFFF] via-[#F5F7FA] to-[#EEF2F7]';
+const activeTabMeta = TABS.find(tab => tab.id === activeTab);
+const activePhase = TABS_CONFIG.find(section => section.tabs.some(tab => tab.id === activeTab))?.name ?? 'Workspace';
 
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        isSidebarExpanded={isSidebarExpanded}
-        setIsSidebarExpanded={setIsSidebarExpanded}
-        onNewProject={handleNewProject}
-        onDownloadProject={handleDownloadProject}
-        onLoadProject={handleLoadProject}
-      />
+return (
+  <div className={`relative flex min-h-screen overflow-hidden ${mainBg}`}>
+    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-teal-500/10 blur-3xl" />
+    <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
 
-      {/* Fixed Top Navbar */}
+    <Sidebar
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      isSidebarExpanded={isSidebarExpanded}
+      setIsSidebarExpanded={setIsSidebarExpanded}
+      onNewProject={handleNewProject}
+      onDownloadProject={handleDownloadProject}
+      onLoadProject={handleLoadProject}
+    />
+
+    <div className="relative flex flex-1 flex-col">
       <motion.header
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className={`fixed top-0 ${isSidebarExpanded ? 'left-64' : 'left-20'} right-0 z-30 transition-all duration-300 ${
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className={`sticky top-0 z-30 border-b backdrop-blur-xl ${
           isDark
-            ? 'bg-[#0B0B0B]/80 border-b border-gray-800/50'
-            : 'bg-white/80 border-b border-gray-200/50'
-        } backdrop-blur-xl`}
+            ? 'border-white/5 bg-[#05070D]/80 text-white'
+            : 'border-slate-200 bg-white/85 text-slate-900'
+        }`}
       >
-        <div className="px-8 py-4 flex justify-between items-center">
-          {/* Page Title Section */}
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
-                  {TABS.find(t => t.id === activeTab)?.name || 'Alkemy AI Studio'}
-                </h1>
-                {scriptAnalysis?.title && activeTab !== 'script' && (
-                  <span className={`text-sm px-3 py-1 rounded-full ${
-                    isDark ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'bg-teal-100 text-teal-700 border border-teal-200'
-                  }`}>
-                    {scriptAnalysis.title}
-                  </span>
-                )}
-              </div>
-              <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'} uppercase tracking-wider`}>
-                {TABS.find(t => t.id === activeTab)?.phase || 'Development'}
-              </p>
+        <div className="flex items-center justify-between gap-6 px-8 py-5">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-semibold tracking-tight">{activeTabMeta?.name ?? 'Alkemy AI Studio'}</h1>
+              {scriptAnalysis?.title && (
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    isDark
+                      ? 'border border-white/10 bg-white/5 text-white/80'
+                      : 'border border-slate-200 bg-white text-slate-600'
+                  }`}
+                >
+                  {scriptAnalysis.title}
+                </span>
+              )}
             </div>
+            <p className={`text-xs uppercase tracking-[0.4em] ${isDark ? 'text-white/40' : 'text-slate-500'}`}>{activePhase}</p>
           </div>
 
-          {/* Right Section: Sync + Theme Toggle */}
           <div className="flex items-center gap-4">
-            {/* Realtime Sync Indicator */}
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-              isDark ? 'bg-gray-900/50' : 'bg-gray-100/50'
+            <div className={`flex items-center gap-2 rounded-full px-4 py-2 ${
+              isDark ? 'bg-white/5 text-white/70' : 'bg-slate-100 text-slate-600'
             }`}>
-              <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
+              <motion.span
+                animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-2 h-2 bg-green-500 rounded-full shadow-sm shadow-green-500/50"
+                className="inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.8)]"
               />
-              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Sync Active
-              </span>
+              <span className="text-xs font-medium uppercase tracking-[0.3em]">Live Sync</span>
             </div>
 
-            {/* Theme Toggle Button */}
             <motion.button
               onClick={toggleTheme}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+              whileTap={{ scale: 0.96 }}
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
                 isDark
-                  ? 'border-gray-700 hover:border-teal-500/50 bg-gray-900/50 hover:bg-gray-900 text-gray-300'
-                  : 'border-gray-300 hover:border-teal-500/50 bg-white hover:bg-gray-50 text-gray-700'
+                  ? 'border border-white/10 bg-white/5 text-white/80 hover:border-teal-400/40 hover:text-white'
+                  : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-400/40 hover:text-slate-900'
               }`}
             >
-              {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
-              <span className="text-sm font-medium">{isDark ? 'Light' : 'Dark'}</span>
+              {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+              <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
             </motion.button>
           </div>
         </div>
       </motion.header>
 
-      {/* Main Content with Top Padding for Fixed Navbar */}
-      <main className={`relative flex-1 overflow-y-auto ${contentBg} ${isSidebarExpanded ? 'ml-0' : 'ml-0'} pt-20`}>
-        <div className="max-w-7xl mx-auto h-full relative z-10 px-8 py-6">
+      <main className={`relative flex-1 overflow-y-auto ${contentBg}`}>
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,163,127,0.06),_transparent_55%)]" />
+        <div className="relative mx-auto w-full max-w-7xl px-8 py-10">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -883,19 +996,19 @@ const AppContent: React.FC = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -18, scale: 0.985 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
+              className={isDark ? 'text-white' : 'text-slate-900'}
             >
               {renderContent()}
             </motion.div>
           </AnimatePresence>
         </div>
       </main>
-
-      <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
-
-      {/* Enhanced Toast Notifications */}
-      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
-  );
+
+    <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
+    <Toast toast={toast} onClose={() => setToast(null)} />
+  </div>
+);
 };
 
 const App: React.FC = () => {

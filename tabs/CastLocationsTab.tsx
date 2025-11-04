@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AnalyzedCharacter, AnalyzedLocation, Generation, Moodboard } from '../types';
+import { AnalyzedCharacter, AnalyzedLocation, Generation, Moodboard, MoodboardTemplate } from '../types';
 import Button from '../components/Button';
 import { UsersIcon, MapPinIcon, ArrowLeftIcon, AlkemyLoadingIcon, XIcon, PlusIcon, ImagePlusIcon, Trash2Icon, PaperclipIcon, ExpandIcon } from '../components/icons/Icons';
 import { generateStillVariants, refineVariant, upscaleImage } from '../services/aiService';
@@ -391,6 +391,7 @@ const GenerationView: React.FC<{
     onBack: () => void;
     onUpdateBatch: (updater: (prev: AnalyzedCharacter | AnalyzedLocation) => AnalyzedCharacter | AnalyzedLocation) => void;
     moodboard?: Moodboard;
+    moodboardTemplates?: MoodboardTemplate[];
 }> = ({ item, onBack, onUpdateBatch, moodboard }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Flash Image' | 'Flux'>('Imagen');
@@ -442,7 +443,7 @@ const GenerationView: React.FC<{
             };
 
             const { urls, errors } = await generateStillVariants(
-                item.data.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, undefined, undefined, onProgress
+                item.data.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates, undefined, undefined, onProgress
             );
 
             onUpdateBatch(prevItem => {
@@ -873,9 +874,10 @@ interface CastLocationsTabProps {
     locations: AnalyzedLocation[];
     setLocations: React.Dispatch<React.SetStateAction<AnalyzedLocation[]>>;
     moodboard?: Moodboard;
+    moodboardTemplates?: MoodboardTemplate[];
 }
 
-const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setCharacters, locations, setLocations, moodboard }) => {
+const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setCharacters, locations, setLocations, moodboard, moodboardTemplates = [] }) => {
     const [selectedItem, setSelectedItem] = useState<GenerationItem | null>(null);
     const [itemToUpdate, setItemToUpdate] = useState<{ id: string; type: 'character' | 'location' } | null>(null);
     const attachImageInputRef = useRef<HTMLInputElement>(null);

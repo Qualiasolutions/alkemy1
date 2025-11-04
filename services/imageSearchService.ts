@@ -4,6 +4,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
+import { getGeminiApiKey } from './apiKeys';
 
 export interface SearchedImage {
     url: string;
@@ -31,12 +32,12 @@ export const searchImages = async (
     moodboardContext?: string,
     onProgress?: (progress: SearchProgress) => void
 ): Promise<SearchedImage[]> => {
-    const apiKey = process.env.GEMINI_API_KEY || window.localStorage.getItem('geminiApiKey') || '';
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
         throw new Error('Gemini API key not found');
     }
 
-    const genAI = new GoogleGenAI(apiKey);
+    const genAI = new GoogleGenAI({ apiKey });
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     try {
@@ -171,12 +172,12 @@ export const searchSimilarImages = async (
     additionalContext?: string,
     onProgress?: (progress: SearchProgress) => void
 ): Promise<SearchedImage[]> => {
-    const apiKey = process.env.GEMINI_API_KEY || window.localStorage.getItem('geminiApiKey') || '';
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
         throw new Error('Gemini API key not found');
     }
 
-    const genAI = new GoogleGenAI(apiKey);
+    const genAI = new GoogleGenAI({ apiKey });
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     try {

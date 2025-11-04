@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { ScriptAnalysis } from '../types';
+import { ScriptAnalysis, Generation } from '../types';
 import { askTheDirector, generateStillVariants, upscaleImage } from '../services/aiService';
 import Button from './Button';
+import PromptModal from './PromptModal';
 import { BrainIcon, SendIcon, XIcon } from './icons/Icons';
 
 type Author = 'user' | 'director';
@@ -20,12 +21,44 @@ interface DirectorWidgetProps {
 
 const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography with comprehensive cinematography expertise. I have reviewed the project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
 const ACCENT_HEX = '#10A37F';
+const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Flash Image' | 'Flux' => {
+  switch ((model ?? '').toLowerCase()) {
+    case 'imagen':
+      return 'Imagen';
+    case 'gemini':
+    case 'flash':
+    case 'gemini-flash':
+    case 'gemini flash image':
+      return 'Gemini Flash Image';
+    default:
+      return 'Flux';
+  }
+};
+
+const buildGenerationEntries = (urls: string[], errors: (string | null)[], aspectRatio: string): Generation[] => {
+  const timestamp = Date.now();
+  return urls.reduce<Generation[]>((acc, url, index) => {
+    if (!url) {
+      return acc;
+    }
+    acc.push({
+      id: `director-${timestamp}-${index}`,
+      url,
+      aspectRatio,
+      isLoading: false,
+      error: errors[index] ?? undefined,
+    });
+    return acc;
+  }, []);
+};
+
 
 const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScriptAnalysis }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{ author: 'director', text: WELCOME_MESSAGE }]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [promptModal, setPromptModal] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const canChat = !!scriptAnalysis;
@@ -34,6 +67,8 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     if (!canChat) {
       setMessages([{ author: 'director', text: WELCOME_MESSAGE }]);
       setIsOpen(false);
+      setPromptModal(null);
+      setUserInput('');
     }
   }, [canChat]);
 
@@ -140,6 +175,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       }
 
       if (command.type === 'generate') {
+        const resolvedModel = resolveGenerationModel(command.model);
         // Find matching character or location
         const character = scriptAnalysis.characters.find(c =>
           c.name.toLowerCase().includes(command.subject.toLowerCase()) ||
@@ -156,29 +192,35 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
           const prompt = `Cinematic film still for a fictional movie (SFW): ${character.description}`;
           const { urls, errors } = await generateStillVariants(
             `director_char_${character.name}`,
-            command.model === 'flux' ? 'black-forest-labs/FLUX.1' : 'black-forest-labs/FLUX.1',
+            resolvedModel,
             prompt,
             [],
             [],
             command.aspectRatio,
             command.count,
             scriptAnalysis.moodboard || null,
+            scriptAnalysis.moodboardTemplates || [],
             [character.name],
             '',
             () => {}
           );
 
           if (urls.length > 0) {
-            // Update character with new images
+            const newGenerations = buildGenerationEntries(urls, errors, command.aspectRatio);
+
             setScriptAnalysis(prev => {
               if (!prev) return prev;
               return {
                 ...prev,
-                characters: prev.characters.map(c =>
-                  c.name === character.name
-                    ? { ...c, image_url: urls[0], additionalImages: [...(c.additionalImages || []), ...urls.slice(1)] }
-                    : c
-                )
+                characters: prev.characters.map(c => {
+                  if (c.name !== character.name) return c;
+                  const existingGenerations = c.generations || [];
+                  return {
+                    ...c,
+                    imageUrl: urls[0] ?? c.imageUrl ?? null,
+                    generations: [...existingGenerations, ...newGenerations],
+                  };
+                })
               };
             });
 
@@ -198,29 +240,35 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
           const prompt = `Cinematic film still for a fictional movie (SFW): ${location.description}`;
           const { urls, errors } = await generateStillVariants(
             `director_loc_${location.name}`,
-            command.model === 'flux' ? 'black-forest-labs/FLUX.1' : 'black-forest-labs/FLUX.1',
+            resolvedModel,
             prompt,
             [],
             [],
             command.aspectRatio,
             command.count,
             scriptAnalysis.moodboard || null,
+            scriptAnalysis.moodboardTemplates || [],
             [],
             location.name,
             () => {}
           );
 
           if (urls.length > 0) {
-            // Update location with new images
+            const newGenerations = buildGenerationEntries(urls, errors, command.aspectRatio);
+
             setScriptAnalysis(prev => {
               if (!prev) return prev;
               return {
                 ...prev,
-                locations: prev.locations.map(l =>
-                  l.name === location.name
-                    ? { ...l, image_url: urls[0], additionalImages: [...(l.additionalImages || []), ...urls.slice(1)] }
-                    : l
-                )
+                locations: prev.locations.map(l => {
+                  if (l.name !== location.name) return l;
+                  const existingGenerations = l.generations || [];
+                  return {
+                    ...l,
+                    imageUrl: urls[0] ?? l.imageUrl ?? null,
+                    generations: [...existingGenerations, ...newGenerations],
+                  };
+                })
               };
             });
 
@@ -246,17 +294,17 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
         const character = scriptAnalysis.characters.find(c =>
           (c.name.toLowerCase().includes(command.subject.toLowerCase()) ||
           command.subject.toLowerCase().includes(c.name.toLowerCase())) &&
-          c.image_url
+          c.imageUrl
         );
 
         const location = scriptAnalysis.locations.find(l =>
           (l.name.toLowerCase().includes(command.subject.toLowerCase()) ||
           command.subject.toLowerCase().includes(l.name.toLowerCase())) &&
-          l.image_url
+          l.imageUrl
         );
 
-        if (character && character.image_url) {
-          const { image_url } = await upscaleImage(character.image_url, () => {});
+        if (character && character.imageUrl) {
+          const { image_url: upscaledUrl } = await upscaleImage(character.imageUrl, () => {});
 
           setScriptAnalysis(prev => {
             if (!prev) return prev;
@@ -264,7 +312,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               ...prev,
               characters: prev.characters.map(c =>
                 c.name === character.name
-                  ? { ...c, upscaledImageUrl: image_url }
+                  ? { ...c, upscaledImageUrl: upscaledUrl }
                   : c
               )
             };
@@ -273,10 +321,10 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
           return {
             success: true,
             message: `Successfully upscaled image for ${character.name}`,
-            images: [image_url]
+            images: [upscaledUrl]
           };
-        } else if (location && location.image_url) {
-          const { image_url } = await upscaleImage(location.image_url, () => {});
+        } else if (location && location.imageUrl) {
+          const { image_url: upscaledUrl } = await upscaleImage(location.imageUrl, () => {});
 
           setScriptAnalysis(prev => {
             if (!prev) return prev;
@@ -284,7 +332,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               ...prev,
               locations: prev.locations.map(l =>
                 l.name === location.name
-                  ? { ...l, upscaledImageUrl: image_url }
+                  ? { ...l, upscaledImageUrl: upscaledUrl }
                   : l
               )
             };
@@ -293,7 +341,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
           return {
             success: true,
             message: `Successfully upscaled image for ${location.name}`,
-            images: [image_url]
+            images: [upscaledUrl]
           };
         } else {
           return {
@@ -317,36 +365,55 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     const trimmedInput = userInput.trim();
     if (!trimmedInput || !canChat || isLoading) return;
 
+    const lowerInput = trimmedInput.toLowerCase();
+    const promptRequest = lowerInput.includes('prompt');
+
     const nextMessages = [...messages, { author: 'user' as Author, text: trimmedInput }];
     setMessages(nextMessages);
     setUserInput('');
+    setPromptModal(null);
     setIsLoading(true);
 
     try {
-      // Check if it's a command
       const command = parseCommand(trimmedInput);
 
       if (command) {
-        // Execute the command
         const result = await executeCommand(command);
         if (result) {
-          setMessages([...nextMessages, {
-            author: 'director',
-            text: result.message,
-            isCommand: true,
-            images: result.images
-          }]);
+          setMessages([
+            ...nextMessages,
+            {
+              author: 'director',
+              text: result.message,
+              isCommand: true,
+              images: result.images
+            }
+          ]);
         } else {
-          setMessages([...nextMessages, {
-            author: 'director',
-            text: 'Sorry, I couldn\'t execute that command. Please check your syntax.',
-            isCommand: true
-          }]);
+          setMessages([
+            ...nextMessages,
+            {
+              author: 'director',
+              text: "Sorry, I couldn't execute that command. Please check your syntax.",
+              isCommand: true
+            }
+          ]);
         }
       } else {
-        // Regular chat with the director
         const reply = await askTheDirector(scriptAnalysis!, trimmedInput);
-        setMessages([...nextMessages, { author: 'director', text: reply }]);
+        if (promptRequest) {
+          const preparedPrompt = reply.trim();
+          setPromptModal(preparedPrompt);
+          setMessages([
+            ...nextMessages,
+            {
+              author: 'director',
+              text: "Sure—your prompt is ready. Tap the popup to copy it to your clipboard."
+            }
+          ]);
+        } else {
+          setMessages([...nextMessages, { author: 'director', text: reply }]);
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -361,151 +428,161 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       setIsLoading(false);
     }
   };
-
   const widgetLabel = useMemo(() => (canChat ? 'AI Director' : 'Analyze script first'), [canChat]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
-      {isOpen && canChat ? (
-        <div className="relative w-[420px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_40px_90px_rgba(3,7,18,0.75)] backdrop-blur-2xl">
-          <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.08)] to-transparent px-6 py-5">
-            <div className="flex items-center gap-3">
-              <span
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.25)] to-[rgba(16,163,127,0.1)] shadow-[0_0_20px_rgba(16,163,127,0.3)]"
-                style={{ color: ACCENT_HEX }}
-              >
-                <BrainIcon className="h-5 w-5" />
-              </span>
-              <div>
-                <h3 className="text-base font-semibold text-white">AI Director Assistant</h3>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/40">Creative Partner & Executor</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="rounded-full border border-white/10 bg-white/5 p-2.5 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105"
-              aria-label="Close director assistant"
-            >
-              <XIcon className="h-4 w-4" />
-            </button>
-          </header>
-
-          <div className="flex h-[480px] flex-col">
-            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-              {messages.map((message, index) => (
-                <div
-                  key={`${message.author}-${index}`}
-                  className={`flex gap-3 ${message.author === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {message.author === 'director' && (
-                    <span
-                      className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)] shadow-inner"
-                      style={{ color: ACCENT_HEX }}
-                    >
-                      <BrainIcon className="h-4 w-4" />
-                    </span>
-                  )}
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed shadow-lg ${
-                      message.author === 'user'
-                        ? 'rounded-br-sm bg-gradient-to-r from-[#1ad8b1] to-[#0ea887] text-white shadow-[0_4px_20px_rgba(26,216,177,0.3)]'
-                        : message.isCommand
-                          ? 'rounded-bl-sm bg-gradient-to-r from-[#1f2530] to-[#191e28] text-white/90 border border-[rgba(16,163,127,0.2)]'
-                          : 'rounded-bl-sm bg-[#1a1f29] text-white/85'
-                    }`}
-                  >
-                    <span className="whitespace-pre-wrap">{message.text}</span>
-                    {message.images && message.images.length > 0 && (
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        {message.images.slice(0, 4).map((img, idx) => (
-                          <img
-                            key={idx}
-                            src={img}
-                            alt={`Generated ${idx + 1}`}
-                            className="w-full h-24 object-cover rounded-lg hover:opacity-90 transition cursor-pointer"
-                            onClick={() => window.open(img, '_blank')}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {isLoading && (
-                <div className="flex items-center gap-3 text-sm text-white/70">
+    <>
+      {/* Fixed position container for the chat widget */}
+      <div className="fixed bottom-6 right-6 z-40 pointer-events-none">
+        <div className="pointer-events-auto">
+          {isOpen && canChat ? (
+            <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_40px_90px_rgba(3,7,18,0.75)] backdrop-blur-2xl">
+              {/* Header */}
+              <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.08)] to-transparent px-6 py-4">
+                <div className="flex items-center gap-3">
                   <span
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)]"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.25)] to-[rgba(16,163,127,0.1)] shadow-[0_0_20px_rgba(16,163,127,0.3)]"
                     style={{ color: ACCENT_HEX }}
                   >
-                    <BrainIcon className="h-4 w-4 animate-pulse" />
+                    <BrainIcon className="h-5 w-5" />
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white/50" />
-                    <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white/50" style={{ animationDelay: '100ms' }} />
-                    <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white/50" style={{ animationDelay: '200ms' }} />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold text-white truncate">AI Director Assistant</h3>
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 truncate">Creative Partner</p>
                   </div>
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <form onSubmit={handleSubmit} className="border-t border-white/10 bg-[#0f1117] px-6 py-5">
-              <div className="relative">
-                <textarea
-                  value={userInput}
-                  onChange={(event) => setUserInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault();
-                      handleSubmit(event as unknown as React.FormEvent<HTMLFormElement>);
-                    }
-                  }}
-                  rows={2}
-                  placeholder="Ask the director or type a command..."
-                  className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-5 py-3.5 pr-28 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)] focus:shadow-[0_0_20px_rgba(16,163,127,0.15)]"
-                  disabled={!canChat || isLoading}
-                />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={!canChat || isLoading || !userInput.trim()}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 !rounded-xl !px-4 !py-2.5 !bg-gradient-to-r !from-[#10A37F] !to-[#0d8a68] hover:!from-[#12b88d] hover:!to-[#0f9673] shadow-[0_4px_15px_rgba(16,163,127,0.3)]"
+                <button
+                  type="button"
+                  onClick={() => { setIsOpen(false); setPromptModal(null); }}
+                  className="shrink-0 rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105"
+                  aria-label="Close director assistant"
                 >
-                  <SendIcon className="h-4 w-4" />
-                  <span className="font-medium">Send</span>
-                </Button>
-              </div>
-              <div className="mt-2 text-[10px] text-white/30">
-                <div className="flex gap-2 mb-1">
-                  <span>💡 Image Commands:</span>
-                  <span>"Generate 3 flux images of Elena 16:9"</span>
-                  <span>•</span>
-                  <span>"Upscale the cafe image"</span>
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </header>
+
+              {/* Messages Area */}
+              <div className="flex h-[500px] flex-col">
+                <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                  {messages.map((message, index) => (
+                    <div
+                      key={`${message.author}-${index}`}
+                      className={`flex gap-3 ${message.author === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {message.author === 'director' && (
+                        <span
+                          className="mt-0.5 shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)] shadow-inner"
+                          style={{ color: ACCENT_HEX }}
+                        >
+                          <BrainIcon className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-lg ${
+                          message.author === 'user'
+                            ? 'rounded-br-sm bg-gradient-to-r from-[#1ad8b1] to-[#0ea887] text-white shadow-[0_4px_20px_rgba(26,216,177,0.3)]'
+                            : message.isCommand
+                              ? 'rounded-bl-sm bg-gradient-to-r from-[#1f2530] to-[#191e28] text-white/90 border border-[rgba(16,163,127,0.2)]'
+                              : 'rounded-bl-sm bg-[#1a1f29] text-white/85'
+                        }`}
+                      >
+                        <span className="whitespace-pre-wrap break-words">{message.text}</span>
+                        {message.images && message.images.length > 0 && (
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            {message.images.slice(0, 4).map((img, idx) => (
+                              <img
+                                key={idx}
+                                src={img}
+                                alt={`Generated ${idx + 1}`}
+                                className="w-full h-24 object-cover rounded-lg hover:opacity-90 transition cursor-pointer border border-white/10"
+                                onClick={() => window.open(img, '_blank')}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {isLoading && (
+                    <div className="flex items-center gap-3 text-sm text-white/70">
+                      <span
+                        className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)]"
+                        style={{ color: ACCENT_HEX }}
+                      >
+                        <BrainIcon className="h-3.5 w-3.5 animate-pulse" />
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: '100ms' }} />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: '200ms' }} />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
-                <div className="flex gap-2">
-                  <span>🎬 Tech Commands:</span>
-                  <span>"Recommend lens for close-up"</span>
-                  <span>•</span>
-                  <span>"Calculate DOF for f/2.8 at 3m with 85mm"</span>
-                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-[#0f1117] px-6 py-4">
+                  <div className="relative">
+                    <textarea
+                      value={userInput}
+                      onChange={(event) => setUserInput(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' && !event.shiftKey) {
+                          event.preventDefault();
+                          handleSubmit(event as unknown as React.FormEvent<HTMLFormElement>);
+                        }
+                      }}
+                      rows={2}
+                      placeholder="Ask the director or type a command..."
+                      className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-4 py-3 pr-24 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)] focus:shadow-[0_0_20px_rgba(16,163,127,0.15)]"
+                      disabled={!canChat || isLoading}
+                    />
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={!canChat || isLoading || !userInput.trim()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 !rounded-xl !px-3 !py-2 !bg-gradient-to-r !from-[#10A37F] !to-[#0d8a68] hover:!from-[#12b88d] hover:!to-[#0f9673] shadow-[0_4px_15px_rgba(16,163,127,0.3)]"
+                    >
+                      <SendIcon className="h-4 w-4" />
+                      <span className="font-medium text-xs">Send</span>
+                    </Button>
+                  </div>
+
+                  {/* Command hints */}
+                  <div className="mt-2 space-y-1 text-[10px] text-white/30">
+                    <div className="flex flex-wrap gap-x-2 items-center">
+                      <span className="shrink-0">💡 Images:</span>
+                      <span className="truncate">"Generate 3 flux images of Elena 16:9"</span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 items-center">
+                      <span className="shrink-0">🎬 Tech:</span>
+                      <span className="truncate">"Calculate DOF for f/2.8 at 3m with 85mm"</span>
+                    </div>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
+            </div>
+          ) : (
+            <Button
+              onClick={() => canChat && setIsOpen(true)}
+              variant="primary"
+              disabled={!canChat}
+              className="group !rounded-full !px-6 !py-3.5 shadow-[0_20px_40px_rgba(16,163,127,0.35)] hover:shadow-[0_25px_50px_rgba(16,163,127,0.4)] transition-all hover:scale-105"
+            >
+              <BrainIcon className="h-5 w-5 transition group-hover:scale-110 group-hover:rotate-12" />
+              <span className="font-semibold text-base">{widgetLabel}</span>
+            </Button>
+          )}
         </div>
-      ) : (
-        <Button
-          onClick={() => canChat && setIsOpen(true)}
-          variant="primary"
-          disabled={!canChat}
-          className="group !rounded-full !px-6 !py-3.5 shadow-[0_20px_40px_rgba(16,163,127,0.35)] hover:shadow-[0_25px_50px_rgba(16,163,127,0.4)] transition-all hover:scale-105"
-        >
-          <BrainIcon className="h-5 w-5 transition group-hover:scale-110 group-hover:rotate-12" />
-          <span className="font-semibold text-base">{widgetLabel}</span>
-        </Button>
+      </div>
+
+      {/* Prompt Modal - Separate from widget, higher z-index */}
+      {promptModal && (
+        <PromptModal prompt={promptModal} onClose={() => setPromptModal(null)} />
       )}
-    </div>
+    </>
   );
 };
 

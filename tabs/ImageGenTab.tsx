@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Button from '../components/Button';
 import { generateStillVariants } from '../services/aiService';
-import { Generation, Moodboard } from '../types';
+import { Generation, Moodboard, MoodboardTemplate } from '../types';
 import { AlkemyLoadingIcon, PaperclipIcon, XIcon, Trash2Icon, ArrowLeftIcon } from '../components/icons/Icons';
 
 const aspectRatioClasses: { [key: string]: string } = {
@@ -49,7 +49,7 @@ const SimpleFullScreenViewer: React.FC<{
 };
 
 
-const ImageGenTab: React.FC<{ moodboard?: Moodboard }> = ({ moodboard }) => {
+const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: MoodboardTemplate[] }> = ({ moodboard, moodboardTemplates = [] }) => {
     const [prompt, setPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Flash Image' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -87,7 +87,7 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard }> = ({ moodboard }) => {
                 });
             };
 
-            const { urls, errors, wasAdjusted } = await generateStillVariants('image-gen-tab', model, prompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, undefined, undefined, onProgress);
+            const { urls, errors, wasAdjusted } = await generateStillVariants('image-gen-tab', model, prompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates, undefined, undefined, onProgress);
 
             if (wasAdjusted) {
                 setPromptWasAdjusted(true);

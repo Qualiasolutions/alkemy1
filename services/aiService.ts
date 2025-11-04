@@ -1,10 +1,10 @@
 
-import { ScriptAnalysis, AnalyzedScene, Frame, AnalyzedCharacter, AnalyzedLocation, FrameStatus, Generation, Moodboard, MoodboardSection } from '../types';
+import { ScriptAnalysis, AnalyzedScene, Frame, AnalyzedCharacter, AnalyzedLocation, FrameStatus, Generation, Moodboard, MoodboardSection, MoodboardTemplate } from '../types';
 import { Type, GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { fallbackScriptAnalysis, fallbackMoodboardDescription, fallbackDirectorResponse, getFallbackImageUrl, getFallbackVideoBlobs } from './fallbackContent';
+import { getGeminiApiKey, clearGeminiApiKey } from './apiKeys';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
-const GEMINI_API_KEY = (process.env.API_KEY ?? process.env.GEMINI_API_KEY ?? '').trim();
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
 
 const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
@@ -30,6 +30,14 @@ const resolveBooleanEnv = (...keys: string[]): boolean => {
 
 const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
 
+const requireGeminiClient = (): GoogleGenAI => {
+    const apiKey = getGeminiApiKey();
+    if (!apiKey) {
+        throw new Error('Gemini API key is not configured.');
+    }
+    return new GoogleGenAI({ apiKey });
+};
+
 const shouldUseFallbackForError = (error: unknown): boolean => {
     if (FORCE_DEMO_MODE) return true;
     if (!error) return false;
@@ -47,7 +55,7 @@ const shouldUseFallbackForError = (error: unknown): boolean => {
 };
 
 const prefersLiveGemini = (): boolean => {
-    return !!GEMINI_API_KEY && !FORCE_DEMO_MODE;
+    return !!getGeminiApiKey() && !FORCE_DEMO_MODE;
 };
 
 const handleApiError = (error: unknown, model: string): Error => {
@@ -62,6 +70,7 @@ const handleApiError = (error: unknown, model: string): Error => {
             // This is a specific error for an invalid/not found API key.
             // Dispatch a global event to notify the UI to re-prompt for a key.
             window.dispatchEvent(new Event('invalid-api-key'));
+            clearGeminiApiKey();
             message = 'Your API Key was not found or is invalid. Please select a valid key.';
         } else {
             // Clean up generic messages
@@ -149,6 +158,7 @@ export const generateStillVariants = async (
     aspect_ratio: string,
     n: number = 1,
     moodboard?: Moodboard,
+    moodboardTemplates: MoodboardTemplate[] = [],
     characterNames?: string[],
     locationName?: string,
     onProgress?: (index: number, progress: number) => void
@@ -167,7 +177,8 @@ export const generateStillVariants = async (
     }
 
     const MAX_REFERENCE_IMAGES = 5;
-    const combinedImages = [...new Set([...prioritizedImages, ...moodboardImages])];
+    const templateImages = moodboardTemplates.flatMap(board => board.items.map(item => item.url));
+    const combinedImages = [...new Set([...prioritizedImages, ...templateImages, ...moodboardImages])];
     const allReferenceImages = combinedImages.slice(0, MAX_REFERENCE_IMAGES);
     
     const hasVisualReferences = allReferenceImages.length > 0;
@@ -230,7 +241,7 @@ export const animateFrame = async (
     console.log("[API Action] Animating frame with Veo", { prompt, hasLastFrame: !!last_frame_image_url, n });
 
     try {
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+        const ai = requireGeminiClient();
         
         const { mimeType, data } = await image_url_to_base64(reference_image_url);
 
@@ -291,7 +302,11 @@ export const animateFrame = async (
         }
 
         const videoBlobs = await Promise.all(downloadLinks.map(async (downloadLink) => {
-            const response = await fetch(`${downloadLink}&key=${GEMINI_API_KEY}`);
+            const apiKey = getGeminiApiKey();
+            if (!apiKey) {
+                throw new Error('Gemini API key is not available for downloading generated video.');
+            }
+            const response = await fetch(`${downloadLink}&key=${apiKey}`);
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Failed to download video: ${response.statusText} - ${errorText}`);
@@ -414,9 +429,7 @@ export const generateVisual = async (
         if (!prompt || !prompt.trim()) {
             throw new Error("Please enter a prompt to generate an image.");
         }
-        
-        const { GoogleGenAI, Modality } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+        const ai = requireGeminiClient();
 
         onProgress?.(10);
         await new Promise(res => setTimeout(res, 200));
@@ -532,9 +545,8 @@ export const generateMoodboardDescription = async (section: MoodboardSection): P
     console.log("[API Action] generateMoodboardDescription", { notes: section.notes, itemCount: section.items.length });
     
     try {
-        const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-        
+        const ai = requireGeminiClient();
+
         const textPart = { text: `Analyze the following moodboard section and generate a concise, evocative description of its overall aesthetic, tone, and visual direction.
         
         Notes from the user: "${section.notes || 'No notes provided.'}"
@@ -577,8 +589,7 @@ export const askTheDirector = async (analysis: ScriptAnalysis, query: string): P
     console.log("[API Action] askTheDirector", { query });
 
     try {
-        const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+        const ai = requireGeminiClient();
 
         // Use the enhanced system instructions from the knowledge base
         const systemInstruction = ENHANCED_DIRECTOR_KNOWLEDGE.systemInstructions;
@@ -656,8 +667,7 @@ export const analyzeScript = async (scriptContent: string, onProgress?: (message
      }
      console.log("Analyzing script with Gemini API...");
      try {
-        const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+                const ai = requireGeminiClient();
         const analysisSchema = {
              type: Type.OBJECT,
              properties: {
@@ -758,7 +768,7 @@ export const analyzeScript = async (scriptContent: string, onProgress?: (message
         const scenesWithFrames = await Promise.all(frameGenerationPromises);
         onProgress?.('Shot generation complete.');
 
-        return { ...result, scenes: scenesWithFrames };
+        return { ...result, scenes: scenesWithFrames, moodboardTemplates: result.moodboardTemplates ?? [] };
     } catch (error) {
         if (shouldUseFallbackForError(error)) {
             console.warn('[API Action] analyzeScript falling back to heuristic parser due to API failure.');
@@ -787,13 +797,11 @@ export const generateFramesForScene = async (scene: AnalyzedScene, directorialNo
             }
         ];
     }
-    if (!GEMINI_API_KEY) throw new Error("API Key is not configured.");
     console.log(`[API Action] Generating frames for Scene ${scene.sceneNumber} with notes: ${directorialNotes || 'None'}`);
 
     try {
-        const { GoogleGenAI } = await import('@google/genai');
-        const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-        
+        const ai = requireGeminiClient();
+
         const frameSchema = {
             type: Type.OBJECT,
             properties: {
