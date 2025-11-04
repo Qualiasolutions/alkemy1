@@ -223,7 +223,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
             isDark ? 'bg-teal-500/20' : 'bg-teal-400/30'
           } blur-md`}
         />
-        <span className="w-5 h-5 block relative z-10">
+        <span className="w-5 h-5 flex items-center justify-center relative z-10">
           {isSidebarExpanded ? <ChevronsLeftIcon /> : <ChevronsRightIcon />}
         </span>
       </motion.button>

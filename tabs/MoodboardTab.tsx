@@ -3,9 +3,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Moodboard, MoodboardSection, MoodboardItem } from '../types';
 import { THEME_COLORS } from '../constants';
-import { UploadCloudIcon, CameraIcon, PaletteIcon, SparklesIcon, ImageIcon, Trash2Icon, EnterIcon, BrainIcon } from '../components/icons/Icons';
+import { UploadCloudIcon, CameraIcon, PaletteIcon, SparklesIcon, ImageIcon, Trash2Icon, EnterIcon, BrainIcon, ArrowLeftIcon } from '../components/icons/Icons';
 import Button from '../components/Button';
 import { generateMoodboardDescription } from '../services/aiService';
+import { useTheme } from '../theme/ThemeContext';
 
 // --- Collage Studio Modal ---
 const CollageStudio: React.FC<{
@@ -64,7 +65,12 @@ const CollageStudio: React.FC<{
     return (
         <div className="fixed inset-0 bg-black/90 z-50 flex flex-col p-8" onDrop={onDrop} onDragOver={onDragOver} onDragEnter={onDragEnter} onDragLeave={onDragLeave}>
              <header className="flex justify-between items-center mb-6 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                <h2 className="text-2xl font-bold text-white">Moodboard Studio: <span className="text-teal-400">{title}</span></h2>
+                <div className="flex items-center gap-4">
+                    <Button onClick={onClose} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2">
+                        <ArrowLeftIcon className="w-4 h-4" /> Back
+                    </Button>
+                    <h2 className="text-2xl font-bold text-white">Moodboard Studio: <span className="text-teal-400">{title}</span></h2>
+                </div>
                 <Button onClick={onClose} variant="secondary">Close Studio</Button>
             </header>
             <main
@@ -121,17 +127,8 @@ interface MoodboardSectionProps {
 }
 
 const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, staticDescription, icon, sectionData, onEnterStudio, onUpdate }) => {
-    const [currentItemIndex, setCurrentItemIndex] = useState(0);
+    const { isDark } = useTheme();
     const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
-
-    useEffect(() => {
-        if (sectionData.items.length > 1) {
-            const timer = setInterval(() => {
-                setCurrentItemIndex(prevIndex => (prevIndex + 1) % sectionData.items.length);
-            }, 4000);
-            return () => clearInterval(timer);
-        }
-    }, [sectionData.items.length]);
 
     const handleGenerateDescription = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -147,57 +144,110 @@ const MoodboardSectionComponent: React.FC<MoodboardSectionProps> = ({ title, sta
     };
 
     const displayDescription = sectionData.aiDescription || staticDescription;
+    const visibleItems = sectionData.items.slice(0, 4); // Show max 4 images
+    const remainingCount = sectionData.items.length - 4;
 
     return (
-    <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6`}>
-      <div className="flex items-start gap-4 mb-4">
-        <div className={`w-10 h-10 flex-shrink-0 bg-[${THEME_COLORS.background_primary}] rounded-md flex items-center justify-center text-[${THEME_COLORS.accent_primary}]`}>
-          {icon}
-        </div>
-        <div className="flex-1">
-          <h3 className="text-xl font-bold">{title}</h3>
-          <p className={`text-sm text-[${THEME_COLORS.text_secondary}] max-w-2xl`}>{displayDescription}</p>
-        </div>
-        <Button onClick={handleGenerateDescription} isLoading={isGeneratingDesc} disabled={isGeneratingDesc} variant="secondary" className="!text-xs !gap-1.5 !px-3 !py-1.5">
-            <BrainIcon className="w-4 h-4" />
-            <span>Generate Description</span>
-        </Button>
-      </div>
-      
-      <div 
-        onClick={onEnterStudio} 
-        className="relative group aspect-video bg-[#0B0B0B] rounded-lg cursor-pointer flex items-center justify-center text-gray-500 overflow-hidden mt-4"
-      >
-          {sectionData.items.length > 0 ? (
-                sectionData.items.map((item, index) => (
-                    <div
-                        key={item.id}
-                        className="absolute inset-0 transition-opacity duration-[2000ms] ease-in-out group-hover:scale-105"
-                        style={{ 
-                            opacity: index === currentItemIndex ? 1 : 0,
-                            transition: 'opacity 2s ease-in-out, transform 0.3s ease-in-out'
-                        }}
-                    >
-                        {item.type === 'video' ?
-                            <video src={item.url} muted loop autoPlay playsInline className="w-full h-full object-cover" /> :
-                            <img src={item.url} alt={`${title} hero`} className="w-full h-full object-cover" />
-                        }
+        <div className={`group relative bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl overflow-hidden hover:border-[${THEME_COLORS.accent_primary}]/50 transition-all hover:shadow-lg hover:shadow-teal-500/10`}>
+            {/* Header */}
+            <div className="p-4 border-b border-[${THEME_COLORS.border_color}]">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 flex-shrink-0 bg-[${THEME_COLORS.background_primary}] rounded-lg flex items-center justify-center text-[${THEME_COLORS.accent_primary}]`}>
+                            {icon}
+                        </div>
+                        <h3 className="text-lg font-bold">{title}</h3>
                     </div>
-                ))
-            ) : (
-              <div className="text-center">
-                  <ImageIcon className="w-10 h-10 mx-auto mb-2" />
-                  <p className="font-semibold">No References Uploaded</p>
-              </div>
-          )}
-           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <EnterIcon className="w-8 h-8 text-white mb-2" />
-              <p className="font-bold text-white">Enter Studio</p>
-              <p className="text-xs text-gray-300">{sectionData.items.length} items</p>
-          </div>
-      </div>
-    </div>
-  );
+                    <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                            sectionData.items.length > 0
+                                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                                : 'bg-gray-500/10 text-gray-500 border border-gray-500/20'
+                        }`}>
+                            {sectionData.items.length} {sectionData.items.length === 1 ? 'item' : 'items'}
+                        </span>
+                    </div>
+                </div>
+                <p className={`text-xs text-[${THEME_COLORS.text_secondary}] line-clamp-2 leading-relaxed`}>
+                    {displayDescription}
+                </p>
+            </div>
+
+            {/* Image Grid Preview */}
+            <div
+                onClick={onEnterStudio}
+                className="relative cursor-pointer h-48 bg-[${THEME_COLORS.background_primary}] overflow-hidden"
+            >
+                {sectionData.items.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-1 h-full p-1">
+                        {visibleItems.map((item, index) => (
+                            <div
+                                key={item.id}
+                                className="relative overflow-hidden rounded-md group/item"
+                            >
+                                {item.type === 'video' ? (
+                                    <video
+                                        src={item.url}
+                                        muted
+                                        loop
+                                        autoPlay
+                                        playsInline
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover/item:scale-110"
+                                    />
+                                ) : (
+                                    <img
+                                        src={item.url}
+                                        alt={`${title} reference ${index + 1}`}
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover/item:scale-110"
+                                    />
+                                )}
+                                {index === 3 && remainingCount > 0 && (
+                                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                                        <span className="text-white text-2xl font-bold">+{remainingCount}</span>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                        <ImageIcon className="w-12 h-12 mb-2 opacity-40" />
+                        <p className="text-sm font-medium">No references</p>
+                        <p className="text-xs text-gray-600 mt-1">Click to add</p>
+                    </div>
+                )}
+
+                {/* Hover Overlay */}
+                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                    <EnterIcon className="w-10 h-10 text-white" />
+                    <p className="font-bold text-white text-sm">Open Studio</p>
+                    <p className="text-xs text-gray-300">Add & manage references</p>
+                </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-3 border-t border-[${THEME_COLORS.border_color}] flex items-center justify-between">
+                <Button
+                    onClick={handleGenerateDescription}
+                    isLoading={isGeneratingDesc}
+                    disabled={isGeneratingDesc}
+                    variant="secondary"
+                    className="!text-xs !gap-1.5 !px-2.5 !py-1.5"
+                >
+                    <BrainIcon className="w-3.5 h-3.5" />
+                    <span>AI Description</span>
+                </Button>
+                <button
+                    onClick={onEnterStudio}
+                    className={`text-xs font-medium transition-colors ${
+                        isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'
+                    }`}
+                >
+                    Manage →
+                </button>
+            </div>
+        </div>
+    );
 };
 
 
