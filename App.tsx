@@ -309,7 +309,9 @@ const AppContent: React.FC = () => {
     }
 
     const defaultState = {
-        scriptContent: null, scriptAnalysis: null, timelineClips: [],
+        scriptContent: '', // Empty string instead of null to trigger app render
+        scriptAnalysis: null,
+        timelineClips: [],
         ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
     };
     setProjectState(defaultState);
