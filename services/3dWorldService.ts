@@ -4,11 +4,11 @@
  * Integrates Luma AI Genie API for text-to-3D landscape generation
  * suitable for cinematic production environments.
  *
- * NOTE: This requires a Luma API key. Users should set LUMA_API_KEY in environment variables
- * or configure it through the application settings.
+ * NOTE: This uses a serverless proxy function (/api/luma-proxy) to avoid CORS issues.
+ * The Luma API key is configured server-side in Vercel environment variables.
  */
 
-const LUMA_API_BASE_URL = 'https://api.lumalabs.ai/dream-machine/v1';
+const LUMA_PROXY_URL = '/api/luma-proxy';
 
 export interface Generate3DWorldOptions {
     prompt: string;
@@ -30,39 +30,33 @@ export interface Generate3DWorldResult {
 export async function generate3DWorld(options: Generate3DWorldOptions): Promise<Generate3DWorldResult> {
     const { prompt, onProgress } = options;
 
-    // Get API key from environment or throw error
-    const apiKey = process.env.LUMA_API_KEY;
-
-    if (!apiKey) {
-        throw new Error(
-            '3D World Generation requires a Luma API key. Please configure LUMA_API_KEY in your environment variables or contact support to enable this feature.'
-        );
-    }
-
     try {
         // Enhance prompt for cinematic landscape generation
         const enhancedPrompt = enhancePromptForLandscape(prompt);
 
         onProgress?.(10, 'Initiating 3D world generation...');
 
-        // Step 1: Create generation task using Luma Genie API
-        const generationResponse = await fetch(`${LUMA_API_BASE_URL}/generations`, {
+        // Step 1: Create generation task using proxy endpoint
+        const generationResponse = await fetch(LUMA_PROXY_URL, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                prompt: enhancedPrompt,
-                aspect_ratio: '16:9',
-                model: 'genie-1.0',
+                endpoint: '/generations',
+                method: 'POST',
+                body: {
+                    prompt: enhancedPrompt,
+                    aspect_ratio: '16:9',
+                    model: 'genie-1.0',
+                }
             }),
         });
 
         if (!generationResponse.ok) {
             const errorData = await generationResponse.json().catch(() => ({}));
             throw new Error(
-                `Luma API error (${generationResponse.status}): ${errorData.message || generationResponse.statusText}`
+                `Luma API error (${generationResponse.status}): ${errorData.error || errorData.message || generationResponse.statusText}`
             );
         }
 
@@ -76,7 +70,7 @@ export async function generate3DWorld(options: Generate3DWorldOptions): Promise<
         onProgress?.(30, 'Generating 3D landscape...');
 
         // Step 2: Poll for completion
-        const modelUrl = await pollForCompletion(generationId, apiKey, onProgress);
+        const modelUrl = await pollForCompletion(generationId, onProgress);
 
         onProgress?.(100, 'Generation complete!');
 
@@ -118,11 +112,10 @@ function enhancePromptForLandscape(userPrompt: string): string {
 }
 
 /**
- * Poll Luma API for generation completion
+ * Poll Luma API for generation completion using proxy
  */
 async function pollForCompletion(
     generationId: string,
-    apiKey: string,
     onProgress?: (progress: number, status: string) => void
 ): Promise<string> {
     const maxAttempts = 120; // 120 attempts = 2 minutes max wait
@@ -132,10 +125,15 @@ async function pollForCompletion(
         await new Promise(resolve => setTimeout(resolve, pollInterval));
 
         try {
-            const statusResponse = await fetch(`${LUMA_API_BASE_URL}/generations/${generationId}`, {
+            const statusResponse = await fetch(LUMA_PROXY_URL, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({
+                    endpoint: `/generations/${generationId}`,
+                    method: 'GET'
+                }),
             });
 
             if (!statusResponse.ok) {
