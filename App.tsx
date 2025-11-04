@@ -806,44 +806,76 @@ const AppContent: React.FC = () => {
         onLoadProject={handleLoadProject}
       />
 
-      <main className={`relative flex-1 overflow-y-auto p-8 ${contentBg}`}>
-        <div className="max-w-7xl mx-auto h-full relative z-10">
-          {/* Active Surface Header */}
-          <motion.header
-            initial={{ opacity: 0, y: -14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: 'easeOut' }}
-            className="flex justify-between items-center mb-6"
-          >
+      {/* Fixed Top Navbar */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className={`fixed top-0 ${isSidebarExpanded ? 'left-64' : 'left-20'} right-0 z-30 transition-all duration-300 ${
+          isDark
+            ? 'bg-[#0B0B0B]/80 border-b border-gray-800/50'
+            : 'bg-white/80 border-b border-gray-200/50'
+        } backdrop-blur-xl`}
+      >
+        <div className="px-8 py-4 flex justify-between items-center">
+          {/* Page Title Section */}
+          <div className="flex items-center gap-4">
             <div>
-              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} uppercase tracking-wider`}>Active Surface</p>
-              <h2 className="text-2xl font-bold">{TABS.find(t => t.id === activeTab)?.name || 'Alkemy'}</h2>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-2 h-2 bg-green-500 rounded-full"
-                />
-                <span className={textSecondary}>Realtime sync active</span>
+              <div className="flex items-center gap-3">
+                <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+                  {TABS.find(t => t.id === activeTab)?.name || 'Alkemy AI Studio'}
+                </h1>
+                {scriptAnalysis?.title && activeTab !== 'script' && (
+                  <span className={`text-sm px-3 py-1 rounded-full ${
+                    isDark ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'bg-teal-100 text-teal-700 border border-teal-200'
+                  }`}>
+                    {scriptAnalysis.title}
+                  </span>
+                )}
               </div>
-
-              <motion.button
-                onClick={toggleTheme}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                  isDark ? 'border-gray-700 hover:border-gray-600' : 'border-gray-300 hover:border-gray-400'
-                } transition-colors backdrop-blur-sm ${isDark ? 'bg-[#161616]/50' : 'bg-white/50'}`}
-              >
-                {isDark ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
-                <span className="text-sm">{isDark ? 'Light mode' : 'Dark mode'}</span>
-              </motion.button>
+              <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'} uppercase tracking-wider`}>
+                {TABS.find(t => t.id === activeTab)?.phase || 'Development'}
+              </p>
             </div>
-          </motion.header>
+          </div>
 
+          {/* Right Section: Sync + Theme Toggle */}
+          <div className="flex items-center gap-4">
+            {/* Realtime Sync Indicator */}
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+              isDark ? 'bg-gray-900/50' : 'bg-gray-100/50'
+            }`}>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-2 h-2 bg-green-500 rounded-full shadow-sm shadow-green-500/50"
+              />
+              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Sync Active
+              </span>
+            </div>
+
+            {/* Theme Toggle Button */}
+            <motion.button
+              onClick={toggleTheme}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                isDark
+                  ? 'border-gray-700 hover:border-teal-500/50 bg-gray-900/50 hover:bg-gray-900 text-gray-300'
+                  : 'border-gray-300 hover:border-teal-500/50 bg-white hover:bg-gray-50 text-gray-700'
+              }`}
+            >
+              {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+              <span className="text-sm font-medium">{isDark ? 'Light' : 'Dark'}</span>
+            </motion.button>
+          </div>
+        </div>
+      </motion.header>
+
+      {/* Main Content with Top Padding for Fixed Navbar */}
+      <main className={`relative flex-1 overflow-y-auto ${contentBg} ${isSidebarExpanded ? 'ml-0' : 'ml-0'} pt-20`}>
+        <div className="max-w-7xl mx-auto h-full relative z-10 px-8 py-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
