@@ -436,7 +436,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       <div className="fixed bottom-6 right-6 z-40 pointer-events-none">
         <div className="pointer-events-auto">
           {isOpen && canChat ? (
-            <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_40px_90px_rgba(3,7,18,0.75)] backdrop-blur-2xl">
+            <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_50px_100px_rgba(3,7,18,0.9),0_0_80px_rgba(16,163,127,0.15)] backdrop-blur-2xl before:absolute before:inset-0 before:rounded-3xl before:p-[1px] before:bg-gradient-to-b before:from-[rgba(16,163,127,0.2)] before:via-transparent before:to-transparent before:-z-10">
               {/* Header */}
               <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.08)] to-transparent px-6 py-4">
                 <div className="flex items-center gap-3">
@@ -523,42 +523,43 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                 </div>
 
                 {/* Input Area */}
-                <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-[#0f1117] px-6 py-4">
-                  <div className="relative">
-                    <textarea
-                      value={userInput}
-                      onChange={(event) => setUserInput(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' && !event.shiftKey) {
-                          event.preventDefault();
-                          handleSubmit(event as unknown as React.FormEvent<HTMLFormElement>);
-                        }
-                      }}
-                      rows={2}
-                      placeholder="Ask the director or type a command..."
-                      className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-4 py-3 pr-24 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)] focus:shadow-[0_0_20px_rgba(16,163,127,0.15)]"
-                      disabled={!canChat || isLoading}
-                    />
+                <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-gradient-to-b from-[#0f1117] to-[#0a0d12] px-6 py-5 shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+                  <div className="relative flex items-end gap-3">
+                    <div className="flex-1">
+                      <textarea
+                        value={userInput}
+                        onChange={(event) => setUserInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            handleSubmit(event as unknown as React.FormEvent<HTMLFormElement>);
+                          }
+                        }}
+                        rows={2}
+                        placeholder="Ask the director or type a command..."
+                        className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-4 py-3 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)] focus:shadow-[0_0_20px_rgba(16,163,127,0.15)]"
+                        disabled={!canChat || isLoading}
+                      />
+                    </div>
                     <Button
                       type="submit"
                       variant="primary"
                       disabled={!canChat || isLoading || !userInput.trim()}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 !rounded-xl !px-3 !py-2 !bg-gradient-to-r !from-[#10A37F] !to-[#0d8a68] hover:!from-[#12b88d] hover:!to-[#0f9673] shadow-[0_4px_15px_rgba(16,163,127,0.3)]"
+                      className="shrink-0 !rounded-xl !px-4 !py-3 !bg-gradient-to-r !from-[#10A37F] !to-[#0d8a68] hover:!from-[#12b88d] hover:!to-[#0f9673] shadow-[0_4px_15px_rgba(16,163,127,0.3)] hover:shadow-[0_6px_20px_rgba(16,163,127,0.4)] transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       <SendIcon className="h-4 w-4" />
-                      <span className="font-medium text-xs">Send</span>
                     </Button>
                   </div>
 
                   {/* Command hints */}
-                  <div className="mt-2 space-y-1 text-[10px] text-white/30">
+                  <div className="mt-3 space-y-1 text-[10px] text-white/30 leading-relaxed">
                     <div className="flex flex-wrap gap-x-2 items-center">
-                      <span className="shrink-0">💡 Images:</span>
-                      <span className="truncate">"Generate 3 flux images of Elena 16:9"</span>
+                      <span className="shrink-0">💡</span>
+                      <span>"Generate 3 flux images of Elena 16:9" • "Upscale the cafe image"</span>
                     </div>
                     <div className="flex flex-wrap gap-x-2 items-center">
-                      <span className="shrink-0">🎬 Tech:</span>
-                      <span className="truncate">"Calculate DOF for f/2.8 at 3m with 85mm"</span>
+                      <span className="shrink-0">🎬</span>
+                      <span>"Recommend lens for close-up" • "Calculate DOF for f/2.8 at 3m with 85mm"</span>
                     </div>
                   </div>
                 </form>
