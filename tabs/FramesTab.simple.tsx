@@ -4,6 +4,7 @@ import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, ScissorsIcon, Trash2Icon, SaveIcon, PlusIcon, UndoIcon, RedoIcon, GridIcon } from '../components/icons/Icons';
 import { commandHistory, createStateCommand } from '../services/commandHistory';
+import EmptyState from '../components/EmptyState';
 
 interface TimelineClip {
   id: string;
@@ -674,12 +675,13 @@ const FramesTab: React.FC<FramesTabProps> = ({
           {/* Timeline Tracks */}
           <div className="flex-1 overflow-auto bg-zinc-900/50 p-4">
             {clips.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-zinc-600">
-                <div className="text-center">
-                  <p className="mb-2">No clips in timeline yet</p>
-                  <p className="text-sm">Transfer upscaled videos from the Compositing tab</p>
-                </div>
-              </div>
+              <EmptyState
+                type="timeline"
+                title="Timeline is Empty"
+                description="Transfer your upscaled video shots from the Compositing tab to assemble your final production. You can trim, reorder, and export your complete video sequence."
+                actionLabel="Upload Video Clip"
+                onAction={() => fileInputRef.current?.click()}
+              />
             ) : (
               <div className="relative" style={{ height: TRACK_HEIGHT + 60 }}>
                 {/* Time Ruler */}
