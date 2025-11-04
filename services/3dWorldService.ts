@@ -1,11 +1,28 @@
 /**
- * 3D World Generation Service
+ * World Generation Service (Currently Video-based)
  *
- * Integrates Luma AI Genie API for text-to-3D landscape generation
- * suitable for cinematic production environments.
+ * IMPORTANT: This service currently uses Luma Dream Machine API which generates VIDEOS, not 3D models.
+ * Luma's Genie (3D generation) does not have a public API yet.
+ *
+ * Valid model options for Dream Machine:
+ * - 'ray-1-6': Older generation model
+ * - 'ray-2': Standard quality model
+ * - 'ray-flash-2': Fast generation model
+ * - 'ray-3': Latest high-quality model (recommended)
+ * - 'ray-hdr-3': HDR variant of ray-3
+ * - 'ray-flash-3': Fast variant of ray-3
  *
  * NOTE: This uses a serverless proxy function (/api/luma-proxy) to avoid CORS issues.
  * The Luma API key is configured server-side in Vercel environment variables.
+ *
+ * TODO: When Luma releases a public 3D API, update this service to use it.
+ *
+ * ALTERNATIVES for true navigable 3D worlds:
+ * - Meshy.ai: Has API for text-to-3D mesh generation
+ * - Tripo3D: Offers 3D model generation API
+ * - Spline AI: 3D scene generation (may have API)
+ * - Blockade Labs Skybox AI: 360° environment generation
+ * - Polycam AI: 3D capture and generation
  */
 
 const LUMA_PROXY_URL = '/api/luma-proxy';
@@ -48,7 +65,7 @@ export async function generate3DWorld(options: Generate3DWorldOptions): Promise<
                 body: {
                     prompt: enhancedPrompt,
                     aspect_ratio: '16:9',
-                    model: 'photon-1'
+                    model: 'ray-3'  // Using latest video model - 3D API not available yet
                 }
             }),
         });
@@ -158,13 +175,16 @@ async function pollForCompletion(
 
             // Check for completion
             if (status === 'completed') {
-                const modelUrl = statusData.assets?.glb || statusData.assets?.gltf;
+                // Dream Machine returns video URL, not 3D models
+                const videoUrl = statusData.assets?.video || statusData.video_url || statusData.url;
 
-                if (!modelUrl) {
-                    throw new Error('Generation completed but no 3D model URL provided');
+                if (!videoUrl) {
+                    throw new Error('Generation completed but no video URL provided');
                 }
 
-                return modelUrl;
+                // Return video URL (frontend will need to handle this differently than 3D model)
+                console.warn('Note: Luma API returned video URL, not 3D model. True 3D generation not available yet.');
+                return videoUrl;
             }
 
             // Check for failure
