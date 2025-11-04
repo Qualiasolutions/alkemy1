@@ -25,6 +25,8 @@ import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
 import Button from './components/Button';
 import { DEMO_PROJECT_DATA, DEMO_SCRIPT } from './data/demoProject';
+import Toast, { ToastMessage } from './components/Toast';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 const ENV_GEMINI_API_KEY = (process.env.GEMINI_API_KEY ?? process.env.API_KEY ?? '').trim();
 const HAS_ENV_GEMINI_KEY = ENV_GEMINI_API_KEY.length > 0;
@@ -150,13 +152,13 @@ const AppContent: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisMessage, setAnalysisMessage] = useState<string>('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
   const [isKeyReady, setIsKeyReady] = useState<boolean>(() => HAS_ENV_GEMINI_KEY);
   const [isCheckingKey, setIsCheckingKey] = useState<boolean>(() => !HAS_ENV_GEMINI_KEY);
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-      setToast({ message, type });
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+      setToast({ id: `toast-${Date.now()}`, message, type });
       setTimeout(() => setToast(null), 3000);
   }, []);
   
@@ -456,6 +458,17 @@ const AppContent: React.FC = () => {
       return () => clearInterval(autoSaveInterval);
   }, [getSerializableState]);
 
+  // Keyboard shortcuts for power users
+  useKeyboardShortcuts({
+      onNewProject: () => handleNewProject(false),
+      onSaveProject: handleSaveProject,
+      onLoadProject: handleLoadProjectFromWelcome,
+      onTabSwitch: (tabIndex: number) => {
+          if (tabIndex < TABS.length) {
+              setActiveTab(TABS[tabIndex].id);
+          }
+      }
+  });
 
   const handleScriptUpdate = (content: string | null) => {
     setScriptContent(content);
@@ -847,21 +860,8 @@ const AppContent: React.FC = () => {
 
       <DirectorWidget scriptAnalysis={scriptAnalysis} />
 
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className={`fixed bottom-8 right-8 z-50 px-5 py-3 rounded-lg shadow-2xl text-white font-semibold ${
-              toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-            }`}
-          >
-            {toast.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Enhanced Toast Notifications */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 };
