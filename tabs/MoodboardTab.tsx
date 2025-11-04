@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MoodboardTemplate, MoodboardItem, MoodboardSection } from '../types';
 import Button from '../components/Button';
 import { useTheme } from '../theme/ThemeContext';
-import { PlusIcon, UploadCloudIcon, Trash2Icon, SparklesIcon, ImageIcon } from '../components/icons/Icons';
+import { PlusIcon, UploadCloudIcon, Trash2Icon, SparklesIcon, ImageIcon, XIcon } from '../components/icons/Icons';
 import { generateMoodboardDescription } from '../services/aiService';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MAX_ITEMS = 20;
 
@@ -26,6 +27,8 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
   const [activeId, setActiveId] = useState<string | null>(moodboardTemplates[0]?.id ?? null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [fullscreenView, setFullscreenView] = useState(false);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
     if (!scriptAnalyzed) return;
@@ -108,6 +111,22 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
     } finally {
       setIsGeneratingSummary(false);
     }
+  };
+
+  // Auto-advance slideshow every 4 seconds
+  useEffect(() => {
+    if (!fullscreenView || !activeBoard || activeBoard.items.length === 0) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlideIndex(prev => (prev + 1) % activeBoard.items.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [fullscreenView, activeBoard]);
+
+  const handleOpenFullscreen = (index: number) => {
+    setCurrentSlideIndex(index);
+    setFullscreenView(true);
   };
 
   if (!scriptAnalyzed) {
@@ -273,16 +292,19 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                   </label>
                 ) : (
                   <div className="grid w-full grid-cols-2 gap-4 p-4 md:grid-cols-3 xl:grid-cols-4">
-                    {activeBoard.items.map(item => (
-                      <div key={item.id} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                    {activeBoard.items.map((item, index) => (
+                      <div key={item.id} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/20 aspect-video cursor-pointer" onClick={() => handleOpenFullscreen(index)}>
                         {item.type === 'video' ? (
-                          <video src={item.url} className="h-48 w-full object-cover" autoPlay muted loop />
+                          <video src={item.url} className="w-full h-full object-cover" autoPlay muted loop />
                         ) : (
-                          <img src={item.url} alt={item.metadata?.title || 'Moodboard reference'} className="h-48 w-full object-cover" />
+                          <img src={item.url} alt={item.metadata?.title || 'Moodboard reference'} className="w-full h-full object-cover" />
                         )}
                         <button
                           type="button"
-                          onClick={() => updateBoard(activeBoard.id, board => ({ ...board, items: board.items.filter(i => i.id !== item.id) }))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateBoard(activeBoard.id, board => ({ ...board, items: board.items.filter(i => i.id !== item.id) }));
+                          }}
                           className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/70 opacity-0 transition group-hover:opacity-100"
                           aria-label="Remove reference"
                         >
@@ -291,7 +313,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                       </div>
                     ))}
                     {activeBoard.items.length < MAX_ITEMS && (
-                      <label htmlFor="moodboard-file-input" className={`flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs transition ${
+                      <label htmlFor="moodboard-file-input" className={`flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs transition ${
                         isDark
                           ? 'border-white/20 text-white/60 hover:border-teal-400/40 hover:text-teal-200'
                           : 'border-slate-300 text-slate-500 hover:border-teal-400 hover:text-teal-600'
@@ -312,6 +334,83 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
           </div>
         )}
       </section>
+
+      {/* Fullscreen Slideshow */}
+      <AnimatePresence>
+        {fullscreenView && activeBoard && activeBoard.items.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+            onClick={() => setFullscreenView(false)}
+          >
+            <button
+              onClick={() => setFullscreenView(false)}
+              className="absolute top-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
+              aria-label="Close fullscreen"
+            >
+              <XIcon className="h-6 w-6" />
+            </button>
+
+            <div className="w-full h-full flex items-center justify-center p-8">
+              <AnimatePresence mode="wait">
+                {activeBoard.items.map((item, index) => {
+                  if (index !== currentSlideIndex) return null;
+
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 1, ease: "easeInOut" }}
+                      className="w-full h-full flex items-center justify-center"
+                    >
+                      {item.type === 'video' ? (
+                        <video
+                          src={item.url}
+                          className="max-w-full max-h-full object-contain"
+                          autoPlay
+                          muted
+                          loop
+                          style={{ aspectRatio: '16/9' }}
+                        />
+                      ) : (
+                        <img
+                          src={item.url}
+                          alt={item.metadata?.title || 'Moodboard reference'}
+                          className="max-w-full max-h-full object-contain"
+                          style={{ aspectRatio: '16/9' }}
+                        />
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+
+            {/* Slide indicators */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2">
+              {activeBoard.items.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSlideIndex(index);
+                  }}
+                  className={`h-2 rounded-full transition-all ${
+                    index === currentSlideIndex
+                      ? 'w-8 bg-white'
+                      : 'w-2 bg-white/40 hover:bg-white/60'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
