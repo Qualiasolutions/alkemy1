@@ -24,6 +24,7 @@ import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, A
 import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
 import Button from './components/Button';
+import { DEMO_PROJECT_DATA, DEMO_SCRIPT } from './data/demoProject';
 
 const ENV_GEMINI_API_KEY = (process.env.GEMINI_API_KEY ?? process.env.API_KEY ?? '').trim();
 const HAS_ENV_GEMINI_KEY = ENV_GEMINI_API_KEY.length > 0;
@@ -728,7 +729,8 @@ const AppContent: React.FC = () => {
   }
 
   // Show welcome screen if no project exists
-  const hasActiveProject = scriptContent || scriptAnalysis;
+  // FIX: Check for null explicitly instead of truthy value since empty string '' is falsy
+  const hasActiveProject = scriptContent !== null || scriptAnalysis;
   if (!hasActiveProject) {
     return (
       <>
