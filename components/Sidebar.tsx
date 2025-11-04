@@ -141,18 +141,38 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
               const hoverText = isDark ? 'hover:text-white' : 'hover:text-black';
 
               return (
-                <li key={tab.id}>
+                <li key={tab.id} className="relative group/item">
                   <motion.button
                     onClick={() => setActiveTab(tab.id)}
-                    title={tab.name}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`w-full flex items-center justify-center p-3 rounded-lg text-sm transition-all duration-200 ${
+                    className={`relative w-full flex items-center justify-center p-3 rounded-lg text-sm transition-all duration-200 ${
                       isActive ? `${activeBg} ${activeText}` : `${inactiveText} ${hoverBg} ${hoverText}`
                     }`}
                   >
-                    <span className="w-5 h-5">{tab.icon}</span>
+                    {isActive && (
+                      <motion.span
+                        layoutId="sidebar-collapsed-active"
+                        className={`absolute inset-0 rounded-lg ${activeBg} border ${
+                          isDark ? 'border-[#10A37F]/30' : 'border-[#0FB98D]/30'
+                        }`}
+                        transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+                      />
+                    )}
+                    <span className="w-5 h-5 relative z-10">{tab.icon}</span>
                   </motion.button>
+
+                  {/* Enhanced Tooltip */}
+                  <div className={`absolute left-full ml-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none transition-all duration-200 opacity-0 scale-95 group-hover/item:opacity-100 group-hover/item:scale-100 z-30 ${
+                    isDark
+                      ? 'bg-gray-900 text-gray-200 border border-gray-700 shadow-xl'
+                      : 'bg-white text-gray-700 border border-gray-200 shadow-xl'
+                  }`}>
+                    {tab.name}
+                    <div className={`absolute top-1/2 -left-1 transform -translate-y-1/2 w-2 h-2 rotate-45 ${
+                      isDark ? 'bg-gray-900 border-l border-t border-gray-700' : 'bg-white border-l border-t border-gray-200'
+                    }`} />
+                  </div>
                 </li>
               );
             })}
