@@ -1,0 +1,174 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useTheme } from '../theme/ThemeContext';
+import Button from './Button';
+import {
+    PlusIcon,
+    UploadIcon,
+    ScriptIcon,
+    ClapperboardIcon,
+    FilmIcon,
+    SparklesIcon
+} from './icons/Icons';
+
+interface WelcomeScreenProps {
+    onStartNewProject: () => void;
+    onLoadProject: () => void;
+}
+
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
+    onStartNewProject,
+    onLoadProject
+}) => {
+    const { colors, isDark } = useTheme();
+
+    const features = [
+        {
+            icon: <ScriptIcon className="w-8 h-8" />,
+            title: 'Script Analysis',
+            description: 'AI-powered screenplay breakdown with scene and character analysis'
+        },
+        {
+            icon: <ClapperboardIcon className="w-8 h-8" />,
+            title: 'Shot Composition',
+            description: 'Generate cinematic stills with Imagen and Gemini Flash Image'
+        },
+        {
+            icon: <FilmIcon className="w-8 h-8" />,
+            title: 'Video Animation',
+            description: 'Animate shots with Veo 3.1 and assemble on the timeline'
+        },
+        {
+            icon: <SparklesIcon className="w-8 h-8" />,
+            title: 'AI Assistant',
+            description: 'Get creative guidance from The Director AI throughout production'
+        }
+    ];
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: { duration: 0.5, ease: 'easeOut' }
+        }
+    };
+
+    return (
+        <div className={`min-h-screen flex items-center justify-center p-8 ${
+            isDark ? 'bg-gradient-to-br from-[#0B0B0B] via-[#121212] to-[#0B0B0B]' : 'bg-gradient-to-br from-white via-gray-50 to-white'
+        }`}>
+            {/* Background glow effects */}
+            <div className={`absolute top-1/4 left-1/4 w-96 h-96 ${
+                isDark ? 'bg-teal-500/10' : 'bg-teal-600/15'
+            } rounded-full blur-3xl pointer-events-none`} />
+            <div className={`absolute bottom-1/4 right-1/3 w-80 h-80 ${
+                isDark ? 'bg-teal-400/8' : 'bg-teal-500/12'
+            } rounded-full blur-3xl pointer-events-none`} />
+
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="relative z-10 max-w-6xl w-full"
+            >
+                {/* Hero section */}
+                <motion.div variants={itemVariants} className="text-center mb-16">
+                    <h1 className={`text-6xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>
+                        Welcome to{' '}
+                        <span className={`bg-gradient-to-r ${
+                            isDark
+                                ? 'from-teal-400 to-teal-500'
+                                : 'from-teal-600 to-teal-700'
+                        } bg-clip-text text-transparent`}>
+                            Alkemy AI Studio
+                        </span>
+                    </h1>
+                    <p className={`text-2xl mb-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Transform your screenplay into a complete visual production
+                    </p>
+
+                    {/* CTA Buttons */}
+                    <div className="flex items-center justify-center gap-4">
+                        <Button
+                            onClick={onStartNewProject}
+                            variant="primary"
+                            className="!px-8 !py-4 !text-lg !font-bold"
+                        >
+                            <PlusIcon className="w-6 h-6" />
+                            Start New Project
+                        </Button>
+                        <Button
+                            onClick={onLoadProject}
+                            variant="secondary"
+                            className="!px-8 !py-4 !text-lg"
+                        >
+                            <UploadIcon className="w-6 h-6" />
+                            Load Project
+                        </Button>
+                    </div>
+                </motion.div>
+
+                {/* Feature grid */}
+                <motion.div variants={itemVariants} className="mb-12">
+                    <h2 className={`text-center text-xl font-semibold mb-8 ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                        Everything you need to create cinematic content
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {features.map((feature, index) => (
+                            <motion.div
+                                key={index}
+                                variants={itemVariants}
+                                whileHover={{ y: -8, scale: 1.02 }}
+                                className={`p-6 rounded-2xl border ${
+                                    isDark
+                                        ? 'bg-gradient-to-br from-gray-900/50 to-gray-800/30 border-gray-700/50 hover:border-teal-500/50'
+                                        : 'bg-white border-gray-200 hover:border-teal-500/50'
+                                } backdrop-blur-sm transition-all duration-300 cursor-default`}
+                            >
+                                <div className={`inline-flex p-3 rounded-xl mb-4 ${
+                                    isDark ? 'bg-teal-500/10 text-teal-400' : 'bg-teal-100 text-teal-600'
+                                }`}>
+                                    {feature.icon}
+                                </div>
+                                <h3 className={`font-semibold text-lg mb-2 ${
+                                    isDark ? 'text-white' : 'text-black'
+                                }`}>
+                                    {feature.title}
+                                </h3>
+                                <p className={`text-sm ${
+                                    isDark ? 'text-gray-400' : 'text-gray-600'
+                                }`}>
+                                    {feature.description}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* Footer note */}
+                <motion.p
+                    variants={itemVariants}
+                    className={`text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}
+                >
+                    Powered by Google Gemini, Imagen, and Veo AI models
+                </motion.p>
+            </motion.div>
+        </div>
+    );
+};
+
+export default WelcomeScreen;

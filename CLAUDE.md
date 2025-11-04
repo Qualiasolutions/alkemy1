@@ -1,0 +1,301 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Alkemy AI Studio is a React-based AI-powered film production application that assists filmmakers in transforming scripts into complete visual productions. The app uses Google's Gemini API (including Imagen, Veo, and Gemini Flash Image models) to analyze scripts, generate visual assets, and create shot-by-shot compositions.
+
+**AI Studio App**: https://ai.studio/apps/drive/1Tm5FTdplRGA4KFy33VGHCQM5jpAwYqR5
+
+## Development Commands
+
+All commands should be run from the `alkemy11/` directory:
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server (runs on port 3000)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Deployment
+
+The project is linked to Vercel:
+- **Project Name**: `alkemy1`
+- **Default URL**: `https://alkemy1.vercel.app`
+- **Vercel Config**: Project details stored in `.vercel/project.json` (do not commit)
+- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, and `LUMA_API_KEY` in Vercel dashboard under project settings
+
+The app auto-deploys on push to `main` branch. Vercel builds use `npm run build` and serve from `dist/`.
+
+## Environment Configuration
+
+Create `.env.local` in the `alkemy11/` directory:
+
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+FLUX_API_KEY=your_flux_api_key_here  # Optional: for Flux model support
+```
+
+**API Key Management:**
+- If `GEMINI_API_KEY` is set via environment variable (e.g., in Vercel), the app skips the API key prompt
+- If no environment key is found, the app prompts users to select their API key through the AI Studio interface (`window.aistudio.openSelectKey()`)
+- The `vite.config.ts` exposes environment variables to the client via `process.env.GEMINI_API_KEY` and `process.env.FLUX_API_KEY`
+- Invalid API key errors trigger a global `invalid-api-key` event, prompting the user to reselect a key
+
+For deployment, configure the `GEMINI_API_KEY` in Vercel project environment variables.
+
+**AI Studio Global Interface:**
+The app expects a `window.aistudio` object when running in Google AI Studio environment (types.ts:3-11):
+- `hasSelectedApiKey(): Promise<boolean>` - Checks if user has selected an API key
+- `openSelectKey(): Promise<void>` - Opens AI Studio's key selection dialog
+
+This interface is optional and the app gracefully degrades when unavailable (e.g., local dev with `.env.local` keys).
+
+## Architecture Overview
+
+### State Management Pattern
+
+The app uses a **centralized project state architecture** in `App.tsx` that manages all production data:
+
+- **Project State**: Stores `scriptContent`, `scriptAnalysis`, `timelineClips`, and UI state in a unified object
+- **Local Storage Persistence**: Project data is saved to `localStorage` under `alkemy_ai_studio_project_data_v2`
+- **Serialization Strategy**: Large generated image variants are stripped before storage to avoid quota limits (see `getSerializableState()` in App.tsx:245)
+- **Blob URL Handling**: Timeline clips with blob URLs are converted to base64 for persistence (`blobUrlToBase64()` at App.tsx:211), then restored as blob URLs on load (`base64ToBlobUrl()` at App.tsx:228)
+- **State Hydration**: On app load, project state is restored from localStorage, allowing users to resume work
+- **Auto-Save**: Project auto-saves to localStorage every 2 minutes (see useEffect at App.tsx:400)
+
+Key state setters passed down through props:
+- `setScriptContent`: Updates raw script text
+- `setScriptAnalysis`: Updates the analyzed script structure (supports functional updates via React.SetStateAction)
+- `setTimelineClips`: Updates video clips in the timeline (supports functional updates)
+- `setProjectState`: Internal state updater that triggers localStorage serialization
+
+**Important**: `setScriptAnalysis` was fixed to handle both direct values and functional updaters (App.tsx:159). Always use functional updates when modifying nested data to avoid race conditions.
+
+### Theme System
+
+The app includes a comprehensive theming system via `theme/ThemeContext.tsx`:
+
+- **ThemeProvider**: React context provider wrapping the entire app in `index.tsx`
+- **Theme Modes**: `dark` (default) and `light` modes with complete color palettes
+- **Persistence**: Theme preference saved to `localStorage` under `alkemy-ai-studio-theme`
+- **useTheme Hook**: Access current theme with `const { mode, colors, toggleTheme, isDark } = useTheme()`
+- **Color Tokens**: Defined in `THEMES` object with semantic names (e.g., `bg_primary`, `text_secondary`, `accent_primary`)
+
+When building new components, use the `useTheme()` hook instead of hardcoded color values from `constants.ts`.
+
+### Tab-Based Workflow
+
+The application is organized as a multi-tab workflow representing the film production pipeline:
+
+**Development Phase:**
+- **Script Tab**: Upload/paste screenplay, triggers AI analysis via `analyzeScript()`
+- **Moodboard Tab**: Visual reference management (cinematography, color, style)
+- **Cast & Locations Tab**: Generate character and location images using `generateStillVariants()`
+- **Compositing Tab** (`SceneAssemblerTab`): Shot-by-shot composition with `generateStillVariants()` and `animateFrame()`
+- **Presentation Tab**: Project overview and pitch materials
+
+**Production Phase:**
+- **Timeline Tab** (`FramesTab`): Video editing interface for assembled shots
+- **Wan Transfer Tab**: Motion transfer capabilities (experimental)
+- **Post-Production Tab**: Color grading, effects (placeholder)
+- **Exports Tab**: Export final videos
+
+**Media Phase:**
+- **Social Spots Tab**: Generate social media variants
+- **Scheduler Tab**: Content calendar
+- **Analytics Tab**: Performance metrics
+
+Tabs are defined in `constants.ts` as `TABS_CONFIG` and rendered conditionally in the `renderContent()` function within `AppContent` component.
+
+### AI Service Layer
+
+`services/aiService.ts` centralizes all AI API interactions:
+
+**Core Functions:**
+- `analyzeScript()`: Structured JSON extraction from screenplay using Gemini 2.5 Pro with schema-guided generation
+- `generateFramesForScene()`: Creates 3-5 shot descriptions per scene with technical camera data
+- `generateStillVariants()`: Batch image generation with reference images and moodboard integration
+- `animateFrame()`: Converts still images to video using Veo 3.1
+- `refineVariant()`: Iterative refinement of generated images
+- `upscaleImage()` / `upscaleVideo()`: Quality enhancement (currently simulated)
+- `askTheDirector()`: Context-aware AI assistant for creative decisions
+
+**Safety & Prompt Engineering:**
+- `buildSafePrompt()` wraps all prompts with "Cinematic film still for a fictional movie (SFW)" to reduce safety blocks
+- Reference images limited to 5 per generation call
+- Error handling via `handleApiError()` with user-friendly messages
+
+**Progress Tracking:**
+All generation functions accept `onProgress` callbacks for real-time UI updates.
+
+### TypeScript Contracts
+
+`types.ts` defines the data model:
+
+- `ScriptAnalysis`: Top-level project structure (title, scenes, characters, locations)
+- `AnalyzedScene`: Scene metadata with `frames[]` array
+- `Frame`: Shot-level data with `status` (FrameStatus enum), `media` URLs, and technical specs
+- `Generation`: Tracks individual AI generation attempts with loading/error states
+- `TimelineClip`: Video clip representation for editing
+
+**Frame Status Lifecycle:**
+```
+Draft → GeneratingStill → GeneratedStill → UpscaledImageReady →
+RenderingVideo → UpscaledVideoReady → (transferred to timeline)
+```
+
+### Component Organization
+
+- `components/`: Reusable UI elements (`Button.tsx`, `Sidebar.tsx`, `DirectorWidget.tsx`)
+- `components/icons/Icons.tsx`: Inline SVG icon components
+- `tabs/`: Feature-specific views, each handling its own UI logic but relying on App.tsx for state
+- `theme/`: Theme system (`ThemeContext.tsx` with ThemeProvider and useTheme hook)
+
+### App Structure
+
+The `App.tsx` file exports a default component wrapped in `ThemeProvider`. The main app logic is in the `AppContent` component which:
+- Manages API key validation flow
+- Handles project state and localStorage persistence
+- Renders the active tab content
+- Provides callbacks to child components for state updates
+
+### Import Alias
+
+`tsconfig.json` defines `@/*` as a root alias pointing to `alkemy11/`. Use this for all imports:
+
+```typescript
+import { analyzeScript } from '@/services/aiService';
+import { THEME_COLORS } from '@/constants';
+```
+
+## Key Implementation Patterns
+
+### Functional State Updates
+
+When updating nested state, always use functional updates to avoid race conditions:
+
+```typescript
+setScriptAnalysis((prev) => ({
+  ...prev,
+  scenes: prev.scenes.map(scene =>
+    scene.id === targetSceneId
+      ? { ...scene, frames: updatedFrames }
+      : scene
+  )
+}));
+```
+
+### Generation Workflow
+
+1. User initiates generation from a tab (e.g., Compositing Tab)
+2. Tab component calls AI service function with `onProgress` callback
+3. Service function updates `Generation` objects with `isLoading: true`
+4. On completion, update frame status and store URL in `frame.media`
+5. Persist state to localStorage via `handleSaveProject()`
+
+### Timeline Transfer
+
+Upscaled videos are transferred from Compositing to Timeline via:
+1. `handleTransferToTimeline()` in App.tsx:500 creates a `TimelineClip` from a frame
+2. Sets `frame.transferredToTimeline = true` to prevent duplicates
+3. `handleTransferAllToTimeline()` in App.tsx:536 batch-transfers all ready frames
+4. `FramesTab` renders clips with trim/playback controls
+
+### Project Management
+
+Projects can be saved/loaded as `.alkemy.json` files:
+
+- **handleNewProject()** (App.tsx:295): Clears current project and resets to default state
+- **handleSaveProject()** (App.tsx:312): Manually saves current state to localStorage
+- **handleDownloadProject()** (App.tsx:328): Exports project as `.alkemy.json` file with sanitized filename
+- **handleLoadProject()** (App.tsx:351): Loads project from `.alkemy.json` file, with confirmation dialog
+
+File format includes full project state (script, analysis, timeline clips, moodboard). Blob URLs are converted to base64 for portability. When loading projects, command history is cleared to prevent stale undo/redo actions.
+
+## Coding Conventions
+
+- **Indentation**: 4 spaces
+- **Component Naming**: PascalCase (e.g., `ScriptTab.tsx`, `DirectorWidget.tsx`)
+- **Hooks**: Prefix with `use` (e.g., `useCallback`, `useState`)
+- **Exports**: Named exports preferred unless a single default clarifies usage
+- **Functional Components**: Use React functional components with hooks exclusively
+- **Animations**: Framer Motion is available for animations (see `framer-motion` package)
+- **Styling**: Use the theme system via `useTheme()` hook for dynamic colors; avoid hardcoded color values
+
+## Commit Guidelines
+
+Follow Conventional Commits format seen in git history:
+- `feat:` New features
+- `fix:` Bug fixes
+- `chore:` Maintenance tasks
+
+Keep commits focused with descriptive messages. Include screenshots for UI changes.
+
+## Advanced Services
+
+### Video Rendering Service
+
+`services/videoRenderingService.ts` handles client-side video rendering using FFmpeg.wasm:
+
+- **loadFFmpeg()**: Initializes FFmpeg.wasm in the browser (loads from CDN)
+- **renderTimelineToVideo()**: Concatenates timeline clips into a single video with specified resolution, codec, and quality
+- **Supported Formats**: MP4 (h264/h265), WebM (vp9), MOV
+- **Resolution Options**: 720p, 1080p, 4K
+- **Progress Tracking**: Real-time progress callbacks during rendering
+
+FFmpeg is loaded lazily when first needed and runs entirely in-browser via WebAssembly.
+
+### 3D World Service
+
+`services/3dWorldService.ts` integrates Luma AI Genie API for text-to-3D landscape generation:
+
+- **generate3DWorld()**: Generates 3D environments from text prompts
+- **API Integration**: Polls Luma API for completion (max 2 minutes)
+- **Model Formats**: Returns GLB/GLTF models for Three.js rendering
+- **Environment Variable**: Requires `LUMA_API_KEY` to be configured
+- **Helper Functions**: `download3DModel()`, `isValid3DModelUrl()` for model management
+
+Used in the **3DWorldViewer** component (`components/3DWorldViewer.tsx`) which renders 3D landscapes using Three.js.
+
+### Command History Service
+
+`services/commandHistory.ts` implements Unreal Engine-style undo/redo functionality:
+
+- **Command Pattern**: Each action is encapsulated as a `Command` with `execute()` and `undo()` methods
+- **History Management**: Maintains a stack of up to 50 commands
+- **createStateCommand()**: Helper to create state-based commands
+- **Branching History**: New commands after undo clear forward history
+- **Global Singleton**: Exported as `commandHistory` for app-wide access
+
+Cleared when loading a new project (see `handleLoadProject()` in App.tsx).
+
+## Dependencies
+
+Key packages used in this project:
+- **@google/genai**: Google Generative AI SDK for Gemini, Imagen, and Veo models
+- **@ffmpeg/ffmpeg** & **@ffmpeg/util**: Client-side video processing via WebAssembly
+- **three**: 3D rendering library for landscape visualization
+- **react** & **react-dom**: React 19.2.0 (latest)
+- **framer-motion**: Animation library for smooth UI transitions
+- **vite**: Build tool and dev server
+- **typescript**: Type safety (v5.8.2)
+
+## Notes for Future Development
+
+- **Testing**: No automated test suite currently wired. When adding tests, colocate them per feature (e.g., `tabs/FramesTab.test.tsx`)
+- **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, and `LUMA_API_KEY`
+- **Storage Optimization**: The serialization logic in `getSerializableState()` strips large generated variants to avoid localStorage quota issues. If adding new generation arrays, update this function. Timeline clips with blob URLs are converted to base64 for persistence and back to blob URLs on load.
+- **Video Duration**: `getVideoDuration()` helper in App.tsx extracts metadata for timeline clips. It defaults to 5 seconds on error.
+- **Animation Performance**: Framer Motion is used throughout for UI animations. Use `AnimatePresence` for exit animations and `motion.*` components for animated elements.
+- **FFmpeg Performance**: FFmpeg.wasm loads from unpkg.com CDN (~30MB). First render may take time. The wasm module persists across renders once loaded.
+- **3D Model Memory**: Three.js models from Luma can be large. Dispose of geometries and materials when unmounting to prevent memory leaks.
