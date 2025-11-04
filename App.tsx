@@ -890,7 +890,7 @@ const AppContent: React.FC = () => {
         </div>
       </main>
 
-      <DirectorWidget scriptAnalysis={scriptAnalysis} />
+      <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
 
       {/* Enhanced Toast Notifications */}
       <Toast toast={toast} onClose={() => setToast(null)} />

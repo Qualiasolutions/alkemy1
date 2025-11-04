@@ -30,27 +30,32 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
 
     const styles = {
         success: isDark
-            ? 'bg-gradient-to-r from-green-900/90 to-green-800/90 border-green-700 text-green-100'
-            : 'bg-gradient-to-r from-green-100 to-green-200 border-green-300 text-green-900',
+            ? 'bg-gradient-to-r from-green-900/95 to-green-800/95 border-green-600/50 text-green-100 shadow-[0_0_30px_rgba(34,197,94,0.25)]'
+            : 'bg-gradient-to-r from-green-100 to-green-200 border-green-400/60 text-green-900 shadow-[0_0_30px_rgba(34,197,94,0.15)]',
         error: isDark
-            ? 'bg-gradient-to-r from-red-900/90 to-red-800/90 border-red-700 text-red-100'
-            : 'bg-gradient-to-r from-red-100 to-red-200 border-red-300 text-red-900',
+            ? 'bg-gradient-to-r from-red-900/95 to-red-800/95 border-red-600/50 text-red-100 shadow-[0_0_30px_rgba(239,68,68,0.25)]'
+            : 'bg-gradient-to-r from-red-100 to-red-200 border-red-400/60 text-red-900 shadow-[0_0_30px_rgba(239,68,68,0.15)]',
         warning: isDark
-            ? 'bg-gradient-to-r from-yellow-900/90 to-yellow-800/90 border-yellow-700 text-yellow-100'
-            : 'bg-gradient-to-r from-yellow-100 to-yellow-200 border-yellow-300 text-yellow-900',
+            ? 'bg-gradient-to-r from-yellow-900/95 to-yellow-800/95 border-yellow-600/50 text-yellow-100 shadow-[0_0_30px_rgba(250,204,21,0.25)]'
+            : 'bg-gradient-to-r from-yellow-100 to-yellow-200 border-yellow-400/60 text-yellow-900 shadow-[0_0_30px_rgba(250,204,21,0.15)]',
         info: isDark
-            ? 'bg-gradient-to-r from-blue-900/90 to-blue-800/90 border-blue-700 text-blue-100'
-            : 'bg-gradient-to-r from-blue-100 to-blue-200 border-blue-300 text-blue-900'
+            ? 'bg-gradient-to-r from-blue-900/95 to-blue-800/95 border-blue-600/50 text-blue-100 shadow-[0_0_30px_rgba(59,130,246,0.25)]'
+            : 'bg-gradient-to-r from-blue-100 to-blue-200 border-blue-400/60 text-blue-900 shadow-[0_0_30px_rgba(59,130,246,0.15)]'
     };
 
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
+                initial={{ opacity: 0, y: 100, scale: 0.85, x: 100 }}
                 animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
                 exit={{ opacity: 0, y: 20, scale: 0.95, x: 50 }}
-                transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
-                className={`fixed bottom-8 right-8 z-[200] max-w-md ${styles[toast.type]} border rounded-2xl px-6 py-4 shadow-2xl backdrop-blur-xl flex items-center gap-4`}
+                transition={{
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 25,
+                    mass: 0.8
+                }}
+                className={`fixed bottom-8 right-8 z-[200] max-w-md ${styles[toast.type]} border-2 rounded-2xl px-6 py-4 backdrop-blur-xl flex items-center gap-4`}
             >
                 <div className="flex-shrink-0">
                     {icons[toast.type]}
