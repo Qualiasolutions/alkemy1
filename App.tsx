@@ -986,21 +986,23 @@ return (
         </div>
       </motion.header>
 
-      <main className={`relative flex-1 overflow-y-auto ${contentBg}`}>
+      <main className={`relative flex-1 overflow-hidden ${contentBg}`}>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,163,127,0.06),_transparent_55%)]" />
-        <div className="relative mx-auto w-full max-w-7xl px-8 py-10">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 24, scale: 0.985 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.985 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className={isDark ? 'text-white' : 'text-slate-900'}
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
+        <div className="relative h-full w-full overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1920px] px-8 py-10 min-h-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 24, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -18, scale: 0.985 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className={isDark ? 'text-white' : 'text-slate-900'}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </main>
     </div>

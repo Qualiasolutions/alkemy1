@@ -10,13 +10,13 @@ Alkemy AI Studio is a React-based AI-powered film production application that as
 
 ## Development Commands
 
-All commands should be run from the `alkemy11/` directory:
+All commands should be run from the project root directory:
 
 ```bash
 # Install dependencies
 npm install
 
-# Start development server (runs on port 3000)
+# Start development server (runs on port 3000, accessible at localhost:3000 or network IP)
 npm run dev
 
 # Build for production
@@ -26,6 +26,8 @@ npm run build
 npm run preview
 ```
 
+**Vite Development Server**: Configured in `vite.config.ts` to run on port 3000 with host `0.0.0.0` (network accessible). Environment variables are exposed to the client via `define` config.
+
 **Tailwind CSS Setup**: The project uses Tailwind CSS v3.4.17 with PostCSS and Autoprefixer. Configuration is in `tailwind.config.ts` with custom CSS variables defined in `index.css`.
 
 ## Deployment
@@ -34,13 +36,21 @@ The project is linked to Vercel:
 - **Project Name**: `alkemy1`
 - **Default URL**: `https://alkemy1.vercel.app`
 - **Vercel Config**: Project details stored in `.vercel/project.json` (do not commit)
-- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, and `LUMA_API_KEY` in Vercel dashboard under project settings
+- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, and `WAN_API_KEY` in Vercel dashboard under project settings
+- **Serverless Functions**: API routes in `api/` directory are deployed as Vercel serverless functions (currently `luma-proxy.ts`)
 
 The app auto-deploys on push to `main` branch. Vercel builds use `npm run build` and serve from `dist/`.
 
+**Serverless API Proxy Pattern**: The `api/luma-proxy.ts` function demonstrates the pattern for creating CORS-safe API proxies. If adding more external APIs that have CORS restrictions, follow this pattern:
+1. Create a new `.ts` file in `api/` directory
+2. Export a default handler function with `VercelRequest` and `VercelResponse` types
+3. Add CORS headers for preflight OPTIONS requests
+4. Proxy the request to the external API using server-side fetch
+5. Pass API keys from environment variables (never expose them client-side)
+
 ## Environment Configuration
 
-Create `.env.local` in the `alkemy11/` directory:
+Create `.env.local` in the project root directory:
 
 ```
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -72,10 +82,10 @@ The app uses a **centralized project state architecture** in `App.tsx` that mana
 
 - **Project State**: Stores `scriptContent`, `scriptAnalysis`, `timelineClips`, and UI state in a unified object
 - **Local Storage Persistence**: Project data is saved to `localStorage` under `alkemy_ai_studio_project_data_v2`
-- **Serialization Strategy**: Large generated image variants are stripped before storage to avoid quota limits (see `getSerializableState()` in App.tsx:245)
-- **Blob URL Handling**: Timeline clips with blob URLs are converted to base64 for persistence (`blobUrlToBase64()` at App.tsx:211), then restored as blob URLs on load (`base64ToBlobUrl()` at App.tsx:228)
+- **Serialization Strategy**: Large generated image variants are stripped before storage to avoid quota limits (see `getSerializableState()` in App.tsx)
+- **Blob URL Handling**: Timeline clips with blob URLs are converted to base64 for persistence (`blobUrlToBase64()`), then restored as blob URLs on load (`base64ToBlobUrl()`)
 - **State Hydration**: On app load, project state is restored from localStorage, allowing users to resume work
-- **Auto-Save**: Project auto-saves to localStorage every 2 minutes (see useEffect at App.tsx:400)
+- **Auto-Save**: Project auto-saves to localStorage every 2 minutes
 
 Key state setters passed down through props:
 - `setScriptContent`: Updates raw script text
@@ -83,7 +93,7 @@ Key state setters passed down through props:
 - `setTimelineClips`: Updates video clips in the timeline (supports functional updates)
 - `setProjectState`: Internal state updater that triggers localStorage serialization
 
-**Important**: `setScriptAnalysis` was fixed to handle both direct values and functional updaters (App.tsx:159). Always use functional updates when modifying nested data to avoid race conditions.
+**Important**: `setScriptAnalysis` handles both direct values and functional updaters. Always use functional updates when modifying nested data to avoid race conditions.
 
 ### Theme System
 
@@ -167,6 +177,37 @@ RenderingVideo → UpscaledVideoReady → (transferred to timeline)
 - `hooks/`: Custom React hooks (`useKeyboardShortcuts.ts` for power-user shortcuts)
 - `data/`: Demo project data (`demoProject.ts` with sample screenplay and analysis)
 
+### DirectorWidget - AI Assistant
+
+The `DirectorWidget` component (`components/DirectorWidget.tsx`) is a persistent chat interface that provides an AI-powered cinematography assistant:
+
+**Features:**
+- **Chat Interface**: Fixed bottom-right widget that expands to a full chat window
+- **Command Parsing**: Recognizes natural language commands for image generation and technical queries
+- **Image Generation**: "Generate [N] [flux/imagen] images of [character/location] [aspect]" - generates images directly into character/location state
+- **Image Upscaling**: "Upscale the [character/location] image" - enhances existing images
+- **Technical Queries**: Cinematography questions leverage `askTheDirector()` from `services/aiService.ts` with enhanced director knowledge from `services/directorKnowledge.ts`
+- **DOF Calculations**: "Calculate DOF for f/[aperture] at [distance]m with [focal_length]mm" - performs real depth-of-field calculations
+- **Lens Recommendations**: "Recommend lens for [shot type]" - suggests focal lengths
+- **Lighting Setup**: "Setup lighting for [mood]" - provides 3-point lighting configurations
+- **Camera Movement**: "Suggest camera movement for [emotion]" - recommends dolly, crane, tracking shots
+- **Color Grading**: "Color grade for [genre/mood]" - suggests LUTs and color temperature adjustments
+
+**Command Execution Pattern:**
+1. User submits natural language query
+2. `parseCommand()` extracts structured command data
+3. `executeCommand()` routes to appropriate service function
+4. Results update `scriptAnalysis` state via `setScriptAnalysis` functional updates
+5. Chat displays confirmation message and generated images inline
+
+**Integration Points:**
+- Accesses `scriptAnalysis` for character/location lookup
+- Updates character/location `generations` arrays via functional state updates
+- Uses `askTheDirector()` from `aiService.ts` for natural language responses
+- Imports `calculateDepthOfField()` from `directorKnowledge.ts` for technical calculations
+
+The widget is always rendered at the bottom-right of the screen and is only interactive after a script has been analyzed.
+
 ### App Structure
 
 The `App.tsx` file exports a default component wrapped in `ThemeProvider`. The main app logic is in the `AppContent` component which:
@@ -177,7 +218,7 @@ The `App.tsx` file exports a default component wrapped in `ThemeProvider`. The m
 
 ### Import Alias
 
-`tsconfig.json` defines `@/*` as a root alias pointing to `alkemy11/`. Use this for all imports:
+`tsconfig.json` defines `@/*` as a root alias pointing to the project root. Use this for all imports:
 
 ```typescript
 import { analyzeScript } from '@/services/aiService';
@@ -219,19 +260,19 @@ setScriptAnalysis((prev) => ({
 ### Timeline Transfer
 
 Upscaled videos are transferred from Compositing to Timeline via:
-1. `handleTransferToTimeline()` in App.tsx:500 creates a `TimelineClip` from a frame
+1. `handleTransferToTimeline()` in App.tsx creates a `TimelineClip` from a frame
 2. Sets `frame.transferredToTimeline = true` to prevent duplicates
-3. `handleTransferAllToTimeline()` in App.tsx:536 batch-transfers all ready frames
+3. `handleTransferAllToTimeline()` in App.tsx batch-transfers all ready frames
 4. `FramesTab` renders clips with trim/playback controls
 
 ### Project Management
 
 Projects can be saved/loaded as `.alkemy.json` files:
 
-- **handleNewProject()** (App.tsx:295): Clears current project and resets to default state
-- **handleSaveProject()** (App.tsx:312): Manually saves current state to localStorage
-- **handleDownloadProject()** (App.tsx:328): Exports project as `.alkemy.json` file with sanitized filename
-- **handleLoadProject()** (App.tsx:351): Loads project from `.alkemy.json` file, with confirmation dialog
+- **handleNewProject()**: Clears current project and resets to default state
+- **handleSaveProject()**: Manually saves current state to localStorage
+- **handleDownloadProject()**: Exports project as `.alkemy.json` file with sanitized filename
+- **handleLoadProject()**: Loads project from `.alkemy.json` file, with confirmation dialog
 
 File format includes full project state (script, analysis, timeline clips, moodboard). Blob URLs are converted to base64 for portability. When loading projects, command history is cleared to prevent stale undo/redo actions.
 
@@ -278,15 +319,22 @@ FFmpeg is loaded lazily when first needed and runs entirely in-browser via WebAs
 
 ### 3D World Service
 
-`services/3dWorldService.ts` integrates Luma AI Genie API for text-to-3D landscape generation:
+`services/3dWorldService.ts` integrates Luma AI Dream Machine API for text-to-3D landscape generation:
 
 - **generate3DWorld()**: Generates 3D environments from text prompts
-- **API Integration**: Polls Luma API for completion (max 2 minutes)
+- **API Integration**: Polls Luma API for completion (max 2 minutes) using the `ray-3` model
+- **Serverless Proxy**: Uses Vercel serverless function at `/api/luma-proxy` to avoid CORS issues (see `api/luma-proxy.ts`)
 - **Model Formats**: Returns GLB/GLTF models for Three.js rendering
-- **Environment Variable**: Requires `LUMA_API_KEY` to be configured
+- **Environment Variable**: Requires `LUMA_API_KEY` to be configured in Vercel environment
 - **Helper Functions**: `download3DModel()`, `isValid3DModelUrl()` for model management
 
 Used in the **3DWorldViewer** component (`components/3DWorldViewer.tsx`) which renders 3D landscapes using Three.js.
+
+**Important**: The Luma API proxy (`api/luma-proxy.ts`) is a Vercel serverless function that:
+- Handles CORS headers for cross-origin requests
+- Securely passes the `LUMA_API_KEY` from server environment
+- Supports GET/POST requests to Luma API endpoints
+- Returns responses with proper status codes and error handling
 
 ### Wan Motion Transfer Service
 
@@ -349,3 +397,16 @@ Key packages used in this project:
 - **Sidebar Collapse**: Toggle between expanded (256px) and collapsed (80px) states
 - **Fixed Navbar**: Persistent header with theme toggle and sync indicator
 - **Gradient Halos**: Decorative background elements for visual depth
+
+## Recent Enhancements
+
+### DirectorWidget Premium UI (Latest)
+The DirectorWidget has been enhanced with a premium glassmorphic UI featuring:
+- **Modern Chat Interface**: Gradient backgrounds, glassmorphism effects, and smooth animations
+- **Enhanced Command System**: Extended natural language parsing for technical cinematography queries
+- **Inline Image Display**: Generated images appear directly in chat with grid layout
+- **Prompt Viewing**: Stored prompts can be reviewed and copied via modal
+- **Technical Calculations**: Real-time DOF calculations with hyperfocal distance formulas
+- **Command Hints**: Contextual examples displayed in the input footer
+
+The "Send" button has been fixed to use proper Framer Motion integration and improved disabled state styling.

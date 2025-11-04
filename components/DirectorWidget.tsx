@@ -464,8 +464,8 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               </header>
 
               {/* Messages Area */}
-              <div className="flex h-[500px] flex-col">
-                <div className="flex-1 space-y-3 overflow-y-auto px-6 py-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              <div className="flex h-[520px] flex-col">
+                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                   {messages.map((message, index) => (
                     <div
                       key={`${message.author}-${index}`}
@@ -473,14 +473,14 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                     >
                       {message.author === 'director' && (
                         <span
-                          className="mt-0.5 shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)] shadow-inner"
+                          className="mt-1 shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)] shadow-inner"
                           style={{ color: ACCENT_HEX }}
                         >
                           <BrainIcon className="h-3.5 w-3.5" />
                         </span>
                       )}
                       <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-lg ${
+                        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-lg ${
                           message.author === 'user'
                             ? 'rounded-br-sm bg-gradient-to-r from-[#1ad8b1] to-[#0ea887] text-white shadow-[0_4px_20px_rgba(26,216,177,0.3)]'
                             : message.isCommand
@@ -537,7 +537,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                 </div>
 
                 {/* Input Area */}
-                <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-gradient-to-b from-[#0f1117] to-[#0a0d12] px-6 py-5 shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+                <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-gradient-to-b from-[#0f1117] to-[#0a0d12] px-6 py-4 shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
                   <div className="relative flex items-end gap-3">
                     <div className="flex-1">
                       <textarea
@@ -549,7 +549,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                             handleSubmit(event as unknown as React.FormEvent<HTMLFormElement>);
                           }
                         }}
-                        rows={2}
+                        rows={1}
                         placeholder="Ask the director or type a command..."
                         className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-4 py-3 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)] focus:shadow-[0_0_20px_rgba(16,163,127,0.15)]"
                         disabled={!canChat || isLoading}
@@ -566,7 +566,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   </div>
 
                   {/* Command hints */}
-                  <div className="mt-3 space-y-1 text-[10px] text-white/30 leading-relaxed">
+                  <div className="mt-2.5 space-y-1 text-[10px] text-white/30 leading-relaxed">
                     <div className="flex flex-wrap gap-x-2 items-center">
                       <span className="shrink-0">💡</span>
                       <span>"Generate 3 flux images of Elena 16:9" • "Upscale the cafe image"</span>
