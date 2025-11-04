@@ -47,16 +47,16 @@ export async function generate3DWorld(options: Generate3DWorldOptions): Promise<
                 method: 'POST',
                 body: {
                     prompt: enhancedPrompt,
-                    aspect_ratio: '16:9',
-                    model: 'genie-1.0',
+                    aspect_ratio: '16:9'
                 }
             }),
         });
 
         if (!generationResponse.ok) {
             const errorData = await generationResponse.json().catch(() => ({}));
+            console.error('Luma generation error response:', errorData);
             throw new Error(
-                `Luma API error (${generationResponse.status}): ${errorData.error || errorData.message || generationResponse.statusText}`
+                `Luma API error (${generationResponse.status}): ${JSON.stringify(errorData)}`
             );
         }
 
