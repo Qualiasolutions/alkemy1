@@ -524,7 +524,7 @@ const GenerationView: React.FC<{
     }
 
     return (
-        <div className="absolute inset-0 bg-[#0B0B0B] flex flex-col z-10">
+        <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-10 overflow-hidden">
             {viewingGeneration && (
                 <FullScreenImagePlayer
                     generation={viewingGeneration}
@@ -539,10 +539,10 @@ const GenerationView: React.FC<{
                     }}
                 />
             )}
-            <header className="absolute top-0 left-0 p-4 z-20"><Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to List</Button></header>
-            
-            <main className="flex-1 overflow-y-auto pt-20 pb-40">
-                <div className="px-4">
+            <header className="flex-shrink-0 p-4 z-20"><Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to List</Button></header>
+
+            <main className="flex-1 overflow-y-auto pb-40 px-4">
+                <div className="max-w-7xl mx-auto">
                     {item.data.imageUrl && (
                         <div className="mb-8">
                             <h4 className={`text-lg font-semibold mb-3 text-[var(--color-text-primary)]`}>Main Visual</h4>
@@ -572,9 +572,10 @@ const GenerationView: React.FC<{
                         ))}
                     </div>
                 </div>
+                </div>
             </main>
 
-            <footer className="absolute bottom-0 left-0 right-0 p-6 z-20">
+            <footer className="flex-shrink-0 p-6 z-20 bg-gradient-to-t from-[#0B0B0B] via-[#0B0B0B]/95 to-transparent">
                  <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -645,22 +646,22 @@ const GenerationView: React.FC<{
                                         <select
                                             value={model}
                                             onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')}
-                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
+                                            className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
                                         >
-                                            <option>Imagen</option>
-                                            <option>Gemini Flash Image</option>
-                                            <option>Flux</option>
+                                            <option className="bg-gray-800 text-white">Imagen</option>
+                                            <option className="bg-gray-800 text-white">Gemini Flash Image</option>
+                                            <option className="bg-gray-800 text-white">Flux</option>
                                         </select>
                                         <select
                                             value={aspectRatio}
                                             onChange={e => setAspectRatio(e.target.value)}
-                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
+                                            className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
                                         >
-                                            <option>16:9</option>
-                                            <option>9:16</option>
-                                            <option>1:1</option>
-                                            <option>4:3</option>
-                                            <option>3:4</option>
+                                            <option className="bg-gray-800 text-white">16:9</option>
+                                            <option className="bg-gray-800 text-white">9:16</option>
+                                            <option className="bg-gray-800 text-white">1:1</option>
+                                            <option className="bg-gray-800 text-white">4:3</option>
+                                            <option className="bg-gray-800 text-white">3:4</option>
                                         </select>
                                     </div>
                                     <motion.div
@@ -735,7 +736,7 @@ const Card: React.FC<{
 
             {/* Image Section */}
             <div onClick={onClick} className="cursor-pointer relative">
-                <div className="aspect-video relative overflow-hidden bg-black/5">
+                <div className="aspect-[4/3] relative overflow-hidden bg-black/5">
                     {hasImage ? (
                         <>
                             <motion.img
@@ -973,8 +974,8 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     const { isDark } = useTheme();
 
     return (
-        <div className="h-full overflow-y-auto">
-            <div className="space-y-12 pb-12">
+        <div className="min-h-full">
+            <div className="space-y-12 pb-20">
                 <AddItemModal
                     isOpen={!!isAddModalOpen}
                     type={isAddModalOpen!}
