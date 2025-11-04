@@ -41,30 +41,37 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className={`relative group ${sidebarBg} border-r ${borderColor} flex flex-col p-4 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-20'}`}
     >
+      {/* Subtle accent glow effects */}
+      <div className={`absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none ${
+        isDark ? 'bg-teal-500/5' : 'bg-teal-500/8'
+      }`} />
+      <div className={`absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none ${
+        isDark ? 'bg-green-400/3' : 'bg-green-400/6'
+      }`} />
       <div className={`flex items-center gap-3 mb-8 transition-all duration-300 ${isSidebarExpanded ? 'px-2' : 'justify-center'}`}>
         <LogoIcon />
         <h1 className={`text-xl font-semibold whitespace-nowrap transition-opacity duration-200 ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Alkemy AI Studio</h1>
       </div>
       
-      <ul className="flex-1 overflow-y-auto overflow-x-hidden">
+      <ul className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
         {isSidebarExpanded ? (
           // Expanded View with Sections
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             {TABS_CONFIG.map((section) => {
               const isExpanded = expandedSections.includes(section.name);
               return (
                 <li key={section.name} className="list-none">
                   <button
                     onClick={() => toggleSection(section.name)}
-                    className={`w-full flex items-center justify-between px-2 py-1 text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
-                      isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                    className={`w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 ${
+                      isDark ? 'text-gray-500 hover:text-teal-400' : 'text-gray-500 hover:text-teal-600'
                     }`}
                   >
                     {section.name}
                     <motion.span
                       animate={{ rotate: isExpanded ? 0 : -90 }}
                       transition={{ duration: 0.24, ease: 'easeInOut' }}
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                     >
                       <ChevronDownIcon />
                     </motion.span>
@@ -76,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.24, ease: 'easeInOut' }}
-                        className="space-y-1 mt-2 overflow-hidden"
+                        className="space-y-0.5 mt-1 overflow-hidden"
                       >
                         {section.tabs.map((tab) => {
                           const isActive = activeTab === tab.id;
@@ -94,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                                 onClick={() => setActiveTab(tab.id)}
                                 whileHover={{ x: 2 }}
                                 whileTap={{ scale: 0.98 }}
-                                className={`relative w-full flex items-center gap-3 pl-5 pr-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                                className={`relative w-full flex items-center gap-2.5 pl-4 pr-2 py-1.5 rounded-lg text-sm transition-all duration-200 ${
                                   isActive ? `${activeBg} ${activeText}` : `${inactiveText} ${hoverBg} ${hoverText}`
                                 }`}
                               >
@@ -189,18 +196,34 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         />
       </div>
 
+      {/* Beautiful Toggle Button */}
       <motion.button
         onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
         aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        className={`absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 ${
-          isDark ? 'bg-[#161616]' : 'bg-white'
-        } border ${borderColor} rounded-full p-1.5 ${
-          isDark ? 'text-[#A0A0A0] hover:text-white hover:bg-[#1C1C1C]' : 'text-[#505050] hover:text-black hover:bg-[#F5F5F5]'
-        } transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 z-10 shadow-lg`}
+        whileHover={{ scale: 1.15, rotate: 180 }}
+        whileTap={{ scale: 0.85 }}
+        className={`absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 rounded-full p-2.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 z-20 ${
+          isDark
+            ? 'bg-gradient-to-br from-teal-500/20 to-green-500/10 border border-teal-500/30 text-teal-400 hover:from-teal-500/30 hover:to-green-500/20 hover:border-teal-400/50 hover:text-teal-300 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30'
+            : 'bg-gradient-to-br from-teal-400/20 to-green-400/15 border border-teal-500/40 text-teal-600 hover:from-teal-400/30 hover:to-green-400/25 hover:border-teal-600/60 hover:text-teal-700 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30'
+        } backdrop-blur-sm`}
       >
-        <span className="w-4 h-4 block">
+        {/* Animated glow ring */}
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.6, 0.3]
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className={`absolute inset-0 rounded-full ${
+            isDark ? 'bg-teal-500/20' : 'bg-teal-400/30'
+          } blur-md`}
+        />
+        <span className="w-5 h-5 block relative z-10">
           {isSidebarExpanded ? <ChevronsLeftIcon /> : <ChevronsRightIcon />}
         </span>
       </motion.button>
