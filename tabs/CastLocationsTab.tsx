@@ -285,43 +285,96 @@ const RefinementStudio: React.FC<{
                     </div>
                 </div>
 
-                <div className="flex-shrink-0 flex justify-center pb-2">
-                     <div className="w-full max-w-4xl">
-                         <div className="bg-[#1C1C1C] p-3 rounded-2xl flex flex-col gap-2 shadow-2xl w-full border border-gray-700">
-                             {attachedImage && (
-                                <div className="relative self-start p-1 bg-black/20 rounded-lg ml-3">
-                                    <img src={attachedImage} alt="Attached reference" className="w-16 h-16 object-cover rounded"/>
-                                    <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-black/70 text-white rounded-full p-0.5 hover:bg-red-500 transition-colors">
-                                        <XIcon className="w-3 h-3" />
-                                    </button>
+                <div className="flex-shrink-0 flex justify-center pb-4">
+                     <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="w-full max-w-4xl"
+                    >
+                        <div className="relative group">
+                            {/* Gradient glow */}
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-[28px] opacity-20 group-hover:opacity-40 blur-xl transition-all duration-500" />
+
+                            {/* Main container */}
+                            <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 rounded-3xl border border-gray-700/50 shadow-2xl overflow-hidden">
+                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-teal-400/50 to-transparent" />
+
+                                <div className="p-5 space-y-4">
+                                    {attachedImage && (
+                                        <motion.div
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="relative self-start p-1.5 bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm rounded-2xl border border-gray-700/50 ml-3"
+                                        >
+                                            <img src={attachedImage} alt="Attached reference" className="w-20 h-20 object-cover rounded-xl"/>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                type="button"
+                                                onClick={() => setAttachedImage(null)}
+                                                className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1.5 hover:bg-red-600 transition-all shadow-lg shadow-red-500/50"
+                                            >
+                                                <XIcon className="w-3.5 h-3.5" />
+                                            </motion.button>
+                                        </motion.div>
+                                    )}
+
+                                    <div className="relative bg-gray-800/40 rounded-2xl border border-gray-700/30 p-4 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
+                                        <div className="flex items-start gap-3">
+                                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="flex-shrink-0 mt-1 p-2.5 text-gray-400 rounded-xl hover:bg-gradient-to-br hover:from-teal-500/20 hover:to-purple-500/20 hover:text-teal-400 transition-all border border-transparent hover:border-teal-500/30"
+                                            >
+                                                <PaperclipIcon className="w-5 h-5"/>
+                                            </motion.button>
+                                            <textarea
+                                                value={prompt}
+                                                onChange={(e) => setPrompt(e.target.value)}
+                                                placeholder="e.g., make the character smile, add cinematic lighting..."
+                                                rows={1}
+                                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500 leading-relaxed"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey && prompt.trim()) {
+                                                        e.preventDefault();
+                                                        handleGenerate();
+                                                    }
+                                                }}
+                                            />
+                                            <div className="flex-shrink-0 bg-gradient-to-br from-gray-700/80 to-gray-800/80 text-white text-xs rounded-xl font-semibold px-4 py-2.5 border border-gray-600/50 shadow-lg">
+                                                Gemini Flash Image
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                            <Button
+                                                onClick={handleGenerate}
+                                                disabled={isGenerating || !prompt.trim()}
+                                                isLoading={isGenerating}
+                                                className="relative overflow-hidden !bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-3 !px-8 !rounded-xl hover:!shadow-2xl hover:!shadow-teal-500/20 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed group/btn"
+                                            >
+                                                <span className="relative z-10 flex items-center gap-2">
+                                                    Generate
+                                                    <motion.span
+                                                        animate={{ x: [0, 3, 0] }}
+                                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                                        className="text-teal-600"
+                                                    >
+                                                        →
+                                                    </motion.span>
+                                                </span>
+                                                <div className="absolute inset-0 bg-gradient-to-r from-teal-500/0 via-teal-500/20 to-purple-500/0 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                                            </Button>
+                                        </motion.div>
+                                    </div>
                                 </div>
-                            )}
-                             <div className="flex items-center gap-3">
-                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
-                                <button onClick={() => fileInputRef.current?.click()} className="p-1 text-gray-400 rounded-lg hover:bg-white/10 transition-colors">
-                                    <PaperclipIcon className="w-5 h-5"/>
-                                </button>
-                                <textarea
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="e.g., make the character smile, add cinematic lighting"
-                                    rows={1}
-                                    className="flex-1 bg-transparent text-sm resize-none focus:outline-none max-h-24 text-gray-200 placeholder-gray-500"
-                                />
-                                <div className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 whitespace-nowrap">
-                                    Model: Gemini Flash Image
-                                </div>
-                                <Button 
-                                    onClick={handleGenerate} 
-                                    disabled={isGenerating || !prompt.trim()} 
-                                    isLoading={isGenerating} 
-                                    className="!bg-gray-300 !text-black !font-bold !py-2 !px-4 rounded-lg flex-shrink-0"
-                                >
-                                    Generate
-                                </Button>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </div>
@@ -521,47 +574,122 @@ const GenerationView: React.FC<{
                 </div>
             </main>
 
-            <footer className="absolute bottom-0 left-0 right-0 p-4 z-20">
-                 <div className="max-w-3xl mx-auto">
-                    <div className="bg-[#1C1C1C] p-3 rounded-2xl flex flex-col gap-2.5 shadow-2xl border border-gray-700">
-                        {attachedImage && (
-                            <div className="relative self-start p-1 bg-black/20 rounded-lg ml-3">
-                                <img src={attachedImage} alt="Attached reference" className="w-16 h-16 object-cover rounded"/>
-                                <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-black/70 text-white rounded-full p-0.5 hover:bg-red-500 transition-colors">
-                                    <XIcon className="w-3 h-3" />
-                                </button>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 rounded-lg hover:bg-white/10 transition-colors">
-                                <PaperclipIcon className="w-6 h-6"/>
-                            </button>
-                            <textarea
-                                value={detailedPrompt}
-                                onChange={(e) => setDetailedPrompt(e.target.value)}
-                                placeholder={`Describe a visual for ${item.data.name}...`}
-                                rows={1}
-                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-24 pt-1 text-gray-200 placeholder-gray-500"
-                            />
-                        </div>
-                         <div className="flex items-center justify-between pl-10">
-                             <div className="flex items-center gap-2">
-                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
-                                    <option>Imagen</option>
-                                    <option>Gemini Flash Image</option>
-                                    <option>Flux</option>
-                                </select>
-                                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
-                                    <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center">
-                                <Button onClick={handleGenerate} disabled={!detailedPrompt.trim()} className="!bg-white !text-black !font-bold !py-2 !px-5 rounded-lg">Generate</Button>
+            <footer className="absolute bottom-0 left-0 right-0 p-6 z-20">
+                 <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="max-w-4xl mx-auto"
+                >
+                    <div className="relative group">
+                        {/* Gradient glow effect */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-[28px] opacity-20 group-hover:opacity-40 blur-xl transition-all duration-500" />
+
+                        {/* Main container */}
+                        <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 rounded-3xl border border-gray-700/50 shadow-2xl overflow-hidden">
+                            {/* Top gradient line */}
+                            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-teal-400/50 to-transparent" />
+
+                            <div className="p-5 space-y-4">
+                                {/* Attached image */}
+                                {attachedImage && (
+                                    <motion.div
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="relative self-start p-1.5 bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm rounded-2xl border border-gray-700/50 ml-3"
+                                    >
+                                        <img src={attachedImage} alt="Attached reference" className="w-20 h-20 object-cover rounded-xl"/>
+                                        <motion.button
+                                            whileHover={{ scale: 1.1, rotate: 90 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            type="button"
+                                            onClick={() => setAttachedImage(null)}
+                                            className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1.5 hover:bg-red-600 transition-all shadow-lg shadow-red-500/50"
+                                        >
+                                            <XIcon className="w-3.5 h-3.5" />
+                                        </motion.button>
+                                    </motion.div>
+                                )}
+
+                                {/* Input area */}
+                                <div className="relative bg-gray-800/40 rounded-2xl border border-gray-700/30 p-4 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all group/input">
+                                    <div className="flex items-start gap-3">
+                                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                                        <motion.button
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="flex-shrink-0 mt-1 p-2.5 text-gray-400 rounded-xl hover:bg-gradient-to-br hover:from-teal-500/20 hover:to-purple-500/20 hover:text-teal-400 transition-all border border-transparent hover:border-teal-500/30"
+                                        >
+                                            <PaperclipIcon className="w-5 h-5"/>
+                                        </motion.button>
+                                        <textarea
+                                            value={detailedPrompt}
+                                            onChange={(e) => setDetailedPrompt(e.target.value)}
+                                            placeholder={`Describe a visual for ${item.data.name}...`}
+                                            rows={1}
+                                            className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500 leading-relaxed"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey && detailedPrompt.trim()) {
+                                                    e.preventDefault();
+                                                    handleGenerate();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Controls row */}
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <select
+                                            value={model}
+                                            onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')}
+                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
+                                        >
+                                            <option>Imagen</option>
+                                            <option>Gemini Flash Image</option>
+                                            <option>Flux</option>
+                                        </select>
+                                        <select
+                                            value={aspectRatio}
+                                            onChange={e => setAspectRatio(e.target.value)}
+                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
+                                        >
+                                            <option>16:9</option>
+                                            <option>9:16</option>
+                                            <option>1:1</option>
+                                            <option>4:3</option>
+                                            <option>3:4</option>
+                                        </select>
+                                    </div>
+                                    <motion.div
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        <Button
+                                            onClick={handleGenerate}
+                                            disabled={!detailedPrompt.trim()}
+                                            className="relative overflow-hidden !bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-3 !px-8 !rounded-xl hover:!shadow-2xl hover:!shadow-teal-500/20 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 group/btn"
+                                        >
+                                            <span className="relative z-10 flex items-center gap-2">
+                                                Generate
+                                                <motion.span
+                                                    animate={{ x: [0, 3, 0] }}
+                                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                                    className="text-teal-600"
+                                                >
+                                                    →
+                                                </motion.span>
+                                            </span>
+                                            <div className="absolute inset-0 bg-gradient-to-r from-teal-500/0 via-teal-500/20 to-purple-500/0 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                                        </Button>
+                                    </motion.div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                 </div>
+                 </motion.div>
             </footer>
         </div>
     );
