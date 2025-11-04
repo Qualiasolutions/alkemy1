@@ -14,11 +14,13 @@ import {
 interface WelcomeScreenProps {
     onStartNewProject: () => void;
     onLoadProject: () => void;
+    onTryDemo: () => void;
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     onStartNewProject,
-    onLoadProject
+    onLoadProject,
+    onTryDemo
 }) => {
     const { colors, isDark } = useTheme();
 
@@ -104,19 +106,27 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                     </p>
 
                     {/* CTA Buttons */}
-                    <div className="flex items-center justify-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Button
                             onClick={onStartNewProject}
                             variant="primary"
-                            className="!px-8 !py-4 !text-lg !font-bold"
+                            className="!px-8 !py-4 !text-lg !font-bold w-full sm:w-auto"
                         >
                             <PlusIcon className="w-6 h-6" />
                             Start New Project
                         </Button>
                         <Button
+                            onClick={onTryDemo}
+                            variant="glass"
+                            className="!px-8 !py-4 !text-lg w-full sm:w-auto"
+                        >
+                            <SparklesIcon className="w-6 h-6" />
+                            Try Demo Project
+                        </Button>
+                        <Button
                             onClick={onLoadProject}
                             variant="secondary"
-                            className="!px-8 !py-4 !text-lg"
+                            className="!px-8 !py-4 !text-lg w-full sm:w-auto"
                         >
                             <UploadIcon className="w-6 h-6" />
                             Load Project

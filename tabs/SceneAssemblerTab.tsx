@@ -4,7 +4,9 @@ import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, An
 import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo } from '../services/aiService';
-import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon } from '../components/icons/Icons';
+import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon } from '../components/icons/Icons';
+import ThreeDWorldViewer from '../components/3DWorldViewer';
+import { generate3DWorld } from '../services/3dWorldService';
 
 type Workspace = 'grid' | 'still-studio' | 'refine-studio' | 'animate-studio' | 'image-upscale-studio' | 'video-upscale-studio';
 
@@ -869,6 +871,25 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
     const [selectedItem, setSelectedItem] = useState<{ frame: Frame; scene: AnalyzedScene } | null>(null);
     const [refinementBase, setRefinementBase] = useState<Generation | null>(null);
 
+    // 3D World Viewer state
+    const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
+    const [generated3DModelUrl, setGenerated3DModelUrl] = useState<string | null>(null);
+
+    const handleGenerate3DWorld = async (prompt: string) => {
+        try {
+            const result = await generate3DWorld({
+                prompt,
+                onProgress: (progress, status) => {
+                    console.log(`3D Generation: ${progress}% - ${status}`);
+                }
+            });
+            setGenerated3DModelUrl(result.modelUrl);
+        } catch (error) {
+            console.error('Failed to generate 3D world:', error);
+            throw error;
+        }
+    };
+
     const handleUpdateFrame = (updater: (prev: Frame) => Frame) => {
         if (!selectedItem) return;
         const { scene, frame } = selectedItem;
@@ -949,6 +970,13 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
 
     return (
         <div className="space-y-10">
+            <ThreeDWorldViewer
+                isOpen={is3DViewerOpen}
+                onClose={() => setIs3DViewerOpen(false)}
+                generatedModelUrl={generated3DModelUrl}
+                onGenerate={handleGenerate3DWorld}
+            />
+
             <header className="space-y-4">
               <div>
                 <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Compositing</h2>
@@ -956,6 +984,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
               </div>
               <div className="flex items-center gap-3">
                 <Button onClick={onAddScene} variant="secondary" className="!py-2 !px-4"><PlusIcon className="w-4 h-4" /><span>Add Scene</span></Button>
+                <Button onClick={() => setIs3DViewerOpen(true)} variant="secondary" className="!py-2 !px-4 !border-teal-500 !text-teal-400 hover:!bg-teal-500/20"><BoxIcon className="w-4 h-4" /><span>3D World Viewer</span></Button>
                 <Button onClick={onTransferAllToTimeline} variant="primary" className="!py-2 !px-4"><SendIcon className="w-4 h-4" /><span>Transfer All to Timeline</span></Button>
               </div>
             </header>

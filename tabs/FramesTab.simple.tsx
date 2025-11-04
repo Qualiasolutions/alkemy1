@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, Reorder } from 'framer-motion';
 import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
-import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, ScissorsIcon, Trash2Icon, SaveIcon, PlusIcon } from '../components/icons/Icons';
+import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, ScissorsIcon, Trash2Icon, SaveIcon, PlusIcon, UndoIcon, RedoIcon, GridIcon } from '../components/icons/Icons';
+import { commandHistory, createStateCommand } from '../services/commandHistory';
 
 interface TimelineClip {
   id: string;
@@ -39,6 +40,13 @@ const FramesTab: React.FC<FramesTabProps> = ({
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(projectState?.ui?.zoom || 1);
   const [isDraggingTrim, setIsDraggingTrim] = useState<{ clipId: string; handle: 'start' | 'end' } | null>(null);
+  const trimStartStateRef = useRef<TimelineClip[] | null>(null);
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [copiedClip, setCopiedClip] = useState<TimelineClip | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,43 +54,326 @@ const FramesTab: React.FC<FramesTabProps> = ({
 
   const PIXELS_PER_SECOND = 100 * zoom;
   const TRACK_HEIGHT = 60;
+  const SNAP_THRESHOLD = 0.1; // seconds
 
   // Calculate total duration
   const totalDuration = clips.reduce((sum, clip) => sum + (clip.trimEnd - clip.trimStart), 0);
 
-  // Sync playback
+  // Store thumbnails for clips
+  const [clipThumbnails, setClipThumbnails] = useState<{ [clipId: string]: string }>({});
+
+  // Extract thumbnail from video clip
+  const extractThumbnail = useCallback(async (clip: TimelineClip): Promise<string> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.src = clip.url;
+      video.currentTime = clip.trimStart + 0.1; // Extract frame 0.1s after trim start
+
+      video.addEventListener('loadeddata', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 160;
+        canvas.height = 90;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(thumbnailUrl);
+        } else {
+          resolve('');
+        }
+      });
+
+      video.addEventListener('error', () => resolve(''));
+    });
+  }, []);
+
+  // Generate thumbnails for all clips
   useEffect(() => {
-    if (isPlaying) {
-      const updatePlayhead = () => {
-        setCurrentTime(prev => {
-          const newTime = prev + (1 / 60); // 60fps
-          if (newTime >= totalDuration) {
-            setIsPlaying(false);
-            return 0;
+    const generateThumbnails = async () => {
+      for (const clip of clips) {
+        if (!clipThumbnails[clip.timelineId]) {
+          const thumbnail = await extractThumbnail(clip);
+          if (thumbnail) {
+            setClipThumbnails(prev => ({ ...prev, [clip.timelineId]: thumbnail }));
           }
-          return newTime;
-        });
-        animationFrameRef.current = requestAnimationFrame(updatePlayhead);
-      };
-      animationFrameRef.current = requestAnimationFrame(updatePlayhead);
-    }
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+        }
       }
     };
-  }, [isPlaying, totalDuration]);
+    if (clips.length > 0) {
+      generateThumbnails();
+    }
+  }, [clips, clipThumbnails, extractThumbnail]);
 
-  // Update preview video
+  // Cleanup blob URLs when component unmounts
   useEffect(() => {
-    if (videoRef.current && selectedClipId) {
-      const clip = clips.find(c => c.timelineId === selectedClipId);
-      if (clip) {
-        videoRef.current.src = clip.url;
-        videoRef.current.currentTime = clip.trimStart;
-      }
+    return () => {
+      // Revoke all blob URLs on unmount to prevent memory leaks
+      clips.forEach(clip => {
+        if (clip.url.startsWith('blob:')) {
+          URL.revokeObjectURL(clip.url);
+        }
+      });
+    };
+  }, []); // Empty deps - only run on unmount
+
+  // Subscribe to command history changes
+  useEffect(() => {
+    const updateHistoryState = () => {
+      setCanUndo(commandHistory.canUndo());
+      setCanRedo(commandHistory.canRedo());
+    };
+    updateHistoryState();
+    return commandHistory.subscribe(updateHistoryState);
+  }, []);
+
+  // Copy selected clip
+  const handleCopyClip = useCallback(() => {
+    if (!selectedClipId) return;
+    const clipToCopy = clips.find(c => c.timelineId === selectedClipId);
+    if (clipToCopy) {
+      setCopiedClip(clipToCopy);
     }
   }, [selectedClipId, clips]);
+
+  // Paste copied clip
+  const handlePasteClip = useCallback(() => {
+    if (!copiedClip) return;
+
+    // Create a new clip with unique ID
+    const newClip: TimelineClip = {
+      ...copiedClip,
+      timelineId: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
+
+    const command = createStateCommand(
+      `Paste clip: ${copiedClip.description}`,
+      () => clips,
+      (newClips) => onUpdateClips(newClips),
+      [...clips, newClip]
+    );
+
+    commandHistory.executeCommand(command);
+    setSelectedClipId(newClip.timelineId);
+  }, [copiedClip, clips, onUpdateClips]);
+
+  // Duplicate selected clip
+  const handleDuplicateClip = useCallback(() => {
+    if (!selectedClipId) return;
+    const clipToDuplicate = clips.find(c => c.timelineId === selectedClipId);
+    if (!clipToDuplicate) return;
+
+    const newClip: TimelineClip = {
+      ...clipToDuplicate,
+      timelineId: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
+
+    const command = createStateCommand(
+      `Duplicate clip: ${clipToDuplicate.description}`,
+      () => clips,
+      (newClips) => onUpdateClips(newClips),
+      [...clips, newClip]
+    );
+
+    commandHistory.executeCommand(command);
+    setSelectedClipId(newClip.timelineId);
+  }, [selectedClipId, clips, onUpdateClips]);
+
+  // Keyboard shortcuts (Unreal Engine style)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      // Space = Play/Pause
+      if (e.code === 'Space' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setIsPlaying(prev => !prev);
+      }
+
+      // Ctrl+Z = Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        commandHistory.undo();
+      }
+
+      // Ctrl+Shift+Z or Ctrl+Y = Redo
+      if (((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) || ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+        e.preventDefault();
+        commandHistory.redo();
+      }
+
+      // Ctrl+S = Save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        onSave();
+      }
+
+      // Ctrl+C = Copy selected clip
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedClipId) {
+        e.preventDefault();
+        handleCopyClip();
+      }
+
+      // Ctrl+V = Paste copied clip
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedClip) {
+        e.preventDefault();
+        handlePasteClip();
+      }
+
+      // Ctrl+D = Duplicate selected clip
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && selectedClipId) {
+        e.preventDefault();
+        handleDuplicateClip();
+      }
+
+      // Delete/Backspace = Delete selected clip
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
+        e.preventDefault();
+        handleDeleteClip(selectedClipId);
+      }
+
+      // Home = Jump to start
+      if (e.key === 'Home') {
+        e.preventDefault();
+        setCurrentTime(0);
+      }
+
+      // End = Jump to end
+      if (e.key === 'End') {
+        e.preventDefault();
+        setCurrentTime(totalDuration);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedClipId, totalDuration, onSave, copiedClip, handleCopyClip, handlePasteClip, handleDuplicateClip]);
+
+  // Snap-to-grid utility function
+  const snapToGrid = useCallback((time: number): number => {
+    if (!snapEnabled) return time;
+    const gridSize = 0.1; // 100ms grid
+    return Math.round(time / gridSize) * gridSize;
+  }, [snapEnabled]);
+
+  // Helper function to find which clip should be playing at a given time
+  const getClipAtTime = useCallback((time: number): { clip: TimelineClip; localTime: number; clipIndex: number } | null => {
+    let accumulatedTime = 0;
+    for (let i = 0; i < clips.length; i++) {
+      const clip = clips[i];
+      const clipDuration = clip.trimEnd - clip.trimStart;
+      if (time >= accumulatedTime && time < accumulatedTime + clipDuration) {
+        const localTime = time - accumulatedTime;
+        return { clip, localTime, clipIndex: i };
+      }
+      accumulatedTime += clipDuration;
+    }
+    return null;
+  }, [clips]);
+
+  // Sync video playback with playhead
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement || clips.length === 0) return;
+
+    const clipInfo = getClipAtTime(currentTime);
+
+    if (clipInfo) {
+      const { clip, localTime } = clipInfo;
+      const videoTime = clip.trimStart + localTime;
+
+      // Load the correct clip if it's not already loaded
+      if (videoElement.src !== clip.url) {
+        videoElement.src = clip.url;
+        videoElement.load();
+      }
+
+      // Sync video time with timeline position (allow 0.2s tolerance)
+      if (Math.abs(videoElement.currentTime - videoTime) > 0.2) {
+        videoElement.currentTime = videoTime;
+      }
+
+      // Play or pause based on isPlaying state
+      if (isPlaying && videoElement.paused) {
+        videoElement.play().catch(err => console.warn('Play failed:', err));
+      } else if (!isPlaying && !videoElement.paused) {
+        videoElement.pause();
+      }
+    } else {
+      // No clip at current time, pause video
+      if (!videoElement.paused) {
+        videoElement.pause();
+      }
+    }
+  }, [currentTime, clips, isPlaying, getClipAtTime]);
+
+  // Sync playback - update currentTime from video element when playing
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement || !isPlaying) return;
+
+    const handleTimeUpdate = () => {
+      const clipInfo = getClipAtTime(currentTime);
+      if (!clipInfo) return;
+
+      const { clip, clipIndex } = clipInfo;
+      const localTime = videoElement.currentTime - clip.trimStart;
+
+      // Calculate global timeline position
+      let accumulatedTime = 0;
+      for (let i = 0; i < clipIndex; i++) {
+        accumulatedTime += clips[i].trimEnd - clips[i].trimStart;
+      }
+      const newTime = accumulatedTime + localTime;
+
+      // Check if we've reached the end of the current clip
+      if (videoElement.currentTime >= clip.trimEnd) {
+        // Move to next clip
+        const nextClipIndex = clipIndex + 1;
+        if (nextClipIndex < clips.length) {
+          const nextClip = clips[nextClipIndex];
+          let nextAccumulatedTime = 0;
+          for (let i = 0; i < nextClipIndex; i++) {
+            nextAccumulatedTime += clips[i].trimEnd - clips[i].trimStart;
+          }
+          setCurrentTime(nextAccumulatedTime);
+        } else {
+          // End of timeline
+          setIsPlaying(false);
+          setCurrentTime(0);
+        }
+      } else {
+        setCurrentTime(newTime);
+      }
+    };
+
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    return () => videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [isPlaying, currentTime, clips, getClipAtTime]);
+
+  // Handle video loading states
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    const handleLoadStart = () => setVideoLoading(true);
+    const handleCanPlay = () => setVideoLoading(false);
+    const handleError = () => {
+      setVideoLoading(false);
+      setVideoError('Failed to load video. The video file may be corrupted or the URL is invalid.');
+    };
+
+    videoElement.addEventListener('loadstart', handleLoadStart);
+    videoElement.addEventListener('canplay', handleCanPlay);
+    videoElement.addEventListener('error', handleError);
+
+    return () => {
+      videoElement.removeEventListener('loadstart', handleLoadStart);
+      videoElement.removeEventListener('canplay', handleCanPlay);
+      videoElement.removeEventListener('error', handleError);
+    };
+  }, []);
 
   const handlePlayPause = () => setIsPlaying(!isPlaying);
 
@@ -95,6 +386,8 @@ const FramesTab: React.FC<FramesTabProps> = ({
   };
 
   const handleTrimStart = (clipId: string, handle: 'start' | 'end') => {
+    // Capture the current state before trimming starts
+    trimStartStateRef.current = [...clips];
     setIsDraggingTrim({ clipId, handle });
   };
 
@@ -103,7 +396,7 @@ const FramesTab: React.FC<FramesTabProps> = ({
 
     const rect = timelineRef.current.getBoundingClientRect();
     const dragX = e.clientX - rect.left;
-    const dragTime = dragX / PIXELS_PER_SECOND;
+    const dragTime = snapToGrid(dragX / PIXELS_PER_SECOND);
 
     onUpdateClips(prevClips => prevClips.map(clip => {
       if (clip.timelineId === isDraggingTrim.clipId) {
@@ -117,11 +410,27 @@ const FramesTab: React.FC<FramesTabProps> = ({
       }
       return clip;
     }));
-  }, [isDraggingTrim, onUpdateClips, PIXELS_PER_SECOND]);
+  }, [isDraggingTrim, onUpdateClips, PIXELS_PER_SECOND, snapToGrid]);
 
   const handleTrimEnd = useCallback(() => {
+    // Create undo command with the state captured before trimming
+    if (trimStartStateRef.current) {
+      const oldState = trimStartStateRef.current;
+      const newState = [...clips];
+
+      const command = createStateCommand(
+        'Trim clip',
+        () => oldState,
+        (state) => onUpdateClips(state),
+        newState
+      );
+
+      commandHistory.executeCommand(command);
+      trimStartStateRef.current = null;
+    }
+
     setIsDraggingTrim(null);
-  }, []);
+  }, [clips, onUpdateClips]);
 
   useEffect(() => {
     if (isDraggingTrim) {
@@ -134,10 +443,29 @@ const FramesTab: React.FC<FramesTabProps> = ({
     }
   }, [isDraggingTrim, handleTrimDrag, handleTrimEnd]);
 
-  const handleDeleteClip = (clipId: string) => {
-    onUpdateClips(prev => prev.filter(c => c.timelineId !== clipId));
+  const handleDeleteClip = useCallback((clipId: string) => {
+    // Find the clip to get its URL for cleanup
+    const clipToDelete = clips.find(c => c.timelineId === clipId);
+
+    if (!clipToDelete) return;
+
+    // Create undo command
+    const command = createStateCommand(
+      `Delete clip: ${clipToDelete.description}`,
+      () => clips,
+      (newClips) => onUpdateClips(newClips),
+      clips.filter(c => c.timelineId !== clipId)
+    );
+
+    commandHistory.executeCommand(command);
+
+    // Revoke blob URL if it's a blob (uploaded file)
+    if (clipToDelete.url.startsWith('blob:')) {
+      URL.revokeObjectURL(clipToDelete.url);
+    }
+
     if (selectedClipId === clipId) setSelectedClipId(null);
-  };
+  }, [clips, onUpdateClips, selectedClipId]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -145,6 +473,21 @@ const FramesTab: React.FC<FramesTabProps> = ({
     }
     if (e.target) e.target.value = '';
   };
+
+  // Wrap onUpdateClips with command history for reordering
+  const handleReorderClips = useCallback((newClips: TimelineClip[]) => {
+    const oldClips = [...clips];
+
+    // Create undo command
+    const command = createStateCommand(
+      'Reorder clips',
+      () => oldClips,
+      (state) => onUpdateClips(state),
+      newClips
+    );
+
+    commandHistory.executeCommand(command);
+  }, [clips, onUpdateClips]);
 
   // Calculate clip position in timeline
   let cumulativeTime = 0;
@@ -157,12 +500,43 @@ const FramesTab: React.FC<FramesTabProps> = ({
   });
 
   const selectedClip = clips.find(c => c.timelineId === selectedClipId);
+  const currentPlayingClip = getClipAtTime(currentTime);
 
   return (
     <div className="w-full h-full flex flex-col bg-zinc-950 text-white">
       {/* Top Bar */}
       <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-zinc-800">
-        <h1 className="text-2xl font-bold">Timeline Editor</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Timeline Editor</h1>
+          <div className="flex items-center gap-2 border-l border-zinc-700 pl-4">
+            <Button
+              onClick={() => commandHistory.undo()}
+              disabled={!canUndo}
+              variant="secondary"
+              className="!p-2"
+              title="Undo (Ctrl+Z)"
+            >
+              <UndoIcon className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => commandHistory.redo()}
+              disabled={!canRedo}
+              variant="secondary"
+              className="!p-2"
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              <RedoIcon className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => setSnapEnabled(!snapEnabled)}
+              variant={snapEnabled ? "primary" : "secondary"}
+              className="!p-2"
+              title="Snap to Grid (S)"
+            >
+              <GridIcon className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
         <div className="flex items-center gap-3">
           <Button onClick={() => fileInputRef.current?.click()} variant="secondary" className="!py-2 !px-4">
             <PlusIcon className="w-4 h-4" />
@@ -180,51 +554,92 @@ const FramesTab: React.FC<FramesTabProps> = ({
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Preview */}
         <div className="w-1/3 border-r border-zinc-800 p-4 flex flex-col">
-          <h2 className="text-lg font-semibold mb-3">Preview</h2>
-          <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-            {selectedClip ? (
-              <video ref={videoRef} controls className="w-full h-full object-contain" />
+          <h2 className="text-lg font-semibold mb-3">Sequence Preview</h2>
+          <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4 relative">
+            {clips.length > 0 ? (
+              <>
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-contain"
+                />
+                {videoLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-4 border-t-transparent border-teal-500 rounded-full animate-spin mx-auto mb-2" />
+                      <p className="text-xs text-zinc-400">Loading video...</p>
+                    </div>
+                  </div>
+                )}
+                {videoError && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                    <div className="text-center px-4">
+                      <p className="text-xs text-red-400 mb-1">Error</p>
+                      <p className="text-xs text-zinc-400">{videoError}</p>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                <p className="text-sm">Select a clip to preview</p>
+                <p className="text-sm">No clips in timeline</p>
               </div>
             )}
           </div>
 
-          {selectedClip && (
+          {/* Show currently playing clip info or selected clip info */}
+          {(currentPlayingClip?.clip || selectedClip) && (
             <div className="space-y-3">
               <div className={`bg-zinc-900 border border-zinc-800 rounded-lg p-3`}>
-                <h3 className="font-semibold text-sm mb-2">Clip Info</h3>
-                <p className="text-xs text-zinc-400 mb-1">Scene {selectedClip.sceneNumber} - Shot {selectedClip.shot_number}</p>
-                <p className="text-xs text-zinc-500">{selectedClip.description}</p>
+                <h3 className="font-semibold text-sm mb-2">
+                  {currentPlayingClip ? 'Now Playing' : 'Selected Clip'}
+                </h3>
+                {currentPlayingClip ? (
+                  <>
+                    <p className="text-xs text-zinc-400 mb-1">
+                      Scene {currentPlayingClip.clip.sceneNumber} - Shot {currentPlayingClip.clip.shot_number}
+                    </p>
+                    <p className="text-xs text-zinc-500">{currentPlayingClip.clip.description}</p>
+                  </>
+                ) : selectedClip ? (
+                  <>
+                    <p className="text-xs text-zinc-400 mb-1">
+                      Scene {selectedClip.sceneNumber} - Shot {selectedClip.shot_number}
+                    </p>
+                    <p className="text-xs text-zinc-500">{selectedClip.description}</p>
+                  </>
+                ) : null}
               </div>
 
-              <div className={`bg-zinc-900 border border-zinc-800 rounded-lg p-3`}>
-                <h3 className="font-semibold text-sm mb-2">Trim Controls</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-zinc-400">In Point:</span>
-                    <span className="font-mono">{selectedClip.trimStart.toFixed(2)}s</span>
+              {selectedClip && (
+                <>
+                  <div className={`bg-zinc-900 border border-zinc-800 rounded-lg p-3`}>
+                    <h3 className="font-semibold text-sm mb-2">Trim Controls</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">In Point:</span>
+                        <span className="font-mono">{selectedClip.trimStart.toFixed(2)}s</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">Out Point:</span>
+                        <span className="font-mono">{selectedClip.trimEnd.toFixed(2)}s</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">Duration:</span>
+                        <span className="font-mono">{(selectedClip.trimEnd - selectedClip.trimStart).toFixed(2)}s</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-zinc-400">Out Point:</span>
-                    <span className="font-mono">{selectedClip.trimEnd.toFixed(2)}s</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-zinc-400">Duration:</span>
-                    <span className="font-mono">{(selectedClip.trimEnd - selectedClip.trimStart).toFixed(2)}s</span>
-                  </div>
-                </div>
-              </div>
 
-              <Button
-                onClick={() => handleDeleteClip(selectedClip.timelineId)}
-                variant="secondary"
-                className="!w-full !py-2 !text-red-400 !border-red-800 hover:!bg-red-900/20"
-              >
-                <Trash2Icon className="w-4 h-4" />
-                <span>Delete Clip</span>
-              </Button>
+                  <Button
+                    onClick={() => handleDeleteClip(selectedClip.timelineId)}
+                    variant="secondary"
+                    className="!w-full !py-2 !text-red-400 !border-red-800 hover:!bg-red-900/20"
+                  >
+                    <Trash2Icon className="w-4 h-4" />
+                    <span>Delete Clip</span>
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -276,6 +691,25 @@ const FramesTab: React.FC<FramesTabProps> = ({
                   ))}
                 </div>
 
+                {/* Visual Grid Lines (Unreal Engine style) */}
+                {snapEnabled && (
+                  <div className="absolute top-6 bottom-0 left-0 right-0 pointer-events-none">
+                    {Array.from({ length: Math.ceil(totalDuration * 10) + 1 }).map((_, i) => {
+                      const time = i * 0.1; // 100ms intervals
+                      const isSecondMark = i % 10 === 0;
+                      return (
+                        <div
+                          key={i}
+                          className={`absolute top-0 bottom-0 ${
+                            isSecondMark ? 'w-px bg-zinc-700/50' : 'w-px bg-zinc-800/30'
+                          }`}
+                          style={{ left: time * PIXELS_PER_SECOND }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Playhead */}
                 <div
                   className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none"
@@ -294,7 +728,7 @@ const FramesTab: React.FC<FramesTabProps> = ({
                   <Reorder.Group
                     axis="x"
                     values={clips}
-                    onReorder={onUpdateClips}
+                    onReorder={handleReorderClips}
                     className="relative h-full"
                   >
                     {clips.map((clip, index) => (
@@ -320,15 +754,23 @@ const FramesTab: React.FC<FramesTabProps> = ({
                           }`}
                           whileHover={{ scale: 1.02 }}
                         >
+                          {/* Thumbnail Background */}
+                          {clipThumbnails[clip.timelineId] && (
+                            <div
+                              className="absolute inset-0 bg-cover bg-center opacity-40"
+                              style={{ backgroundImage: `url(${clipThumbnails[clip.timelineId]})` }}
+                            />
+                          )}
+
                           {/* Clip Content */}
-                          <div className="absolute inset-0 flex items-center px-2">
+                          <div className="absolute inset-0 flex items-center px-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
                             <div className="flex-1 truncate">
-                              <p className="text-xs font-semibold truncate">{clip.description}</p>
-                              <p className="text-[10px] text-zinc-500">
+                              <p className="text-xs font-semibold truncate drop-shadow-md">{clip.description}</p>
+                              <p className="text-[10px] text-zinc-300 drop-shadow-md">
                                 {(clip.trimEnd - clip.trimStart).toFixed(1)}s
                               </p>
                             </div>
-                            <ScissorsIcon className="w-3 h-3 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ScissorsIcon className="w-3 h-3 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
                           </div>
 
                           {/* Trim Handles */}

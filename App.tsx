@@ -419,6 +419,25 @@ const AppContent: React.FC = () => {
       loadProjectInputRef.current?.click();
   };
 
+  // Load demo project
+  const handleTryDemo = () => {
+      const demoData = DEMO_PROJECT_DATA();
+      const demoState = {
+          scriptContent: DEMO_SCRIPT,
+          scriptAnalysis: demoData,
+          timelineClips: [],
+          ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
+      };
+      setProjectState(demoState);
+      setActiveTab('script');
+      try {
+          localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(demoState));
+      } catch (e) {
+          console.error("Failed to save demo project", e);
+      }
+      showToast("Demo project loaded! Explore all features with sample data.", 'success');
+  };
+
   // Auto-save to localStorage every 2 minutes
   useEffect(() => {
       const autoSaveInterval = setInterval(async () => {
@@ -737,6 +756,7 @@ const AppContent: React.FC = () => {
         <WelcomeScreen
           onStartNewProject={() => handleNewProject(true)}
           onLoadProject={handleLoadProjectFromWelcome}
+          onTryDemo={handleTryDemo}
         />
         {/* Hidden file input for loading projects */}
         <input
