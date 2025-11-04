@@ -26,6 +26,8 @@ npm run build
 npm run preview
 ```
 
+**Tailwind CSS Setup**: The project uses Tailwind CSS v3.4.17 with PostCSS and Autoprefixer. Configuration is in `tailwind.config.ts` with custom CSS variables defined in `index.css`.
+
 ## Deployment
 
 The project is linked to Vercel:
@@ -43,12 +45,14 @@ Create `.env.local` in the `alkemy11/` directory:
 ```
 GEMINI_API_KEY=your_gemini_api_key_here
 FLUX_API_KEY=your_flux_api_key_here  # Optional: for Flux model support
+WAN_API_KEY=your_wan_api_key_here  # Optional: for Wan 2.2 motion transfer
+LUMA_API_KEY=your_luma_api_key_here  # Optional: for Luma AI 3D generation
 ```
 
 **API Key Management:**
 - If `GEMINI_API_KEY` is set via environment variable (e.g., in Vercel), the app skips the API key prompt
 - If no environment key is found, the app prompts users to select their API key through the AI Studio interface (`window.aistudio.openSelectKey()`)
-- The `vite.config.ts` exposes environment variables to the client via `process.env.GEMINI_API_KEY` and `process.env.FLUX_API_KEY`
+- The `vite.config.ts` exposes environment variables to the client via `process.env.GEMINI_API_KEY`, `process.env.FLUX_API_KEY`, and `process.env.WAN_API_KEY`
 - Invalid API key errors trigger a global `invalid-api-key` event, prompting the user to reselect a key
 
 For deployment, configure the `GEMINI_API_KEY` in Vercel project environment variables.
@@ -156,10 +160,12 @@ RenderingVideo → UpscaledVideoReady → (transferred to timeline)
 
 ### Component Organization
 
-- `components/`: Reusable UI elements (`Button.tsx`, `Sidebar.tsx`, `DirectorWidget.tsx`)
+- `components/`: Reusable UI elements (`Button.tsx`, `Sidebar.tsx`, `DirectorWidget.tsx`, `SplashScreen.tsx`, `WelcomeScreen.tsx`, `Toast.tsx`, `3DWorldViewer.tsx`)
 - `components/icons/Icons.tsx`: Inline SVG icon components
 - `tabs/`: Feature-specific views, each handling its own UI logic but relying on App.tsx for state
 - `theme/`: Theme system (`ThemeContext.tsx` with ThemeProvider and useTheme hook)
+- `hooks/`: Custom React hooks (`useKeyboardShortcuts.ts` for power-user shortcuts)
+- `data/`: Demo project data (`demoProject.ts` with sample screenplay and analysis)
 
 ### App Structure
 
@@ -175,8 +181,15 @@ The `App.tsx` file exports a default component wrapped in `ThemeProvider`. The m
 
 ```typescript
 import { analyzeScript } from '@/services/aiService';
-import { THEME_COLORS } from '@/constants';
+import { TABS_CONFIG } from '@/constants';
+import { useTheme } from '@/theme/ThemeContext';
 ```
+
+### Entry Point
+
+- `index.tsx`: Root React application mount point
+- `index.html`: HTML template with root element
+- `index.css`: Global styles with Tailwind directives and CSS custom properties for theming
 
 ## Key Implementation Patterns
 
@@ -221,6 +234,14 @@ Projects can be saved/loaded as `.alkemy.json` files:
 - **handleLoadProject()** (App.tsx:351): Loads project from `.alkemy.json` file, with confirmation dialog
 
 File format includes full project state (script, analysis, timeline clips, moodboard). Blob URLs are converted to base64 for portability. When loading projects, command history is cleared to prevent stale undo/redo actions.
+
+### Keyboard Shortcuts
+
+The app supports power-user keyboard shortcuts (implemented in `hooks/useKeyboardShortcuts.ts`):
+- **Cmd/Ctrl + N**: New Project
+- **Cmd/Ctrl + S**: Save Project
+- **Cmd/Ctrl + O**: Load Project
+- **Cmd/Ctrl + 1-9**: Switch to tab by index
 
 ## Coding Conventions
 
@@ -267,6 +288,19 @@ FFmpeg is loaded lazily when first needed and runs entirely in-browser via WebAs
 
 Used in the **3DWorldViewer** component (`components/3DWorldViewer.tsx`) which renders 3D landscapes using Three.js.
 
+### Wan Motion Transfer Service
+
+`services/wanService.ts` integrates Wan 2.2 API for AI-powered motion transfer capabilities:
+
+- **transferMotionWan()**: Transfers motion from a reference video to a target character image
+- **API Integration**: Uses Alibaba's Wan 2.2 VACE Fun Pose model via AI/ML API
+- **Progress Tracking**: Real-time progress callbacks during generation (max 5 minutes timeout)
+- **Video Processing**: Handles video file to base64 conversion and blob URL preparation
+- **Environment Variable**: Requires `WAN_API_KEY` to be configured
+- **Helper Functions**: `isWanApiAvailable()` checks if API key is configured
+
+Used in the **Wan Transfer Tab** for applying motion from reference videos to generated characters. Supports 720p resolution output at 16 fps with up to 81 frames.
+
 ### Command History Service
 
 `services/commandHistory.ts` implements Unreal Engine-style undo/redo functionality:
@@ -293,9 +327,25 @@ Key packages used in this project:
 ## Notes for Future Development
 
 - **Testing**: No automated test suite currently wired. When adding tests, colocate them per feature (e.g., `tabs/FramesTab.test.tsx`)
-- **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, and `LUMA_API_KEY`
+- **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, and `WAN_API_KEY`
 - **Storage Optimization**: The serialization logic in `getSerializableState()` strips large generated variants to avoid localStorage quota issues. If adding new generation arrays, update this function. Timeline clips with blob URLs are converted to base64 for persistence and back to blob URLs on load.
 - **Video Duration**: `getVideoDuration()` helper in App.tsx extracts metadata for timeline clips. It defaults to 5 seconds on error.
 - **Animation Performance**: Framer Motion is used throughout for UI animations. Use `AnimatePresence` for exit animations and `motion.*` components for animated elements.
 - **FFmpeg Performance**: FFmpeg.wasm loads from unpkg.com CDN (~30MB). First render may take time. The wasm module persists across renders once loaded.
 - **3D Model Memory**: Three.js models from Luma can be large. Dispose of geometries and materials when unmounting to prevent memory leaks.
+
+## UI/UX Patterns
+
+### Loading States
+- **SplashScreen**: Initial app load animation with logo and progress
+- **WelcomeScreen**: First-time user experience with project creation options
+- **SkeletonLoader**: Content placeholders during async operations
+
+### User Feedback
+- **Toast**: Non-blocking notifications for success/error/warning/info messages (3-second auto-dismiss)
+- **Progress Callbacks**: All AI generation functions provide real-time progress updates
+
+### Responsive Design
+- **Sidebar Collapse**: Toggle between expanded (256px) and collapsed (80px) states
+- **Fixed Navbar**: Persistent header with theme toggle and sync indicator
+- **Gradient Halos**: Decorative background elements for visual depth

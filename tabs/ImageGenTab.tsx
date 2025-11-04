@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { generateStillVariants } from '../services/aiService';
 import { Generation, Moodboard } from '../types';
@@ -130,8 +129,8 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard }> = ({ moodboard }) => {
         <div className="h-full flex flex-col">
             {viewingUrl && <SimpleFullScreenViewer imageUrl={viewingUrl} onClose={() => setViewingUrl(null)} />}
             <header className="mb-6 flex-shrink-0">
-                <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Image Generation Studio</h2>
-                <p className={`text-md text-[${THEME_COLORS.text_secondary}] max-w-3xl`}>A dedicated space to experiment with prompts and generate high-quality visuals using the robust Safe Promptizer.</p>
+                <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Image Generation Studio</h2>
+                <p className={`text-md text-[var(--color-text-secondary)] max-w-3xl`}>A dedicated space to experiment with prompts and generate high-quality visuals using the robust Safe Promptizer.</p>
             </header>
             
             <main className="flex-1 overflow-y-auto pr-4">
@@ -184,12 +183,12 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard }> = ({ moodboard }) => {
                         </div>
                          <div className="flex items-center justify-between pl-10">
                              <div className="flex items-center gap-2">
-                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
                                     <option>Imagen</option>
                                     <option>Gemini Flash Image</option>
                                     <option>Flux</option>
                                 </select>
-                                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="bg-gray-700 text-white text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
                                     <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
                                 </select>
                             </div>

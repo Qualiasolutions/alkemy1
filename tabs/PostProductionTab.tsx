@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { SettingsIcon, SaveIcon, SparklesIcon, EyeIcon, EyeOffIcon } from '../components/icons/Icons';
 
@@ -406,19 +405,19 @@ const PostProductionTab: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col bg-zinc-950 text-white p-6">
       <header className="mb-6">
-        <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Post-Production</h2>
-        <p className={`text-md text-[${THEME_COLORS.text_secondary}]`}>Real-time color grading and visual effects for your footage.</p>
+        <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Post-Production</h2>
+        <p className={`text-md text-[var(--color-text-secondary)]`}>Real-time color grading and visual effects for your footage.</p>
       </header>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
         {/* Left: Source Video Upload */}
-        <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6 flex flex-col`}>
+        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}>
           <h3 className="text-lg font-semibold mb-4">Source Video</h3>
 
           {!sourceVideoUrl ? (
             <div
               onClick={() => fileInputRef.current?.click()}
-              className={`flex-1 border-2 border-dashed border-[${THEME_COLORS.border_color}] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-[${THEME_COLORS.accent_primary}] transition-colors`}
+              className={`flex-1 border-2 border-dashed border-[var(--color-border-color)] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-[var(--color-accent-primary)] transition-colors`}
             >
               <SparklesIcon className="w-12 h-12 text-gray-600 mb-3" />
               <p className="text-gray-400 font-semibold mb-1">Upload Video</p>
@@ -451,7 +450,7 @@ const PostProductionTab: React.FC = () => {
         </div>
 
         {/* Center: Preview with Color Grade and Scopes */}
-        <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6 flex flex-col`}>
+        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Graded Preview</h3>
             <Button
@@ -505,7 +504,7 @@ const PostProductionTab: React.FC = () => {
         </div>
 
         {/* Right: Color Grading Controls */}
-        <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6 overflow-y-auto`}>
+        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 overflow-y-auto`}>
           <h3 className="text-lg font-semibold mb-4">Color Grading</h3>
 
           {/* Presets */}

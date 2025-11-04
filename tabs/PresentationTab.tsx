@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ScriptAnalysis, AnalyzedCharacter, AnalyzedLocation, AnalyzedScene, Frame, MoodboardItem } from '../types';
-import { THEME_COLORS } from '../constants';
 import { CameraIcon, UsersIcon, MapPinIcon, FilmIcon, ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from '../components/icons/Icons';
 import Button from '../components/Button';
 
@@ -114,19 +113,19 @@ const CharacterCastingCard: React.FC<{
     onViewImages: () => void;
 }> = ({ character, onViewImages }) => {
     return (
-        <div className={`bg-[${THEME_COLORS.surface_card}] rounded-lg border border-[${THEME_COLORS.border_color}] p-6 flex flex-col gap-6`}>
+        <div className={`bg-[var(--color-surface-card)] rounded-lg border border-[var(--color-border-color)] p-6 flex flex-col gap-6`}>
             <div className="w-full">
                  <button onClick={onViewImages} className="relative aspect-w-3 aspect-h-4 bg-[#0B0B0B] rounded-lg overflow-hidden mb-4 group block w-full text-left">
                     {character.imageUrl
                         ? <img src={character.imageUrl} alt={character.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                        : <div className="flex items-center justify-center h-full"><UsersIcon className={`w-12 h-12 text-[${THEME_COLORS.text_secondary}]`} /></div>
+                        : <div className="flex items-center justify-center h-full"><UsersIcon className={`w-12 h-12 text-[var(--color-text-secondary)]`} /></div>
                     }
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <p className="text-white font-semibold">View Image Gallery</p>
                     </div>
                 </button>
                 <h3 className="text-xl font-bold">{character.name}</h3>
-                <p className={`text-sm text-[${THEME_COLORS.text_secondary}] mt-1`}>{character.description}</p>
+                <p className={`text-sm text-[var(--color-text-secondary)] mt-1`}>{character.description}</p>
             </div>
         </div>
     );
@@ -134,11 +133,11 @@ const CharacterCastingCard: React.FC<{
 
 
 const LocationCard: React.FC<{ location: AnalyzedLocation }> = ({ location }) => (
-     <div className={`bg-[${THEME_COLORS.surface_card}] rounded-lg overflow-hidden border border-[${THEME_COLORS.border_color}] h-full w-full`}>
+     <div className={`bg-[var(--color-surface-card)] rounded-lg overflow-hidden border border-[var(--color-border-color)] h-full w-full`}>
         <div className="aspect-video bg-[#0B0B0B] flex items-center justify-center">
             {location.imageUrl
                 ? <img src={location.imageUrl} alt={location.name} className="w-full h-full object-cover" />
-                : <MapPinIcon className={`w-8 h-8 text-[${THEME_COLORS.text_secondary}]`} />
+                : <MapPinIcon className={`w-8 h-8 text-[var(--color-text-secondary)]`} />
             }
         </div>
         <div className="p-3">
@@ -152,7 +151,7 @@ const StoryboardShot: React.FC<{ frame: Frame, shotNumber: number }> = ({ frame,
         <div className="aspect-video bg-[#0B0B0B] rounded-lg border border-[#242424] flex items-center justify-center mb-2">
              {frame.media?.start_frame_url
                 ? <img src={frame.media.start_frame_url} alt={`Shot ${shotNumber}`} className="w-full h-full object-cover rounded-lg" />
-                : <FilmIcon className={`w-8 h-8 text-[${THEME_COLORS.text_secondary}]`} />
+                : <FilmIcon className={`w-8 h-8 text-[var(--color-text-secondary)]`} />
             }
         </div>
         <p className="text-xs font-semibold">Shot {shotNumber}</p>
@@ -215,7 +214,7 @@ const PresentationTab: React.FC<{ scriptAnalysis: ScriptAnalysis | null }> = ({ 
     if (!scriptAnalysis) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-                <div className={`p-10 border border-dashed border-[${THEME_COLORS.border_color}] rounded-2xl`}>
+                <div className={`p-10 border border-dashed border-[var(--color-border-color)] rounded-2xl`}>
                     <h2 className="text-3xl font-bold mb-2">Presentation Deck</h2>
                     <p className="text-lg text-gray-400 max-w-md">Analyze a script to automatically generate a presentation with storyboards, characters, and moodboards.</p>
                 </div>
@@ -236,7 +235,7 @@ const PresentationTab: React.FC<{ scriptAnalysis: ScriptAnalysis | null }> = ({ 
              {viewingItem && <ItemGalleryModal item={viewingItem} onClose={() => setViewingItem(null)} />}
             <header className="text-center">
                 <h1 className="text-4xl font-bold mb-2">{title}</h1>
-                <p className={`text-lg text-[${THEME_COLORS.text_secondary}]`}>{logline}</p>
+                <p className={`text-lg text-[var(--color-text-secondary)]`}>{logline}</p>
             </header>
 
             <section>
@@ -250,8 +249,8 @@ const PresentationTab: React.FC<{ scriptAnalysis: ScriptAnalysis | null }> = ({ 
                             <MoodboardCategory title="Other" items={moodboard.other.items} />
                         </>
                     ) : (
-                        <div className={`flex items-center justify-center h-48 bg-[${THEME_COLORS.surface_card}] rounded-lg border border-dashed border-[${THEME_COLORS.border_color}]`}>
-                            <p className={`text-sm text-[${THEME_COLORS.text_secondary}]`}>No references added to moodboard yet.</p>
+                        <div className={`flex items-center justify-center h-48 bg-[var(--color-surface-card)] rounded-lg border border-dashed border-[var(--color-border-color)]`}>
+                            <p className={`text-sm text-[var(--color-text-secondary)]`}>No references added to moodboard yet.</p>
                         </div>
                     )}
                 </div>

@@ -18,7 +18,7 @@ interface DirectorWidgetProps {
   setScriptAnalysis: (analysis: ScriptAnalysis | ((prev: ScriptAnalysis | null) => ScriptAnalysis | null)) => void;
 }
 
-const WELCOME_MESSAGE = 'Welcome. I have reviewed the project materials. How can I assist you with the creative direction?\n\nI can also execute commands like:\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"';
+const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography with comprehensive cinematography expertise. I have reviewed the project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
 const ACCENT_HEX = '#10A37F';
 
 const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScriptAnalysis }) => {
@@ -63,6 +63,39 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       return { type: 'upscale', subject };
     }
 
+    // Check for lens recommendation command
+    const lensMatch = lowerInput.match(/recommend\s+lens\s+(?:for\s+)?(.+)/i);
+    if (lensMatch) {
+      return { type: 'technical', subType: 'lens', query: lensMatch[1].trim() };
+    }
+
+    // Check for lighting setup command
+    const lightingMatch = lowerInput.match(/(?:setup|suggest)\s+lighting\s+(?:for\s+)?(.+)/i);
+    if (lightingMatch) {
+      return { type: 'technical', subType: 'lighting', query: lightingMatch[1].trim() };
+    }
+
+    // Check for DOF calculation command
+    const dofMatch = lowerInput.match(/calculate\s+(?:dof|depth\s+of\s+field)\s+(?:for\s+)?f\/?([\d.]+)\s+(?:at\s+)?([\d.]+)m?\s+(?:with\s+)?([\d]+)mm/i);
+    if (dofMatch) {
+      const fStop = parseFloat(dofMatch[1]);
+      const distance = parseFloat(dofMatch[2]);
+      const focalLength = parseInt(dofMatch[3], 10);
+      return { type: 'technical', subType: 'dof', fStop, distance, focalLength };
+    }
+
+    // Check for camera movement suggestion
+    const movementMatch = lowerInput.match(/suggest\s+(?:camera\s+)?movement\s+(?:for\s+)?(.+)/i);
+    if (movementMatch) {
+      return { type: 'technical', subType: 'movement', query: movementMatch[1].trim() };
+    }
+
+    // Check for color grading command
+    const colorMatch = lowerInput.match(/color\s+grade\s+(?:for\s+)?(.+)/i);
+    if (colorMatch) {
+      return { type: 'technical', subType: 'color', query: colorMatch[1].trim() };
+    }
+
     return null;
   };
 
@@ -70,6 +103,42 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     if (!scriptAnalysis) return null;
 
     try {
+      // Handle new technical commands
+      if (command.type === 'technical') {
+        const { askTheDirector } = await import('../services/aiService');
+        let query = '';
+
+        switch (command.subType) {
+          case 'lens':
+            query = `Recommend the best lens focal length for ${command.query}. Include specific mm recommendations and explain why.`;
+            break;
+          case 'lighting':
+            query = `Provide a detailed lighting setup for ${command.query}. Include key light position, fill ratio, and color temperature in Kelvin.`;
+            break;
+          case 'dof':
+            const { calculateDepthOfField } = await import('../services/directorKnowledge');
+            const dofResult = calculateDepthOfField(command.focalLength, command.fStop, command.distance);
+            return {
+              success: true,
+              message: `**Depth of Field Calculation:**\n• Focal Length: ${command.focalLength}mm\n• Aperture: f/${command.fStop}\n• Focus Distance: ${command.distance}m\n\n**Results:**\n• Near Focus: ${dofResult.near.toFixed(2)}m\n• Far Focus: ${dofResult.far === Infinity ? 'Infinity' : dofResult.far.toFixed(2) + 'm'}\n• Total DOF: ${dofResult.total === Infinity ? 'Infinity' : dofResult.total.toFixed(2) + 'm'}\n• Hyperfocal Distance: ${dofResult.hyperfocal.toFixed(2)}m\n\n*Tip: At f/${command.fStop}, everything from ${dofResult.near.toFixed(2)}m to ${dofResult.far === Infinity ? 'infinity' : dofResult.far.toFixed(2) + 'm'} will be in acceptable focus.*`
+            };
+          case 'movement':
+            query = `Suggest the best camera movement technique for ${command.query}. Include specific equipment and speed recommendations.`;
+            break;
+          case 'color':
+            query = `Recommend color grading approach for ${command.query}. Include specific color temperature, LUT suggestions, and tint adjustments.`;
+            break;
+        }
+
+        if (query) {
+          const response = await askTheDirector(scriptAnalysis, query);
+          return {
+            success: true,
+            message: response
+          };
+        }
+      }
+
       if (command.type === 'generate') {
         // Find matching character or location
         const character = scriptAnalysis.characters.find(c =>
@@ -408,11 +477,19 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   <span className="font-medium">Send</span>
                 </Button>
               </div>
-              <div className="mt-2 flex gap-2 text-[10px] text-white/30">
-                <span>💡 Commands:</span>
-                <span>"Generate 3 flux images of Elena 16:9"</span>
-                <span>•</span>
-                <span>"Upscale the cafe image"</span>
+              <div className="mt-2 text-[10px] text-white/30">
+                <div className="flex gap-2 mb-1">
+                  <span>💡 Image Commands:</span>
+                  <span>"Generate 3 flux images of Elena 16:9"</span>
+                  <span>•</span>
+                  <span>"Upscale the cafe image"</span>
+                </div>
+                <div className="flex gap-2">
+                  <span>🎬 Tech Commands:</span>
+                  <span>"Recommend lens for close-up"</span>
+                  <span>•</span>
+                  <span>"Calculate DOF for f/2.8 at 3m with 85mm"</span>
+                </div>
               </div>
             </form>
           </div>

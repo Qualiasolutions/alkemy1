@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { SaveIcon, FilmIcon, AlertCircleIcon, CheckIcon, DownloadIcon } from '../components/icons/Icons';
 import { TimelineClip } from '../types';
@@ -152,8 +151,8 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
   return (
     <div className="w-full h-full flex flex-col bg-zinc-950 text-white p-6">
       <header className="mb-6">
-        <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Exports</h2>
-        <p className={`text-md text-[${THEME_COLORS.text_secondary}]`}>Render your timeline to final video files in multiple formats and resolutions.</p>
+        <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Exports</h2>
+        <p className={`text-md text-[var(--color-text-secondary)]`}>Render your timeline to final video files in multiple formats and resolutions.</p>
       </header>
 
       {!isFFmpegInitialized && (
@@ -188,7 +187,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
         {/* Left: Export Settings */}
-        <div className={`bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6 space-y-5`}>
+        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 space-y-5`}>
           <h3 className="text-lg font-semibold">Export Settings</h3>
 
           <div>
@@ -275,7 +274,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
         </div>
 
         {/* Right: Export Queue */}
-        <div className={`lg:col-span-2 bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-6 flex flex-col`}>
+        <div className={`lg:col-span-2 bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}>
           <h3 className="text-lg font-semibold mb-4">Export Queue ({exportJobs.length})</h3>
 
           <div className="flex-1 overflow-y-auto space-y-3">

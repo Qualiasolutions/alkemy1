@@ -90,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                           const activeBg = isDark
                             ? 'bg-gradient-to-r from-[#10A37F]/20 to-[#1AD8B1]/10'
                             : 'bg-gradient-to-r from-[#0FB98D]/20 to-[#0D8F74]/10';
-                          const activeText = `text-[${colors.accent_primary}]`;
+                          const activeText = `text-[var(--color-accent-primary)]`;
                           const inactiveText = isDark ? 'text-[#A0A0A0]' : 'text-[#505050]';
                           const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#EBEBEB]';
                           const hoverText = isDark ? 'hover:text-white' : 'hover:text-black';
@@ -135,7 +135,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
               const activeBg = isDark
                 ? 'bg-gradient-to-r from-[#10A37F]/20 to-[#1AD8B1]/10'
                 : 'bg-gradient-to-r from-[#0FB98D]/20 to-[#0D8F74]/10';
-              const activeText = `text-[${colors.accent_primary}]`;
+              const activeText = `text-[var(--color-accent-primary)]`;
               const inactiveText = isDark ? 'text-[#A0A0A0]' : 'text-[#505050]';
               const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#EBEBEB]';
               const hoverText = isDark ? 'hover:text-white' : 'hover:text-black';

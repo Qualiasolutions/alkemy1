@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnalyzedCharacter, AnalyzedLocation, Generation, Moodboard } from '../types';
-import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { UsersIcon, MapPinIcon, ArrowLeftIcon, AlkemyLoadingIcon, XIcon, PlusIcon, ImagePlusIcon, Trash2Icon, PaperclipIcon, ExpandIcon } from '../components/icons/Icons';
 import { generateStillVariants, refineVariant, upscaleImage } from '../services/aiService';
@@ -545,7 +544,7 @@ const GenerationView: React.FC<{
                 <div className="px-4">
                     {item.data.imageUrl && (
                         <div className="mb-8">
-                            <h4 className={`text-lg font-semibold mb-3 text-[${THEME_COLORS.text_primary}]`}>Main Visual</h4>
+                            <h4 className={`text-lg font-semibold mb-3 text-[var(--color-text-primary)]`}>Main Visual</h4>
                             <img src={item.data.imageUrl} alt={`Main visual for ${item.data.name}`} className="rounded-lg max-w-lg mx-auto aspect-video object-cover" />
                         </div>
                     )}
@@ -645,7 +644,7 @@ const GenerationView: React.FC<{
                                         <select
                                             value={model}
                                             onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')}
-                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
+                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
                                         >
                                             <option>Imagen</option>
                                             <option>Gemini Flash Image</option>
@@ -654,7 +653,7 @@ const GenerationView: React.FC<{
                                         <select
                                             value={aspectRatio}
                                             onChange={e => setAspectRatio(e.target.value)}
-                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
+                                            className="bg-gradient-to-br from-gray-700/80 to-gray-800/80 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
                                         >
                                             <option>16:9</option>
                                             <option>9:16</option>
