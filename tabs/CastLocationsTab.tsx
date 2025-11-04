@@ -507,36 +507,63 @@ const Card: React.FC<{
     onAttach: () => void;
     onDelete: () => void;
 }> = ({ item, icon, onClick, onAttach, onDelete }) => {
-    const truncatedDescription = item.description.length > 100
-        ? item.description.substring(0, 100) + '...'
-        : item.description;
-
     return (
-        <div className={`relative group bg-[${THEME_COLORS.surface_card}] rounded-lg border border-[${THEME_COLORS.border_color}] p-4 flex flex-col hover:border-[${THEME_COLORS.accent_primary}] transition-colors`}>
-            <div onClick={onClick} className="cursor-pointer flex flex-col flex-grow">
-                <div className={`aspect-video bg-[${THEME_COLORS.background_primary}] rounded-md mb-3 flex items-center justify-center overflow-hidden`}>
-                    {item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" /> : icon}
+        <div className={`relative group bg-[${THEME_COLORS.surface_card}] rounded-xl border border-[${THEME_COLORS.border_color}] overflow-hidden hover:border-[${THEME_COLORS.accent_primary}] transition-all hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1`}>
+            {/* Image Section */}
+            <div onClick={onClick} className="cursor-pointer">
+                <div className={`aspect-video bg-[${THEME_COLORS.background_primary}] flex items-center justify-center overflow-hidden relative group-hover:scale-105 transition-transform duration-300`}>
+                    {item.imageUrl ? (
+                        <>
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-center text-gray-600">
+                            {icon}
+                        </div>
+                    )}
+                    {/* Action Buttons Overlay */}
+                    <div className="absolute top-2 left-2 right-2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                            aria-label={`Delete ${item.name}`}
+                            className="p-2 bg-black/70 backdrop-blur-sm rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-500/20 transition-all"
+                        >
+                            <Trash2Icon className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAttach(); }}
+                            aria-label={`Attach image for ${item.name}`}
+                            className="p-2 bg-black/70 backdrop-blur-sm rounded-lg text-gray-300 hover:text-teal-400 hover:bg-teal-500/20 transition-all"
+                        >
+                            <ImagePlusIcon className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
-                <h5 className="font-semibold">{item.name}</h5>
-                <p className={`text-sm text-[${THEME_COLORS.text_secondary}] flex-grow mb-3 h-12 overflow-hidden`}>{truncatedDescription}</p>
-                <div className={`text-xs text-[${THEME_COLORS.text_secondary}] mt-auto pt-2`}>
-                    {item.generations?.length || 0} generations
+
+                {/* Content Section */}
+                <div className="p-4">
+                    <h5 className={`text-lg font-bold mb-2 text-[${THEME_COLORS.text_primary}] line-clamp-1`}>
+                        {item.name}
+                    </h5>
+                    <p className={`text-sm text-[${THEME_COLORS.text_secondary}] leading-relaxed line-clamp-3 mb-3`}>
+                        {item.description}
+                    </p>
+
+                    {/* Footer Stats */}
+                    <div className="flex items-center justify-between pt-3 border-t border-[${THEME_COLORS.border_color}]">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${item.imageUrl ? 'bg-green-500' : 'bg-gray-600'}`} />
+                            <span className={`text-xs ${item.imageUrl ? 'text-green-400' : 'text-gray-500'}`}>
+                                {item.imageUrl ? 'Image Set' : 'No Image'}
+                            </span>
+                        </div>
+                        <span className={`text-xs font-medium text-[${THEME_COLORS.text_secondary}]`}>
+                            {item.generations?.length || 0} {item.generations?.length === 1 ? 'variant' : 'variants'}
+                        </span>
+                    </div>
                 </div>
             </div>
-            <button
-                onClick={(e) => { e.stopPropagation(); onAttach(); }}
-                aria-label={`Attach image for ${item.name}`}
-                className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-            >
-                <ImagePlusIcon className="w-5 h-5" />
-            </button>
-            <button
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                aria-label={`Delete ${item.name}`}
-                className="absolute top-2 left-2 p-1.5 text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-            >
-                <Trash2Icon className="w-4 h-4" />
-            </button>
         </div>
     );
 };

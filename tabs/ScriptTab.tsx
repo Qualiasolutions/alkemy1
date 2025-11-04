@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useTheme } from '../theme/ThemeContext';
 import { THEME_COLORS } from '../constants';
 import Button from '../components/Button';
 import { ScriptAnalysis } from '../types';
@@ -48,6 +50,7 @@ interface ScriptTabProps {
 }
 
 const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScriptUpdate, isAnalyzing, analysisError, analysisMessage, onAnalyze }) => {
+    const { isDark } = useTheme();
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [isParsing, setIsParsing] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -257,75 +260,257 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
 
     if (!scriptContent) {
         return (
-             <div>
-                <h2 className={`text-2xl font-bold mb-1 text-[${THEME_COLORS.text_primary}]`}>Script</h2>
-                <p className={`text-md text-[${THEME_COLORS.text_secondary}] mb-6`}>Upload a script to automatically break it down into scenes, characters, and locations.</p>
-                
-                {inputMode === 'upload' ? (
-                    <div 
-                        className="flex flex-col items-center justify-center h-[calc(100vh-15rem)] text-center"
-                        onDragEnter={handleDragEnter}
-                        onDragLeave={handleDragLeave}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                    >
-                        <div
-                            onClick={() => fileInputRef.current?.click()}
-                            className={`p-10 border-2 border-dashed border-[${THEME_COLORS.border_color}] rounded-2xl w-full max-w-2xl cursor-pointer transition-colors duration-300 ${isDragging ? `border-[${THEME_COLORS.accent_primary}] bg-[${THEME_COLORS.hover_background}]` : ''}`}
-                            aria-label="Script upload dropzone"
-                            role="button"
-                            tabIndex={0}
-                        >
-                            <div className="flex justify-center mb-4">
-                                <span className={`w-12 h-12 text-[${THEME_COLORS.text_secondary}]`}>
-                                    <UploadCloudIcon />
-                                </span>
-                            </div>
-                            <h3 className={`text-xl font-semibold mb-1 text-[${THEME_COLORS.text_primary}]`}>Drag & drop script file</h3>
-                            <p className={`text-md text-[${THEME_COLORS.text_secondary}]`}>or click to browse</p>
-                            <p className={`text-xs text-[${THEME_COLORS.text_secondary}] mt-4`}>Supported formats: .pdf, .txt, .fountain, .md</p>
-                        </div>
-                        <p className="mt-6 text-sm text-gray-400">
-                            Don't have a file?{' '}
-                            <button onClick={() => setInputMode('paste')} className={`font-semibold text-[${THEME_COLORS.accent_primary}] hover:underline focus:outline-none`}>
-                                Paste your script directly.
-                            </button>
-                        </p>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            accept=".pdf,.txt,.md,.fountain"
-                            onChange={handleFileSelect}
-                            aria-hidden="true"
+            <div className="relative min-h-[calc(100vh-12rem)] flex items-center justify-center overflow-hidden">
+                {/* Elegant Background Effects */}
+                <div className="absolute inset-0 pointer-events-none">
+                    {/* Animated gradient halos */}
+                    <motion.div
+                        animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.15, 0.25, 0.15],
+                            x: [0, 50, 0],
+                            y: [0, -30, 0]
+                        }}
+                        transition={{
+                            duration: 8,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className={`absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl ${
+                            isDark ? 'bg-gradient-to-br from-teal-500/20 to-cyan-500/10' : 'bg-gradient-to-br from-teal-400/25 to-cyan-400/15'
+                        }`}
+                    />
+                    <motion.div
+                        animate={{
+                            scale: [1, 1.15, 1],
+                            opacity: [0.12, 0.22, 0.12],
+                            x: [0, -40, 0],
+                            y: [0, 40, 0]
+                        }}
+                        transition={{
+                            duration: 10,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: 1
+                        }}
+                        className={`absolute bottom-1/4 right-1/3 w-[450px] h-[450px] rounded-full blur-3xl ${
+                            isDark ? 'bg-gradient-to-tl from-purple-500/15 to-pink-500/8' : 'bg-gradient-to-tl from-purple-400/20 to-pink-400/12'
+                        }`}
+                    />
+                    <motion.div
+                        animate={{
+                            scale: [1, 1.1, 1],
+                            opacity: [0.1, 0.2, 0.1]
+                        }}
+                        transition={{
+                            duration: 12,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: 2
+                        }}
+                        className={`absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full blur-3xl ${
+                            isDark ? 'bg-gradient-to-br from-blue-500/12 to-indigo-500/8' : 'bg-gradient-to-br from-blue-400/18 to-indigo-400/12'
+                        }`}
+                    />
+
+                    {/* Floating particles */}
+                    {[...Array(12)].map((_, i) => (
+                        <motion.div
+                            key={i}
+                            className={`absolute w-1 h-1 rounded-full ${
+                                isDark ? 'bg-teal-400/30' : 'bg-teal-500/40'
+                            }`}
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 100}%`,
+                            }}
+                            animate={{
+                                y: [0, -30, 0],
+                                x: [0, Math.random() * 20 - 10, 0],
+                                opacity: [0.2, 0.6, 0.2],
+                                scale: [1, 1.5, 1]
+                            }}
+                            transition={{
+                                duration: 4 + Math.random() * 4,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                                delay: Math.random() * 3
+                            }}
                         />
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-[calc(100vh-15rem)] text-center">
-                        <form onSubmit={handlePasteSubmit} className="w-full max-w-2xl">
-                            <h3 className="text-xl font-semibold mb-4">Paste your script</h3>
-                            <textarea
-                                value={pastedScript}
-                                onChange={(e) => setPastedScript(e.target.value)}
-                                placeholder="INT. COFFEE SHOP - DAY..."
-                                className={`w-full h-64 bg-[${THEME_COLORS.surface_card}] border border-[${THEME_COLORS.border_color}] rounded-xl p-4 text-sm text-gray-300 font-mono focus:outline-none focus:ring-2 focus:ring-[${THEME_COLORS.accent_primary}]`}
-                                aria-label="Paste script content"
-                            />
-                            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <Button type="submit" variant="primary" disabled={!pastedScript.trim()}>
-                                    Submit Script
-                                </Button>
-                                <button
-                                    type="button"
-                                    onClick={() => setInputMode('upload')}
-                                    className={`text-sm font-semibold text-[${THEME_COLORS.text_secondary}] hover:text-[${THEME_COLORS.accent_primary}] transition-colors`}
+                    ))}
+                </div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="relative z-10 w-full max-w-4xl mx-auto px-8 text-center"
+                >
+                    {/* Centered Title Section */}
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="mb-12"
+                    >
+                        <h1 className={`text-6xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>
+                            <span className={`bg-gradient-to-r ${
+                                isDark
+                                    ? 'from-teal-400 via-cyan-400 to-teal-500'
+                                    : 'from-teal-600 via-cyan-600 to-teal-700'
+                            } bg-clip-text text-transparent inline-block`}>
+                                Script Analysis
+                            </span>
+                        </h1>
+                        <p className={`text-xl ${isDark ? 'text-gray-400' : 'text-gray-600'} max-w-2xl mx-auto leading-relaxed`}>
+                            Upload a script to automatically break it down into scenes, characters, and locations with AI-powered precision
+                        </p>
+                    </motion.div>
+
+                    {inputMode === 'upload' ? (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.4, delay: 0.3 }}
+                            onDragEnter={handleDragEnter}
+                            onDragLeave={handleDragLeave}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                        >
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className={`relative p-16 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 backdrop-blur-sm ${
+                                    isDragging
+                                        ? isDark
+                                            ? 'border-teal-400 bg-teal-500/10 shadow-lg shadow-teal-500/20'
+                                            : 'border-teal-600 bg-teal-500/15 shadow-lg shadow-teal-500/30'
+                                        : isDark
+                                            ? 'border-gray-700 bg-gray-900/30 hover:border-teal-500/50 hover:bg-gray-900/50'
+                                            : 'border-gray-300 bg-white/40 hover:border-teal-500/50 hover:bg-white/60'
+                                }`}
+                                aria-label="Script upload dropzone"
+                                role="button"
+                                tabIndex={0}
+                            >
+                                <motion.div
+                                    animate={{
+                                        y: isDragging ? -5 : 0,
+                                        scale: isDragging ? 1.05 : 1
+                                    }}
+                                    transition={{ duration: 0.2 }}
+                                    className="flex flex-col items-center"
                                 >
-                                    or upload a file instead
-                                </button>
+                                    <motion.div
+                                        animate={{
+                                            y: [0, -8, 0]
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            ease: "easeInOut"
+                                        }}
+                                        className={`w-20 h-20 mb-6 ${
+                                            isDark ? 'text-teal-400' : 'text-teal-600'
+                                        }`}
+                                    >
+                                        <UploadCloudIcon />
+                                    </motion.div>
+                                    <h3 className={`text-2xl font-bold mb-2 ${
+                                        isDark ? 'text-white' : 'text-black'
+                                    }`}>
+                                        Drag & drop your script
+                                    </h3>
+                                    <p className={`text-lg mb-4 ${
+                                        isDark ? 'text-gray-400' : 'text-gray-600'
+                                    }`}>
+                                        or click to browse files
+                                    </p>
+                                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
+                                        isDark
+                                            ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                                            : 'bg-teal-100 text-teal-700 border border-teal-200'
+                                    }`}>
+                                        <span>Supports:</span>
+                                        <span className="font-mono">.pdf</span>
+                                        <span className="font-mono">.txt</span>
+                                        <span className="font-mono">.fountain</span>
+                                        <span className="font-mono">.md</span>
+                                    </div>
+                                </motion.div>
                             </div>
-                        </form>
-                    </div>
-                )}
+                            <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                                className={`mt-8 text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                            >
+                                Don't have a file?{' '}
+                                <button
+                                    onClick={() => setInputMode('paste')}
+                                    className={`font-semibold ${
+                                        isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'
+                                    } hover:underline focus:outline-none transition-colors`}
+                                >
+                                    Paste your script directly →
+                                </button>
+                            </motion.p>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                className="hidden"
+                                accept=".pdf,.txt,.md,.fountain"
+                                onChange={handleFileSelect}
+                                aria-hidden="true"
+                            />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.4 }}
+                        >
+                            <form onSubmit={handlePasteSubmit} className="w-full">
+                                <h3 className={`text-2xl font-semibold mb-6 ${
+                                    isDark ? 'text-white' : 'text-black'
+                                }`}>
+                                    Paste your script
+                                </h3>
+                                <textarea
+                                    value={pastedScript}
+                                    onChange={(e) => setPastedScript(e.target.value)}
+                                    placeholder="INT. COFFEE SHOP - DAY&#10;&#10;A cozy neighborhood coffee shop buzzes with morning energy..."
+                                    className={`w-full h-80 rounded-2xl p-6 text-base font-mono focus:outline-none focus:ring-2 transition-all backdrop-blur-sm ${
+                                        isDark
+                                            ? 'bg-gray-900/50 border-2 border-gray-700 text-gray-300 placeholder-gray-600 focus:ring-teal-500 focus:border-teal-500'
+                                            : 'bg-white/60 border-2 border-gray-300 text-gray-800 placeholder-gray-500 focus:ring-teal-500 focus:border-teal-500'
+                                    }`}
+                                    aria-label="Paste script content"
+                                />
+                                <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        disabled={!pastedScript.trim()}
+                                        className="!px-8 !py-3 !text-lg"
+                                    >
+                                        Analyze Script
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setInputMode('upload')}
+                                        className={`text-base font-semibold transition-colors ${
+                                            isDark
+                                                ? 'text-gray-400 hover:text-teal-400'
+                                                : 'text-gray-600 hover:text-teal-600'
+                                        }`}
+                                    >
+                                        ← or upload a file instead
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    )}
+                </motion.div>
             </div>
         );
     }
