@@ -411,9 +411,9 @@ interface VisualGenerationResult {
 }
 
 export const generateVisual = async (
-    prompt: string, 
-    model: string, 
-    reference_images: string[], 
+    prompt: string,
+    model: string,
+    reference_images: string[],
     aspect_ratio: string,
     onProgress?: (progress: number) => void,
     seed: string = `${model}-${prompt}`
@@ -423,6 +423,8 @@ export const generateVisual = async (
         return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
     }
 
+    // When Imagen/Flux have reference images, use Gemini Flash Image instead (multimodal)
+    // Otherwise, use the requested model as-is
     const effectiveModel = ((model === 'Imagen' || model === 'Flux') && reference_images.length > 0) ? 'Gemini Flash Image' : model;
 
     try {
@@ -435,7 +437,8 @@ export const generateVisual = async (
         await new Promise(res => setTimeout(res, 200));
         onProgress?.(30);
 
-        if (effectiveModel === 'Imagen' || effectiveModel === 'Flux') {
+        // Use Imagen API for Imagen and Flux models (when NO reference images)
+        if ((model === 'Imagen' || model === 'Flux') && reference_images.length === 0) {
             const response = await ai.models.generateImages({
                 model: 'imagen-4.0-generate-001',
                 prompt: prompt, // Use the fully constructed prompt directly
@@ -448,7 +451,7 @@ export const generateVisual = async (
 
             onProgress?.(100);
             if (!response.generatedImages || response.generatedImages.length === 0) {
-                throw new Error(`${effectiveModel} API returned no image data.`);
+                throw new Error(`${model} API returned no image data.`);
             }
             return { url: `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`, fromFallback: false };
         

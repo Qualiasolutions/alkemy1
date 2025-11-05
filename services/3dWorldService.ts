@@ -1,31 +1,18 @@
 /**
- * World Generation Service (Currently Video-based)
+ * 3D World Generation Service - Powered by Emu3-Gen
  *
- * IMPORTANT: This service currently uses Luma Dream Machine API which generates VIDEOS, not 3D models.
- * Luma's Genie (3D generation) does not have a public API yet.
+ * Generates navigable 3D worlds using Emu3-Gen multimodal model.
+ * Creates spatiotemporally consistent multi-view environments for immersive exploration.
  *
- * Valid model options for Dream Machine:
- * - 'ray-1-6': Older generation model
- * - 'ray-2': Standard quality model
- * - 'ray-flash-2': Fast generation model
- * - 'ray-3': Latest high-quality model (recommended)
- * - 'ray-hdr-3': HDR variant of ray-3
- * - 'ray-flash-3': Fast variant of ray-3
- *
- * NOTE: This uses a serverless proxy function (/api/luma-proxy) to avoid CORS issues.
- * The Luma API key is configured server-side in Vercel environment variables.
- *
- * TODO: When Luma releases a public 3D API, update this service to use it.
- *
- * ALTERNATIVES for true navigable 3D worlds:
- * - Meshy.ai: Has API for text-to-3D mesh generation
- * - Tripo3D: Offers 3D model generation API
- * - Spline AI: 3D scene generation (may have API)
- * - Blockade Labs Skybox AI: 360° environment generation
- * - Polycam AI: 3D capture and generation
+ * Model: baaivision/emu3-gen via Replicate API
+ * Features:
+ * - Multi-view generation for cube-map/skybox
+ * - Spatiotemporally consistent world modeling
+ * - Progressive exploration with dynamic view generation
+ * - Seamless navigation through AI-generated environments
  */
 
-const LUMA_PROXY_URL = '/api/luma-proxy';
+import { generateNavigableWorld, exploreWorldDirection, generateWorldPreview, type WorldGenerationOptions, type GeneratedWorld, type WorldView } from './emuWorldService';
 
 export interface Generate3DWorldOptions {
     prompt: string;
@@ -33,69 +20,52 @@ export interface Generate3DWorldOptions {
 }
 
 export interface Generate3DWorldResult {
-    modelUrl: string;
+    modelUrl: string; // For backward compatibility, returns primary view URL
     thumbnailUrl?: string;
     generationId: string;
+    world?: GeneratedWorld; // Full world data with all views
 }
 
 /**
- * Generate a 3D world/landscape from a text prompt using Luma Genie API
+ * Generate a navigable 3D world from a text prompt
+ *
+ * This function generates multiple views of an environment that can be assembled
+ * into a navigable 3D space using cube mapping or skybox techniques.
  *
  * @param options Generation options including prompt and progress callback
- * @returns Promise with generated model URL in GLTF/GLB format
+ * @returns Promise with generated world data including multi-view images
  */
 export async function generate3DWorld(options: Generate3DWorldOptions): Promise<Generate3DWorldResult> {
     const { prompt, onProgress } = options;
 
     try {
-        // Enhance prompt for cinematic landscape generation
-        const enhancedPrompt = enhancePromptForLandscape(prompt);
+        onProgress?.(5, 'Initializing Emu3-Gen world generation...');
 
-        onProgress?.(10, 'Initiating 3D world generation...');
-
-        // Step 1: Create generation task using proxy endpoint
-        const generationResponse = await fetch(LUMA_PROXY_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                endpoint: '/generations',
-                method: 'POST',
-                body: {
-                    prompt: enhancedPrompt,
-                    aspect_ratio: '16:9',
-                    model: 'ray-3'  // Using latest video model - 3D API not available yet
-                }
-            }),
+        // Generate complete navigable world with 6 views
+        const world = await generateNavigableWorld({
+            prompt,
+            numViews: 6, // Generate all 6 cube faces
+            guidanceScale: 3,
+            onProgress: (progress, status) => {
+                // Map 0-100 progress from world generation to 5-95 in total flow
+                const mappedProgress = 5 + (progress * 0.9);
+                onProgress?.(mappedProgress, status);
+            }
         });
 
-        if (!generationResponse.ok) {
-            const errorData = await generationResponse.json().catch(() => ({}));
-            console.error('Luma generation error response:', errorData);
-            throw new Error(
-                `Luma API error (${generationResponse.status}): ${JSON.stringify(errorData)}`
-            );
-        }
+        onProgress?.(98, 'Finalizing world data...');
 
-        const generationData = await generationResponse.json();
-        const generationId = generationData.id;
+        // Use front view as primary/thumbnail for backward compatibility
+        const frontView = world.views.find(v => v.direction === 'front');
+        const modelUrl = frontView?.imageUrl || world.views[0].imageUrl;
 
-        if (!generationId) {
-            throw new Error('Failed to get generation ID from Luma API');
-        }
-
-        onProgress?.(30, 'Generating 3D landscape...');
-
-        // Step 2: Poll for completion
-        const modelUrl = await pollForCompletion(generationId, onProgress);
-
-        onProgress?.(100, 'Generation complete!');
+        onProgress?.(100, 'World generation complete!');
 
         return {
-            modelUrl,
-            generationId,
-            thumbnailUrl: generationData.thumbnail_url,
+            modelUrl, // Primary front view
+            thumbnailUrl: modelUrl,
+            generationId: world.id,
+            world // Complete world data with all views
         };
 
     } catch (error) {
@@ -109,122 +79,69 @@ export async function generate3DWorld(options: Generate3DWorldOptions): Promise<
 }
 
 /**
- * Enhance user prompt for better landscape generation
+ * Generate a quick preview of the world (front view only)
+ * Useful for fast feedback before generating full world
  */
-function enhancePromptForLandscape(userPrompt: string): string {
-    // Add cinematic context to improve generation quality
-    const landscapeKeywords = [
-        'landscape', 'terrain', 'environment', 'scene', 'world',
-        'mountains', 'forest', 'desert', 'city', 'urban'
-    ];
-
-    const hasLandscapeContext = landscapeKeywords.some(keyword =>
-        userPrompt.toLowerCase().includes(keyword)
-    );
-
-    if (!hasLandscapeContext) {
-        return `Cinematic 3D environment: ${userPrompt}, detailed terrain with atmospheric perspective`;
-    }
-
-    return `Cinematic 3D ${userPrompt}, high detail, professional production quality`;
-}
-
-/**
- * Poll Luma API for generation completion using proxy
- */
-async function pollForCompletion(
-    generationId: string,
+export async function generateWorldQuickPreview(
+    prompt: string,
     onProgress?: (progress: number, status: string) => void
 ): Promise<string> {
-    const maxAttempts = 120; // 120 attempts = 2 minutes max wait
-    const pollInterval = 1000; // 1 second between polls
-
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-
-        try {
-            const statusResponse = await fetch(LUMA_PROXY_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    endpoint: `/generations/${generationId}`,
-                    method: 'GET'
-                }),
-            });
-
-            if (!statusResponse.ok) {
-                throw new Error(`Status check failed: ${statusResponse.statusText}`);
-            }
-
-            const statusData = await statusResponse.json();
-            const status = statusData.state;
-            const progress = 30 + Math.floor((attempt / maxAttempts) * 60);
-
-            // Update progress based on status
-            if (status === 'pending' || status === 'queued') {
-                onProgress?.(progress, 'Queued for generation...');
-                continue;
-            }
-
-            if (status === 'processing' || status === 'generating') {
-                onProgress?.(progress, 'Generating 3D landscape...');
-                continue;
-            }
-
-            // Check for completion
-            if (status === 'completed') {
-                // Dream Machine returns video URL, not 3D models
-                const videoUrl = statusData.assets?.video || statusData.video_url || statusData.url;
-
-                if (!videoUrl) {
-                    throw new Error('Generation completed but no video URL provided');
-                }
-
-                // Return video URL (frontend will need to handle this differently than 3D model)
-                console.warn('Note: Luma API returned video URL, not 3D model. True 3D generation not available yet.');
-                return videoUrl;
-            }
-
-            // Check for failure
-            if (status === 'failed') {
-                throw new Error(statusData.failure_reason || 'Generation failed');
-            }
-
-        } catch (error) {
-            console.error(`Polling attempt ${attempt + 1} failed:`, error);
-            // Continue polling unless it's the last attempt
-            if (attempt === maxAttempts - 1) {
-                throw error;
-            }
-        }
+    try {
+        return await generateWorldPreview(prompt, onProgress);
+    } catch (error) {
+        console.error('World preview error:', error);
+        throw new Error(
+            error instanceof Error
+                ? `Failed to generate preview: ${error.message}`
+                : 'Failed to generate preview'
+        );
     }
-
-    throw new Error('Generation timed out after 2 minutes');
 }
 
 /**
- * Validate if a URL is a valid 3D model format
+ * Explore world in a specific direction
+ * Generates new view as user navigates beyond initial world boundaries
+ */
+export async function exploreWorld(
+    world: GeneratedWorld,
+    direction: WorldView['direction'],
+    onProgress?: (progress: number, status: string) => void
+): Promise<WorldView> {
+    try {
+        return await exploreWorldDirection(world, direction, onProgress);
+    } catch (error) {
+        console.error('World exploration error:', error);
+        throw new Error(
+            error instanceof Error
+                ? `Failed to explore world: ${error.message}`
+                : 'Failed to explore world'
+        );
+    }
+}
+
+/**
+ * Validate if a URL is a valid image for world generation
+ * (Images are used for cube-map textures)
  */
 export function isValid3DModelUrl(url: string): boolean {
     if (!url) return false;
 
-    const validExtensions = ['.glb', '.gltf', '.obj', '.fbx'];
+    // Accept image URLs (used for skybox textures)
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.glb', '.gltf'];
     const lowerUrl = url.toLowerCase();
 
-    return validExtensions.some(ext => lowerUrl.includes(ext)) || url.startsWith('blob:');
+    return validExtensions.some(ext => lowerUrl.includes(ext)) || url.startsWith('blob:') || url.startsWith('http');
 }
 
 /**
- * Download 3D model from URL and convert to blob URL for local use
+ * Download world view from URL and convert to blob URL for local use
  */
-export async function download3DModel(modelUrl: string): Promise<string> {
+export async function download3DModel(imageUrl: string): Promise<string> {
     try {
-        const response = await fetch(modelUrl);
+        const response = await fetch(imageUrl);
 
         if (!response.ok) {
-            throw new Error(`Failed to download model: ${response.statusText}`);
+            throw new Error(`Failed to download world view: ${response.statusText}`);
         }
 
         const blob = await response.blob();
@@ -232,7 +149,29 @@ export async function download3DModel(modelUrl: string): Promise<string> {
 
         return blobUrl;
     } catch (error) {
-        console.error('Model download error:', error);
-        throw new Error('Failed to download 3D model');
+        console.error('World view download error:', error);
+        throw new Error('Failed to download world view');
     }
+}
+
+/**
+ * Convert world views to cube map texture URLs
+ * Returns object with URLs for each face of the cube map
+ */
+export function worldViewsToCubeMap(world: GeneratedWorld): Record<string, string> {
+    const cubeMap: Record<string, string> = {};
+
+    world.views.forEach(view => {
+        cubeMap[view.direction] = view.imageUrl;
+    });
+
+    return cubeMap;
+}
+
+/**
+ * Check if world generation is available
+ */
+export function isWorldGenerationAvailable(): boolean {
+    // Emu3-Gen is always available via Replicate proxy
+    return true;
 }

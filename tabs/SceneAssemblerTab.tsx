@@ -930,6 +930,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
     // 3D World Viewer state
     const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
     const [generated3DModelUrl, setGenerated3DModelUrl] = useState<string | null>(null);
+    const [generatedWorld, setGeneratedWorld] = useState<import('../services/emuWorldService').GeneratedWorld | null>(null);
 
     const handleGenerate3DWorld = async (prompt: string) => {
         try {
@@ -940,6 +941,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
                 }
             });
             setGenerated3DModelUrl(result.modelUrl);
+            setGeneratedWorld(result.world || null); // Store full world data
         } catch (error) {
             console.error('Failed to generate 3D world:', error);
             throw error;
@@ -1030,6 +1032,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
                 isOpen={is3DViewerOpen}
                 onClose={() => setIs3DViewerOpen(false)}
                 generatedModelUrl={generated3DModelUrl}
+                generatedWorld={generatedWorld}
                 onGenerate={handleGenerate3DWorld}
             />
 
