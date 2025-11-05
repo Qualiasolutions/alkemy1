@@ -43,10 +43,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
     >
       {/* Subtle accent glow effects */}
       <div className={`absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none ${
-        isDark ? 'bg-teal-500/5' : 'bg-teal-500/8'
+        isDark ? 'bg-emerald-500/5' : 'bg-emerald-500/8'
       }`} />
       <div className={`absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none ${
-        isDark ? 'bg-green-400/3' : 'bg-green-400/6'
+        isDark ? 'bg-emerald-400/3' : 'bg-emerald-400/6'
       }`} />
       <div className={`flex items-center gap-3 mb-8 transition-all duration-300 ${isSidebarExpanded ? 'px-2' : 'justify-center'}`}>
         <LogoIcon />
@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                   <button
                     onClick={() => toggleSection(section.name)}
                     className={`w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 ${
-                      isDark ? 'text-gray-500 hover:text-teal-400' : 'text-gray-500 hover:text-teal-600'
+                      isDark ? 'text-gray-500 hover:text-emerald-400' : 'text-gray-500 hover:text-emerald-600'
                     }`}
                   >
                     {section.name}
@@ -88,11 +88,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                         {section.tabs.map((tab) => {
                           const isActive = activeTab === tab.id;
                           const activeBg = isDark
-                            ? 'bg-gradient-to-r from-[#10A37F]/20 to-[#1AD8B1]/10'
-                            : 'bg-gradient-to-r from-[#0FB98D]/20 to-[#0D8F74]/10';
+                            ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-400/10'
+                            : 'bg-gradient-to-r from-emerald-600/20 to-emerald-500/10';
                           const activeText = `text-[var(--color-accent-primary)]`;
-                          const inactiveText = isDark ? 'text-[#A0A0A0]' : 'text-[#505050]';
-                          const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#EBEBEB]';
+                          const inactiveText = isDark ? 'text-[#A8A8A8]' : 'text-[#4B5563]';
+                          const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#F3F4F6]';
                           const hoverText = isDark ? 'hover:text-white' : 'hover:text-black';
 
                           return (
@@ -109,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                                   <motion.span
                                     layoutId="sidebar-active-pill"
                                     className={`absolute inset-0 rounded-lg ${activeBg} border ${
-                                      isDark ? 'border-[#10A37F]/30' : 'border-[#0FB98D]/30'
+                                      isDark ? 'border-emerald-500/30' : 'border-emerald-600/30'
                                     }`}
                                     transition={{ type: 'spring', stiffness: 420, damping: 38 }}
                                   />
@@ -133,11 +133,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
             {TABS.map(tab => {
               const isActive = activeTab === tab.id;
               const activeBg = isDark
-                ? 'bg-gradient-to-r from-[#10A37F]/20 to-[#1AD8B1]/10'
-                : 'bg-gradient-to-r from-[#0FB98D]/20 to-[#0D8F74]/10';
+                ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-400/10'
+                : 'bg-gradient-to-r from-emerald-600/20 to-emerald-500/10';
               const activeText = `text-[var(--color-accent-primary)]`;
-              const inactiveText = isDark ? 'text-[#A0A0A0]' : 'text-[#505050]';
-              const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#EBEBEB]';
+              const inactiveText = isDark ? 'text-[#A8A8A8]' : 'text-[#4B5563]';
+              const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#F3F4F6]';
               const hoverText = isDark ? 'hover:text-white' : 'hover:text-black';
 
               return (
@@ -154,7 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                       <motion.span
                         layoutId="sidebar-collapsed-active"
                         className={`absolute inset-0 rounded-lg ${activeBg} border ${
-                          isDark ? 'border-[#10A37F]/30' : 'border-[#0FB98D]/30'
+                          isDark ? 'border-emerald-500/30' : 'border-emerald-600/30'
                         }`}
                         transition={{ type: 'spring', stiffness: 420, damping: 38 }}
                       />
@@ -224,8 +224,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         whileTap={{ scale: 0.85 }}
         className={`absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 rounded-full p-2.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 z-20 ${
           isDark
-            ? 'bg-gradient-to-br from-teal-500/20 to-green-500/10 border border-teal-500/30 text-teal-400 hover:from-teal-500/30 hover:to-green-500/20 hover:border-teal-400/50 hover:text-teal-300 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30'
-            : 'bg-gradient-to-br from-teal-400/20 to-green-400/15 border border-teal-500/40 text-teal-600 hover:from-teal-400/30 hover:to-green-400/25 hover:border-teal-600/60 hover:text-teal-700 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30'
+            ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-400/10 border border-emerald-500/30 text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-400/20 hover:border-emerald-400/50 hover:text-emerald-300 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30'
+            : 'bg-gradient-to-br from-emerald-400/20 to-emerald-300/15 border border-emerald-500/40 text-emerald-600 hover:from-emerald-400/30 hover:to-emerald-300/25 hover:border-emerald-600/60 hover:text-emerald-700 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30'
         } backdrop-blur-sm`}
       >
         {/* Animated glow ring */}
@@ -240,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
             ease: "easeInOut"
           }}
           className={`absolute inset-0 rounded-full ${
-            isDark ? 'bg-teal-500/20' : 'bg-teal-400/30'
+            isDark ? 'bg-emerald-500/20' : 'bg-emerald-400/30'
           } blur-md`}
         />
         <span className="w-5 h-5 flex items-center justify-center relative z-10">
