@@ -883,15 +883,11 @@ const AppContent: React.FC = () => {
   }
 
 
-const mainBg = isDark ? 'bg-[#05070D]' : 'bg-[#F8FAFC]';
-const contentBg = isDark
-  ? 'bg-gradient-to-b from-[#0B0F1A] via-[#0D111C] to-[#080A12]'
-  : 'bg-gradient-to-b from-[#FFFFFF] via-[#F5F7FA] to-[#EEF2F7]';
 const activeTabMeta = TABS.find(tab => tab.id === activeTab);
 const activePhase = TABS_CONFIG.find(section => section.tabs.some(tab => tab.id === activeTab))?.name ?? 'Workspace';
 
 return (
-  <div className={`relative flex min-h-screen overflow-hidden ${mainBg}`}>
+  <div className="relative flex min-h-screen overflow-hidden bg-[var(--color-background-primary)]">
     <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
     <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
 
@@ -910,35 +906,23 @@ return (
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className={`sticky top-0 z-30 border-b backdrop-blur-xl ${
-          isDark
-            ? 'border-white/5 bg-[#05070D]/80 text-white'
-            : 'border-slate-200 bg-white/85 text-slate-900'
-        }`}
+        className="sticky top-0 z-30 border-b border-[var(--color-border-color)] bg-[var(--color-background-primary)]/95 backdrop-blur-xl text-[var(--color-text-primary)]"
       >
         <div className="flex items-center justify-between gap-6 px-8 py-5">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">{activeTabMeta?.name ?? 'Alkemy AI Studio'}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">{activeTabMeta?.name ?? 'Alkemy AI Studio'}</h1>
               {scriptAnalysis?.title && (
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    isDark
-                      ? 'border border-white/10 bg-white/5 text-white/80'
-                      : 'border border-slate-200 bg-white text-slate-600'
-                  }`}
-                >
+                <span className="rounded-full px-3 py-1 text-xs font-medium border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)]">
                   {scriptAnalysis.title}
                 </span>
               )}
             </div>
-            <p className={`text-xs uppercase tracking-[0.4em] ${isDark ? 'text-white/40' : 'text-slate-500'}`}>{activePhase}</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-[var(--color-text-tertiary)]">{activePhase}</p>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 rounded-full px-4 py-2 ${
-              isDark ? 'bg-white/5 text-white/70' : 'bg-slate-100 text-slate-600'
-            }`}>
+            <div className="flex items-center gap-2 rounded-full px-4 py-2 bg-[var(--color-surface-card)] text-[var(--color-text-secondary)]">
               <motion.span
                 animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
@@ -951,11 +935,7 @@ return (
               onClick={toggleTheme}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.96 }}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
-                isDark
-                  ? 'border border-white/10 bg-white/5 text-white/80 hover:border-emerald-400/40 hover:text-white'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:border-emerald-400/40 hover:text-slate-900'
-              }`}
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-emerald-400/40 hover:text-[var(--color-text-primary)]"
             >
               {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
               <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
@@ -964,7 +944,7 @@ return (
         </div>
       </motion.header>
 
-      <main className={`relative flex-1 overflow-hidden ${contentBg}`}>
+      <main className="relative flex-1 overflow-hidden bg-[var(--color-background-secondary)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.06),_transparent_55%)]" />
         <div className="relative h-full w-full overflow-y-auto">
           <div className="mx-auto w-full max-w-[1920px] px-8 py-10 min-h-full">
@@ -975,7 +955,7 @@ return (
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -18, scale: 0.985 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className={isDark ? 'text-white' : 'text-slate-900'}
+                className="text-[var(--color-text-primary)]"
               >
                 {renderContent()}
               </motion.div>
