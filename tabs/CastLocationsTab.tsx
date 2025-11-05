@@ -343,7 +343,7 @@ const RefinementStudio: React.FC<{
                                                 }}
                                             />
                                             <div className="flex-shrink-0 bg-gradient-to-br from-gray-700/80 to-gray-800/80 text-white text-xs rounded-xl font-semibold px-4 py-2.5 border border-gray-600/50 shadow-lg">
-                                                Gemini Flash Image
+                                                Gemini Nano Banana
                                             </div>
                                         </div>
                                     </div>
@@ -394,7 +394,7 @@ const GenerationView: React.FC<{
     moodboardTemplates?: MoodboardTemplate[];
 }> = ({ item, onBack, onUpdateBatch, moodboard, moodboardTemplates = [] }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Flash Image' | 'Flux'>('Imagen');
+    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [editingGeneration, setEditingGeneration] = useState<Generation | null>(null);
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
@@ -644,11 +644,11 @@ const GenerationView: React.FC<{
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <select
                                             value={model}
-                                            onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')}
+                                            onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')}
                                             className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
                                         >
                                             <option className="bg-gray-800 text-white">Imagen</option>
-                                            <option className="bg-gray-800 text-white">Gemini Flash Image</option>
+                                            <option className="bg-gray-800 text-white">Gemini Nano Banana</option>
                                             <option className="bg-gray-800 text-white">Flux</option>
                                         </select>
                                         <select
