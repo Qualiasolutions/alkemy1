@@ -51,6 +51,16 @@ const initializeCache = (): string => {
 // Initialize cache immediately to prevent API key prompt on every load
 cachedGeminiKey = initializeCache();
 
+// Debug logging to help diagnose API key issues
+if (typeof window !== 'undefined') {
+  console.log('[API Keys] Initialization:', {
+    hasEnvKey: !!ENV_GEMINI_KEY,
+    hasCachedKey: !!cachedGeminiKey,
+    keySource: ENV_GEMINI_KEY ? 'environment' : (cachedGeminiKey ? 'localStorage' : 'none'),
+    keyPrefix: cachedGeminiKey ? cachedGeminiKey.substring(0, 10) + '...' : 'N/A'
+  });
+}
+
 const readFromLocalStorage = (): string => {
   if (typeof window === 'undefined') {
     return '';
