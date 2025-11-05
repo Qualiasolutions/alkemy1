@@ -50,23 +50,23 @@ const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary: isDark
-      ? `bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-black hover:shadow-xl hover:shadow-teal-500/40 hover:scale-105 active:scale-100`
-      : `bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 text-white hover:shadow-xl hover:shadow-teal-600/40 hover:scale-105 active:scale-100`,
+      ? `bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 text-white hover:from-emerald-400 hover:via-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-[0.98] transition-all duration-200`
+      : `bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 text-white hover:from-emerald-500 hover:via-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-600/30 hover:shadow-xl hover:shadow-emerald-600/50 active:scale-[0.98] transition-all duration-200`,
     secondary: isDark
-      ? `bg-transparent text-white border border-gray-700 hover:bg-gray-800/50 hover:border-teal-500/50 backdrop-blur-sm`
-      : `bg-transparent text-black border border-gray-300 hover:bg-gray-100 hover:border-teal-500/50`,
+      ? `bg-transparent text-white border-2 border-gray-700/80 hover:bg-gray-800/60 hover:border-emerald-500/60 backdrop-blur-sm transition-all duration-200`
+      : `bg-transparent text-gray-900 border-2 border-gray-300 hover:bg-gray-50 hover:border-emerald-500/60 transition-all duration-200`,
     default: isDark
-      ? `bg-gray-800 text-white border border-gray-700 hover:bg-gray-700 hover:border-gray-600`
-      : `bg-white text-black border border-gray-300 hover:bg-gray-50`,
+      ? `bg-gray-800/80 text-white border border-gray-700 hover:bg-gray-700/90 hover:border-gray-600 shadow-sm transition-all duration-200`
+      : `bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 shadow-sm transition-all duration-200`,
     glass: isDark
-      ? `bg-gray-900/20 backdrop-blur-xl border border-gray-700/50 text-white hover:bg-gray-800/30 hover:border-gray-600/50`
-      : `bg-white/20 backdrop-blur-xl border border-gray-300/50 text-black hover:bg-white/30 hover:border-gray-400/50`,
+      ? `bg-gray-900/30 backdrop-blur-xl border border-gray-700/50 text-white hover:bg-gray-800/40 hover:border-emerald-500/30 shadow-lg transition-all duration-200`
+      : `bg-white/60 backdrop-blur-xl border border-gray-300/60 text-gray-900 hover:bg-white/80 hover:border-emerald-500/40 shadow-lg transition-all duration-200`,
     icon: isDark
-      ? `p-2 rounded-full bg-gray-800/50 hover:bg-gray-700 border border-gray-700 hover:border-teal-500/50 backdrop-blur-sm`
-      : `p-2 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300 hover:border-teal-500/50`,
+      ? `p-2 rounded-full bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 hover:border-emerald-500/50 backdrop-blur-sm transition-all duration-200`
+      : `p-2 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300 hover:border-emerald-500/50 transition-all duration-200`,
     danger: isDark
-      ? `bg-gradient-to-r from-red-600 to-red-700 text-white hover:shadow-xl hover:shadow-red-600/40 hover:scale-105 active:scale-100`
-      : `bg-gradient-to-r from-red-500 to-red-600 text-white hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-100`,
+      ? `bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600 shadow-lg shadow-red-600/30 hover:shadow-xl hover:shadow-red-600/50 active:scale-[0.98] transition-all duration-200`
+      : `bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-400 hover:to-red-500 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/50 active:scale-[0.98] transition-all duration-200`,
   };
 
   const loadingSpinner = (
