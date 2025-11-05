@@ -161,10 +161,10 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                 onClick={() => setActiveId(board.id)}
                 className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
                   isActive
-                    ? 'border-teal-500/40 bg-teal-500/10 text-teal-100 shadow-[0_12px_30px_rgba(15,118,110,0.35)]'
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100'
                     : isDark
                       ? 'border-white/5 bg-white/5 text-white/70 hover:border-white/15 hover:bg-white/10'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-teal-400/40 hover:text-slate-900'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400/40 hover:text-slate-900'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -219,8 +219,8 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                   onChange={(event) => updateBoard(activeBoard.id, board => ({ ...board, description: event.target.value }))}
                   className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
                     isDark
-                      ? 'border-white/10 bg-white/5 text-white/80 focus:border-teal-400/40'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-teal-400/40'
+                      ? 'border-white/10 bg-white/5 text-white/80 focus:border-emerald-400/40'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-emerald-400/40'
                   }`}
                   rows={3}
                   placeholder="Describe the emotion, lighting, composition, or references you're targeting."
@@ -254,7 +254,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
             <div
               className={`relative m-6 flex-1 overflow-y-auto rounded-3xl border-2 border-dashed transition ${
                 dragActive
-                  ? 'border-teal-400 bg-teal-500/10'
+                  ? 'border-emerald-400 bg-emerald-500/10'
                   : isDark
                     ? 'border-white/10 bg-white/5'
                     : 'border-slate-200 bg-slate-50'
@@ -282,13 +282,13 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                 {activeBoard.items.length === 0 ? (
                   <label
                     htmlFor="moodboard-file-input"
-                    className={`flex h-full flex-col items-center justify-center gap-3 text-center text-sm cursor-pointer ${
+                    className={`flex h-full flex-col items-center justify-center gap-3 text-center text-sm cursor-pointer px-8 py-8 ${
                       isDark ? 'text-white/60' : 'text-slate-500'
                     }`}
                   >
                     <UploadCloudIcon className="h-10 w-10" />
                     <p className={`text-base font-medium ${isDark ? 'text-white/80' : 'text-slate-700'}`}>Drop images or click to upload</p>
-                    <p className="text-xs opacity-70">High-quality stills, lighting references, frames, palette swatches. Up to {MAX_ITEMS} items.</p>
+                    <p className="text-xs opacity-70 max-w-md leading-relaxed">High-quality stills, lighting references, frames, palette swatches. Up to {MAX_ITEMS} items.</p>
                   </label>
                 ) : (
                   <div className="grid w-full grid-cols-2 gap-4 p-4 md:grid-cols-3 xl:grid-cols-4">
@@ -315,8 +315,8 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     {activeBoard.items.length < MAX_ITEMS && (
                       <label htmlFor="moodboard-file-input" className={`flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs transition ${
                         isDark
-                          ? 'border-white/20 text-white/60 hover:border-teal-400/40 hover:text-teal-200'
-                          : 'border-slate-300 text-slate-500 hover:border-teal-400 hover:text-teal-600'
+                          ? 'border-white/20 text-white/60 hover:border-emerald-400/40 hover:text-emerald-200'
+                          : 'border-slate-300 text-slate-500 hover:border-emerald-400 hover:text-emerald-600'
                       }`}>
                         <UploadCloudIcon className="h-6 w-6" />
                         Add more references

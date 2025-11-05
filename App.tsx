@@ -143,7 +143,7 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
                             if (error) setError(null);
                         }}
                         placeholder="AIza..."
-                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-teal-500/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-teal-500/40'}`}
+                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-emerald-500/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-emerald-500/40'}`}
                         autoComplete="off"
                         spellCheck={false}
                     />
@@ -156,7 +156,7 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
 
                 <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                     By using this service, you agree to the Gemini API's terms and pricing. Learn more at{' '}
-                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-teal-400' : 'text-teal-600'} hover:underline`}>
+                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'} hover:underline`}>
                         ai.google.dev/gemini-api/docs/billing
                     </a>.
                 </p>
@@ -858,7 +858,7 @@ const AppContent: React.FC = () => {
             <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className={`w-12 h-12 border-4 border-t-transparent ${isDark ? 'border-teal-500' : 'border-teal-600'} rounded-full`}
+                className={`w-12 h-12 border-4 border-t-transparent ${isDark ? 'border-emerald-500' : 'border-emerald-600'} rounded-full`}
             />
         </div>
     );
@@ -901,7 +901,7 @@ const activePhase = TABS_CONFIG.find(section => section.tabs.some(tab => tab.id 
 
 return (
   <div className={`relative flex min-h-screen overflow-hidden ${mainBg}`}>
-    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-teal-500/10 blur-3xl" />
+    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
     <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
 
     <Sidebar
@@ -962,8 +962,8 @@ return (
               whileTap={{ scale: 0.96 }}
               className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
                 isDark
-                  ? 'border border-white/10 bg-white/5 text-white/80 hover:border-teal-400/40 hover:text-white'
-                  : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-400/40 hover:text-slate-900'
+                  ? 'border border-white/10 bg-white/5 text-white/80 hover:border-emerald-400/40 hover:text-white'
+                  : 'border border-slate-200 bg-white text-slate-600 hover:border-emerald-400/40 hover:text-slate-900'
               }`}
             >
               {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
@@ -974,7 +974,7 @@ return (
       </motion.header>
 
       <main className={`relative flex-1 overflow-hidden ${contentBg}`}>
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,163,127,0.06),_transparent_55%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.06),_transparent_55%)]" />
         <div className="relative h-full w-full overflow-y-auto">
           <div className="mx-auto w-full max-w-[1920px] px-8 py-10 min-h-full">
             <AnimatePresence mode="wait">
