@@ -243,7 +243,7 @@ const RefinementStudio: React.FC<{
                                             className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
                                         />
                                         <div className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 text-white text-xs rounded-xl font-semibold px-4 py-2.5 whitespace-nowrap border border-gray-600/50 shadow-lg backdrop-blur-sm">
-                                            Gemini Flash Image
+                                            Gemini Nano Banana
                                         </div>
                                         <Button
                                             onClick={handleGenerate}
@@ -285,7 +285,7 @@ const StillStudio: React.FC<{
     locations: AnalyzedLocation[];
 }> = ({ frame, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Flash Image' | 'Flux'>('Imagen');
+    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -507,8 +507,8 @@ const StillStudio: React.FC<{
                             {/* Controls row */}
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
-                                        <option>Imagen</option><option>Gemini Flash Image</option><option>Flux</option>
+                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                        <option>Imagen</option><option>Gemini Nano Banana</option><option>Flux</option>
                                     </select>
                                     <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
                                         <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>

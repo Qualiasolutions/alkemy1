@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Alkemy AI Studio is a React-based AI-powered film production application that assists filmmakers in transforming scripts into complete visual productions. The app uses Google's Gemini API (including Imagen, Veo, and Gemini Flash Image models) to analyze scripts, generate visual assets, and create shot-by-shot compositions.
+Alkemy AI Studio is a React-based AI-powered film production application that assists filmmakers in transforming scripts into complete visual productions. The app uses Google's Gemini API (including Imagen, Veo, and Gemini Nano Banana image models) to analyze scripts, generate visual assets, and create shot-by-shot compositions.
 
 **AI Studio App**: https://ai.studio/apps/drive/1Tm5FTdplRGA4KFy33VGHCQM5jpAwYqR5
 

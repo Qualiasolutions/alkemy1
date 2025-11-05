@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { ScriptAnalysis, AnalyzedCharacter, AnalyzedLocation, AnalyzedScene, Frame, MoodboardItem } from '../types';
+import { ScriptAnalysis, AnalyzedCharacter, AnalyzedLocation, AnalyzedScene, Frame, MoodboardItem, MoodboardTemplate } from '../types';
 import { CameraIcon, UsersIcon, MapPinIcon, FilmIcon, ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from '../components/icons/Icons';
 import Button from '../components/Button';
 

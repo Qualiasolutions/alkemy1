@@ -51,7 +51,7 @@ const SimpleFullScreenViewer: React.FC<{
 
 const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: MoodboardTemplate[] }> = ({ moodboard, moodboardTemplates = [] }) => {
     const [prompt, setPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Flash Image' | 'Flux'>('Imagen');
+    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -183,9 +183,9 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                         </div>
                          <div className="flex items-center justify-between pl-10">
                              <div className="flex items-center gap-2">
-                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Flash Image' | 'Flux')} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
                                     <option>Imagen</option>
-                                    <option>Gemini Flash Image</option>
+                                    <option>Gemini Nano Banana</option>
                                     <option>Flux</option>
                                 </select>
                                 <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">

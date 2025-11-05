@@ -38,7 +38,6 @@ export const searchImages = async (
     }
 
     const genAI = new GoogleGenAI({ apiKey });
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     try {
         // Step 1: Analyze the prompt and generate search terms
@@ -59,9 +58,12 @@ Consider cinematographic aspects like composition, lighting, color palette, and 
 Return ONLY a JSON array of search queries, nothing else:
 ["query1", "query2", "query3", ...]`;
 
-        const analysisResult = await model.generateContent(analysisPrompt);
+        const analysisResult = await genAI.models.generateContent({
+            model: 'gemini-2.0-flash-exp',
+            contents: analysisPrompt
+        });
         const searchQueries = JSON.parse(
-            analysisResult.response.text()
+            analysisResult.text
                 .replace(/```json/g, '')
                 .replace(/```/g, '')
                 .trim()
@@ -178,7 +180,6 @@ export const searchSimilarImages = async (
     }
 
     const genAI = new GoogleGenAI({ apiKey });
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     try {
         onProgress?.({
@@ -208,12 +209,15 @@ ${additionalContext ? `Additional context: ${additionalContext}` : ''}
 
 Provide 5 search queries to find similar images.`;
 
-        const result = await model.generateContent([
-            analysisPrompt,
-            { inlineData: { mimeType: 'image/jpeg', data: imageData.split(',')[1] } }
-        ]);
+        const result = await genAI.models.generateContent({
+            model: 'gemini-2.0-flash-exp',
+            contents: [
+                { text: analysisPrompt },
+                { inlineData: { mimeType: 'image/jpeg', data: imageData.split(',')[1] } }
+            ]
+        });
 
-        const response = result.response.text();
+        const response = result.text;
 
         // Extract search queries from the response
         const queries = response

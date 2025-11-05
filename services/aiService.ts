@@ -1,6 +1,6 @@
 
 import { ScriptAnalysis, AnalyzedScene, Frame, AnalyzedCharacter, AnalyzedLocation, FrameStatus, Generation, Moodboard, MoodboardSection, MoodboardTemplate } from '../types';
-import { Type, GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { Type, GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { fallbackScriptAnalysis, fallbackMoodboardDescription, fallbackDirectorResponse, getFallbackImageUrl, getFallbackVideoBlobs } from './fallbackContent';
 import { getGeminiApiKey, clearGeminiApiKey } from './apiKeys';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
@@ -345,11 +345,11 @@ export const animateFrame = async (
 
 export const refineVariant = async (prompt: string, base_image_url: string, aspect_ratio: string): Promise<string> => {
     console.log("[API Action] refineVariant", { prompt, base_image_url, aspect_ratio });
-    const refinementModel = 'Gemini Flash Image';
-    
+    const refinementModel = 'Gemini Nano Banana';
+
     // By definition, refinement always has a visual reference (the base image).
     const hasVisualReferences = true;
-    
+
     // Apply the same safety and context wrapper as other generation calls to prevent safety blocks.
     const { finalPrompt } = buildSafePrompt(prompt, hasVisualReferences);
 
@@ -440,9 +440,15 @@ export const generateVisual = async (
         return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
     }
 
+    // Normalize model labels so that "Gemini Nano Banana" routes through the same
+    // implementation path as "Gemini Flash Image" while preserving logging intent.
+    const normalizedModel = model === 'Gemini Nano Banana' ? 'Gemini Flash Image' : model;
+
     // When Imagen/Flux have reference images, use Gemini Flash Image instead (multimodal)
     // Otherwise, use the requested model as-is
-    const effectiveModel = ((model === 'Imagen' || model === 'Flux') && reference_images.length > 0) ? 'Gemini Flash Image' : model;
+    const effectiveModel = ((normalizedModel === 'Imagen' || normalizedModel === 'Flux') && reference_images.length > 0)
+        ? 'Gemini Flash Image'
+        : normalizedModel;
 
     try {
         if (!prompt || !prompt.trim()) {
@@ -455,7 +461,7 @@ export const generateVisual = async (
         onProgress?.(30);
 
         // Use Imagen API for Imagen and Flux models (when NO reference images)
-        if ((model === 'Imagen' || model === 'Flux') && reference_images.length === 0) {
+        if ((normalizedModel === 'Imagen' || normalizedModel === 'Flux') && reference_images.length === 0) {
             const response = await ai.models.generateImages({
                 model: 'imagen-4.0-generate-001',
                 prompt: prompt, // Use the fully constructed prompt directly
@@ -498,17 +504,20 @@ export const generateVisual = async (
                     return { inlineData: { mimeType, data } };
                 })
             );
-            
+
             const textPart = { text: prompt };
-            // According to SDK best practices for multimodal prompts, placing the text instruction
-            // before the image data can sometimes lead to more consistent results.
-            const parts = [textPart, ...imageParts];
+            // Gemini image editing expects the base imagery before instructions (per Nano Banana docs).
+            const parts = imageParts.length > 0 ? [...imageParts, textPart] : [textPart];
+
+            const trimmedAspectRatio = aspect_ratio?.trim();
+            const imageConfig = trimmedAspectRatio ? { aspectRatio: trimmedAspectRatio } : undefined;
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: parts },
+                contents: parts,
                 config: {
-                    responseModalities: [Modality.IMAGE],
+                    responseModalities: ['IMAGE'],
+                    ...(imageConfig ? { imageConfig } : {}),
                     safetySettings: safetySettings,
                 },
             });

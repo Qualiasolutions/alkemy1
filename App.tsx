@@ -238,19 +238,6 @@ const AppContent: React.FC = () => {
       }
 
       const aistudio = window.aistudio;
-      if (aistudio?.getSelectedApiKey) {
-        try {
-          const selectedKey = await aistudio.getSelectedApiKey();
-          if (typeof selectedKey === 'string' && selectedKey.trim()) {
-            setGeminiApiKey(selectedKey);
-            setIsKeyReady(true);
-            return;
-          }
-        } catch (getKeyError) {
-          console.warn('Failed to retrieve Gemini API key from AI Studio', getKeyError);
-        }
-      }
-
       if (aistudio?.hasSelectedApiKey && await aistudio.hasSelectedApiKey()) {
         if (hasGeminiApiKey()) {
           setIsKeyReady(true);

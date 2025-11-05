@@ -22,18 +22,13 @@ interface DirectorWidgetProps {
 
 const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography with comprehensive cinematography expertise. I have reviewed the project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
 const ACCENT_HEX = '#10A37F';
-const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Flash Image' | 'Flux' => {
-  switch ((model ?? '').toLowerCase()) {
-    case 'imagen':
-      return 'Imagen';
-    case 'gemini':
-    case 'flash':
-    case 'gemini-flash':
-    case 'gemini flash image':
-      return 'Gemini Flash Image';
-    default:
-      return 'Flux';
+const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' => {
+  const normalized = (model ?? '').toLowerCase();
+  if (normalized.includes('imagen')) return 'Imagen';
+  if (normalized.includes('nano') || normalized.includes('banana') || normalized.includes('gemini') || normalized.includes('flash')) {
+    return 'Gemini Nano Banana';
   }
+  return 'Flux';
 };
 
 const buildGenerationEntries = (urls: string[], errors: (string | null)[], aspectRatio: string): Generation[] => {
