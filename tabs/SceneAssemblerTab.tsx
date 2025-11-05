@@ -280,9 +280,10 @@ const StillStudio: React.FC<{
     onUpdateFrame: (updater: (prev: Frame) => Frame) => void;
     onEnterRefinement: (generation: Generation) => void;
     moodboard?: Moodboard;
+    moodboardTemplates?: import('../types').MoodboardTemplate[];
     characters: AnalyzedCharacter[];
     locations: AnalyzedLocation[];
-}> = ({ frame, onBack, onUpdateFrame, onEnterRefinement, moodboard, characters, locations }) => {
+}> = ({ frame, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Flash Image' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -332,7 +333,7 @@ const StillStudio: React.FC<{
                 });
             };
 
-            const { urls, errors, wasAdjusted } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, scriptAnalysis?.moodboard, scriptAnalysis?.moodboardTemplates || [], characterNames, locationName, onProgress);
+            const { urls, errors, wasAdjusted } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates || [], characterNames, locationName, onProgress);
             
             if (wasAdjusted) {
                 setPromptWasAdjusted(true);
@@ -1008,7 +1009,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
         if (!selectedItem) return null;
         switch (activeWorkspace) {
             case 'still-studio':
-                return <StillStudio frame={selectedItem.frame} scene={selectedItem.scene} onBack={() => setActiveWorkspace('grid')} onUpdateFrame={handleUpdateFrame} onEnterRefinement={(gen) => { setRefinementBase(gen); setActiveWorkspace('refine-studio'); }} moodboard={scriptAnalysis.moodboard} characters={scriptAnalysis.characters} locations={scriptAnalysis.locations} />;
+                return <StillStudio frame={selectedItem.frame} scene={selectedItem.scene} onBack={() => setActiveWorkspace('grid')} onUpdateFrame={handleUpdateFrame} onEnterRefinement={(gen) => { setRefinementBase(gen); setActiveWorkspace('refine-studio'); }} moodboard={scriptAnalysis.moodboard} moodboardTemplates={scriptAnalysis.moodboardTemplates} characters={scriptAnalysis.characters} locations={scriptAnalysis.locations} />;
             case 'refine-studio':
                 if (!refinementBase) return null;
                 return <RefinementStudio baseGeneration={refinementBase} onClose={() => setActiveWorkspace('still-studio')} onUpdateFrame={handleUpdateFrame} />;
