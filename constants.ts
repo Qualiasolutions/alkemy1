@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, SparklesIcon, CalendarIcon, BarChartIcon, PaletteIcon } from './components/icons/Icons';
+import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, PaletteIcon } from './components/icons/Icons';
 
 export const THEME_COLORS = {
   background_primary: "#0B0B0B",
@@ -37,14 +37,6 @@ export const TABS_CONFIG = [
       { id: 'wan_transfer', name: 'Wan Transfer', icon: React.createElement(ShuffleIcon) },
       { id: 'post_production', name: 'Post-Production', icon: React.createElement(ScissorsIcon) },
       { id: 'exports', name: 'Exports', icon: React.createElement(SendIcon) },
-    ],
-  },
-  {
-    name: 'Media',
-    tabs: [
-      { id: 'social_spots', name: 'Social Spots', icon: React.createElement(SparklesIcon) },
-      { id: 'scheduler', name: 'Scheduler', icon: React.createElement(CalendarIcon) },
-      { id: 'analytics', name: 'Analytics', icon: React.createElement(BarChartIcon) },
     ],
   },
 ];
