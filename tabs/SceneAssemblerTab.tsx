@@ -562,6 +562,7 @@ const StillStudio: React.FC<{
                                 )}
                             </div>
                         ))}
+                        </div>
                     </div>
                 </div>
             </main>
