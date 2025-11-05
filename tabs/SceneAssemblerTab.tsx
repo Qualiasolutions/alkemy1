@@ -1,10 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, AnalyzedLocation, Moodboard, FrameStatus } from '../types';
 import Button from '../components/Button';
 import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo } from '../services/aiService';
-import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon } from '../components/icons/Icons';
+import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon, ChevronDownIcon } from '../components/icons/Icons';
 import ThreeDWorldViewer from '../components/3DWorldViewer';
 import { generate3DWorld } from '../services/3dWorldService';
 
@@ -272,6 +272,109 @@ const RefinementStudio: React.FC<{
 };
 
 
+// --- Custom Multi-Select Dropdown ---
+const CharacterMultiSelect: React.FC<{
+    characters: AnalyzedCharacter[];
+    selectedIds: string[];
+    onChange: (ids: string[]) => void;
+}> = ({ characters, selectedIds, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const toggleCharacter = (id: string) => {
+        if (selectedIds.includes(id)) {
+            onChange(selectedIds.filter(cid => cid !== id));
+        } else {
+            onChange([...selectedIds, id]);
+        }
+    };
+
+    const selectedCount = selectedIds.length;
+    const displayText = selectedCount === 0
+        ? 'Characters'
+        : selectedCount === 1
+            ? characters.find(c => c.id === selectedIds[0])?.name || 'Character'
+            : `${selectedCount} selected`;
+
+    return (
+        <div ref={dropdownRef} className="relative">
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 focus:outline-none cursor-pointer max-w-[160px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm flex items-center justify-between gap-2 min-w-[120px]"
+            >
+                <span className="truncate">{displayText}</span>
+                <motion.span
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-shrink-0"
+                >
+                    <ChevronDownIcon className="w-4 h-4" />
+                </motion.span>
+            </button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full left-0 mt-2 w-56 bg-[var(--color-surface-elevated)] border border-[var(--color-border-color)] rounded-xl shadow-xl backdrop-blur-xl z-50 overflow-hidden"
+                    >
+                        <div className="max-h-64 overflow-y-auto p-2">
+                            {characters.length === 0 ? (
+                                <div className="px-3 py-2 text-xs text-[var(--color-text-secondary)] text-center">
+                                    No characters available
+                                </div>
+                            ) : (
+                                characters.map(char => (
+                                    <label
+                                        key={char.id}
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group"
+                                    >
+                                        <div className="relative flex-shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(char.id)}
+                                                onChange={() => toggleCharacter(char.id)}
+                                                className="w-4 h-4 rounded border-2 border-[var(--color-border-color)] bg-transparent checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer appearance-none transition-colors"
+                                            />
+                                            {selectedIds.includes(char.id) && (
+                                                <CheckIcon className="w-3 h-3 text-white absolute top-0.5 left-0.5 pointer-events-none" />
+                                            )}
+                                        </div>
+                                        {char.imageUrl && (
+                                            <img
+                                                src={char.imageUrl}
+                                                alt={char.name}
+                                                className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                                            />
+                                        )}
+                                        <span className="text-sm text-[var(--color-text-primary)] truncate flex-1">
+                                            {char.name}
+                                        </span>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 // --- Still Image Generation Studio ---
 const StillStudio: React.FC<{
     frame: Frame;
@@ -394,7 +497,7 @@ const StillStudio: React.FC<{
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-[var(--color-background-primary)]">
             {viewingGeneration && (
                 <FullScreenImagePlayer
                     generation={viewingGeneration}
@@ -409,33 +512,39 @@ const StillStudio: React.FC<{
                     }}
                 />
             )}
-            <header className="flex-shrink-0 p-6 pb-4"><Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to Compositing</Button></header>
+            <header className="flex-shrink-0 p-6 pb-4 border-b border-[var(--color-border-color)]">
+                <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2">
+                    <ArrowLeftIcon className="w-4 h-4" /> Back to Compositing
+                </Button>
+            </header>
 
             <main className="flex-1 overflow-y-auto px-6 pb-8">
-                 <div>
+                 <div className="py-6">
                     {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
-                        <div className="mb-8">
-                            <h4 className={`text-lg font-semibold mb-3 text-[var(--color-text-primary)]`}>Hero Frames</h4>
+                        <div className="mb-8 p-6 bg-[var(--color-surface-card)] rounded-xl border border-[var(--color-border-color)]">
+                            <h4 className={`text-lg font-semibold mb-4 text-[var(--color-text-primary)]`}>Hero Frames</h4>
                             <div className="flex gap-4 justify-center">
                                 {frame.media.start_frame_url && (
                                     <div className="text-center">
-                                        <img src={frame.media.start_frame_url} alt="Start frame" className="rounded-lg w-72 h-40 object-cover border-2 border-green-500"/>
-                                        <p className="text-xs text-gray-400 mt-1">Hero Frame</p>
+                                        <img src={frame.media.start_frame_url} alt="Start frame" className="rounded-xl w-72 h-40 object-cover border-2 border-emerald-500 shadow-lg"/>
+                                        <p className="text-xs text-[var(--color-text-secondary)] mt-2 font-medium">Hero Frame</p>
                                     </div>
                                 )}
                                 {frame.media.end_frame_url && (
                                     <div className="text-center">
-                                        <img src={frame.media.end_frame_url} alt="End frame" className="rounded-lg w-72 h-40 object-cover border-2 border-blue-500"/>
-                                        <p className="text-xs text-gray-400 mt-1">End Frame</p>
+                                        <img src={frame.media.end_frame_url} alt="End frame" className="rounded-xl w-72 h-40 object-cover border-2 border-blue-500 shadow-lg"/>
+                                        <p className="text-xs text-[var(--color-text-secondary)] mt-2 font-medium">End Frame</p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     )}
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {(frame.generations || []).map((generation) => (
-                           <div key={generation.id} onClick={() => generation.url && setViewingGeneration(generation)} className={`relative group rounded-lg overflow-hidden ${aspectRatioClasses[generation.aspectRatio] || 'aspect-square'} bg-black/10 ${generation.url ? 'cursor-pointer' : ''}`}>
+
+                    <div>
+                        <h4 className={`text-lg font-semibold mb-4 text-[var(--color-text-primary)]`}>Generated Variants</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {(frame.generations || []).map((generation) => (
+                           <div key={generation.id} onClick={() => generation.url && setViewingGeneration(generation)} className={`relative group rounded-xl overflow-hidden border border-[var(--color-border-color)] hover:border-emerald-500/50 transition-all duration-300 ${aspectRatioClasses[generation.aspectRatio] || 'aspect-square'} bg-[var(--color-surface-card)] ${generation.url ? 'cursor-pointer' : ''}`}>
                                 {generation.isLoading ? <LoadingSkeleton aspectRatio={generation.aspectRatio} progress={generation.progress || 0} /> : 
                                  generation.url ? (
                                     <>
@@ -507,19 +616,21 @@ const StillStudio: React.FC<{
                             {/* Controls row */}
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
                                         <option>Imagen</option><option>Gemini Nano Banana</option><option>Flux</option>
                                     </select>
-                                    <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                    <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
                                         <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
                                     </select>
-                                    <select value={selectedLocationId} onChange={e => setSelectedLocationId(e.target.value)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                    <select value={selectedLocationId} onChange={e => setSelectedLocationId(e.target.value)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
                                         <option value="">Location</option>
                                         {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                                     </select>
-                                    <select multiple value={selectedCharacterIds} onChange={e => setSelectedCharacterIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-black text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
-                                        {characters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
+                                    <CharacterMultiSelect
+                                        characters={characters}
+                                        selectedIds={selectedCharacterIds}
+                                        onChange={setSelectedCharacterIds}
+                                    />
                                 </div>
 
                                 {/* Modern Generate button with animated arrow */}
