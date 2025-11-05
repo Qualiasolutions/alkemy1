@@ -13,6 +13,7 @@
  */
 
 const REPLICATE_PROXY_URL = '/api/replicate-proxy';
+const EMU3_GEN_VERSION = 'f65f4d8e2625bc9261768c129ec143c26c51f1aa11e12f2276a92fbfdf2359cd';
 
 export interface WorldGenerationOptions {
     prompt: string;
@@ -38,6 +39,7 @@ export interface GeneratedWorld {
 /**
  * Generate a navigable 3D world from a text prompt
  * Creates multiple views from different angles for skybox generation
+ * Uses parallel generation in batches to reduce total time
  */
 export async function generateNavigableWorld(
     options: WorldGenerationOptions
@@ -45,35 +47,58 @@ export async function generateNavigableWorld(
     const { prompt, numViews = 6, guidanceScale = 3, onProgress } = options;
 
     try {
-        onProgress?.(10, 'Initializing world generation...');
+        onProgress?.(5, 'Initializing world generation...');
 
         // Generate views for all 6 directions (cube map)
         const directions: WorldView['direction'][] = ['front', 'back', 'left', 'right', 'up', 'down'];
         const views: WorldView[] = [];
 
-        // Generate each view with directional prompt
-        for (let i = 0; i < numViews; i++) {
-            const direction = directions[i];
-            const progress = 10 + (i / numViews) * 80;
+        // Generate in two parallel batches to avoid rate limiting
+        // Batch 1: Front, left, right (main horizontal views)
+        // Batch 2: Back, up, down (secondary views)
+        const batch1: WorldView['direction'][] = ['front', 'left', 'right'];
+        const batch2: WorldView['direction'][] = ['back', 'up', 'down'];
 
-            onProgress?.(progress, `Generating ${direction} view...`);
-
+        // Generate batch 1 in parallel
+        onProgress?.(10, 'Generating primary views (front, left, right)...');
+        const batch1Promises = batch1.map(async (direction) => {
             const directionalPrompt = enhancePromptForDirection(prompt, direction);
-
-            const imageUrl = await generateSingleView(directionalPrompt, guidanceScale);
-
-            views.push({
+            const imageUrl = await generateSingleView(directionalPrompt, guidanceScale, (elapsed) => {
+                console.log(`[${direction}] ${elapsed}s elapsed...`);
+            });
+            return {
                 id: `view-${direction}-${Date.now()}`,
                 imageUrl,
                 direction,
                 position: getPositionForDirection(direction)
-            });
+            };
+        });
 
-            // Small delay to avoid rate limiting
-            if (i < numViews - 1) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-        }
+        const batch1Results = await Promise.all(batch1Promises);
+        views.push(...batch1Results);
+        onProgress?.(50, 'Primary views complete! Generating secondary views...');
+
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Generate batch 2 in parallel
+        onProgress?.(55, 'Generating secondary views (back, up, down)...');
+        const batch2Promises = batch2.map(async (direction) => {
+            const directionalPrompt = enhancePromptForDirection(prompt, direction);
+            const imageUrl = await generateSingleView(directionalPrompt, guidanceScale, (elapsed) => {
+                console.log(`[${direction}] ${elapsed}s elapsed...`);
+            });
+            return {
+                id: `view-${direction}-${Date.now()}`,
+                imageUrl,
+                direction,
+                position: getPositionForDirection(direction)
+            };
+        });
+
+        const batch2Results = await Promise.all(batch2Promises);
+        views.push(...batch2Results);
+        onProgress?.(95, 'All views generated! Finalizing world...');
 
         onProgress?.(100, 'World generation complete!');
 
@@ -99,7 +124,8 @@ export async function generateNavigableWorld(
  */
 async function generateSingleView(
     prompt: string,
-    guidanceScale: number = 3
+    guidanceScale: number = 3,
+    onProgress?: (elapsed: number) => void
 ): Promise<string> {
     try {
         // Create prediction
@@ -111,6 +137,7 @@ async function generateSingleView(
             body: JSON.stringify({
                 action: 'create_prediction',
                 payload: {
+                    version: EMU3_GEN_VERSION,
                     input: {
                         prompt: prompt,
                         guidance_scale: guidanceScale,
@@ -128,8 +155,8 @@ async function generateSingleView(
 
         const prediction = await createResponse.json();
 
-        // Poll for completion
-        const imageUrl = await pollForPredictionComplete(prediction.id);
+        // Poll for completion with progress reporting
+        const imageUrl = await pollForPredictionComplete(prediction.id, onProgress);
 
         return imageUrl;
 
@@ -140,13 +167,21 @@ async function generateSingleView(
 }
 
 /**
- * Poll Replicate API for prediction completion
+ * Poll Replicate API for prediction completion with exponential backoff
  */
-async function pollForPredictionComplete(predictionId: string): Promise<string> {
-    const maxAttempts = 60; // 60 attempts = 2 minutes max wait
-    const pollInterval = 2000; // 2 seconds between polls
+async function pollForPredictionComplete(predictionId: string, onProgress?: (elapsed: number) => void): Promise<string> {
+    const maxAttempts = 180; // 180 attempts = up to 6 minutes max wait
+    const initialPollInterval = 2000; // Start with 2 seconds
+    const maxPollInterval = 5000; // Max 5 seconds between polls
+    const startTime = Date.now();
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // Exponential backoff: gradually increase wait time
+        const pollInterval = Math.min(
+            initialPollInterval * Math.pow(1.05, attempt),
+            maxPollInterval
+        );
+
         await new Promise(resolve => setTimeout(resolve, pollInterval));
 
         try {
@@ -169,6 +204,10 @@ async function pollForPredictionComplete(predictionId: string): Promise<string> 
 
             const prediction = await statusResponse.json();
             const status = prediction.status;
+
+            // Report progress
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            onProgress?.(elapsed);
 
             // Check for completion
             if (status === 'succeeded') {
@@ -204,7 +243,7 @@ async function pollForPredictionComplete(predictionId: string): Promise<string> 
         }
     }
 
-    throw new Error('Prediction timed out after 2 minutes');
+    throw new Error('Prediction timed out after 6 minutes');
 }
 
 /**
