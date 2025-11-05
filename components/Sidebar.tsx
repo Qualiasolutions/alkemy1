@@ -28,29 +28,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
     );
   };
 
-  const sidebarBg = isDark
-    ? 'bg-gradient-to-br from-[#0B0B0B] via-[#0F0F0F] to-[#0B0B0B]'
-    : 'bg-gradient-to-br from-[#FFFFFF] via-[#F8F8F8] to-[#FFFFFF]';
-
-  const borderColor = isDark ? 'border-[#2A2A2A]' : 'border-[#D4D4D4]';
-
   return (
     <motion.nav
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className={`relative group ${sidebarBg} border-r ${borderColor} sticky top-0 flex h-screen flex-col p-4 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-20'}`}
+      className={`relative group bg-[var(--color-background-primary)] border-r border-[var(--color-border-color)] sticky top-0 flex h-screen flex-col p-4 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-20'}`}
     >
       {/* Subtle accent glow effects */}
-      <div className={`absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none ${
-        isDark ? 'bg-emerald-500/5' : 'bg-emerald-500/8'
-      }`} />
-      <div className={`absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none ${
-        isDark ? 'bg-emerald-400/3' : 'bg-emerald-400/6'
-      }`} />
+      <div className="absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none bg-emerald-500/8 opacity-50" />
+      <div className="absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none bg-emerald-400/6 opacity-40" />
       <div className={`flex items-center gap-3 mb-8 transition-all duration-300 ${isSidebarExpanded ? 'px-2' : 'justify-center'}`}>
         <LogoIcon />
-        <h1 className={`text-xl font-semibold whitespace-nowrap transition-opacity duration-200 ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Alkemy AI Studio</h1>
+        <h1 className={`text-xl font-semibold whitespace-nowrap transition-opacity duration-200 text-[var(--color-text-primary)] ${isSidebarExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Alkemy AI Studio</h1>
       </div>
       
       <ul className="flex-1 overflow-y-auto overflow-x-hidden relative z-10">
@@ -63,9 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                 <li key={section.name} className="list-none">
                   <button
                     onClick={() => toggleSection(section.name)}
-                    className={`w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 ${
-                      isDark ? 'text-gray-500 hover:text-emerald-400' : 'text-gray-500 hover:text-emerald-600'
-                    }`}
+                    className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 text-[var(--color-text-tertiary)] hover:text-[var(--color-accent-primary)]"
                   >
                     {section.name}
                     <motion.span
@@ -87,13 +75,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                       >
                         {section.tabs.map((tab) => {
                           const isActive = activeTab === tab.id;
-                          const activeBg = isDark
-                            ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-400/10'
-                            : 'bg-gradient-to-r from-emerald-600/20 to-emerald-500/10';
-                          const activeText = `text-[var(--color-accent-primary)]`;
-                          const inactiveText = isDark ? 'text-[#A8A8A8]' : 'text-[#4B5563]';
-                          const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#F3F4F6]';
-                          const hoverText = isDark ? 'hover:text-white' : 'hover:text-black';
 
                           return (
                             <li key={tab.id} className="relative">
@@ -102,15 +83,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                                 whileHover={{ x: 2 }}
                                 whileTap={{ scale: 0.98 }}
                                 className={`relative w-full flex items-center gap-2.5 pl-4 pr-2 py-1.5 rounded-lg text-sm transition-all duration-200 ${
-                                  isActive ? `${activeBg} ${activeText}` : `${inactiveText} ${hoverBg} ${hoverText}`
+                                  isActive
+                                    ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-400/10 text-[var(--color-accent-primary)]'
+                                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-hover-background)] hover:text-[var(--color-text-primary)]'
                                 }`}
                               >
                                 {isActive && (
                                   <motion.span
                                     layoutId="sidebar-active-pill"
-                                    className={`absolute inset-0 rounded-lg ${activeBg} border ${
-                                      isDark ? 'border-emerald-500/30' : 'border-emerald-600/30'
-                                    }`}
+                                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/20 to-emerald-400/10 border border-emerald-500/30"
                                     transition={{ type: 'spring', stiffness: 420, damping: 38 }}
                                   />
                                 )}
@@ -132,13 +113,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
           <ul className="space-y-2">
             {TABS.map(tab => {
               const isActive = activeTab === tab.id;
-              const activeBg = isDark
-                ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-400/10'
-                : 'bg-gradient-to-r from-emerald-600/20 to-emerald-500/10';
-              const activeText = `text-[var(--color-accent-primary)]`;
-              const inactiveText = isDark ? 'text-[#A8A8A8]' : 'text-[#4B5563]';
-              const hoverBg = isDark ? 'hover:bg-[#1C1C1C]' : 'hover:bg-[#F3F4F6]';
-              const hoverText = isDark ? 'hover:text-white' : 'hover:text-black';
 
               return (
                 <li key={tab.id} className="relative group/item">
@@ -147,15 +121,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className={`relative w-full flex items-center justify-center p-3 rounded-lg text-sm transition-all duration-200 ${
-                      isActive ? `${activeBg} ${activeText}` : `${inactiveText} ${hoverBg} ${hoverText}`
+                      isActive
+                        ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-400/10 text-[var(--color-accent-primary)]'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-hover-background)] hover:text-[var(--color-text-primary)]'
                     }`}
                   >
                     {isActive && (
                       <motion.span
                         layoutId="sidebar-collapsed-active"
-                        className={`absolute inset-0 rounded-lg ${activeBg} border ${
-                          isDark ? 'border-emerald-500/30' : 'border-emerald-600/30'
-                        }`}
+                        className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/20 to-emerald-400/10 border border-emerald-500/30"
                         transition={{ type: 'spring', stiffness: 420, damping: 38 }}
                       />
                     )}
@@ -163,15 +137,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                   </motion.button>
 
                   {/* Enhanced Tooltip */}
-                  <div className={`absolute left-full ml-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none transition-all duration-200 opacity-0 scale-95 group-hover/item:opacity-100 group-hover/item:scale-100 z-30 ${
-                    isDark
-                      ? 'bg-gray-900 text-gray-200 border border-gray-700 shadow-xl'
-                      : 'bg-white text-gray-700 border border-gray-200 shadow-xl'
-                  }`}>
+                  <div className="absolute left-full ml-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none transition-all duration-200 opacity-0 scale-95 group-hover/item:opacity-100 group-hover/item:scale-100 z-30 bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border-color)] shadow-theme-xl">
                     {tab.name}
-                    <div className={`absolute top-1/2 -left-1 transform -translate-y-1/2 w-2 h-2 rotate-45 ${
-                      isDark ? 'bg-gray-900 border-l border-t border-gray-700' : 'bg-white border-l border-t border-gray-200'
-                    }`} />
+                    <div className="absolute top-1/2 -left-1 transform -translate-y-1/2 w-2 h-2 rotate-45 bg-[var(--color-surface-elevated)] border-l border-t border-[var(--color-border-color)]" />
                   </div>
                 </li>
               );
@@ -180,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         )}
       </ul>
       
-      <div className={`mt-auto pt-4 border-t ${borderColor} space-y-2`}>
+      <div className="mt-auto pt-4 border-t border-[var(--color-border-color)] space-y-2">
         <Button
             onClick={onNewProject}
             variant="secondary"
@@ -222,11 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
         whileHover={{ scale: 1.15, rotate: 180 }}
         whileTap={{ scale: 0.85 }}
-        className={`absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 rounded-full p-2.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 z-20 ${
-          isDark
-            ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-400/10 border border-emerald-500/30 text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-400/20 hover:border-emerald-400/50 hover:text-emerald-300 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30'
-            : 'bg-gradient-to-br from-emerald-400/20 to-emerald-300/15 border border-emerald-500/40 text-emerald-600 hover:from-emerald-400/30 hover:to-emerald-300/25 hover:border-emerald-600/60 hover:text-emerald-700 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30'
-        } backdrop-blur-sm`}
+        className="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 rounded-full p-2.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 z-20 bg-gradient-to-br from-emerald-500/20 to-emerald-400/10 border border-emerald-500/30 text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-400/20 hover:border-emerald-400/50 hover:text-emerald-300 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 backdrop-blur-sm"
       >
         {/* Animated glow ring */}
         <motion.div
@@ -239,9 +203,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className={`absolute inset-0 rounded-full ${
-            isDark ? 'bg-emerald-500/20' : 'bg-emerald-400/30'
-          } blur-md`}
+          className="absolute inset-0 rounded-full bg-emerald-500/20 blur-md"
         />
         <span className="w-5 h-5 flex items-center justify-center relative z-10">
           {isSidebarExpanded ? <ChevronsLeftIcon /> : <ChevronsRightIcon />}

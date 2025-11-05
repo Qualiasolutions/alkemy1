@@ -36,8 +36,8 @@ The project is linked to Vercel:
 - **Project Name**: `alkemy1`
 - **Default URL**: `https://alkemy1.vercel.app`
 - **Vercel Config**: Project details stored in `.vercel/project.json` (do not commit)
-- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, and `WAN_API_KEY` in Vercel dashboard under project settings
-- **Serverless Functions**: API routes in `api/` directory are deployed as Vercel serverless functions (currently `luma-proxy.ts`)
+- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, and `REPLICATE_API_TOKEN` in Vercel dashboard under project settings
+- **Serverless Functions**: API routes in `api/` directory are deployed as Vercel serverless functions (`luma-proxy.ts` and `replicate-proxy.ts`)
 
 The app auto-deploys on push to `main` branch. Vercel builds use `npm run build` and serve from `dist/`.
 
@@ -57,6 +57,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 FLUX_API_KEY=your_flux_api_key_here  # Optional: for Flux model support
 WAN_API_KEY=your_wan_api_key_here  # Optional: for Wan 2.2 motion transfer
 LUMA_API_KEY=your_luma_api_key_here  # Optional: for Luma AI 3D generation
+REPLICATE_API_TOKEN=your_replicate_api_token_here  # Optional: for Emu3-Gen world generation
 ```
 
 **API Key Management:**
@@ -164,9 +165,11 @@ All generation functions accept `onProgress` callbacks for real-time UI updates.
 
 **Frame Status Lifecycle:**
 ```
-Draft → GeneratingStill → GeneratedStill → UpscaledImageReady →
-RenderingVideo → UpscaledVideoReady → (transferred to timeline)
+Draft → GeneratingStill → GeneratedStill → UpscalingImage → UpscaledImageReady →
+QueuedVideo → RenderingVideo → AnimatedVideoReady → UpscalingVideo → UpscaledVideoReady → (transferred to timeline)
 ```
+
+Note: `VideoReady` status is retained for compatibility but the new flow uses `AnimatedVideoReady`.
 
 ### Component Organization
 
@@ -336,6 +339,22 @@ Used in the **3DWorldViewer** component (`components/3DWorldViewer.tsx`) which r
 - Supports GET/POST requests to Luma API endpoints
 - Returns responses with proper status codes and error handling
 
+### Emu World Service
+
+`services/emuWorldService.ts` integrates Replicate API for Emu3-Gen world generation:
+
+- **generateEmuWorld()**: Generates 3D environments using baaivision/emu3-gen model
+- **API Integration**: Uses Replicate prediction API with polling for completion
+- **Serverless Proxy**: Uses Vercel serverless function at `/api/replicate-proxy` to avoid CORS issues (see `api/replicate-proxy.ts`)
+- **Environment Variable**: Requires `REPLICATE_API_TOKEN` to be configured in Vercel environment
+- **Actions Supported**: `create_prediction`, `get_prediction`, `cancel_prediction`
+
+**Replicate API Proxy** (`api/replicate-proxy.ts`) is a Vercel serverless function that:
+- Handles CORS headers for cross-origin requests
+- Securely passes the `REPLICATE_API_TOKEN` from server environment
+- Supports action-based routing for prediction lifecycle management
+- Returns responses with proper status codes and error handling
+
 ### Wan Motion Transfer Service
 
 `services/wanService.ts` integrates Wan 2.2 API for AI-powered motion transfer capabilities:
@@ -361,6 +380,25 @@ Used in the **Wan Transfer Tab** for applying motion from reference videos to ge
 
 Cleared when loading a new project (see `handleLoadProject()` in App.tsx).
 
+### API Keys Service
+
+`services/apiKeys.ts` manages API key storage and retrieval with sophisticated fallback logic:
+
+- **Priority Order**: Environment variables → localStorage → empty string
+- **Caching**: In-memory cache prevents unnecessary localStorage reads
+- **Eager Initialization**: Keys are loaded immediately on module import to prevent API key re-prompting
+- **Multi-key Support**: Checks multiple localStorage keys for backward compatibility (`alkemy_gemini_api_key`, `geminiApiKey`)
+- **Change Events**: Custom event system (`alkemy:gemini-key-changed`) for reactive key updates
+- **Key Functions**:
+  - `getGeminiApiKey()`: Retrieves the active API key (cached)
+  - `setGeminiApiKey(value)`: Updates the API key in cache and localStorage
+  - `clearGeminiApiKey()`: Resets to environment key or empty
+  - `onGeminiApiKeyChange(callback)`: Subscribes to key change events
+  - `hasGeminiApiKey()`: Checks if any key is available
+  - `hasEnvGeminiApiKey()`: Checks if environment key is configured
+
+The service is used by `App.tsx` for API key validation flow and by `aiService.ts` for authenticated API calls.
+
 ## Dependencies
 
 Key packages used in this project:
@@ -375,7 +413,7 @@ Key packages used in this project:
 ## Notes for Future Development
 
 - **Testing**: No automated test suite currently wired. When adding tests, colocate them per feature (e.g., `tabs/FramesTab.test.tsx`)
-- **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, and `WAN_API_KEY`
+- **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, and `REPLICATE_API_TOKEN`
 - **Storage Optimization**: The serialization logic in `getSerializableState()` strips large generated variants to avoid localStorage quota issues. If adding new generation arrays, update this function. Timeline clips with blob URLs are converted to base64 for persistence and back to blob URLs on load.
 - **Video Duration**: `getVideoDuration()` helper in App.tsx extracts metadata for timeline clips. It defaults to 5 seconds on error.
 - **Animation Performance**: Framer Motion is used throughout for UI animations. Use `AnimatePresence` for exit animations and `motion.*` components for animated elements.
