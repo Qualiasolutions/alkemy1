@@ -30,18 +30,22 @@ const resolveBooleanEnv = (...keys: string[]): boolean => {
 
 const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
 
-// Debug logging to diagnose demo mode issues
-console.log('[AI Service] Configuration:', {
-    FORCE_DEMO_MODE,
-    hasGeminiKey: !!getGeminiApiKey(),
-    prefersLiveGemini: prefersLiveGemini(),
-    fluxApiKeyPresent: !!FLUX_API_KEY,
-    envVars: {
-        VITE_FORCE_DEMO_MODE: importMetaEnv.VITE_FORCE_DEMO_MODE,
-        FORCE_DEMO_MODE: typeof process !== 'undefined' ? process.env?.FORCE_DEMO_MODE : undefined,
-        USE_FALLBACK_MODE: typeof process !== 'undefined' ? process.env?.USE_FALLBACK_MODE : undefined,
-    }
-});
+// Debug logging to diagnose demo mode issues (deferred to avoid circular dependency errors)
+if (typeof window !== 'undefined') {
+    setTimeout(() => {
+        console.log('[AI Service] Configuration:', {
+            FORCE_DEMO_MODE,
+            hasGeminiKey: !!getGeminiApiKey(),
+            prefersLiveGemini: prefersLiveGemini(),
+            fluxApiKeyPresent: !!FLUX_API_KEY,
+            envVars: {
+                VITE_FORCE_DEMO_MODE: importMetaEnv.VITE_FORCE_DEMO_MODE,
+                FORCE_DEMO_MODE: typeof process !== 'undefined' ? process.env?.FORCE_DEMO_MODE : undefined,
+                USE_FALLBACK_MODE: typeof process !== 'undefined' ? process.env?.USE_FALLBACK_MODE : undefined,
+            }
+        });
+    }, 0);
+}
 
 const requireGeminiClient = (): GoogleGenAI => {
     const apiKey = getGeminiApiKey();
