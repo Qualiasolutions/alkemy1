@@ -31,31 +31,21 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
     return (
         <motion.div
-            className={`${isDark ? 'bg-gray-800' : 'bg-gray-200'} ${roundedClass} ${className} overflow-hidden relative`}
+            className={`${isDark ? 'bg-gray-800/60' : 'bg-gray-200/80'} ${roundedClass} ${className} overflow-hidden relative shimmer`}
             style={{ width, height }}
-            initial={{ opacity: 0.6 }}
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
         >
             <div
-                className="absolute inset-0 -translate-x-full animate-shimmer"
+                className="absolute inset-0 -translate-x-full"
                 style={{
                     background: isDark
-                        ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
-                        : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-                    animation: 'shimmer 2s infinite'
+                        ? 'linear-gradient(90deg, transparent, rgba(16,185,129,0.08), transparent)'
+                        : 'linear-gradient(90deg, transparent, rgba(5,150,105,0.12), transparent)',
+                    animation: 'shimmer 1.5s infinite'
                 }}
             />
-            <style jsx>{`
-                @keyframes shimmer {
-                    0% {
-                        transform: translateX(-100%);
-                    }
-                    100% {
-                        transform: translateX(100%);
-                    }
-                }
-            `}</style>
         </motion.div>
     );
 };
