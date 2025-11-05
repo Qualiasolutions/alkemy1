@@ -17,9 +17,6 @@ import FramesTab from './tabs/FramesTab.simple';
 import WanTransferTab from './tabs/WanTransferTab';
 import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
-import SocialSpotsTab from './tabs/SocialSpotsTab';
-import SchedulerTab from './tabs/SchedulerTab';
-import AnalyticsTab from './tabs/AnalyticsTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip } from './types';
 import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
@@ -828,12 +825,6 @@ const AppContent: React.FC = () => {
         return <PostProductionTab />;
       case 'exports':
         return <ExportsTab timelineClips={timelineClips} />;
-      case 'social_spots':
-        return <SocialSpotsTab />;
-      case 'scheduler':
-        return <SchedulerTab />;
-      case 'analytics':
-        return <AnalyticsTab />;
       default:
         return <ScriptTab 
                   scriptContent={scriptContent}
