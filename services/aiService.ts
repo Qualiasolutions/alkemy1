@@ -99,6 +99,21 @@ const handleApiError = (error: unknown, model: string): Error => {
 
 
 // --- Helper Functions ---
+const MAX_IMAGE_SIZE_MB = 4; // Gemini API limit for Nano Banana
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+/**
+ * Validates if a base64 encoded image is within size limits
+ */
+const validateImageSize = (base64Data: string, maxSizeBytes: number = MAX_IMAGE_SIZE_BYTES): { isValid: boolean; sizeBytes: number } => {
+    // Calculate approximate size from base64 (base64 adds ~33% overhead)
+    const sizeBytes = Math.floor((base64Data.length * 3) / 4);
+    return {
+        isValid: sizeBytes <= maxSizeBytes,
+        sizeBytes
+    };
+};
+
 const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; data: string }> => {
     // Handle data URLs directly
     if (url.startsWith('data:')) {
@@ -111,6 +126,14 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
         const mimeMatch = meta.match(/:(.*?);/);
         const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
         if (!mimeMatch) console.warn("Could not determine MIME type from data URL, defaulting to octet-stream.", meta);
+
+        // Validate size for Gemini API
+        const { isValid, sizeBytes } = validateImageSize(data);
+        if (!isValid) {
+            const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
+            throw new Error(`Image is too large (${sizeMB}MB). Gemini API supports images up to ${MAX_IMAGE_SIZE_MB}MB. Please use a smaller image.`);
+        }
+
         return { mimeType, data };
     }
 
@@ -138,6 +161,14 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
                 if (!base64data) {
                     return reject(new Error('Could not extract base64 data from the data URL.'));
                 }
+
+                // Validate size before returning
+                const { isValid, sizeBytes } = validateImageSize(base64data);
+                if (!isValid) {
+                    const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
+                    return reject(new Error(`Image is too large (${sizeMB}MB). Gemini API supports images up to ${MAX_IMAGE_SIZE_MB}MB. Please use a smaller image or compress it.`));
+                }
+
                 resolve({ mimeType, data: base64data });
             };
             reader.onerror = (error) => reject(new Error(`FileReader error: ${error}`));
@@ -151,6 +182,8 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
     }
 };
 
+const MAX_PROMPT_LENGTH = 800; // Nano Banana performs best with concise prompts
+
 export const buildSafePrompt = (
     prompt: string,
     hasVisualReferences: boolean, // Keep for signature compatibility, though unused in this version
@@ -161,9 +194,26 @@ export const buildSafePrompt = (
     const prefix = "Cinematic film still for a fictional movie (SFW): ";
     const videoPrefix = "Cinematic video shot for a fictional movie (SFW): ";
 
-    const finalPrompt = (type === 'video' ? videoPrefix : prefix) + prompt;
-    
-    return { finalPrompt, wasAdjusted: true };
+    let adjustedPrompt = prompt;
+    let wasAdjusted = false;
+
+    // Truncate overly long prompts to prevent MAX_TOKENS and IMAGE_OTHER errors
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+        adjustedPrompt = prompt.substring(0, MAX_PROMPT_LENGTH).trim();
+        // Try to end at a sentence boundary for better coherence
+        const lastPeriod = adjustedPrompt.lastIndexOf('.');
+        const lastComma = adjustedPrompt.lastIndexOf(',');
+        const cutPoint = Math.max(lastPeriod, lastComma);
+        if (cutPoint > MAX_PROMPT_LENGTH * 0.7) { // Only cut at punctuation if it's not too early
+            adjustedPrompt = adjustedPrompt.substring(0, cutPoint + 1).trim();
+        }
+        wasAdjusted = true;
+        console.warn(`[buildSafePrompt] Prompt truncated from ${prompt.length} to ${adjustedPrompt.length} characters to prevent API errors.`);
+    }
+
+    const finalPrompt = (type === 'video' ? videoPrefix : prefix) + adjustedPrompt;
+
+    return { finalPrompt, wasAdjusted };
 };
 
 export const generateStillVariants = async (
@@ -344,17 +394,58 @@ export const animateFrame = async (
 };
 
 export const refineVariant = async (prompt: string, base_image_url: string, aspect_ratio: string): Promise<string> => {
-    console.log("[API Action] refineVariant", { prompt, base_image_url, aspect_ratio });
-    const refinementModel = 'Gemini Nano Banana';
+    console.log("[API Action] refineVariant", {
+        prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+        promptLength: prompt.length,
+        base_image_url: base_image_url.substring(0, 50) + '...',
+        aspect_ratio
+    });
 
-    // By definition, refinement always has a visual reference (the base image).
-    const hasVisualReferences = true;
+    try {
+        const refinementModel = 'Gemini Nano Banana';
 
-    // Apply the same safety and context wrapper as other generation calls to prevent safety blocks.
-    const { finalPrompt } = buildSafePrompt(prompt, hasVisualReferences);
+        // By definition, refinement always has a visual reference (the base image).
+        const hasVisualReferences = true;
 
-    const result = await generateVisual(finalPrompt, refinementModel, [base_image_url], aspect_ratio, undefined, `refine-${base_image_url}`);
-    return result.url;
+        // Apply the same safety and context wrapper as other generation calls to prevent safety blocks.
+        const { finalPrompt, wasAdjusted } = buildSafePrompt(prompt, hasVisualReferences);
+
+        if (wasAdjusted) {
+            console.warn(`[refineVariant] Prompt was adjusted for API compatibility. Original length: ${prompt.length}, Final length: ${finalPrompt.length}`);
+        }
+
+        // Validate base image before attempting refinement
+        if (!base_image_url || !base_image_url.trim()) {
+            throw new Error('Base image URL is required for refinement.');
+        }
+
+        const result = await generateVisual(
+            finalPrompt,
+            refinementModel,
+            [base_image_url],
+            aspect_ratio,
+            undefined,
+            `refine-${Date.now()}`
+        );
+
+        console.log("[API Action] refineVariant successful", {
+            resultLength: result.url.length,
+            fromFallback: result.fromFallback
+        });
+
+        return result.url;
+
+    } catch (error) {
+        console.error("[API Action] refineVariant failed:", error);
+
+        // Provide more context in the error message
+        if (error instanceof Error) {
+            // Add refinement context to the error
+            const enhancedMessage = `Image refinement failed: ${error.message}`;
+            throw new Error(enhancedMessage);
+        }
+        throw error;
+    }
 };
 
 
@@ -435,6 +526,14 @@ export const generateVisual = async (
     onProgress?: (progress: number) => void,
     seed: string = `${model}-${prompt}`
 ): Promise<VisualGenerationResult> => {
+    console.log("[generateVisual] Starting generation", {
+        model,
+        promptLength: prompt.length,
+        referenceImageCount: reference_images.length,
+        aspect_ratio,
+        timestamp: new Date().toISOString()
+    });
+
     if (!prefersLiveGemini()) {
         onProgress?.(100);
         return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
@@ -449,6 +548,13 @@ export const generateVisual = async (
     const effectiveModel = ((normalizedModel === 'Imagen' || normalizedModel === 'Flux') && reference_images.length > 0)
         ? 'Gemini Flash Image'
         : normalizedModel;
+
+    console.log("[generateVisual] Model routing", {
+        originalModel: model,
+        normalizedModel,
+        effectiveModel,
+        hasReferenceImages: reference_images.length > 0
+    });
 
     try {
         if (!prompt || !prompt.trim()) {
@@ -538,21 +644,70 @@ export const generateVisual = async (
                 errorMessage += ' Please rephrase your prompt to be less ambiguous or explicit.';
                 throw new Error(errorMessage);
             }
-            
+
+            // Extract image from response
             for (const part of candidate?.content?.parts || []) {
                 if (part.inlineData) {
                     const base64ImageBytes: string = part.inlineData.data;
+                    const imageSizeKB = Math.floor((base64ImageBytes.length * 3 / 4) / 1024);
+                    console.log("[generateVisual] Image generated successfully", {
+                        effectiveModel,
+                        imageSizeKB,
+                        finishReason: candidate?.finishReason || 'STOP'
+                    });
                     return { url: `data:image/png;base64,${base64ImageBytes}`, fromFallback: false };
+                }
             }
+
+            // Handle specific finish reasons with actionable error messages
+            if (candidate?.finishReason) {
+                const finishReason = candidate.finishReason;
+
+                if (finishReason === 'NO_IMAGE') {
+                    // The model decided not to generate an image
+                    throw new Error(
+                        'Nano Banana could not generate an image for this prompt. This may happen if: ' +
+                        '(1) The prompt is too vague or complex, (2) Reference images are incompatible, or ' +
+                        '(3) The request conflicts with model capabilities. Try simplifying your prompt or using different reference images.'
+                    );
+                }
+
+                if (finishReason === 'IMAGE_OTHER') {
+                    // Generic image generation failure
+                    throw new Error(
+                        'Image generation failed due to model limitations. Try: ' +
+                        '(1) Shortening your prompt (keep it under 500 characters), ' +
+                        '(2) Using fewer or smaller reference images (under 4MB each), ' +
+                        '(3) Being more specific about what you want, or ' +
+                        '(4) Removing complex editing instructions.'
+                    );
+                }
+
+                if (finishReason === 'MAX_TOKENS' || finishReason === 'RECITATION') {
+                    throw new Error(
+                        `Generation stopped: ${finishReason}. ` +
+                        (finishReason === 'MAX_TOKENS'
+                            ? 'Prompt may be too long. Try a shorter description.'
+                            : 'Content may be too similar to existing copyrighted material. Try a more original prompt.')
+                    );
+                }
+
+                if (finishReason !== 'STOP') {
+                    // Catch-all for other unexpected finish reasons
+                    throw new Error(
+                        `Generation failed with reason: ${finishReason}. ` +
+                        'This may be due to prompt complexity, reference image issues, or API limitations. ' +
+                        'Try simplifying your request.'
+                    );
+                }
             }
-            
-            // If no image is found, check for other non-STOP finish reasons.
-            if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-                throw new Error(`Generation failed for an unexpected reason: ${candidate.finishReason}. This could be related to prompt length or other model limitations.`);
-            }
-            
+
             // Generic fallback if no data is returned without a clear reason.
-            throw new Error("Gemini Flash Image API returned no image data. This may be due to content safety filters or an issue with the prompt.");
+            throw new Error(
+                "Nano Banana API returned no image data. This may be due to: " +
+                "(1) Content safety filters, (2) Incompatible reference images, or (3) Prompt issues. " +
+                "Try rephrasing your prompt or using different reference images."
+            );
 
         } else {
             throw new Error(`The selected model "${effectiveModel}" is not currently supported.`);
@@ -611,7 +766,51 @@ export const generateMoodboardDescription = async (section: MoodboardSection): P
 
 import { ENHANCED_DIRECTOR_KNOWLEDGE } from './directorKnowledge';
 
-export const askTheDirector = async (analysis: ScriptAnalysis, query: string): Promise<string> => {
+type DirectorConversationMessage = { author: 'user' | 'director'; text: string };
+
+const sanitizeConversationHistory = (history: DirectorConversationMessage[]): DirectorConversationMessage[] => {
+    return history
+        .filter((entry) => entry && typeof entry.text === 'string' && entry.text.trim().length > 0)
+        .slice(-8);
+};
+
+const buildConversationContents = (history: DirectorConversationMessage[]) => {
+    return history.map((entry) => ({
+        role: entry.author === 'user' ? 'user' : 'model',
+        parts: [{ text: entry.text.trim() }]
+    }));
+};
+
+const extractCandidateText = async (response: any): Promise<string> => {
+    if (!response) return '';
+
+    const candidates = response.candidates ?? [];
+    for (const candidate of candidates) {
+        const parts = candidate?.content?.parts;
+        if (Array.isArray(parts)) {
+            const text = parts
+                .map((part: any) => (typeof part?.text === 'string' ? part.text : ''))
+                .join('')
+                .trim();
+            if (text.length > 0) {
+                return text;
+            }
+        }
+    }
+
+    const resText = typeof response.text === 'function' ? await response.text() : response.text;
+    if (typeof resText === 'string' && resText.trim().length > 0) {
+        return resText.trim();
+    }
+
+    return '';
+};
+
+export const askTheDirector = async (
+    analysis: ScriptAnalysis,
+    query: string,
+    history: DirectorConversationMessage[] = []
+): Promise<string> => {
     if (!prefersLiveGemini()) {
         return fallbackDirectorResponse(analysis, query);
     }
@@ -621,8 +820,10 @@ export const askTheDirector = async (analysis: ScriptAnalysis, query: string): P
         const ai = requireGeminiClient();
 
         // Use the enhanced system instructions from the knowledge base
-        const systemInstruction = ENHANCED_DIRECTOR_KNOWLEDGE.systemInstructions;
-        
+        const baseSystemInstruction = ENHANCED_DIRECTOR_KNOWLEDGE.systemInstructions;
+        const sanitizedHistory = sanitizeConversationHistory(history);
+        const conversationContents = buildConversationContents(sanitizedHistory);
+
         // Check if query needs technical calculations
         let technicalContext = '';
         const queryLower = query.toLowerCase();
@@ -644,8 +845,7 @@ export const askTheDirector = async (analysis: ScriptAnalysis, query: string): P
             technicalContext += '\n\nYou know all camera movements: pan, tilt, dolly, tracking, crane, Steadicam, gimbal with specific speeds and techniques.';
         }
 
-        let context = `
-PROJECT CONTEXT:
+        const projectContext = `PROJECT CONTEXT:
 Title: ${analysis.title}
 Logline: ${analysis.logline}
 Summary: ${analysis.summary}
@@ -659,24 +859,45 @@ Cinematography: ${analysis.moodboard?.cinematography.aiDescription || analysis.m
 Color: ${analysis.moodboard?.color.aiDescription || analysis.moodboard?.color.notes || 'Not defined.'}
 Style: ${analysis.moodboard?.style.aiDescription || analysis.moodboard?.style.notes || 'Not defined.'}
 
-TECHNICAL KNOWLEDGE AVAILABLE:${technicalContext || '\nFull cinematography database including lenses, lighting, movement, composition, and color grading.'}
----
+TECHNICAL KNOWLEDGE AVAILABLE:${technicalContext || '\nFull cinematography database including lenses, lighting, movement, composition, and color grading.'}`;
 
-Based on all the above context and your comprehensive cinematography expertise, respond to the following user query.
-IMPORTANT: Always provide specific technical parameters (focal length in mm, f-stop, ISO, Kelvin) when relevant.
+        const dynamicSystemInstruction = `${baseSystemInstruction}
 
-USER QUERY: "${query}"
-`;
-        
+${projectContext}
+
+Remember to stay concise (2-4 sentences or tight bullet points) and redirect casual conversation back to cinematography expertise.`;
+
+        const contents = [
+            {
+                role: 'user',
+                parts: [{ text: `Use the provided production context to answer as the Director of Photography.` }]
+            },
+            ...conversationContents
+        ];
+
+        if (!conversationContents.some(content => content.role === 'user')) {
+            contents.push({ role: 'user', parts: [{ text: query }] });
+        }
+
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-pro',
-            contents: context,
+            contents,
             config: {
-                systemInstruction: systemInstruction,
+                systemInstruction: { role: 'system', parts: [{ text: dynamicSystemInstruction }] },
+                temperature: 0.6,
+                topP: 0.9,
+                maxOutputTokens: 512,
+                responseMimeType: 'text/plain',
             }
         });
 
-        return response.text;
+        const finalText = await extractCandidateText(response);
+
+        if (!finalText) {
+            throw new Error('The director returned an empty response.');
+        }
+
+        return finalText;
     } catch (error) {
         if (shouldUseFallbackForError(error)) {
             console.warn('[API Action] askTheDirector returning fallback response.');
