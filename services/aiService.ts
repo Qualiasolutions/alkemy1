@@ -183,32 +183,37 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
 };
 
 const MAX_PROMPT_LENGTH = 800; // Nano Banana performs best with concise prompts
+const MAX_REFINEMENT_PROMPT_LENGTH = 400; // Refinement needs shorter prompts since it also processes reference image
 
 export const buildSafePrompt = (
     prompt: string,
     hasVisualReferences: boolean, // Keep for signature compatibility, though unused in this version
-    type: 'still' | 'video' = 'still'
+    type: 'still' | 'video' = 'still',
+    isRefinement: boolean = false // New parameter for refinement operations
 ): { finalPrompt: string; wasAdjusted: boolean } => {
     // A direct, natural language prefix to provide context without complex syntax that
     // might confuse the model and lead to IMAGE_OTHER errors.
     const prefix = "Cinematic film still for a fictional movie (SFW): ";
     const videoPrefix = "Cinematic video shot for a fictional movie (SFW): ";
 
+    // Use more conservative limit for refinement operations
+    const maxLength = isRefinement ? MAX_REFINEMENT_PROMPT_LENGTH : MAX_PROMPT_LENGTH;
+
     let adjustedPrompt = prompt;
     let wasAdjusted = false;
 
     // Truncate overly long prompts to prevent MAX_TOKENS and IMAGE_OTHER errors
-    if (prompt.length > MAX_PROMPT_LENGTH) {
-        adjustedPrompt = prompt.substring(0, MAX_PROMPT_LENGTH).trim();
+    if (prompt.length > maxLength) {
+        adjustedPrompt = prompt.substring(0, maxLength).trim();
         // Try to end at a sentence boundary for better coherence
         const lastPeriod = adjustedPrompt.lastIndexOf('.');
         const lastComma = adjustedPrompt.lastIndexOf(',');
         const cutPoint = Math.max(lastPeriod, lastComma);
-        if (cutPoint > MAX_PROMPT_LENGTH * 0.7) { // Only cut at punctuation if it's not too early
+        if (cutPoint > maxLength * 0.7) { // Only cut at punctuation if it's not too early
             adjustedPrompt = adjustedPrompt.substring(0, cutPoint + 1).trim();
         }
         wasAdjusted = true;
-        console.warn(`[buildSafePrompt] Prompt truncated from ${prompt.length} to ${adjustedPrompt.length} characters to prevent API errors.`);
+        console.warn(`[buildSafePrompt] Prompt truncated from ${prompt.length} to ${adjustedPrompt.length} characters to prevent API errors. Context: ${isRefinement ? 'refinement' : 'generation'}`);
     }
 
     const finalPrompt = (type === 'video' ? videoPrefix : prefix) + adjustedPrompt;
@@ -401,24 +406,22 @@ export const refineVariant = async (prompt: string, base_image_url: string, aspe
         aspect_ratio
     });
 
+    // Validate base image before attempting refinement
+    if (!base_image_url || !base_image_url.trim()) {
+        throw new Error('Base image URL is required for refinement.');
+    }
+
+    const refinementModel = 'Gemini Nano Banana';
+    const hasVisualReferences = true;
+
+    // Try with refinement-specific prompt optimization
+    const { finalPrompt, wasAdjusted } = buildSafePrompt(prompt, hasVisualReferences, 'still', true);
+
+    if (wasAdjusted) {
+        console.warn(`[refineVariant] Prompt was adjusted for refinement. Original: ${prompt.length} chars, Final: ${finalPrompt.length} chars`);
+    }
+
     try {
-        const refinementModel = 'Gemini Nano Banana';
-
-        // By definition, refinement always has a visual reference (the base image).
-        const hasVisualReferences = true;
-
-        // Apply the same safety and context wrapper as other generation calls to prevent safety blocks.
-        const { finalPrompt, wasAdjusted } = buildSafePrompt(prompt, hasVisualReferences);
-
-        if (wasAdjusted) {
-            console.warn(`[refineVariant] Prompt was adjusted for API compatibility. Original length: ${prompt.length}, Final length: ${finalPrompt.length}`);
-        }
-
-        // Validate base image before attempting refinement
-        if (!base_image_url || !base_image_url.trim()) {
-            throw new Error('Base image URL is required for refinement.');
-        }
-
         const result = await generateVisual(
             finalPrompt,
             refinementModel,
@@ -430,19 +433,64 @@ export const refineVariant = async (prompt: string, base_image_url: string, aspe
 
         console.log("[API Action] refineVariant successful", {
             resultLength: result.url.length,
-            fromFallback: result.fromFallback
+            fromFallback: result.fromFallback,
+            promptLength: finalPrompt.length
         });
 
         return result.url;
 
     } catch (error) {
-        console.error("[API Action] refineVariant failed:", error);
+        console.error("[API Action] refineVariant failed on first attempt:", error);
 
-        // Provide more context in the error message
+        // If refinement fails with IMAGE_OTHER error, try with an even simpler prompt
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('IMAGE_OTHER') || errorMessage.includes('model limitations')) {
+            console.warn("[refineVariant] Retrying with simplified prompt...");
+
+            try {
+                // Extract just the core action words from the prompt
+                const simplifiedPrompt = prompt
+                    .split(/[,.]/)  // Split on commas and periods
+                    [0]              // Take first clause
+                    .trim()
+                    .substring(0, 100); // Maximum 100 chars for retry
+
+                const { finalPrompt: retryPrompt } = buildSafePrompt(simplifiedPrompt, hasVisualReferences, 'still', true);
+
+                console.log("[refineVariant] Retry prompt:", {
+                    original: prompt.substring(0, 50),
+                    simplified: simplifiedPrompt,
+                    final: retryPrompt.substring(0, 100)
+                });
+
+                const retryResult = await generateVisual(
+                    retryPrompt,
+                    refinementModel,
+                    [base_image_url],
+                    aspect_ratio,
+                    undefined,
+                    `refine-retry-${Date.now()}`
+                );
+
+                console.log("[API Action] refineVariant successful on retry");
+                return retryResult.url;
+
+            } catch (retryError) {
+                console.error("[API Action] refineVariant failed on retry:", retryError);
+
+                // Provide detailed error message with troubleshooting
+                const retryErrorMsg = retryError instanceof Error ? retryError.message : String(retryError);
+                throw new Error(
+                    `Image refinement failed after retry. This usually means the reference image is incompatible with Nano Banana. ` +
+                    `Original error: ${errorMessage}. Retry error: ${retryErrorMsg}. ` +
+                    `Suggestion: Try generating a new image instead of refining this one.`
+                );
+            }
+        }
+
+        // For other errors, provide context
         if (error instanceof Error) {
-            // Add refinement context to the error
-            const enhancedMessage = `Image refinement failed: ${error.message}`;
-            throw new Error(enhancedMessage);
+            throw new Error(`Image refinement failed: ${error.message}`);
         }
         throw error;
     }
@@ -676,7 +724,7 @@ export const generateVisual = async (
                     // Generic image generation failure
                     throw new Error(
                         'Image generation failed due to model limitations. Try: ' +
-                        '(1) Shortening your prompt (keep it under 500 characters), ' +
+                        `(1) Shortening your prompt (keep it under ${MAX_PROMPT_LENGTH} characters), ` +
                         '(2) Using fewer or smaller reference images (under 4MB each), ' +
                         '(3) Being more specific about what you want, or ' +
                         '(4) Removing complex editing instructions.'
