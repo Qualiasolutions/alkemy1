@@ -2,10 +2,13 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import DirectorWidget from './components/DirectorWidget';
 import SplashScreen from './components/SplashScreen';
 import WelcomeScreen from './components/WelcomeScreen';
+import AuthModal from './components/auth/AuthModal';
+import UserMenu from './components/auth/UserMenu';
 import { TABS, TABS_CONFIG } from './constants';
 import { SunIcon, MoonIcon } from './components/icons/Icons';
 import ScriptTab from './tabs/ScriptTab';
@@ -25,6 +28,7 @@ import { DEMO_PROJECT_DATA, DEMO_SCRIPT } from './data/demoProject';
 import Toast, { ToastMessage } from './components/Toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { hasGeminiApiKey, hasEnvGeminiApiKey, onGeminiApiKeyChange, clearGeminiApiKey, setGeminiApiKey } from './services/apiKeys';
+import { isSupabaseConfigured } from './services/supabase';
 
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
@@ -163,9 +167,27 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }
 };
 
 
-const AppContent: React.FC = () => {
+// Wrapper component to handle auth conditionally
+const AppContentWithAuth: React.FC = () => {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  return <AppContentBase user={user} isAuthenticated={isAuthenticated} authLoading={authLoading} />;
+};
+
+const AppContentWithoutAuth: React.FC = () => {
+  return <AppContentBase user={null} isAuthenticated={false} authLoading={false} />;
+};
+
+interface AppContentBaseProps {
+  user: any;
+  isAuthenticated: boolean;
+  authLoading: boolean;
+}
+
+const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, authLoading }) => {
   const { toggleTheme, isDark } = useTheme();
   const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const loadProjectInputRef = useRef<HTMLInputElement>(null);
 
   const envHasGeminiKey = hasEnvGeminiApiKey();
@@ -940,6 +962,28 @@ return (
               {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
               <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
             </motion.button>
+
+            {/* User Menu or Sign In - Only show if Supabase is configured */}
+            {isSupabaseConfigured() && (
+              isAuthenticated ? (
+                <UserMenu
+                  onProfileClick={() => console.log('Profile clicked')}
+                  onSettingsClick={() => console.log('Settings clicked')}
+                  onProjectsClick={() => console.log('Projects clicked')}
+                />
+              ) : (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setAuthModalMode('login');
+                    setShowAuthModal(true);
+                  }}
+                  className="!py-2"
+                >
+                  Sign In
+                </Button>
+              )
+            )}
           </div>
         </div>
       </motion.header>
@@ -967,14 +1011,39 @@ return (
 
     <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
     <Toast toast={toast} onClose={() => setToast(null)} />
+
+    {/* Auth Modal - Only render if Supabase is configured */}
+    {isSupabaseConfigured() && (
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={authModalMode}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          showToast('Successfully signed in!', 'success');
+        }}
+      />
+    )}
   </div>
 );
 };
 
 const App: React.FC = () => {
+  // Only wrap with AuthProvider if Supabase is configured
+  if (isSupabaseConfigured()) {
+    return (
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContentWithAuth />
+        </AuthProvider>
+      </ThemeProvider>
+    );
+  }
+
+  // Without Supabase, just use ThemeProvider
   return (
     <ThemeProvider>
-      <AppContent />
+      <AppContentWithoutAuth />
     </ThemeProvider>
   );
 };

@@ -56,8 +56,23 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const [isLoading, setIsLoading] = useState(false);
   const [promptModal, setPromptModal] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const activeRequestIdRef = useRef<number | null>(null);
 
   const canChat = !!scriptAnalysis;
+  const canResetChat = messages.some((message, index) => {
+    if (index === 0) return message.author !== 'director' || message.text !== WELCOME_MESSAGE;
+    return message.text.trim().length > 0;
+  });
+
+  const resetConversation = useCallback(() => {
+    activeRequestIdRef.current = null;
+    setIsLoading(false);
+    setMessages([{ author: 'director', text: WELCOME_MESSAGE }]);
+    setPromptModal(null);
+    setUserInput('');
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, [setMessages, setPromptModal, setUserInput, setIsLoading]);
 
   useEffect(() => {
     if (!canChat) {
@@ -73,6 +88,12 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && canChat) {
+      textareaRef.current?.focus();
+    }
+  }, [isOpen, canChat]);
 
   const parseCommand = (input: string) => {
     const lowerInput = input.toLowerCase();
@@ -130,7 +151,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     return null;
   };
 
-  const executeCommand = useCallback(async (command: any) => {
+  const executeCommand = useCallback(async (command: any, conversationHistory: Message[], rawInput: string) => {
     if (!scriptAnalysis) return null;
 
     try {
@@ -141,10 +162,10 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
 
         switch (command.subType) {
           case 'lens':
-            query = `Recommend the best lens focal length for ${command.query}. Include specific mm recommendations and explain why.`;
+            query = `The user asked: "${rawInput}". Recommend the best lens focal length for ${command.query}. Include specific mm values and explain the creative impact in concise language.`;
             break;
           case 'lighting':
-            query = `Provide a detailed lighting setup for ${command.query}. Include key light position, fill ratio, and color temperature in Kelvin.`;
+            query = `The user asked: "${rawInput}". Provide a lighting setup for ${command.query}. Include key/fill ratio, light placement, and color temperature in Kelvin.`;
             break;
           case 'dof':
             const { calculateDepthOfField } = await import('../services/directorKnowledge');
@@ -154,15 +175,15 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               message: `**Depth of Field Calculation:**\n• Focal Length: ${command.focalLength}mm\n• Aperture: f/${command.fStop}\n• Focus Distance: ${command.distance}m\n\n**Results:**\n• Near Focus: ${dofResult.near.toFixed(2)}m\n• Far Focus: ${dofResult.far === Infinity ? 'Infinity' : dofResult.far.toFixed(2) + 'm'}\n• Total DOF: ${dofResult.total === Infinity ? 'Infinity' : dofResult.total.toFixed(2) + 'm'}\n• Hyperfocal Distance: ${dofResult.hyperfocal.toFixed(2)}m\n\n*Tip: At f/${command.fStop}, everything from ${dofResult.near.toFixed(2)}m to ${dofResult.far === Infinity ? 'infinity' : dofResult.far.toFixed(2) + 'm'} will be in acceptable focus.*`
             };
           case 'movement':
-            query = `Suggest the best camera movement technique for ${command.query}. Include specific equipment and speed recommendations.`;
+            query = `The user asked: "${rawInput}". Suggest a camera movement approach for ${command.query}. Include specific equipment and typical movement speed.`;
             break;
           case 'color':
-            query = `Recommend color grading approach for ${command.query}. Include specific color temperature, LUT suggestions, and tint adjustments.`;
+            query = `The user asked: "${rawInput}". Recommend a color grading approach for ${command.query}. Include color temperature, LUT direction, and tint adjustments.`;
             break;
         }
 
         if (query) {
-          const response = await askTheDirector(scriptAnalysis, query);
+          const response = await askTheDirector(scriptAnalysis, query, conversationHistory);
           return {
             success: true,
             message: response
@@ -361,6 +382,9 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     const trimmedInput = userInput.trim();
     if (!trimmedInput || !canChat || isLoading) return;
 
+    const requestId = Date.now();
+    activeRequestIdRef.current = requestId;
+
     const lowerInput = trimmedInput.toLowerCase();
     const promptRequest = lowerInput.includes('prompt');
 
@@ -374,7 +398,8 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       const command = parseCommand(trimmedInput);
 
       if (command) {
-        const result = await executeCommand(command);
+        const result = await executeCommand(command, nextMessages, trimmedInput);
+        if (activeRequestIdRef.current !== requestId) return;
         if (result) {
           setMessages([
             ...nextMessages,
@@ -386,6 +411,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
             }
           ]);
         } else {
+          if (activeRequestIdRef.current !== requestId) return;
           setMessages([
             ...nextMessages,
             {
@@ -396,7 +422,8 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
           ]);
         }
       } else {
-        const reply = await askTheDirector(scriptAnalysis!, trimmedInput);
+        const reply = await askTheDirector(scriptAnalysis!, trimmedInput, nextMessages);
+        if (activeRequestIdRef.current !== requestId) return;
         if (promptRequest) {
           const preparedPrompt = reply.trim();
           setPromptModal(preparedPrompt);
@@ -413,6 +440,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
         }
       }
     } catch (error) {
+      if (activeRequestIdRef.current !== requestId) return;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setMessages([
         ...nextMessages,
@@ -422,7 +450,10 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
         },
       ]);
     } finally {
-      setIsLoading(false);
+      if (activeRequestIdRef.current === requestId) {
+        activeRequestIdRef.current = null;
+        setIsLoading(false);
+      }
     }
   };
   const widgetLabel = useMemo(() => (canChat ? 'AI Director' : 'Analyze script first'), [canChat]);
@@ -448,14 +479,24 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                     <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 truncate">Creative Partner</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { setIsOpen(false); setPromptModal(null); }}
-                  className="shrink-0 rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105"
-                  aria-label="Close director assistant"
-                >
-                  <XIcon className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={resetConversation}
+                    disabled={!canResetChat}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/70 transition-all hover:bg-white/12 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    New Chat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsOpen(false); setPromptModal(null); }}
+                    className="shrink-0 rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105"
+                    aria-label="Close director assistant"
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </button>
+                </div>
               </header>
 
               {/* Messages Area */}
@@ -538,6 +579,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                       <textarea
                         value={userInput}
                         onChange={(event) => setUserInput(event.target.value)}
+                        ref={textareaRef}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' && !event.shiftKey) {
                             event.preventDefault();

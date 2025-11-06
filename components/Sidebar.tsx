@@ -33,12 +33,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className={`relative group bg-[var(--color-background-primary)] border-r border-[var(--color-border-color)] sticky top-0 flex h-screen flex-col p-4 transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64' : 'w-20'}`}
+      className={`relative group bg-[var(--color-background-primary)] border-r border-[var(--color-border-color)] sticky top-0 flex h-screen flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64 p-4' : 'w-20 p-3'}`}
     >
       {/* Subtle accent glow effects */}
       <div className="absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none bg-emerald-500/8 opacity-50" />
       <div className="absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none bg-emerald-400/6 opacity-40" />
-      <div className={`flex items-center gap-3 mb-6 pb-4 border-b border-[var(--color-border-color)] transition-all duration-300 ${isSidebarExpanded ? 'px-2' : 'justify-center border-b-0'}`}>
+      <div className={`flex items-center gap-3 border-b border-[var(--color-border-color)] transition-all duration-300 ${isSidebarExpanded ? 'mb-6 pb-4 px-2' : 'mb-4 pb-0 justify-center border-b-0'}`}>
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
           <LogoIcon />
         </div>
@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         )}
       </div>
 
-      <ul className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 space-y-6">
+      <ul className={`flex-1 overflow-y-auto overflow-x-hidden relative z-10 ${isSidebarExpanded ? 'space-y-6' : 'space-y-3'}`}>
         {isSidebarExpanded ? (
           // Expanded View with Sections
           <>
@@ -131,13 +131,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
 
               return (
                 <React.Fragment key={tab.id}>
-                  {showDivider && <div className="h-px bg-[var(--color-border-color)] my-4" />}
+                  {showDivider && <div className="h-px bg-[var(--color-border-color)] my-3" />}
                   <li className="relative group/item">
                     <motion.button
                       onClick={() => setActiveTab(tab.id)}
-                      whileHover={{ scale: 1.08 }}
+                      whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.92 }}
-                      className={`relative w-full flex items-center justify-center p-3.5 rounded-xl text-sm transition-all duration-200 ${
+                      className={`relative w-full flex items-center justify-center rounded-xl text-sm transition-all duration-200 px-2.5 py-2 ${
                         isActive
                           ? 'bg-gradient-to-br from-emerald-500/25 to-emerald-400/15 text-emerald-400 shadow-lg shadow-emerald-500/20'
                           : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-hover-background)] hover:text-emerald-400'
@@ -166,10 +166,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         )}
       </ul>
       
-      <div className="mt-auto pt-6 border-t border-[var(--color-border-color)] space-y-2">
+      <div className={`mt-auto border-t border-[var(--color-border-color)] ${isSidebarExpanded ? 'pt-6 space-y-2' : 'pt-4 space-y-1.5'}`}>
         <Button
             onClick={onNewProject}
             variant="secondary"
+            size={isSidebarExpanded ? 'md' : 'sm'}
             className={`w-full ${isSidebarExpanded ? '' : '!px-0'}`}
         >
             <PlusIcon className="w-4 h-4 flex-shrink-0" />
@@ -178,6 +179,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         <Button
             onClick={onDownloadProject}
             variant="secondary"
+            size={isSidebarExpanded ? 'md' : 'sm'}
             className={`w-full ${isSidebarExpanded ? '' : '!px-0'}`}
             title="Save Project As..."
         >
@@ -187,6 +189,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
         <Button
             onClick={() => fileInputRef.current?.click()}
             variant="secondary"
+            size={isSidebarExpanded ? 'md' : 'sm'}
             className={`w-full ${isSidebarExpanded ? '' : '!px-0'}`}
             title="Load Project"
         >
