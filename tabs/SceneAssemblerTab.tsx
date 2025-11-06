@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, AnalyzedLocation, Moodboard, FrameStatus } from '../types';
 import Button from '../components/Button';
 import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo } from '../services/aiService';
-import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon, ChevronDownIcon } from '../components/icons/Icons';
+import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon, ChevronDownIcon, DownloadIcon } from '../components/icons/Icons';
 import ThreeDWorldViewer from '../components/3DWorldViewer';
 import { generate3DWorld } from '../services/3dWorldService';
 
@@ -818,11 +818,44 @@ const AnimateStudio: React.FC<{
                            ) : gen.url ? (
                                 <>
                                     <video src={gen.url} muted loop autoPlay playsInline className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                        <Button onClick={() => setFullScreenVideoUrl(gen.url!)} variant="secondary" className="!p-3">
+
+                                    {/* Top-left: Use this video button */}
+                                    <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button
+                                            onClick={() => handleSelectVideo(gen.url!)}
+                                            variant="primary"
+                                            className="!bg-white !text-black !font-semibold !py-2 !px-4 !rounded-lg hover:!bg-gray-100 !transition-all !shadow-lg"
+                                        >
+                                            Use this video
+                                        </Button>
+                                    </div>
+
+                                    {/* Top-right: Download and Fullscreen buttons */}
+                                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button
+                                            onClick={() => {
+                                                // Download video
+                                                const a = document.createElement('a');
+                                                a.href = gen.url!;
+                                                a.download = `video-${gen.id}.mp4`;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                document.body.removeChild(a);
+                                            }}
+                                            variant="secondary"
+                                            className="!bg-black/70 !text-white !p-2.5 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
+                                            title="Download video"
+                                        >
+                                            <DownloadIcon className="w-5 h-5" />
+                                        </Button>
+                                        <Button
+                                            onClick={() => setFullScreenVideoUrl(gen.url!)}
+                                            variant="secondary"
+                                            className="!bg-black/70 !text-white !p-2.5 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
+                                            title="Fullscreen"
+                                        >
                                             <ExpandIcon className="w-5 h-5" />
                                         </Button>
-                                        <Button onClick={() => handleSelectVideo(gen.url!)} variant="primary">Use This Video</Button>
                                     </div>
                                 </>
                            ) : (
