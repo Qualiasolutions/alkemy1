@@ -36,7 +36,7 @@ The project is linked to Vercel:
 - **Project Name**: `alkemy1`
 - **Default URL**: `https://alkemy1.vercel.app`
 - **Vercel Config**: Project details stored in `.vercel/project.json` (do not commit)
-- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, and `REPLICATE_API_TOKEN` in Vercel dashboard under project settings
+- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, `REPLICATE_API_TOKEN`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in Vercel dashboard under project settings
 - **Serverless Functions**: API routes in `api/` directory are deployed as Vercel serverless functions (`luma-proxy.ts` and `replicate-proxy.ts`)
 
 The app auto-deploys on push to `main` branch. Vercel builds use `npm run build` and serve from `dist/`.
@@ -58,6 +58,8 @@ FLUX_API_KEY=your_flux_api_key_here  # Optional: for Flux model support
 WAN_API_KEY=your_wan_api_key_here  # Optional: for Wan 2.2 motion transfer
 LUMA_API_KEY=your_luma_api_key_here  # Optional: for Luma AI 3D generation
 REPLICATE_API_TOKEN=your_replicate_api_token_here  # Optional: for Emu3-Gen world generation
+VITE_SUPABASE_URL=your_supabase_url  # Optional: for authentication
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key  # Optional: for authentication
 ```
 
 **API Key Management:**
@@ -95,6 +97,25 @@ Key state setters passed down through props:
 - `setProjectState`: Internal state updater that triggers localStorage serialization
 
 **Important**: `setScriptAnalysis` handles both direct values and functional updaters. Always use functional updates when modifying nested data to avoid race conditions.
+
+### Authentication System (Optional)
+
+The app includes optional Supabase authentication via `contexts/AuthContext.tsx`:
+
+- **AuthProvider**: Wraps the app to provide authentication state and methods
+- **Auth Service Layer**: `services/supabase.ts` abstracts Supabase client with helper methods
+- **User Components**: `LoginForm`, `RegisterForm`, `AuthModal`, and `UserMenu` in `components/auth/`
+- **Permission System**: `usePermission` hook for tier-based feature access
+- **Database Schema**: Ready-to-run migrations in `supabase/migrations/001_initial_schema.sql`
+- **Graceful Degradation**: App works without Supabase configuration (anonymous mode)
+
+When Supabase is configured, users can:
+- Save projects to cloud instead of localStorage
+- Access projects from any device
+- Track usage and quotas
+- Upload media to cloud storage
+
+See `SUPABASE_SETUP.md` for detailed setup instructions.
 
 ### Theme System
 
@@ -162,6 +183,8 @@ All generation functions accept `onProgress` callbacks for real-time UI updates.
 - `Frame`: Shot-level data with `status` (FrameStatus enum), `media` URLs, and technical specs
 - `Generation`: Tracks individual AI generation attempts with loading/error states
 - `TimelineClip`: Video clip representation for editing
+- `User`: User profile with subscription tiers
+- `AuthState`: Authentication state management
 
 **Frame Status Lifecycle:**
 ```
@@ -175,8 +198,10 @@ Note: `VideoReady` status is retained for compatibility but the new flow uses `A
 
 - `components/`: Reusable UI elements (`Button.tsx`, `Sidebar.tsx`, `DirectorWidget.tsx`, `SplashScreen.tsx`, `WelcomeScreen.tsx`, `Toast.tsx`, `3DWorldViewer.tsx`)
 - `components/icons/Icons.tsx`: Inline SVG icon components
+- `components/auth/`: Authentication components (`LoginForm.tsx`, `RegisterForm.tsx`, `AuthModal.tsx`, `UserMenu.tsx`)
 - `tabs/`: Feature-specific views, each handling its own UI logic but relying on App.tsx for state
 - `theme/`: Theme system (`ThemeContext.tsx` with ThemeProvider and useTheme hook)
+- `contexts/`: React contexts (`AuthContext.tsx` for authentication state)
 - `hooks/`: Custom React hooks (`useKeyboardShortcuts.ts` for power-user shortcuts)
 - `data/`: Demo project data (`demoProject.ts` with sample screenplay and analysis)
 
@@ -404,6 +429,8 @@ The service is used by `App.tsx` for API key validation flow and by `aiService.t
 Key packages used in this project:
 - **@google/genai**: Google Generative AI SDK for Gemini, Imagen, and Veo models
 - **@ffmpeg/ffmpeg** & **@ffmpeg/util**: Client-side video processing via WebAssembly
+- **@supabase/supabase-js**: Supabase client for authentication and database
+- **@supabase/auth-ui-react**: Pre-built authentication UI components
 - **three**: 3D rendering library for landscape visualization
 - **react** & **react-dom**: React 19.2.0 (latest)
 - **framer-motion**: Animation library for smooth UI transitions
@@ -413,12 +440,13 @@ Key packages used in this project:
 ## Notes for Future Development
 
 - **Testing**: No automated test suite currently wired. When adding tests, colocate them per feature (e.g., `tabs/FramesTab.test.tsx`)
-- **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, and `REPLICATE_API_TOKEN`
+- **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, `REPLICATE_API_TOKEN`, and Supabase keys
 - **Storage Optimization**: The serialization logic in `getSerializableState()` strips large generated variants to avoid localStorage quota issues. If adding new generation arrays, update this function. Timeline clips with blob URLs are converted to base64 for persistence and back to blob URLs on load.
 - **Video Duration**: `getVideoDuration()` helper in App.tsx extracts metadata for timeline clips. It defaults to 5 seconds on error.
 - **Animation Performance**: Framer Motion is used throughout for UI animations. Use `AnimatePresence` for exit animations and `motion.*` components for animated elements.
 - **FFmpeg Performance**: FFmpeg.wasm loads from unpkg.com CDN (~30MB). First render may take time. The wasm module persists across renders once loaded.
 - **3D Model Memory**: Three.js models from Luma can be large. Dispose of geometries and materials when unmounting to prevent memory leaks.
+- **Authentication Migration**: When Supabase is configured, consider migrating localStorage projects to cloud storage for better persistence and collaboration features.
 
 ## UI/UX Patterns
 

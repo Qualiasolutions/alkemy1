@@ -179,3 +179,38 @@ export interface ScriptAnalysis {
   moodboard?: Moodboard;
   moodboardTemplates?: MoodboardTemplate[];
 }
+
+// Authentication Types
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  avatar_url?: string;
+  subscription_tier: 'free' | 'pro' | 'enterprise';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  session: any | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface Project {
+  id: string;
+  user_id: string;
+  title: string;
+  script_content?: string | null;
+  script_analysis?: ScriptAnalysis | null;
+  timeline_clips?: TimelineClip[] | null;
+  moodboard_data?: Moodboard | null;
+  project_settings?: any | null;
+  is_public: boolean;
+  shared_with?: string[] | null;
+  created_at: string;
+  updated_at: string;
+  last_accessed_at: string;
+}
