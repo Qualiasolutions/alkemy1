@@ -110,7 +110,11 @@ const RefinementStudio: React.FC<{
     baseGeneration: Generation;
     onClose: () => void;
     onUpdateFrame: (updater: (prev: Frame) => Frame) => void;
-}> = ({ baseGeneration, onClose, onUpdateFrame }) => {
+    currentProject?: any;
+    user?: any;
+    scene?: AnalyzedScene;
+    frame?: Frame;
+}> = ({ baseGeneration, onClose, onUpdateFrame, currentProject, user, scene, frame }) => {
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [currentBaseImage, setCurrentBaseImage] = useState(baseGeneration.url!);
@@ -122,7 +126,12 @@ const RefinementStudio: React.FC<{
         if (!prompt.trim() || !currentBaseImage) return;
         setIsGenerating(true);
         try {
-            const newUrl = await refineVariant(prompt, currentBaseImage, baseGeneration.aspectRatio);
+            const newUrl = await refineVariant(prompt, currentBaseImage, baseGeneration.aspectRatio, {
+                projectId: currentProject?.id || null,
+                userId: user?.id || null,
+                sceneId: scene?.id || null,
+                frameId: frame?.id || null
+            });
             setSessionVariants(prev => [newUrl, ...prev]);
             
             onUpdateFrame(prevFrame => ({
@@ -555,7 +564,9 @@ const StillStudio: React.FC<{
     moodboardTemplates?: import('../types').MoodboardTemplate[];
     characters: AnalyzedCharacter[];
     locations: AnalyzedLocation[];
-}> = ({ frame, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations }) => {
+    currentProject?: any;
+    user?: any;
+}> = ({ frame, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations, currentProject, user }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -605,7 +616,12 @@ const StillStudio: React.FC<{
                 });
             };
 
-            const { urls, errors, wasAdjusted } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates || [], characterNames, locationName, onProgress);
+            const { urls, errors, wasAdjusted } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates || [], characterNames, locationName, onProgress, {
+                projectId: currentProject?.id || null,
+                userId: user?.id || null,
+                sceneId: scene.id,
+                frameId: frame.id
+            });
             
             if (wasAdjusted) {
                 setPromptWasAdjusted(true);
@@ -833,7 +849,10 @@ const AnimateStudio: React.FC<{
     frame: Frame;
     onBack: () => void;
     onUpdateFrame: (updater: (prev: Frame) => Frame) => void;
-}> = ({ frame, onBack, onUpdateFrame }) => {
+    currentProject?: any;
+    user?: any;
+    scene?: AnalyzedScene;
+}> = ({ frame, onBack, onUpdateFrame, currentProject, user, scene }) => {
     const [motionPrompt, setMotionPrompt] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [frameToUpload, setFrameToUpload] = useState<'start' | 'end' | null>(null);
@@ -924,7 +943,12 @@ const AnimateStudio: React.FC<{
                 aspectRatio = '16:9';
             }
 
-            const videoBlobs = await animateFrame(motionPrompt, startFrame, endFrame, N_VIDEO_GENERATIONS, aspectRatio, onProgress);
+            const videoBlobs = await animateFrame(motionPrompt, startFrame, endFrame, N_VIDEO_GENERATIONS, aspectRatio, onProgress, {
+                projectId: currentProject?.id || null,
+                userId: user?.id || null,
+                sceneId: scene?.id || null,
+                frameId: frame.id
+            });
             const videoUrls = videoBlobs.map(blob => URL.createObjectURL(blob));
 
             onUpdateFrame(prevFrame => {
@@ -1236,9 +1260,11 @@ interface CompositingTabProps {
   onAddScene: () => void;
   onTransferToTimeline: (frame: Frame, scene: AnalyzedScene) => void;
   onTransferAllToTimeline: () => void;
+  currentProject?: any;
+  user?: any;
 }
 
-const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdateAnalysis, onAddScene, onTransferToTimeline, onTransferAllToTimeline }) => {
+const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdateAnalysis, onAddScene, onTransferToTimeline, onTransferAllToTimeline, currentProject, user }) => {
     const [activeWorkspace, setActiveWorkspace] = useState<Workspace>('grid');
     const [selectedItem, setSelectedItem] = useState<{ frame: Frame; scene: AnalyzedScene } | null>(null);
     const [refinementBase, setRefinementBase] = useState<Generation | null>(null);
@@ -1324,12 +1350,12 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
         if (!selectedItem) return null;
         switch (activeWorkspace) {
             case 'still-studio':
-                return <StillStudio frame={selectedItem.frame} scene={selectedItem.scene} onBack={() => setActiveWorkspace('grid')} onUpdateFrame={handleUpdateFrame} onEnterRefinement={(gen) => { setRefinementBase(gen); setActiveWorkspace('refine-studio'); }} moodboard={scriptAnalysis.moodboard} moodboardTemplates={scriptAnalysis.moodboardTemplates} characters={scriptAnalysis.characters} locations={scriptAnalysis.locations} />;
+                return <StillStudio frame={selectedItem.frame} scene={selectedItem.scene} onBack={() => setActiveWorkspace('grid')} onUpdateFrame={handleUpdateFrame} onEnterRefinement={(gen) => { setRefinementBase(gen); setActiveWorkspace('refine-studio'); }} moodboard={scriptAnalysis.moodboard} moodboardTemplates={scriptAnalysis.moodboardTemplates} characters={scriptAnalysis.characters} locations={scriptAnalysis.locations} currentProject={currentProject} user={user} />;
             case 'refine-studio':
                 if (!refinementBase) return null;
-                return <RefinementStudio baseGeneration={refinementBase} onClose={() => setActiveWorkspace('still-studio')} onUpdateFrame={handleUpdateFrame} />;
+                return <RefinementStudio baseGeneration={refinementBase} onClose={() => setActiveWorkspace('still-studio')} onUpdateFrame={handleUpdateFrame} currentProject={currentProject} user={user} scene={selectedItem.scene} frame={selectedItem.frame} />;
             case 'animate-studio':
-                return <AnimateStudio frame={selectedItem.frame} onBack={() => setActiveWorkspace('grid')} onUpdateFrame={handleUpdateFrame} />;
+                return <AnimateStudio frame={selectedItem.frame} onBack={() => setActiveWorkspace('grid')} onUpdateFrame={handleUpdateFrame} currentProject={currentProject} user={user} scene={selectedItem.scene} />;
             case 'image-upscale-studio':
             case 'video-upscale-studio':
                 const isVideo = activeWorkspace === 'video-upscale-studio';

@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -32,6 +33,10 @@ import { isSupabaseConfigured } from './services/supabase';
 import { getProjectService } from './services/projectService';
 import { getMediaService } from './services/mediaService';
 import { getUsageService, USAGE_ACTIONS, logAIUsage } from './services/usageService';
+
+// Import the new auth pages
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
@@ -969,12 +974,14 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                   moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
                 />;
       case 'compositing':
-        return <CompositingTab 
+        return <CompositingTab
                   scriptAnalysis={scriptAnalysis}
                   onUpdateAnalysis={setScriptAnalysis}
                   onAddScene={handleAddScene}
                   onTransferToTimeline={handleTransferToTimeline}
                   onTransferAllToTimeline={handleTransferAllToTimeline}
+                  currentProject={currentProject}
+                  user={user}
                 />;
       case 'timeline':
         return <FramesTab 
@@ -1173,22 +1180,29 @@ return (
 };
 
 const App: React.FC = () => {
-  // Only wrap with AuthProvider if Supabase is configured
-  if (isSupabaseConfigured()) {
-    return (
-      <ThemeProvider>
-        <AuthProvider>
-          <AppContentWithAuth />
-        </AuthProvider>
-      </ThemeProvider>
-    );
-  }
-
-  // Without Supabase, just use ThemeProvider
   return (
-    <ThemeProvider>
-      <AppContentWithoutAuth />
-    </ThemeProvider>
+    <Routes>
+      {/* Authentication Routes */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+      {/* Main App Route */}
+      <Route path="/*" element={
+        // Only wrap with AuthProvider if Supabase is configured
+        isSupabaseConfigured() ? (
+          <ThemeProvider>
+            <AuthProvider>
+              <AppContentWithAuth />
+            </AuthProvider>
+          </ThemeProvider>
+        ) : (
+          // Without Supabase, just use ThemeProvider
+          <ThemeProvider>
+            <AppContentWithoutAuth />
+          </ThemeProvider>
+        )
+      } />
+    </Routes>
   );
 };
 
