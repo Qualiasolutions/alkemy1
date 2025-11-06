@@ -3,9 +3,20 @@ import { ScriptAnalysis, AnalyzedScene, Frame, AnalyzedCharacter, AnalyzedLocati
 import { Type, GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { fallbackScriptAnalysis, fallbackMoodboardDescription, fallbackDirectorResponse, getFallbackImageUrl, getFallbackVideoBlobs } from './fallbackContent';
 import { getGeminiApiKey, clearGeminiApiKey } from './apiKeys';
+import { getMediaService } from './mediaService';
+import { logAIUsage, USAGE_ACTIONS } from './usageService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
+const GEMINI_PRO_MODEL_CANDIDATES = [
+    'gemini-2.5-pro',
+    'gemini-2.5-flash-002',
+    'gemini-2.0-pro-exp-02-05',
+    'gemini-1.5-pro-latest',
+];
+
+let cachedModelNames: string[] | null = null;
+let inFlightModelList: Promise<string[]> | null = null;
 
 const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
 const truthyStrings = new Set(['true', '1', 'yes', 'on']);
@@ -88,6 +99,7 @@ const handleApiError = (error: unknown, model: string): Error => {
             // Dispatch a global event to notify the UI to re-prompt for a key.
             window.dispatchEvent(new Event('invalid-api-key'));
             clearGeminiApiKey();
+            resetModelListCache();
             message = 'Your API Key was not found or is invalid. Please select a valid key.';
         } else {
             // Clean up generic messages
@@ -97,9 +109,143 @@ const handleApiError = (error: unknown, model: string): Error => {
     return new Error(message);
 };
 
+const isModelNotFoundError = (error: unknown): boolean => {
+    if (!error) return false;
+
+    const unwrapError = (err: any): boolean => {
+        if (!err) return false;
+        const status = typeof err.status === 'string' ? err.status.toLowerCase() : '';
+        const code = typeof err.code === 'string' ? err.code : '';
+        const message = typeof err.message === 'string' ? err.message.toLowerCase() : '';
+        return status.includes('not_found') || code === '404' || message.includes('not found');
+    };
+
+    if (unwrapError((error as any)?.error)) {
+        return true;
+    }
+
+    const message = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+            ? error
+            : '';
+
+    const normalized = message.toLowerCase();
+    return normalized.includes('not_found') ||
+        normalized.includes('not found') ||
+        normalized.includes('404');
+};
+
+const resetModelListCache = () => {
+    cachedModelNames = null;
+    inFlightModelList = null;
+};
+
+const extractModelNames = (response: any): string[] => {
+    if (!response) return [];
+    const collections = Array.isArray(response) ? response : (response?.models ?? response?.data ?? []);
+    if (!Array.isArray(collections)) return [];
+    return collections
+        .map((entry) => {
+            if (!entry) return '';
+            if (typeof entry === 'string') return entry;
+            const name = entry?.name ?? entry?.model;
+            return typeof name === 'string' ? name : '';
+        })
+        .filter((name): name is string => typeof name === 'string' && name.length > 0);
+};
+
+const getAvailableGeminiModels = async (ai: GoogleGenAI): Promise<string[]> => {
+    if (cachedModelNames) {
+        return cachedModelNames;
+    }
+    if (inFlightModelList) {
+        return inFlightModelList;
+    }
+
+    inFlightModelList = ai.models.list({ pageSize: 200 })
+        .then((response: any) => {
+            const names = extractModelNames(response);
+            cachedModelNames = names;
+            return names;
+        })
+        .catch((error: unknown) => {
+            console.warn('[AI Service] Unable to list Gemini models. Falling back to static list.', error);
+            return [];
+        })
+        .finally(() => {
+            inFlightModelList = null;
+        });
+
+    return inFlightModelList;
+};
+
+const expandModelIdVariants = (id: string): string[] => {
+    if (!id) return [];
+    const clean = id.replace(/^models\//, '');
+    const variants = new Set<string>();
+    variants.add(clean);
+    variants.add(`models/${clean}`);
+    if (id !== clean) {
+        variants.add(id);
+    }
+    return Array.from(variants);
+};
+
+const buildModelAttemptList = async (ai: GoogleGenAI, preferred: string[]): Promise<string[]> => {
+    const availableModels = await getAvailableGeminiModels(ai);
+    const availableSet = new Set(availableModels);
+    const attempts: string[] = [];
+    const seen = new Set<string>();
+
+    const addAttempt = (modelId: string) => {
+        if (!modelId || seen.has(modelId)) return;
+        seen.add(modelId);
+        attempts.push(modelId);
+    };
+
+    const findAvailableVariant = (candidate: string): string | null => {
+        if (!candidate) return null;
+        if (availableSet.has(candidate)) return candidate;
+        const suffix = candidate.replace(/^models\//, '');
+        const match = availableModels.find(name => name.endsWith(suffix));
+        return match ?? null;
+    };
+
+    for (const baseId of preferred) {
+        const variants = expandModelIdVariants(baseId);
+        let resolved = false;
+        for (const variant of variants) {
+            const available = availableModels.length > 0 ? findAvailableVariant(variant) : variant;
+            if (available) {
+                addAttempt(available);
+                resolved = true;
+                break;
+            }
+        }
+        if (!resolved) {
+            variants.forEach(addAttempt);
+        }
+    }
+
+    if (availableModels.length > 0) {
+        const proFallback = availableModels.find(name => name.includes('gemini') && name.includes('pro'));
+        if (proFallback) addAttempt(proFallback);
+
+        const flashFallback = availableModels.find(name => name.includes('gemini') && name.includes('flash'));
+        if (flashFallback) addAttempt(flashFallback);
+    }
+
+    if (attempts.length === 0) {
+        preferred.flatMap(expandModelIdVariants).forEach(addAttempt);
+    }
+
+    return attempts;
+};
+
 
 // --- Helper Functions ---
-const MAX_IMAGE_SIZE_MB = 4; // Gemini API limit for Nano Banana
+const MAX_IMAGE_SIZE_MB = 20; // Google API actual limit for entire request (prompt + images)
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 /**
@@ -131,7 +277,7 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
         const { isValid, sizeBytes } = validateImageSize(data);
         if (!isValid) {
             const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
-            throw new Error(`Image is too large (${sizeMB}MB). Gemini API supports images up to ${MAX_IMAGE_SIZE_MB}MB. Please use a smaller image.`);
+            throw new Error(`Image is too large (${sizeMB}MB). Google API supports images up to ${MAX_IMAGE_SIZE_MB}MB for inline requests. Please use a smaller image or compress it. For larger files, consider using the Files API.`);
         }
 
         return { mimeType, data };
@@ -166,7 +312,7 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
                 const { isValid, sizeBytes } = validateImageSize(base64data);
                 if (!isValid) {
                     const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
-                    return reject(new Error(`Image is too large (${sizeMB}MB). Gemini API supports images up to ${MAX_IMAGE_SIZE_MB}MB. Please use a smaller image or compress it.`));
+                    return reject(new Error(`Image is too large (${sizeMB}MB). Google API supports images up to ${MAX_IMAGE_SIZE_MB}MB for inline requests. Please use a smaller image or compress it. For larger files, consider using the Files API.`));
                 }
 
                 resolve({ mimeType, data: base64data });
@@ -233,7 +379,8 @@ export const generateStillVariants = async (
     moodboardTemplates: MoodboardTemplate[] = [],
     characterNames?: string[],
     locationName?: string,
-    onProgress?: (index: number, progress: number) => void
+    onProgress?: (index: number, progress: number) => void,
+    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
 ): Promise<{ urls: string[], errors: (string | null)[], wasAdjusted: boolean }> => {
     console.log("[API Action] generateStillVariants", { frame_id, model, prompt, reference_images, n, aspect_ratio, moodboard, characterNames, locationName });
     
@@ -269,10 +416,14 @@ export const generateStillVariants = async (
     const urls: string[] = [];
     const errors: (string | null)[] = [];
     
-    const generationPromises = Array.from({ length: n }).map((_, index) => 
+    const generationPromises = Array.from({ length: n }).map((_, index) =>
         generateVisual(finalPrompt, model, allReferenceImages, aspect_ratio, (progress) => {
             onProgress?.(index, progress);
-        }, `${frame_id}-${index}-${aspect_ratio}`)
+        }, `${frame_id}-${index}-${aspect_ratio}`, {
+            ...context,
+            frameId: context?.frameId || `${frame_id}-${index}`,
+            sceneId: context?.sceneId || frame_id.split('-')[0],
+        })
     );
 
     const results = await Promise.allSettled(generationPromises);
@@ -298,17 +449,19 @@ export const generateStillVariants = async (
 
 
 export const animateFrame = async (
-    prompt: string, 
-    reference_image_url: string, 
+    prompt: string,
+    reference_image_url: string,
     last_frame_image_url?: string | null,
     n: number = 1,
     aspectRatio: string = '16:9',
-    onProgress?: (progress: number) => void
-): Promise<Blob[]> => {
+    onProgress?: (progress: number) => void,
+    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
+): Promise<string[]> => {
     if (!prefersLiveGemini()) {
         console.warn('[API Action] animateFrame using fallback videos because live service is unavailable.');
         onProgress?.(100);
-        return getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url}`);
+        const fallbackBlobs = getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url}`);
+        return fallbackBlobs.map(blob => URL.createObjectURL(blob));
     }
     console.log("[API Action] Animating frame with Veo", { prompt, hasLastFrame: !!last_frame_image_url, n });
 
@@ -373,7 +526,7 @@ export const animateFrame = async (
             throw new Error("Video generation failed. The API completed without returning a video. This could be due to content safety filters.");
         }
 
-        const videoBlobs = await Promise.all(downloadLinks.map(async (downloadLink) => {
+        const videoBlobs = await Promise.all(downloadLinks.map(async (downloadLink, index) => {
             const apiKey = getGeminiApiKey();
             if (!apiKey) {
                 throw new Error('Gemini API key is not available for downloading generated video.');
@@ -386,19 +539,78 @@ export const animateFrame = async (
             return response.blob();
         }));
 
-        return videoBlobs;
+        // Log usage for analytics
+        if (context?.userId && context?.projectId) {
+            await logAIUsage(
+                context.userId,
+                USAGE_ACTIONS.VIDEO_GENERATION,
+                undefined, // Token count not available for Veo
+                context.projectId,
+                {
+                    model: 'veo-3.1-fast-generate-preview',
+                    prompt: prompt.substring(0, 200),
+                    aspectRatio,
+                    hasReferenceImage: true,
+                    hasLastFrame: !!last_frame_image_url,
+                    videoCount: videoBlobs.length,
+                    totalSize: videoBlobs.reduce((sum, blob) => sum + blob.size, 0),
+                    sceneId: context.sceneId,
+                    frameId: context.frameId,
+                }
+            );
+        }
+
+        // Upload videos to Supabase Storage if context is available
+        if (context?.projectId && context?.userId) {
+            const uploadedUrls = await Promise.all(videoBlobs.map(async (blob, index) => {
+                const fileName = `veo_animation_${aspectRatio}_${prompt.substring(0, 30).replace(/\s+/g, '_')}_${index}`;
+                const { url, error } = await uploadVideoToSupabase(
+                    blob,
+                    fileName,
+                    context.projectId!,
+                    context.userId!,
+                    {
+                        model: 'veo-3.1-fast-generate-preview',
+                        prompt: prompt.substring(0, 200),
+                        aspectRatio,
+                        generationType: 'video_animation',
+                        hasReferenceImage: true,
+                        hasLastFrame: !!last_frame_image_url,
+                        sceneId: context.sceneId,
+                        frameId: context.frameId,
+                    }
+                );
+
+                if (error) {
+                    console.warn(`Failed to upload video ${index} to Supabase, returning blob URL:`, error);
+                    return URL.createObjectURL(blob);
+                }
+                return url;
+            }));
+
+            return uploadedUrls;
+        }
+
+        // Return blob URLs if Supabase is not available
+        return videoBlobs.map(blob => URL.createObjectURL(blob));
 
     } catch (error) {
         onProgress?.(100);
         if (shouldUseFallbackForError(error)) {
             console.warn('[API Action] animateFrame fallback triggered due to API failure.');
-            return getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url ?? 'none'}`);
+            const fallbackBlobs = getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url ?? 'none'}`);
+            return fallbackBlobs.map(blob => URL.createObjectURL(blob));
         }
         throw handleApiError(error, 'Veo (Animate)');
     }
 };
 
-export const refineVariant = async (prompt: string, base_image_url: string, aspect_ratio: string): Promise<string> => {
+export const refineVariant = async (
+    prompt: string,
+    base_image_url: string,
+    aspect_ratio: string,
+    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
+): Promise<string> => {
     console.log("[API Action] refineVariant", {
         prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
         promptLength: prompt.length,
@@ -428,7 +640,11 @@ export const refineVariant = async (prompt: string, base_image_url: string, aspe
             [base_image_url],
             aspect_ratio,
             undefined,
-            `refine-${Date.now()}`
+            `refine-${Date.now()}`,
+            {
+                ...context,
+                frameId: context?.frameId || `refine-${Date.now()}`,
+            }
         );
 
         console.log("[API Action] refineVariant successful", {
@@ -469,7 +685,11 @@ export const refineVariant = async (prompt: string, base_image_url: string, aspe
                     [base_image_url],
                     aspect_ratio,
                     undefined,
-                    `refine-retry-${Date.now()}`
+                    `refine-retry-${Date.now()}`,
+                    {
+                        ...context,
+                        frameId: context?.frameId || `refine-retry-${Date.now()}`,
+                    }
                 );
 
                 console.log("[API Action] refineVariant successful on retry");
@@ -566,20 +786,122 @@ interface VisualGenerationResult {
     fromFallback: boolean;
 }
 
+// Helper function to upload base64 image to Supabase Storage
+const uploadImageToSupabase = async (
+    base64Data: string,
+    fileName: string,
+    projectId: string | null,
+    userId: string | null,
+    metadata?: any
+): Promise<{ url: string; assetId: string | null; error: any }> => {
+    const mediaService = getMediaService();
+    if (!mediaService || !projectId || !userId) {
+        return { url: base64Data, assetId: null, error: null };
+    }
+
+    try {
+        // Convert base64 to blob
+        const base64Response = await fetch(`data:image/jpeg;base64,${base64Data}`);
+        const blob = await base64Response.blob();
+
+        // Create a more descriptive filename
+        const timestamp = Date.now();
+        const sanitizedName = fileName.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 50);
+        const fullFileName = `${sanitizedName}_${timestamp}.jpg`;
+
+        // Upload to Supabase Storage
+        const { asset, error } = await mediaService.uploadBlob(
+            projectId,
+            userId,
+            blob,
+            fullFileName,
+            'image/jpeg',
+            {
+                ...metadata,
+                generatedBy: 'ai',
+                originalFileName: fileName,
+                timestamp: timestamp.toString(),
+            }
+        );
+
+        if (error || !asset) {
+            console.warn('Failed to upload image to Supabase Storage:', error);
+            return { url: base64Data, assetId: null, error };
+        }
+
+        console.log('Image uploaded successfully to Supabase Storage:', asset.url);
+        return { url: asset.url, assetId: asset.id, error: null };
+    } catch (error) {
+        console.error('Error uploading image to Supabase Storage:', error);
+        return { url: base64Data, assetId: null, error };
+    }
+};
+
+// Helper function to upload video blob to Supabase Storage
+const uploadVideoToSupabase = async (
+    videoBlob: Blob,
+    fileName: string,
+    projectId: string | null,
+    userId: string | null,
+    metadata?: any
+): Promise<{ url: string; assetId: string | null; error: any }> => {
+    const mediaService = getMediaService();
+    if (!mediaService || !projectId || !userId) {
+        // Return blob URL if Supabase is not available
+        return { url: URL.createObjectURL(videoBlob), assetId: null, error: null };
+    }
+
+    try {
+        // Create a more descriptive filename
+        const timestamp = Date.now();
+        const sanitizedName = fileName.replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 50);
+        const fullFileName = `${sanitizedName}_${timestamp}.mp4`;
+
+        // Upload to Supabase Storage
+        const { asset, error } = await mediaService.uploadBlob(
+            projectId,
+            userId,
+            videoBlob,
+            fullFileName,
+            'video/mp4',
+            {
+                ...metadata,
+                generatedBy: 'ai',
+                originalFileName: fileName,
+                timestamp: timestamp.toString(),
+                fileSize: videoBlob.size,
+            }
+        );
+
+        if (error || !asset) {
+            console.warn('Failed to upload video to Supabase Storage:', error);
+            return { url: URL.createObjectURL(videoBlob), assetId: null, error };
+        }
+
+        console.log('Video uploaded successfully to Supabase Storage:', asset.url);
+        return { url: asset.url, assetId: asset.id, error: null };
+    } catch (error) {
+        console.error('Error uploading video to Supabase Storage:', error);
+        return { url: URL.createObjectURL(videoBlob), assetId: null, error };
+    }
+};
+
 export const generateVisual = async (
     prompt: string,
     model: string,
     reference_images: string[],
     aspect_ratio: string,
     onProgress?: (progress: number) => void,
-    seed: string = `${model}-${prompt}`
+    seed: string = `${model}-${prompt}`,
+    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
 ): Promise<VisualGenerationResult> => {
     console.log("[generateVisual] Starting generation", {
         model,
         promptLength: prompt.length,
         referenceImageCount: reference_images.length,
         aspect_ratio,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        context
     });
 
     if (!prefersLiveGemini()) {
@@ -626,11 +948,58 @@ export const generateVisual = async (
                 },
             });
 
-            onProgress?.(100);
+            onProgress?.(90); // Leave room for upload progress
             if (!response.generatedImages || response.generatedImages.length === 0) {
                 throw new Error(`${model} API returned no image data.`);
             }
-            return { url: `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`, fromFallback: false };
+
+            const base64Image = response.generatedImages[0].image.imageBytes;
+
+            // Log usage for analytics
+            if (context?.userId && context?.projectId) {
+                await logAIUsage(
+                    context.userId,
+                    USAGE_ACTIONS.IMAGE_GENERATION,
+                    undefined, // Token count not available for Imagen
+                    context.projectId,
+                    {
+                        model: normalizedModel,
+                        prompt: prompt.substring(0, 200),
+                        aspectRatio: aspect_ratio,
+                        hasReferenceImages: false,
+                        sceneId: context.sceneId,
+                        frameId: context.frameId,
+                    }
+                );
+            }
+
+            // Upload to Supabase Storage if context is available
+            if (context?.projectId && context?.userId) {
+                const fileName = `${model.replace(/\s+/g, '_')}_${aspect_ratio}_${seed}`;
+                const { url, error } = await uploadImageToSupabase(
+                    base64Image,
+                    fileName,
+                    context.projectId,
+                    context.userId,
+                    {
+                        model: normalizedModel,
+                        prompt: prompt.substring(0, 200),
+                        aspectRatio: aspect_ratio,
+                        generationType: 'image_generation',
+                        sceneId: context.sceneId,
+                        frameId: context.frameId,
+                    }
+                );
+
+                onProgress?.(100);
+                if (error) {
+                    console.warn('Failed to upload to Supabase, returning base64:', error);
+                }
+                return { url, fromFallback: false };
+            }
+
+            onProgress?.(100);
+            return { url: `data:image/jpeg;base64,${base64Image}`, fromFallback: false };
         
         } else if (effectiveModel === 'Gemini Flash Image') {
             const safetySettings = [
@@ -703,6 +1072,60 @@ export const generateVisual = async (
                         imageSizeKB,
                         finishReason: candidate?.finishReason || 'STOP'
                     });
+
+                    // Log usage for analytics
+                    if (context?.userId && context?.projectId) {
+                        // Estimate tokens for Gemini (rough approximation)
+                        const estimatedTokens = Math.floor(prompt.length / 4) + reference_images.length * 1000;
+                        await logAIUsage(
+                            context.userId,
+                            USAGE_ACTIONS.IMAGE_GENERATION,
+                            estimatedTokens,
+                            context.projectId,
+                            {
+                                model: effectiveModel,
+                                prompt: prompt.substring(0, 200),
+                                aspectRatio: aspect_ratio,
+                                hasReferenceImages: true,
+                                referenceImageCount: reference_images.length,
+                                sceneId: context.sceneId,
+                                frameId: context.frameId,
+                                imageSizeKB: imageSizeKB,
+                            }
+                        );
+                    }
+
+                    onProgress?.(90); // Leave room for upload progress
+
+                    // Upload to Supabase Storage if context is available
+                    if (context?.projectId && context?.userId) {
+                        const fileName = `${effectiveModel.replace(/\s+/g, '_')}_multimodal_${aspect_ratio}_${seed}`;
+                        const { url, error } = await uploadImageToSupabase(
+                            base64ImageBytes,
+                            fileName,
+                            context.projectId,
+                            context.userId,
+                            {
+                                model: effectiveModel,
+                                prompt: prompt.substring(0, 200),
+                                aspectRatio: aspect_ratio,
+                                generationType: 'image_generation_multimodal',
+                                hasReferenceImages: true,
+                                referenceImageCount: reference_images.length,
+                                sceneId: context.sceneId,
+                                frameId: context.frameId,
+                                imageSizeKB: imageSizeKB,
+                            }
+                        );
+
+                        onProgress?.(100);
+                        if (error) {
+                            console.warn('Failed to upload to Supabase, returning base64:', error);
+                        }
+                        return { url, fromFallback: false };
+                    }
+
+                    onProgress?.(100);
                     return { url: `data:image/png;base64,${base64ImageBytes}`, fromFallback: false };
                 }
             }
@@ -725,7 +1148,7 @@ export const generateVisual = async (
                     throw new Error(
                         'Image generation failed due to model limitations. Try: ' +
                         `(1) Shortening your prompt (keep it under ${MAX_PROMPT_LENGTH} characters), ` +
-                        '(2) Using fewer or smaller reference images (under 4MB each), ' +
+                        '(2) Using fewer or smaller reference images (under 20MB total for all images), ' +
                         '(3) Being more specific about what you want, or ' +
                         '(4) Removing complex editing instructions.'
                     );
@@ -927,25 +1350,56 @@ Remember to stay concise (2-4 sentences or tight bullet points) and redirect cas
             contents.push({ role: 'user', parts: [{ text: query }] });
         }
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
-            contents,
-            config: {
-                systemInstruction: { role: 'system', parts: [{ text: dynamicSystemInstruction }] },
-                temperature: 0.6,
-                topP: 0.9,
-                maxOutputTokens: 512,
-                responseMimeType: 'text/plain',
+        const requestConfig = {
+            systemInstruction: { role: 'system', parts: [{ text: dynamicSystemInstruction }] },
+            temperature: 0.6,
+            topP: 0.9,
+            maxOutputTokens: 512,
+            responseMimeType: 'text/plain',
+        } as const;
+
+        const resolvedAttempts = await buildModelAttemptList(ai, GEMINI_PRO_MODEL_CANDIDATES);
+        const modelAttempts = resolvedAttempts.length > 0
+            ? resolvedAttempts
+            : GEMINI_PRO_MODEL_CANDIDATES.flatMap(expandModelIdVariants);
+        let availabilityError: unknown = null;
+
+        for (const modelId of modelAttempts) {
+            try {
+                const response = await ai.models.generateContent({
+                    model: modelId,
+                    contents,
+                    config: requestConfig,
+                });
+
+                const finalText = await extractCandidateText(response);
+
+                if (!finalText) {
+                    console.warn(`[API Action] askTheDirector received empty response from ${modelId}, trying next candidate.`);
+                    continue;
+                }
+
+                if (modelId !== modelAttempts[0]) {
+                    console.info(`[API Action] askTheDirector using fallback Gemini model ${modelId}.`);
+                }
+
+                return finalText;
+            } catch (error) {
+                if (isModelNotFoundError(error)) {
+                    console.warn(`[API Action] askTheDirector model ${modelId} unavailable.`, error);
+                    availabilityError = error;
+                    continue;
+                }
+                throw handleApiError(error, `Gemini (${modelId})`);
             }
-        });
-
-        const finalText = await extractCandidateText(response);
-
-        if (!finalText) {
-            throw new Error('The director returned an empty response.');
         }
 
-        return finalText;
+        if (availabilityError) {
+            console.warn('[API Action] askTheDirector no preferred Gemini models available, returning fallback response.');
+            return fallbackDirectorResponse(analysis, query);
+        }
+
+        throw new Error('The director returned an empty response.');
     } catch (error) {
         if (shouldUseFallbackForError(error)) {
             console.warn('[API Action] askTheDirector returning fallback response.');
@@ -958,7 +1412,11 @@ Remember to stay concise (2-4 sentences or tight bullet points) and redirect cas
 
 // --- Existing AI Services adapted for new spec ---
 
-export const analyzeScript = async (scriptContent: string, onProgress?: (message: string) => void): Promise<ScriptAnalysis> => {
+export const analyzeScript = async (
+    scriptContent: string,
+    onProgress?: (message: string) => void,
+    context?: { projectId?: string; userId?: string }
+): Promise<ScriptAnalysis> => {
      if (!prefersLiveGemini()) {
         console.warn('[API Action] analyzeScript using fallback parser because live service is unavailable.');
         return fallbackScriptAnalysis(scriptContent);
@@ -1065,6 +1523,23 @@ export const analyzeScript = async (scriptContent: string, onProgress?: (message
 
         const scenesWithFrames = await Promise.all(frameGenerationPromises);
         onProgress?.('Shot generation complete.');
+
+        // Log usage for analytics
+        if (context?.userId && context?.projectId) {
+            // Estimate tokens based on script length and generated frames
+            const estimatedTokens = Math.floor(scriptContent.length / 4) + (scenesWithFrames.length * 500);
+            await logAIUsage(
+                context.userId,
+                USAGE_ACTIONS.SCRIPT_ANALYSIS,
+                estimatedTokens,
+                context.projectId,
+                {
+                    scriptLength: scriptContent.length,
+                    sceneCount: scenesWithFrames.length,
+                    totalFrames: scenesWithFrames.reduce((sum, scene) => sum + (scene.frames?.length || 0), 0),
+                }
+            );
+        }
 
         return { ...result, scenes: scenesWithFrames, moodboardTemplates: result.moodboardTemplates ?? [] };
     } catch (error) {

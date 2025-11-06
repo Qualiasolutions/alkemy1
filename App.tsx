@@ -20,7 +20,7 @@ import FramesTab from './tabs/FramesTab.simple';
 import WanTransferTab from './tabs/WanTransferTab';
 import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
-import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip } from './types';
+import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project } from './types';
 import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
 import Button from './components/Button';
@@ -29,6 +29,9 @@ import Toast, { ToastMessage } from './components/Toast';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { hasGeminiApiKey, hasEnvGeminiApiKey, onGeminiApiKeyChange, clearGeminiApiKey, setGeminiApiKey } from './services/apiKeys';
 import { isSupabaseConfigured } from './services/supabase';
+import { getProjectService } from './services/projectService';
+import { getMediaService } from './services/mediaService';
+import { getUsageService, USAGE_ACTIONS, logAIUsage } from './services/usageService';
 
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
@@ -190,8 +193,20 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const loadProjectInputRef = useRef<HTMLInputElement>(null);
 
+  // Initialize services
+  const projectService = getProjectService();
+  const mediaService = getMediaService();
+  const usageService = getUsageService();
+  const supabaseEnabled = isSupabaseConfigured();
+
   const envHasGeminiKey = hasEnvGeminiApiKey();
   const initialHasGeminiKey = hasGeminiApiKey();
+
+  // Project state - now supports both localStorage and database
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [projectList, setProjectList] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState<boolean>(false);
+  const [showProjectSelector, setShowProjectSelector] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
@@ -214,15 +229,9 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     } catch { return true; }
   });
   
-  // --- Project State Hydration ---
+  // --- Project State Management ---
   const [projectState, setProjectState] = useState<any>(() => {
-    try {
-      const raw = localStorage.getItem(PROJECT_STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {
-      console.warn("Failed to load project from storage", e);
-    }
-    // Default initial state
+    // Initialize with default state
     return {
       scriptContent: null,
       scriptAnalysis: null,
@@ -236,8 +245,168 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       }
     };
   });
-  
+
   const { scriptContent, scriptAnalysis, timelineClips } = projectState;
+
+  // --- Project Loading Functions ---
+  const loadUserProjects = useCallback(async () => {
+    if (!isAuthenticated || !user || !supabaseEnabled) return;
+
+    setIsLoadingProjects(true);
+    try {
+      const { projects, error } = await projectService.getProjects(user.id);
+      if (error) throw error;
+      setProjectList(projects || []);
+    } catch (error) {
+      console.error('Failed to load user projects:', error);
+      showToast('Failed to load projects', 'error');
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  }, [isAuthenticated, user, supabaseEnabled, projectService]);
+
+  // Load projects when user authenticates
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadUserProjects();
+    } else {
+      setProjectList([]);
+      setCurrentProject(null);
+    }
+  }, [isAuthenticated, user, loadUserProjects]);
+
+  // Save project to database or localStorage
+  const saveProject = useCallback(async (projectData?: any) => {
+    const dataToSave = projectData || {
+      scriptContent,
+      scriptAnalysis,
+      timelineClips,
+    };
+
+    if (supabaseEnabled && isAuthenticated && user && currentProject) {
+      // Save to database
+      try {
+        const { error } = await projectService.saveProjectData(currentProject.id, dataToSave);
+        if (error) throw error;
+
+        // Update last accessed time
+        await projectService.updateLastAccessed(currentProject.id);
+
+        // Update local project state
+        setCurrentProject(prev => prev ? { ...prev, ...dataToSave } : null);
+
+        console.log('[Database] Project saved successfully');
+      } catch (error) {
+        console.error('[Database] Failed to save project:', error);
+        showToast('Failed to save project to cloud', 'error');
+
+        // Fallback to localStorage
+        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
+      }
+    } else {
+      // Fallback to localStorage
+      try {
+        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
+        console.log('[LocalStorage] Project saved successfully');
+      } catch (error) {
+        console.error('[LocalStorage] Failed to save project:', error);
+        showToast('Failed to save project', 'error');
+      }
+    }
+  }, [scriptContent, scriptAnalysis, timelineClips, supabaseEnabled, isAuthenticated, user, currentProject, projectService, showToast]);
+
+  // Load project from database or localStorage
+  const loadProject = useCallback(async (project: Project) => {
+    if (!project) return;
+
+    setCurrentProject(project);
+
+    // Extract project data
+    const projectData = {
+      scriptContent: project.script_content,
+      scriptAnalysis: project.script_analysis,
+      timelineClips: project.timeline_clips || [],
+    };
+
+    setProjectState(prev => ({
+      ...prev,
+      ...projectData,
+      ui: prev.ui // Preserve UI state
+    }));
+
+    setActiveTab('script');
+
+    // Log usage
+    if (usageService && user) {
+      usageService.logUsage(user.id, USAGE_ACTIONS.PROJECT_UPDATED, {
+        projectId: project.id,
+        metadata: { action: 'loaded_project' }
+      });
+    }
+  }, [usageService, user]);
+
+  // Create new project
+  const createNewProject = useCallback(async (title: string = 'Untitled Project') => {
+    if (supabaseEnabled && isAuthenticated && user) {
+      try {
+        const { project, error } = await projectService.createProject(user.id, title);
+        if (error) throw error;
+
+        setCurrentProject(project);
+        setProjectState({
+          scriptContent: '',
+          scriptAnalysis: null,
+          timelineClips: [],
+          ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
+        });
+
+        // Refresh project list
+        await loadUserProjects();
+
+        // Log usage
+        if (usageService) {
+          usageService.logUsage(user.id, USAGE_ACTIONS.PROJECT_CREATED, {
+            projectId: project.id,
+            metadata: { title }
+          });
+        }
+
+        showToast('New project created successfully!', 'success');
+        return project;
+      } catch (error) {
+        console.error('Failed to create project:', error);
+        showToast('Failed to create project', 'error');
+      }
+    } else {
+      // Fallback to localStorage
+      const newProject = {
+        id: `local-${Date.now()}`,
+        user_id: 'anonymous',
+        title,
+        script_content: null,
+        script_analysis: null,
+        timeline_clips: [],
+        moodboard_data: null,
+        project_settings: {},
+        is_public: false,
+        shared_with: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_accessed_at: new Date().toISOString(),
+      };
+
+      setCurrentProject(newProject);
+      setProjectState({
+        scriptContent: '',
+        scriptAnalysis: null,
+        timelineClips: [],
+        ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
+      });
+
+      showToast('New project started!', 'success');
+      return newProject;
+    }
+  }, [supabaseEnabled, isAuthenticated, user, projectService, loadUserProjects, usageService, showToast]);
   
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -417,44 +586,20 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   };
 
   // --- Project Management ---
-  const handleNewProject = (skipConfirm: boolean = false) => {
+  const handleNewProject = useCallback(async (skipConfirm: boolean = false) => {
     const hasExistingProject = scriptContent || scriptAnalysis;
     if (!skipConfirm && hasExistingProject && !window.confirm("Are you sure you want to start a new project? Your current project will be cleared from this browser's storage.")) {
         return;
     }
 
-    const defaultState = {
-        scriptContent: '', // Empty string instead of null to trigger app render
-        scriptAnalysis: null,
-        timelineClips: [],
-        ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
-    };
-    setProjectState(defaultState);
+    await createNewProject('Untitled Project');
     setActiveTab('script');
-    try {
-        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(defaultState));
-    } catch (e) {
-        console.error("Failed to clear project from storage", e);
-    }
-    if (hasExistingProject || skipConfirm) {
-        showToast("New project started.");
-    }
-  };
-  
-  const handleSaveProject = async () => {
-      try {
-        const dataToSave = await getSerializableState();
-        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
-        showToast("Project saved successfully!");
-      } catch(e) {
-          console.error("Failed to save project", e);
-          if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-            showToast("Storage quota exceeded. Try removing some clips or clearing browser data.", 'error');
-          } else {
-            showToast("Failed to save project.", 'error');
-          }
-      }
-  };
+  }, [scriptContent, scriptAnalysis, createNewProject]);
+
+  const handleSaveProject = useCallback(async () => {
+    await saveProject();
+    showToast("Project saved successfully!");
+  }, [saveProject, showToast]);
 
   // Download project as JSON file
   const handleDownloadProject = async () => {
@@ -555,13 +700,12 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       showToast("Demo project loaded! Explore all features with sample data.", 'success');
   };
 
-  // Auto-save to localStorage every 2 minutes
+  // Auto-save to database or localStorage every 2 minutes
   useEffect(() => {
       const autoSaveInterval = setInterval(async () => {
           try {
-              const dataToSave = await getSerializableState();
-              localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
-              console.log('[Auto-save] Project saved to localStorage');
+              await saveProject();
+              console.log(`[Auto-save] Project saved to ${supabaseEnabled && isAuthenticated ? 'database' : 'localStorage'}`);
           } catch(e) {
               console.error('[Auto-save] Failed:', e);
               if (e instanceof DOMException && e.name === 'QuotaExceededError') {
@@ -571,7 +715,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       }, 120000); // 2 minutes
 
       return () => clearInterval(autoSaveInterval);
-  }, [getSerializableState]);
+  }, [saveProject, supabaseEnabled, isAuthenticated]);
 
   // Keyboard shortcuts for power users
   useKeyboardShortcuts({

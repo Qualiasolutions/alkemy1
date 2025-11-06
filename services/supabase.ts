@@ -4,6 +4,7 @@ import type { Database } from '@/types/supabase';
 // Supabase configuration with fallback values for development
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Create a single supabase client for interacting with your database
 // Only create the client if we have valid configuration
@@ -14,6 +15,16 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
             persistSession: true,
             detectSessionInUrl: true,
             storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        },
+    })
+    : null as any;
+
+// Create a service role client for server-side operations (bypasses RLS)
+export const supabaseAdmin = (supabaseUrl && supabaseServiceRoleKey)
+    ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
         },
     })
     : null as any;
