@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/theme/ThemeContext';
+import { supabase } from '@/services/supabase';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 
@@ -20,6 +21,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
     const { colors } = useTheme();
     const [mode, setMode] = useState<'login' | 'register' | 'forgot-password'>(initialMode);
     const [email, setEmail] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [resetMessage, setResetMessage] = useState('');
+    const [resetError, setResetError] = useState('');
 
     const handleSuccess = () => {
         onSuccess?.();
@@ -28,12 +32,39 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
     const handleForgotPassword = () => {
         setMode('forgot-password');
+        setResetMessage('');
+        setResetError('');
     };
 
     const handlePasswordReset = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement password reset
-        console.log('Password reset email sent to:', email);
+        if (!email.trim()) {
+            setResetError('Please enter your email address');
+            return;
+        }
+
+        setIsLoading(true);
+        setResetError('');
+        setResetMessage('');
+
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+
+            if (error) {
+                setResetError(error.message);
+            } else {
+                setResetMessage('Password reset link sent! Check your email inbox.');
+                // Clear the email field
+                setEmail('');
+            }
+        } catch (error) {
+            setResetError('An unexpected error occurred. Please try again.');
+            console.error('Password reset error:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -127,41 +158,89 @@ const AuthModal: React.FC<AuthModalProps> = ({
                                             >
                                                 Enter your email address and we'll send you a link to reset your password.
                                             </p>
-                                            <form onSubmit={handlePasswordReset} className="space-y-4">
-                                                <div>
-                                                    <label
-                                                        htmlFor="reset-email"
-                                                        className="block text-sm font-medium mb-2"
-                                                        style={{ color: colors.text_secondary }}
-                                                    >
-                                                        Email
-                                                    </label>
-                                                    <input
-                                                        id="reset-email"
-                                                        type="email"
-                                                        value={email}
-                                                        onChange={(e) => setEmail(e.target.value)}
-                                                        required
-                                                        className="w-full px-4 py-2 rounded-lg border transition-colors"
-                                                        style={{
-                                                            backgroundColor: colors.bg_secondary,
-                                                            borderColor: colors.border_primary,
-                                                            color: colors.text_primary,
-                                                        }}
-                                                        placeholder="you@example.com"
-                                                    />
-                                                </div>
-                                                <button
-                                                    type="submit"
-                                                    className="w-full py-2 px-4 rounded-lg font-medium transition-colors"
+
+                                            {/* Success Message */}
+                                            {resetMessage && (
+                                                <div
+                                                    className="mb-4 p-3 rounded-lg text-sm"
                                                     style={{
-                                                        backgroundColor: colors.accent_primary,
-                                                        color: '#FFFFFF'
+                                                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                                        color: '#22c55e',
+                                                        border: '1px solid rgba(34, 197, 94, 0.2)'
                                                     }}
                                                 >
-                                                    Send Reset Link
-                                                </button>
-                                            </form>
+                                                    {resetMessage}
+                                                </div>
+                                            )}
+
+                                            {/* Error Message */}
+                                            {resetError && (
+                                                <div
+                                                    className="mb-4 p-3 rounded-lg text-sm"
+                                                    style={{
+                                                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                                        color: '#ef4444',
+                                                        border: '1px solid rgba(239, 68, 68, 0.2)'
+                                                    }}
+                                                >
+                                                    {resetError}
+                                                </div>
+                                            )}
+
+                                            {!resetMessage && (
+                                                <form onSubmit={handlePasswordReset} className="space-y-4">
+                                                    <div>
+                                                        <label
+                                                            htmlFor="reset-email"
+                                                            className="block text-sm font-medium mb-2"
+                                                            style={{ color: colors.text_secondary }}
+                                                        >
+                                                            Email
+                                                        </label>
+                                                        <input
+                                                            id="reset-email"
+                                                            type="email"
+                                                            value={email}
+                                                            onChange={(e) => {
+                                                                setEmail(e.target.value);
+                                                                if (resetError) setResetError('');
+                                                            }}
+                                                            required
+                                                            disabled={isLoading}
+                                                            className="w-full px-4 py-2 rounded-lg border transition-colors disabled:opacity-50"
+                                                            style={{
+                                                                backgroundColor: colors.bg_secondary,
+                                                                borderColor: resetError ? '#ef4444' : colors.border_primary,
+                                                                color: colors.text_primary,
+                                                            }}
+                                                            placeholder="you@example.com"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="submit"
+                                                        disabled={isLoading || !email.trim()}
+                                                        className="w-full py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                        style={{
+                                                            backgroundColor: isLoading || !email.trim() ? '#94a3b8' : colors.accent_primary,
+                                                            color: '#FFFFFF'
+                                                        }}
+                                                    >
+                                                        {isLoading ? (
+                                                            <>
+                                                                <motion.div
+                                                                    animate={{ rotate: 360 }}
+                                                                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                                                    className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                                                                />
+                                                                Sending...
+                                                            </>
+                                                        ) : (
+                                                            'Send Reset Link'
+                                                        )}
+                                                    </button>
+                                                </form>
+                                            )}
+
                                             <div className="mt-4 text-center">
                                                 <button
                                                     type="button"
