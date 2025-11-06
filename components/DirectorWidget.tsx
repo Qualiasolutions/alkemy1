@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ScriptAnalysis, Generation } from '../types';
 import { askTheDirector, generateStillVariants, upscaleImage } from '../services/aiService';
 import Button from './Button';
@@ -20,7 +20,24 @@ interface DirectorWidgetProps {
   setScriptAnalysis: (analysis: ScriptAnalysis | ((prev: ScriptAnalysis | null) => ScriptAnalysis | null)) => void;
 }
 
-const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography with comprehensive cinematography expertise. I have reviewed the project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
+const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
+  title: 'Untitled Project',
+  logline: 'No project has been analyzed yet.',
+  summary: 'Start a project or analyze your script so the Director can tailor guidance to your story.',
+  scenes: [],
+  characters: [],
+  locations: [],
+  props: [],
+  styling: [],
+  setDressing: [],
+  makeupAndHair: [],
+  sound: [],
+  moodboard: undefined,
+  moodboardTemplates: [],
+};
+
+const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography. I have reviewed the current project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
+const WELCOME_MESSAGE_NO_CONTEXT = 'Welcome. I am your Director of Photography. I can help you craft prompts, pick lenses, plan lighting, or solve cinematography questions. Load or analyze a script whenever you have one and I will adapt instantly to that story.';
 const ACCENT_HEX = '#10A37F';
 const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' => {
   const normalized = (model ?? '').toLowerCase();
@@ -50,8 +67,12 @@ const buildGenerationEntries = (urls: string[], errors: (string | null)[], aspec
 
 
 const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScriptAnalysis }) => {
+  const hasProjectContext = Boolean(scriptAnalysis);
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([{ author: 'director', text: WELCOME_MESSAGE }]);
+  const [messages, setMessages] = useState<Message[]>(() => [{
+    author: 'director',
+    text: hasProjectContext ? WELCOME_MESSAGE : WELCOME_MESSAGE_NO_CONTEXT,
+  }]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [promptModal, setPromptModal] = useState<string | null>(null);
@@ -59,29 +80,33 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const activeRequestIdRef = useRef<number | null>(null);
 
-  const canChat = !!scriptAnalysis;
+  const analysisForChat = scriptAnalysis ?? DEFAULT_SCRIPT_ANALYSIS;
+  const welcomeMessage = hasProjectContext ? WELCOME_MESSAGE : WELCOME_MESSAGE_NO_CONTEXT;
   const canResetChat = messages.some((message, index) => {
-    if (index === 0) return message.author !== 'director' || message.text !== WELCOME_MESSAGE;
+    if (index === 0) return message.author !== 'director' || message.text !== welcomeMessage;
     return message.text.trim().length > 0;
   });
 
   const resetConversation = useCallback(() => {
     activeRequestIdRef.current = null;
     setIsLoading(false);
-    setMessages([{ author: 'director', text: WELCOME_MESSAGE }]);
+    setMessages([{ author: 'director', text: welcomeMessage }]);
     setPromptModal(null);
     setUserInput('');
     setTimeout(() => textareaRef.current?.focus(), 0);
-  }, [setMessages, setPromptModal, setUserInput, setIsLoading]);
+  }, [setMessages, setPromptModal, setUserInput, setIsLoading, welcomeMessage]);
 
   useEffect(() => {
-    if (!canChat) {
-      setMessages([{ author: 'director', text: WELCOME_MESSAGE }]);
-      setIsOpen(false);
-      setPromptModal(null);
-      setUserInput('');
-    }
-  }, [canChat]);
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].author === 'director' && (prev[0].text === WELCOME_MESSAGE || prev[0].text === WELCOME_MESSAGE_NO_CONTEXT)) {
+        if (prev[0].text === welcomeMessage) {
+          return prev;
+        }
+        return [{ author: 'director', text: welcomeMessage }];
+      }
+      return prev;
+    });
+  }, [welcomeMessage]);
 
   useEffect(() => {
     if (isOpen) {
@@ -90,10 +115,10 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   }, [messages, isOpen]);
 
   useEffect(() => {
-    if (isOpen && canChat) {
+    if (isOpen) {
       textareaRef.current?.focus();
     }
-  }, [isOpen, canChat]);
+  }, [isOpen]);
 
   const parseCommand = (input: string) => {
     const lowerInput = input.toLowerCase();
@@ -152,7 +177,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   };
 
   const executeCommand = useCallback(async (command: any, conversationHistory: Message[], rawInput: string) => {
-    if (!scriptAnalysis) return null;
+    const analysisContext = scriptAnalysis ?? DEFAULT_SCRIPT_ANALYSIS;
 
     try {
       // Handle new technical commands
@@ -183,12 +208,19 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
         }
 
         if (query) {
-          const response = await askTheDirector(scriptAnalysis, query, conversationHistory);
+          const response = await askTheDirector(analysisContext, query, conversationHistory);
           return {
             success: true,
             message: response
           };
         }
+      }
+
+      if (!scriptAnalysis) {
+        return {
+          success: false,
+          message: 'Load or analyze a project to run director image commands.'
+        };
       }
 
       if (command.type === 'generate') {
@@ -380,7 +412,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
     const trimmedInput = userInput.trim();
-    if (!trimmedInput || !canChat || isLoading) return;
+    if (!trimmedInput || isLoading) return;
 
     const requestId = Date.now();
     activeRequestIdRef.current = requestId;
@@ -422,7 +454,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
           ]);
         }
       } else {
-        const reply = await askTheDirector(scriptAnalysis!, trimmedInput, nextMessages);
+        const reply = await askTheDirector(analysisForChat, trimmedInput, nextMessages);
         if (activeRequestIdRef.current !== requestId) return;
         if (promptRequest) {
           const preparedPrompt = reply.trim();
@@ -456,14 +488,14 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       }
     }
   };
-  const widgetLabel = useMemo(() => (canChat ? 'AI Director' : 'Analyze script first'), [canChat]);
+  const widgetLabel = 'AI Director';
 
   return (
     <>
       {/* Fixed position container for the chat widget */}
       <div className="fixed bottom-6 right-6 z-40 pointer-events-none">
         <div className="pointer-events-auto">
-          {isOpen && canChat ? (
+          {isOpen ? (
             <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_50px_100px_rgba(3,7,18,0.9),0_0_80px_rgba(16,163,127,0.15)] backdrop-blur-2xl before:absolute before:inset-0 before:rounded-3xl before:p-[1px] before:bg-gradient-to-b before:from-[rgba(16,163,127,0.2)] before:via-transparent before:to-transparent before:-z-10">
               {/* Header */}
               <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.08)] to-transparent px-6 py-4">
@@ -498,6 +530,12 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   </button>
                 </div>
               </header>
+
+              {!hasProjectContext && (
+                <div className="border-b border-white/10 bg-white/5 px-6 py-3 text-xs text-white/70">
+                  Analyze a script or load a project to give me full context. I can still help you craft prompts, lenses, and lighting setups right away.
+                </div>
+              )}
 
               {/* Messages Area */}
               <div className="flex h-[520px] flex-col">
@@ -589,13 +627,13 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                         rows={1}
                         placeholder="Ask the director or type a command..."
                         className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-4 py-3 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)] focus:shadow-[0_0_20px_rgba(16,163,127,0.15)]"
-                        disabled={!canChat || isLoading}
+                        disabled={isLoading}
                       />
                     </div>
                     <Button
                       type="submit"
                       variant="primary"
-                      disabled={!canChat || isLoading || !userInput.trim()}
+                      disabled={isLoading || !userInput.trim()}
                       className="shrink-0 !rounded-xl !px-4 !py-3 !bg-gradient-to-r !from-[#10A37F] !to-[#0d8a68] hover:!from-[#12b88d] hover:!to-[#0f9673] shadow-[0_4px_15px_rgba(16,163,127,0.3)] hover:shadow-[0_6px_20px_rgba(16,163,127,0.4)] transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       <SendIcon className="h-4 w-4" />
@@ -618,9 +656,8 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
             </div>
           ) : (
             <Button
-              onClick={() => canChat && setIsOpen(true)}
+              onClick={() => setIsOpen(true)}
               variant="primary"
-              disabled={!canChat}
               className="group !rounded-full !px-6 !py-3.5 shadow-[0_20px_40px_rgba(16,163,127,0.35)] hover:shadow-[0_25px_50px_rgba(16,163,127,0.4)] transition-all hover:scale-105"
             >
               <BrainIcon className="h-5 w-5 transition group-hover:scale-110 group-hover:rotate-12" />

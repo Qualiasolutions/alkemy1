@@ -271,6 +271,66 @@ const RefinementStudio: React.FC<{
     );
 };
 
+const useDropdownDirection = (
+    isOpen: boolean,
+    containerRef: React.RefObject<HTMLElement>,
+    dependencies: unknown[] = []
+) => {
+    const menuRef = useRef<HTMLDivElement>(null);
+    const [direction, setDirection] = useState<'up' | 'down'>('down');
+
+    useEffect(() => {
+        if (!isOpen) {
+            setDirection(prev => (prev === 'down' ? prev : 'down'));
+            return;
+        }
+
+        const trigger = containerRef.current;
+        const menu = menuRef.current;
+        if (!trigger || !menu) return;
+
+        let frame: number | null = null;
+
+        const measureDirection = () => {
+            frame = null;
+            const triggerRect = trigger.getBoundingClientRect();
+            const menuHeight = menu.offsetHeight;
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            const spaceAbove = triggerRect.top;
+            const nextDirection = spaceBelow < menuHeight && spaceAbove > spaceBelow ? 'up' : 'down';
+            setDirection(prev => (prev === nextDirection ? prev : nextDirection));
+        };
+
+        const scheduleMeasure = () => {
+            if (frame !== null) return;
+            frame = requestAnimationFrame(measureDirection);
+        };
+
+        scheduleMeasure();
+
+        const resizeObserver = typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(() => scheduleMeasure())
+            : null;
+
+        resizeObserver?.observe(menu);
+        resizeObserver?.observe(trigger);
+
+        window.addEventListener('resize', scheduleMeasure, { passive: true });
+        window.addEventListener('scroll', scheduleMeasure, { passive: true, capture: true });
+
+        return () => {
+            if (frame !== null) {
+                cancelAnimationFrame(frame);
+            }
+            window.removeEventListener('resize', scheduleMeasure);
+            window.removeEventListener('scroll', scheduleMeasure, true);
+            resizeObserver?.disconnect();
+        };
+    }, [isOpen, containerRef, ...dependencies]);
+
+    return { menuRef, direction };
+};
+
 
 // --- Custom Multi-Select Dropdown ---
 const CharacterMultiSelect: React.FC<{
@@ -280,6 +340,7 @@ const CharacterMultiSelect: React.FC<{
 }> = ({ characters, selectedIds, onChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const { menuRef, direction } = useDropdownDirection(isOpen, dropdownRef, [characters.length]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -306,6 +367,8 @@ const CharacterMultiSelect: React.FC<{
             ? characters.find(c => c.id === selectedIds[0])?.name || 'Character'
             : `${selectedCount} selected`;
 
+    const verticalOffset = direction === 'down' ? -10 : 10;
+
     return (
         <div ref={dropdownRef} className="relative">
             <button
@@ -326,11 +389,13 @@ const CharacterMultiSelect: React.FC<{
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
+                        key={direction}
+                        ref={menuRef}
+                        initial={{ opacity: 0, y: verticalOffset }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
+                        exit={{ opacity: 0, y: verticalOffset }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 mt-2 w-56 bg-[var(--color-surface-elevated)] border border-[var(--color-border-color)] rounded-xl shadow-xl backdrop-blur-xl z-50 overflow-hidden"
+                        className={`absolute ${direction === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'} left-0 w-56 bg-[var(--color-surface-elevated)] border border-[var(--color-border-color)] rounded-xl shadow-xl backdrop-blur-xl z-50 overflow-hidden`}
                     >
                         <div className="max-h-64 overflow-y-auto p-2">
                             {characters.length === 0 ? (
@@ -365,6 +430,110 @@ const CharacterMultiSelect: React.FC<{
                                             {char.name}
                                         </span>
                                     </label>
+                                ))
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+// --- Custom Location Dropdown ---
+const LocationSelect: React.FC<{
+    locations: AnalyzedLocation[];
+    selectedId: string;
+    onChange: (id: string) => void;
+}> = ({ locations, selectedId, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const { menuRef, direction } = useDropdownDirection(isOpen, dropdownRef, [locations.length]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectedLocation = locations.find(l => l.id === selectedId);
+    const displayText = selectedLocation?.name || 'Location';
+    const verticalOffset = direction === 'down' ? -10 : 10;
+
+    return (
+        <div ref={dropdownRef} className="relative">
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 focus:outline-none cursor-pointer max-w-[160px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm flex items-center justify-between gap-2 min-w-[120px]"
+            >
+                <span className="truncate">{displayText}</span>
+                <motion.span
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-shrink-0"
+                >
+                    <ChevronDownIcon className="w-4 h-4" />
+                </motion.span>
+            </button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        key={direction}
+                        ref={menuRef}
+                        initial={{ opacity: 0, y: verticalOffset }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: verticalOffset }}
+                        transition={{ duration: 0.2 }}
+                        className={`absolute ${direction === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'} left-0 w-56 bg-[var(--color-surface-elevated)] border border-[var(--color-border-color)] rounded-xl shadow-xl backdrop-blur-xl z-50 overflow-hidden`}
+                    >
+                        <div className="max-h-64 overflow-y-auto p-2">
+                            {/* Empty/None option */}
+                            <div
+                                onClick={() => {
+                                    onChange('');
+                                    setIsOpen(false);
+                                }}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group ${selectedId === '' ? 'bg-emerald-500/10' : ''}`}
+                            >
+                                <span className="text-sm text-[var(--color-text-secondary)] truncate flex-1">
+                                    No location
+                                </span>
+                            </div>
+
+                            {locations.length === 0 ? (
+                                <div className="px-3 py-2 text-xs text-[var(--color-text-secondary)] text-center">
+                                    No locations available
+                                </div>
+                            ) : (
+                                locations.map(location => (
+                                    <div
+                                        key={location.id}
+                                        onClick={() => {
+                                            onChange(location.id);
+                                            setIsOpen(false);
+                                        }}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group ${selectedId === location.id ? 'bg-emerald-500/10' : ''}`}
+                                    >
+                                        {location.imageUrl && (
+                                            <img
+                                                src={location.imageUrl}
+                                                alt={location.name}
+                                                className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                                            />
+                                        )}
+                                        <span className="text-sm text-[var(--color-text-primary)] truncate flex-1">
+                                            {location.name}
+                                        </span>
+                                        {selectedId === location.id && (
+                                            <CheckIcon className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                        )}
+                                    </div>
                                 ))
                             )}
                         </div>
@@ -623,10 +792,11 @@ const StillStudio: React.FC<{
                                     <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
                                         <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
                                     </select>
-                                    <select value={selectedLocationId} onChange={e => setSelectedLocationId(e.target.value)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer max-w-[140px] border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
-                                        <option value="">Location</option>
-                                        {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                                    </select>
+                                    <LocationSelect
+                                        locations={locations}
+                                        selectedId={selectedLocationId}
+                                        onChange={setSelectedLocationId}
+                                    />
                                     <CharacterMultiSelect
                                         characters={characters}
                                         selectedIds={selectedCharacterIds}
