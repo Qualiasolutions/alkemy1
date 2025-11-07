@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     const fluxKey = process.env.FLUX_API_KEY || env.FLUX_API_KEY || '';
     const wanKey = process.env.WAN_API_KEY || env.WAN_API_KEY || '';
     const lumaKey = process.env.LUMA_API_KEY || env.LUMA_API_KEY || '';
+    const braveSearchKey = process.env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY || '';
 
     // Supabase configuration
     const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '';
@@ -55,6 +56,7 @@ export default defineConfig(({ mode }) => {
         'process.env.FLUX_API_KEY': JSON.stringify(fluxKey),
         'process.env.WAN_API_KEY': JSON.stringify(wanKey),
         'process.env.LUMA_API_KEY': JSON.stringify(lumaKey),
+        'process.env.BRAVE_SEARCH_API_KEY': JSON.stringify(braveSearchKey),
         'process.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
         'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
         'process.env.FORCE_DEMO_MODE': JSON.stringify(forceDemoMode),
