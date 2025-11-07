@@ -93,7 +93,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
             <motion.div
                 variants={containerVariants}
-                initial="hidden"
+                initial="visible"
                 animate="visible"
                 className="relative z-10 max-w-6xl w-full"
             >
