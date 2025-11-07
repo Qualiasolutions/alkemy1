@@ -1,10 +1,12 @@
 /**
  * Image Search Service
- * Handles searching and fetching images from the web based on prompts
+ * Handles searching and fetching images from the web using Brave Search API
  */
 
 import { GoogleGenAI } from '@google/genai';
 import { getGeminiApiKey } from './apiKeys';
+
+const BRAVE_API_KEY = (process.env.BRAVE_SEARCH_API_KEY ?? '').trim();
 
 export interface SearchedImage {
     url: string;
@@ -69,50 +71,68 @@ Return ONLY a JSON array of search queries, nothing else:
                 .trim()
         );
 
-        // Step 2: Generate image URLs based on search queries
+        // Step 2: Search using Brave Search API
         onProgress?.({
             stage: 'searching',
             message: 'Searching for relevant images...',
             progress: 50
         });
 
-        // In production, this would connect to actual image search APIs
-        // For now, we'll use Unsplash's free API structure as reference
+        if (!BRAVE_API_KEY) {
+            throw new Error('Brave Search API key is not configured');
+        }
+
         const images: SearchedImage[] = [];
 
-        for (const query of searchQueries.slice(0, 5)) {
-            // Using Unsplash's public CDN structure for demonstration
-            // In production, use proper API with authentication
-            const encodedQuery = encodeURIComponent(query);
-
-            // Generate 2-3 image references per query
-            for (let i = 0; i < 2; i++) {
-                const width = 1600;
-                const height = 900;
-                const seed = Math.random().toString(36).substring(7);
-
-                images.push({
-                    url: `https://source.unsplash.com/${width}x${height}/?${encodedQuery}&sig=${seed}`,
-                    title: query,
-                    description: `Reference image for: ${query}`,
-                    source: 'Unsplash',
-                    width,
-                    height,
-                    license: 'Unsplash License'
+        // Search with Brave API for each query
+        for (const query of searchQueries.slice(0, 3)) { // Limit to 3 queries to avoid rate limits
+            try {
+                const response = await fetch(`https://api.search.brave.com/res/v1/images/search?q=${encodeURIComponent(query)}&count=4&safesearch=moderate`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Accept-Encoding': 'gzip',
+                        'X-Subscription-Token': BRAVE_API_KEY
+                    }
                 });
+
+                if (!response.ok) {
+                    console.warn(`Brave Search API error for query "${query}": ${response.status} ${response.statusText}`);
+                    continue;
+                }
+
+                const data = await response.json();
+
+                if (data.results && Array.isArray(data.results)) {
+                    for (const result of data.results) {
+                        if (result.properties?.url) {
+                            images.push({
+                                url: result.properties.url,
+                                title: result.title || query,
+                                description: result.description || `Image related to: ${query}`,
+                                source: result.page_fetched || 'Web',
+                                width: result.properties.width || 1600,
+                                height: result.properties.height || 900,
+                                license: 'Web Content'
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`Error searching with Brave for "${query}":`, error);
             }
         }
 
         // Step 3: Validate and filter images
         onProgress?.({
             stage: 'fetching',
-            message: 'Validating image availability...',
+            message: 'Processing search results...',
             progress: 80
         });
 
-        // In production, validate image URLs are accessible
-        // For now, we'll return all generated URLs
-        const validImages = images.slice(0, 10); // Limit to 10 results
+        // Filter out invalid URLs and limit results
+        const validImages = images
+            .filter(img => img.url && img.url.startsWith('http'))
+            .slice(0, 12); // Limit to 12 results
 
         onProgress?.({
             stage: 'complete',
