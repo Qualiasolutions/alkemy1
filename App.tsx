@@ -11,9 +11,10 @@ import WelcomeScreen from './components/WelcomeScreen';
 import AuthModal from './components/auth/AuthModal';
 import UserMenu from './components/auth/UserMenu';
 import { TABS, TABS_CONFIG } from './constants';
-import { SunIcon, MoonIcon } from './components/icons/Icons';
+import { SunIcon, MoonIcon, RoadmapIcon } from './components/icons/Icons';
 import ScriptTab from './tabs/ScriptTab';
 import MoodboardTab from './tabs/MoodboardTab';
+import ImageGenTab from './tabs/ImageGenTab';
 import PresentationTab from './tabs/PresentationTab';
 import CastLocationsTab from './tabs/CastLocationsTab';
 import CompositingTab from './tabs/SceneAssemblerTab';
@@ -21,7 +22,8 @@ import FramesTab from './tabs/FramesTab.simple';
 import WanTransferTab from './tabs/WanTransferTab';
 import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
-import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project } from './types';
+import RoadmapTab from './tabs/RoadmapTab';
+import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
 import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
 import Button from './components/Button';
@@ -281,6 +283,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       scriptContent: null,
       scriptAnalysis: null,
       timelineClips: [],
+      roadmapBlocks: [],
       ui: {
         leftWidth: 280,
         rightWidth: 300,
@@ -291,7 +294,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     };
   });
 
-  const { scriptContent, scriptAnalysis, timelineClips } = projectState;
+  const { scriptContent, scriptAnalysis, timelineClips, roadmapBlocks } = projectState;
 
   // Define showToast FIRST before any callbacks that depend on it
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
@@ -468,6 +471,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   // FIX: Updated setScriptAnalysis to handle functional updates, resolving multiple type errors.
   const setScriptAnalysis = (updater: React.SetStateAction<ScriptAnalysis | null>) => setProjectState((p: any) => ({...p, scriptAnalysis: typeof updater === 'function' ? updater(p.scriptAnalysis) : updater}));
   const setTimelineClips = (updater: React.SetStateAction<TimelineClip[]>) => setProjectState((p: any) => ({...p, timelineClips: typeof updater === 'function' ? updater(p.timelineClips) : updater}));
+  const setRoadmapBlocks = (updater: React.SetStateAction<RoadmapBlock[]>) => setProjectState((p: any) => ({...p, roadmapBlocks: typeof updater === 'function' ? updater(p.roadmapBlocks || []) : updater}));
 
   // --- API Key Management ---
   useEffect(() => {
@@ -964,6 +968,11 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                   onUpdateMoodboardTemplates={handleSetMoodboardTemplates}
                   scriptAnalyzed={!!scriptAnalysis}
                 />;
+      case 'image_gen':
+        return <ImageGenTab
+                  moodboard={scriptAnalysis?.moodboard}
+                  moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
+                />;
       case 'presentation':
         return <PresentationTab scriptAnalysis={scriptAnalysis} />;
       case 'cast_locations':
@@ -1000,6 +1009,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
         return <PostProductionTab />;
       case 'exports':
         return <ExportsTab timelineClips={timelineClips} />;
+      case 'roadmap':
+        return <RoadmapTab blocks={roadmapBlocks || []} onUpdateBlocks={setRoadmapBlocks} />;
       default:
         return <ScriptTab
                   scriptContent={scriptContent}
@@ -1162,6 +1173,16 @@ return (
               />
               <span className="text-xs font-medium uppercase tracking-[0.3em]">Live Sync</span>
             </div>
+
+            <motion.button
+              onClick={() => setActiveTab('roadmap')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.96 }}
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-emerald-400/40 hover:text-[var(--color-text-primary)]"
+              title="Roadmap"
+            >
+              <RoadmapIcon className="h-5 w-5" />
+            </motion.button>
 
             <motion.button
               onClick={toggleTheme}

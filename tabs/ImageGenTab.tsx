@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import Button from '../components/Button';
 import { generateStillVariants } from '../services/aiService';
 import { Generation, Moodboard, MoodboardTemplate } from '../types';
-import { AlkemyLoadingIcon, PaperclipIcon, XIcon, Trash2Icon, ArrowLeftIcon } from '../components/icons/Icons';
+import { AlkemyLoadingIcon, PaperclipIcon, XIcon, Trash2Icon, ArrowLeftIcon, SearchIcon, DownloadIcon } from '../components/icons/Icons';
+import { searchImages, searchCinematographyReferences, SearchedImage } from '../services/imageSearchService';
 
 const aspectRatioClasses: { [key: string]: string } = {
     '1:1': 'aspect-square', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]',
@@ -50,6 +51,7 @@ const SimpleFullScreenViewer: React.FC<{
 
 
 const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: MoodboardTemplate[] }> = ({ moodboard, moodboardTemplates = [] }) => {
+    const [mode, setMode] = useState<'generate' | 'search'>('search');
     const [prompt, setPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -58,6 +60,59 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
     const [generations, setGenerations] = useState<Generation[]>([]);
     const [promptWasAdjusted, setPromptWasAdjusted] = useState(false);
     const [viewingUrl, setViewingUrl] = useState<string | null>(null);
+    const [searchResults, setSearchResults] = useState<SearchedImage[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchProgress, setSearchProgress] = useState<{ message: string; progress: number }>({ message: '', progress: 0 });
+
+    const handleSearch = async () => {
+        if (!prompt.trim()) {
+            alert("Please enter a search query.");
+            return;
+        }
+
+        setIsSearching(true);
+        setSearchResults([]);
+        setSearchProgress({ message: 'Starting search...', progress: 0 });
+
+        try {
+            const moodboardContext = moodboard ? `Cinematography: ${moodboard.cinematography?.notes || 'N/A'}. Color: ${moodboard.color?.notes || 'N/A'}.` : undefined;
+
+            const results = await searchImages(prompt, moodboardContext, (progress) => {
+                setSearchProgress({ message: progress.message, progress: progress.progress });
+            });
+
+            setSearchResults(results);
+        } catch (error) {
+            console.error('Failed to search images:', error);
+            alert(`Error searching images: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleDownloadImage = async (imageUrl: string) => {
+        try {
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+
+            // Add to generations gallery
+            const newGen: Generation = {
+                id: `search-${Date.now()}`,
+                url: dataUrl,
+                aspectRatio: aspectRatio,
+                isLoading: false
+            };
+            setGenerations(prev => [...prev, newGen]);
+        } catch (error) {
+            console.error('Failed to download image:', error);
+            alert('Failed to download image. Please try another.');
+        }
+    };
 
     const handleGenerate = async () => {
         if (!prompt.trim()) {
@@ -74,7 +129,7 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
 
         try {
             const referenceImages = attachedImage ? [attachedImage] : [];
-            
+
             const onProgress = (index: number, progress: number) => {
                  setGenerations(prev => {
                     const newGenerations = [...prev];
@@ -129,29 +184,109 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
         <div className="h-full flex flex-col">
             {viewingUrl && <SimpleFullScreenViewer imageUrl={viewingUrl} onClose={() => setViewingUrl(null)} />}
             <header className="mb-6 flex-shrink-0">
-                <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Image Generation Studio</h2>
-                <p className={`text-md text-[var(--color-text-secondary)] max-w-3xl`}>A dedicated space to experiment with prompts and generate high-quality visuals using the robust Safe Promptizer.</p>
+                <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Image Studio</h2>
+                <p className={`text-md text-[var(--color-text-secondary)] max-w-3xl`}>Search the web for reference images or generate custom visuals using AI.</p>
+
+                {/* Mode Switcher */}
+                <div className="flex gap-2 mt-4">
+                    <button
+                        onClick={() => setMode('search')}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                            mode === 'search'
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                    >
+                        <SearchIcon className="w-4 h-4 inline mr-2" />
+                        Web Search
+                    </button>
+                    <button
+                        onClick={() => setMode('generate')}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                            mode === 'generate'
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                    >
+                        <AlkemyLoadingIcon className="w-4 h-4 inline mr-2" />
+                        AI Generate
+                    </button>
+                </div>
             </header>
             
             <main className="flex-1 overflow-y-auto pr-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {generations.map((generation) => (
-                       <div key={generation.id} onClick={() => generation.url && setViewingUrl(generation.url)} className={`relative group rounded-lg overflow-hidden ${aspectRatioClasses[generation.aspectRatio] || 'aspect-square'} bg-black/10 ${generation.url ? 'cursor-pointer' : ''}`}>
-                            {generation.isLoading ? <LoadingSkeleton aspectRatio={generation.aspectRatio} progress={generation.progress || 0} /> : 
-                             generation.url ? (
-                                <>
-                                    <img src={generation.url} alt={`Generated shot`} className="w-full h-full object-cover" />
-                                    <button onClick={() => setGenerations(g => g.filter(gen => gen.id !== generation.id))} className="absolute top-1.5 right-1.5 p-1 bg-black/50 rounded-full text-gray-300 hover:text-red-500 hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100" aria-label="Delete"><Trash2Icon className="w-3 h-3" /></button>
-                                </>
-                            ) : (
-                                <div className="p-2 text-center flex flex-col items-center justify-center h-full bg-red-900/20">
-                                    <p className="text-xs text-red-400 font-semibold">Generation Failed</p>
-                                    <p className="text-[10px] text-gray-400 mt-1 line-clamp-3">{generation.error}</p>
+                {mode === 'search' && (
+                    <>
+                        {isSearching && (
+                            <div className="mb-4 p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <AlkemyLoadingIcon className="w-5 h-5 animate-spin text-emerald-400" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-semibold text-emerald-300">{searchProgress.message}</p>
+                                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                                            <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${searchProgress.progress}%` }}></div>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
+
+                        {searchResults.length > 0 && (
+                            <div className="mb-6">
+                                <h3 className="text-lg font-semibold mb-3 text-[var(--color-text-primary)]">Search Results ({searchResults.length})</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {searchResults.map((result, index) => (
+                                        <div key={index} className="relative group rounded-lg overflow-hidden aspect-video bg-black/10 cursor-pointer">
+                                            <img src={result.url} alt={result.title} className="w-full h-full object-cover" onClick={() => setViewingUrl(result.url)} />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="absolute bottom-0 left-0 right-0 p-3">
+                                                    <p className="text-xs font-semibold text-white mb-1 line-clamp-2">{result.title}</p>
+                                                    <p className="text-[10px] text-gray-300">{result.source}</p>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDownloadImage(result.url);
+                                                    }}
+                                                    className="absolute top-2 right-2 p-2 bg-emerald-500 rounded-full text-white hover:bg-emerald-600 transition-colors"
+                                                    aria-label="Add to gallery"
+                                                >
+                                                    <DownloadIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {generations.length > 0 && (
+                    <div>
+                        <h3 className="text-lg font-semibold mb-3 text-[var(--color-text-primary)]">
+                            {mode === 'search' ? 'Your Gallery' : 'Generated Images'}
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {generations.map((generation) => (
+                               <div key={generation.id} onClick={() => generation.url && setViewingUrl(generation.url)} className={`relative group rounded-lg overflow-hidden ${aspectRatioClasses[generation.aspectRatio] || 'aspect-square'} bg-black/10 ${generation.url ? 'cursor-pointer' : ''}`}>
+                                    {generation.isLoading ? <LoadingSkeleton aspectRatio={generation.aspectRatio} progress={generation.progress || 0} /> :
+                                     generation.url ? (
+                                        <>
+                                            <img src={generation.url} alt={`Generated shot`} className="w-full h-full object-cover" />
+                                            <button onClick={(e) => { e.stopPropagation(); setGenerations(g => g.filter(gen => gen.id !== generation.id)); }} className="absolute top-1.5 right-1.5 p-1 bg-black/50 rounded-full text-gray-300 hover:text-red-500 hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100" aria-label="Delete"><Trash2Icon className="w-3 h-3" /></button>
+                                        </>
+                                    ) : (
+                                        <div className="p-2 text-center flex flex-col items-center justify-center h-full bg-red-900/20">
+                                            <p className="text-xs text-red-400 font-semibold">Generation Failed</p>
+                                            <p className="text-[10px] text-gray-400 mt-1 line-clamp-3">{generation.error}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )}
             </main>
 
             <footer className="pt-6 flex-shrink-0">
@@ -169,31 +304,50 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                             </div>
                         )}
                         <div className="flex items-center gap-2">
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 rounded-lg hover:bg-white/10 transition-colors">
-                                <PaperclipIcon className="w-6 h-6"/>
-                            </button>
+                            {mode === 'generate' && (
+                                <>
+                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 rounded-lg hover:bg-white/10 transition-colors">
+                                        <PaperclipIcon className="w-6 h-6"/>
+                                    </button>
+                                </>
+                            )}
                             <textarea
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
-                                placeholder="Describe the image you want to create..."
+                                placeholder={mode === 'search' ? "Search for reference images..." : "Describe the image you want to create..."}
                                 rows={1}
                                 className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-24 pt-1 text-gray-200 placeholder-gray-500"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        mode === 'search' ? handleSearch() : handleGenerate();
+                                    }
+                                }}
                             />
                         </div>
                          <div className="flex items-center justify-between pl-10">
-                             <div className="flex items-center gap-2">
-                                <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
-                                    <option>Imagen</option>
-                                    <option>Gemini Nano Banana</option>
-                                    <option>Flux</option>
-                                </select>
-                                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
-                                    <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center">
-                                <Button onClick={handleGenerate} disabled={!prompt.trim()} className="!bg-white !text-black !font-bold !py-2 !px-5 rounded-lg">Generate</Button>
+                             {mode === 'generate' && (
+                                <div className="flex items-center gap-2">
+                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                                        <option>Imagen</option>
+                                        <option>Gemini Nano Banana</option>
+                                        <option>Flux</option>
+                                    </select>
+                                    <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                                        <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
+                                    </select>
+                                </div>
+                             )}
+                            <div className="flex items-center ml-auto">
+                                {mode === 'search' ? (
+                                    <Button onClick={handleSearch} disabled={!prompt.trim() || isSearching} className="!bg-emerald-500 !text-white !font-bold !py-2 !px-5 rounded-lg hover:!bg-emerald-600">
+                                        <SearchIcon className="w-4 h-4 inline mr-2" />
+                                        {isSearching ? 'Searching...' : 'Search Web'}
+                                    </Button>
+                                ) : (
+                                    <Button onClick={handleGenerate} disabled={!prompt.trim()} className="!bg-white !text-black !font-bold !py-2 !px-5 rounded-lg">Generate</Button>
+                                )}
                             </div>
                         </div>
                     </div>
