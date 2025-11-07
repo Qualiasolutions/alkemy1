@@ -15,12 +15,20 @@ interface WelcomeScreenProps {
     onStartNewProject: () => void;
     onLoadProject: () => void;
     onTryDemo: () => void;
+    onSignIn?: () => void;
+    onSignUp?: () => void;
+    isAuthenticated?: boolean;
+    showAuth?: boolean;
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     onStartNewProject,
     onLoadProject,
-    onTryDemo
+    onTryDemo,
+    onSignIn,
+    onSignUp,
+    isAuthenticated = false,
+    showAuth = false
 }) => {
     const { colors, isDark } = useTheme();
 
@@ -89,6 +97,26 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 animate="visible"
                 className="relative z-10 max-w-6xl w-full"
             >
+                {/* Auth buttons - Show at top if Supabase is configured and user not authenticated */}
+                {showAuth && !isAuthenticated && (
+                    <motion.div variants={itemVariants} className="flex justify-end gap-3 mb-8">
+                        <Button
+                            onClick={onSignIn}
+                            variant="secondary"
+                            className="!px-6 !py-2"
+                        >
+                            Sign In
+                        </Button>
+                        <Button
+                            onClick={onSignUp}
+                            variant="primary"
+                            className="!px-6 !py-2"
+                        >
+                            Sign Up
+                        </Button>
+                    </motion.div>
+                )}
+
                 {/* Hero section */}
                 <motion.div variants={itemVariants} className="text-center mb-16">
                     <h1 className={`text-6xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>
@@ -104,6 +132,13 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                     <p className={`text-2xl mb-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         Transform your screenplay into a complete visual production
                     </p>
+
+                    {/* Show authentication message if configured */}
+                    {showAuth && !isAuthenticated && (
+                        <p className={`text-sm mb-4 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                            Sign in to save your projects and access them from anywhere
+                        </p>
+                    )}
 
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

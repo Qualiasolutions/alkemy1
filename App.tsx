@@ -1042,6 +1042,16 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           onStartNewProject={() => handleNewProject(true)}
           onLoadProject={handleLoadProjectFromWelcome}
           onTryDemo={handleTryDemo}
+          onSignIn={() => {
+            setAuthModalMode('login');
+            setShowAuthModal(true);
+          }}
+          onSignUp={() => {
+            setAuthModalMode('register');
+            setShowAuthModal(true);
+          }}
+          isAuthenticated={isAuthenticated}
+          showAuth={supabaseEnabled}
         />
         {/* Hidden file input for loading projects */}
         <input
@@ -1051,6 +1061,19 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           onChange={handleLoadProject}
           className="hidden"
         />
+
+        {/* Auth Modal - Show on welcome screen if needed */}
+        {supabaseEnabled && (
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            initialMode={authModalMode}
+            onSuccess={() => {
+              setShowAuthModal(false);
+              showToast('Successfully signed in!', 'success');
+            }}
+          />
+        )}
       </>
     );
   }
@@ -1179,31 +1202,33 @@ return (
 );
 };
 
-const App: React.FC = () => {
-  return (
-    <Routes>
-      {/* Authentication Routes */}
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+// Main App wrapper with proper provider hierarchy
+const AppWithProviders: React.FC = () => {
+  const supabaseConfigured = isSupabaseConfigured();
 
-      {/* Main App Route */}
-      <Route path="/*" element={
-        // Only wrap with AuthProvider if Supabase is configured
-        isSupabaseConfigured() ? (
-          <ThemeProvider>
-            <AuthProvider>
-              <AppContentWithAuth />
-            </AuthProvider>
-          </ThemeProvider>
-        ) : (
-          // Without Supabase, just use ThemeProvider
-          <ThemeProvider>
-            <AppContentWithoutAuth />
-          </ThemeProvider>
-        )
-      } />
-    </Routes>
+  return (
+    <ThemeProvider>
+      {supabaseConfigured ? (
+        <AuthProvider>
+          <Routes>
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/*" element={<AppContentWithAuth />} />
+          </Routes>
+        </AuthProvider>
+      ) : (
+        <Routes>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/*" element={<AppContentWithoutAuth />} />
+        </Routes>
+      )}
+    </ThemeProvider>
   );
+};
+
+const App: React.FC = () => {
+  return <AppWithProviders />;
 };
 
 export default App;
