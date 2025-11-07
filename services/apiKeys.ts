@@ -130,8 +130,52 @@ export const onGeminiApiKeyChange = (callback: (value: string) => void): (() => 
   };
 };
 
+/**
+ * Validates if the API key format is compatible with Google AI API
+ * AI Studio keys (starting with "AQ.") are NOT compatible with programmatic API access
+ * Valid API keys should start with "AIza"
+ */
+export const isValidGeminiApiKeyFormat = (key: string): boolean => {
+  const trimmed = toTrimmed(key);
+  if (!trimmed) return false;
+
+  // Check for AI Studio key format (not compatible with API)
+  if (trimmed.startsWith('AQ.')) {
+    console.error('[API Keys] Invalid API key format detected: AI Studio keys (AQ.*) cannot be used with the Gemini API. Please use a Google AI API key (AIza...) instead.');
+    return false;
+  }
+
+  // Valid Google AI API keys typically start with "AIza" and are 39 characters
+  if (trimmed.startsWith('AIza') && trimmed.length === 39) {
+    return true;
+  }
+
+  // Warn about unexpected format but don't block (might be a new format)
+  console.warn('[API Keys] Unexpected API key format. Expected format: AIzaSy... (39 characters). Key starts with:', trimmed.substring(0, 6));
+  return trimmed.length > 20; // Minimum length check
+};
+
 export const hasGeminiApiKey = (): boolean => {
   return getGeminiApiKey().length > 0;
 };
 
+export const hasValidGeminiApiKey = (): boolean => {
+  const key = getGeminiApiKey();
+  return isValidGeminiApiKeyFormat(key);
+};
+
 export const hasEnvGeminiApiKey = (): boolean => ENV_GEMINI_KEY.length > 0;
+
+export const getApiKeyValidationError = (): string | null => {
+  const key = getGeminiApiKey();
+  if (!key) {
+    return 'No API key configured. Please add a Google AI API key.';
+  }
+  if (key.startsWith('AQ.')) {
+    return 'Invalid API key: AI Studio keys (starting with "AQ.") cannot be used with the Gemini API. Please generate a Google AI API key from https://aistudio.google.com/apikey and use that instead.';
+  }
+  if (!isValidGeminiApiKeyFormat(key)) {
+    return 'API key format appears invalid. Google AI API keys should start with "AIza" and be 39 characters long. Please verify your key at https://aistudio.google.com/apikey';
+  }
+  return null;
+};

@@ -26,6 +26,29 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+              'ui-vendor': ['framer-motion'],
+              'three-vendor': ['three'],
+            },
+          },
+        },
+        minify: 'terser',
+        terserOptions: {
+          compress: {
+            drop_console: false,
+            drop_debugger: true,
+          },
+          mangle: {
+            // Prevent mangling of class names to avoid initialization issues
+            keep_classnames: true,
+            keep_fnames: true,
+          },
+        },
+      },
       define: {
         'process.env.API_KEY': JSON.stringify(geminiKey),
         'process.env.GEMINI_API_KEY': JSON.stringify(geminiKey),
@@ -47,6 +70,9 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      optimizeDeps: {
+        include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
+      },
     };
 });
