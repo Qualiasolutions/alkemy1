@@ -1051,6 +1051,19 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     return <SplashScreen onComplete={handleSplashComplete} />;
   }
 
+  // Show loading screen while auth is initializing
+  if (authLoading) {
+    return (
+        <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
+            <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className={`w-12 h-12 border-4 border-t-transparent ${isDark ? 'border-emerald-500' : 'border-emerald-600'} rounded-full`}
+            />
+        </div>
+    );
+  }
+
   if (isCheckingKey) {
     return (
         <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
