@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => {
     const wanKey = process.env.WAN_API_KEY || env.WAN_API_KEY || '';
     const lumaKey = process.env.LUMA_API_KEY || env.LUMA_API_KEY || '';
 
+    // Supabase configuration
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '';
+
     // Explicitly set demo mode to false (only enable via env var if needed)
     const forceDemoMode = process.env.FORCE_DEMO_MODE || env.FORCE_DEMO_MODE || 'false';
     const useFallbackMode = process.env.USE_FALLBACK_MODE || env.USE_FALLBACK_MODE || 'false';
@@ -28,10 +32,14 @@ export default defineConfig(({ mode }) => {
         'process.env.FLUX_API_KEY': JSON.stringify(fluxKey),
         'process.env.WAN_API_KEY': JSON.stringify(wanKey),
         'process.env.LUMA_API_KEY': JSON.stringify(lumaKey),
+        'process.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+        'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
         'process.env.FORCE_DEMO_MODE': JSON.stringify(forceDemoMode),
         'process.env.USE_FALLBACK_MODE': JSON.stringify(useFallbackMode),
         // Also expose via import.meta.env for better client-side access
         'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiKey),
+        'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
         'import.meta.env.VITE_FORCE_DEMO_MODE': JSON.stringify(forceDemoMode),
         'import.meta.env.VITE_USE_FALLBACK_MODE': JSON.stringify(useFallbackMode),
       },
