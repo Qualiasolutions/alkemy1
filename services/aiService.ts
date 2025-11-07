@@ -2,7 +2,7 @@
 import { ScriptAnalysis, AnalyzedScene, Frame, AnalyzedCharacter, AnalyzedLocation, FrameStatus, Generation, Moodboard, MoodboardSection, MoodboardTemplate } from '../types';
 import { Type, GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { fallbackScriptAnalysis, fallbackMoodboardDescription, fallbackDirectorResponse, getFallbackImageUrl, getFallbackVideoBlobs } from './fallbackContent';
-import { getGeminiApiKey, clearGeminiApiKey } from './apiKeys';
+import { getGeminiApiKey, clearGeminiApiKey, getApiKeyValidationError, isValidGeminiApiKeyFormat } from './apiKeys';
 import { getMediaService } from './mediaService';
 import { logAIUsage, USAGE_ACTIONS } from './usageService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
@@ -63,6 +63,17 @@ const requireGeminiClient = (): GoogleGenAI => {
     if (!apiKey) {
         throw new Error('Gemini API key is not configured.');
     }
+
+    // Validate API key format before attempting to use it
+    const validationError = getApiKeyValidationError();
+    if (validationError) {
+        console.error('[AI Service] API key validation failed:', validationError);
+        // Dispatch event to prompt user for a valid key
+        window.dispatchEvent(new Event('invalid-api-key'));
+        clearGeminiApiKey();
+        throw new Error(validationError);
+    }
+
     return new GoogleGenAI({ apiKey });
 };
 
@@ -71,6 +82,21 @@ const shouldUseFallbackForError = (error: unknown): boolean => {
     if (!error) return false;
     const message = error instanceof Error ? error.message : String(error);
     const normalized = message.toLowerCase();
+
+    // Check for authentication errors that should NOT use fallback (need user intervention)
+    const isAuthError = [
+        'unauthenticated',
+        'credentials_missing',
+        'api keys are not supported',
+        'oauth2 access token',
+        'invalid api key',
+    ].some(fragment => normalized.includes(fragment));
+
+    if (isAuthError) {
+        console.error('[AI Service] Authentication error detected - user intervention required:', message);
+        return false; // Don't use fallback, need to fix API key
+    }
+
     return [
         'quota',
         'resource_exhausted',
@@ -90,9 +116,22 @@ const handleApiError = (error: unknown, model: string): Error => {
     console.error(`Error with ${model} API:`, error);
     let message = `An unknown error occurred with ${model}.`;
     if (error instanceof Error) {
-        if (error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('429')) {
+        const errorLower = error.message.toLowerCase();
+
+        // Check for authentication/authorization errors first
+        if (errorLower.includes('unauthenticated') || errorLower.includes('credentials_missing')) {
+            window.dispatchEvent(new Event('invalid-api-key'));
+            clearGeminiApiKey();
+            resetModelListCache();
+            message = 'Authentication failed: Your API key is invalid or in the wrong format. AI Studio keys (starting with "AQ.") cannot be used. Please generate a Google AI API key from https://aistudio.google.com/apikey';
+        } else if (errorLower.includes('api keys are not supported') || errorLower.includes('oauth2 access token')) {
+            window.dispatchEvent(new Event('invalid-api-key'));
+            clearGeminiApiKey();
+            resetModelListCache();
+            message = 'Invalid API key format: This endpoint requires a Google AI API key (starting with "AIza"), not an AI Studio key. Generate one at https://aistudio.google.com/apikey';
+        } else if (error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('429')) {
              message = 'API quota exceeded. Please check your plan and billing details.';
-        } else if (error.message.toLowerCase().includes('safety')) {
+        } else if (errorLower.includes('safety')) {
             message = 'Generation failed due to content safety filters. Please adjust your prompt.';
         } else if (error.message.includes('Requested entity was not found.')) {
             // This is a specific error for an invalid/not found API key.

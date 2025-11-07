@@ -77,8 +77,7 @@ const createDefaultMoodboardTemplates = (): MoodboardTemplate[] => ([
 
 
 
-const ApiKeyPrompt: React.FC<{ onKeySelected: () => void }> = ({ onKeySelected }) => {
-    const { isDark } = useTheme();
+const ApiKeyPrompt: React.FC<{ onKeySelected: () => void; isDark?: boolean }> = ({ onKeySelected, isDark = true }) => {
     const [manualKey, setManualKey] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSelecting, setIsSelecting] = useState(false);
@@ -192,8 +191,17 @@ interface AppContentBaseProps {
 }
 
 const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, authLoading }) => {
-  const { toggleTheme, isDark } = useTheme();
+  // IMPORTANT: Get these values BEFORE calling useTheme() to avoid initialization order issues
+  const envHasGeminiKey = hasEnvGeminiApiKey();
+  const initialHasGeminiKey = hasGeminiApiKey();
+
+  // ALL hooks must be called unconditionally BEFORE any early returns
   const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [isKeyReady, setIsKeyReady] = useState<boolean>(initialHasGeminiKey);
+  const [isCheckingKey, setIsCheckingKey] = useState<boolean>(() => !initialHasGeminiKey);
+
+  // Call useTheme and other hooks BEFORE any early returns
+  const { toggleTheme, isDark } = useTheme();
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const loadProjectInputRef = useRef<HTMLInputElement>(null);
@@ -203,9 +211,6 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const mediaService = getMediaService();
   const usageService = getUsageService();
   const supabaseEnabled = isSupabaseConfigured();
-
-  const envHasGeminiKey = hasEnvGeminiApiKey();
-  const initialHasGeminiKey = hasGeminiApiKey();
 
   // Project state - now supports both localStorage and database
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -233,7 +238,12 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
         return saved ? JSON.parse(saved).isSidebarExpanded : true;
     } catch { return true; }
   });
-  
+
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisMessage, setAnalysisMessage] = useState<string>('');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+
   // --- Project State Management ---
   const [projectState, setProjectState] = useState<any>(() => {
     // Try to load from localStorage first
@@ -282,6 +292,12 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   });
 
   const { scriptContent, scriptAnalysis, timelineClips } = projectState;
+
+  // Define showToast FIRST before any callbacks that depend on it
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+      setToast({ id: `toast-${Date.now()}`, message, type });
+      setTimeout(() => setToast(null), 3000);
+  }, []);
 
   // --- Project Loading Functions ---
   const loadUserProjects = useCallback(async () => {
@@ -447,86 +463,37 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     showToast('New project started!', 'success');
     return newProject;
   }, [supabaseEnabled, isAuthenticated, user, projectService, loadUserProjects, usageService, showToast]);
-  
-  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [analysisMessage, setAnalysisMessage] = useState<string>('');
-  const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const [isKeyReady, setIsKeyReady] = useState<boolean>(initialHasGeminiKey);
-  const [isCheckingKey, setIsCheckingKey] = useState<boolean>(() => !initialHasGeminiKey);
-
-  const verifyGeminiKey = useCallback(async () => {
-    setIsCheckingKey(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 150));
-      if (hasGeminiApiKey()) {
-        setIsKeyReady(true);
-        return;
-      }
-
-      const aistudio = window.aistudio;
-      if (aistudio?.hasSelectedApiKey && await aistudio.hasSelectedApiKey()) {
-        if (hasGeminiApiKey()) {
-          setIsKeyReady(true);
-          return;
-        }
-      }
-
-      setIsKeyReady(false);
-    } catch (error) {
-      console.warn('Could not verify Gemini API key', error);
-      setIsKeyReady(false);
-    } finally {
-      setIsCheckingKey(false);
-    }
-  }, []);
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-      setToast({ id: `toast-${Date.now()}`, message, type });
-      setTimeout(() => setToast(null), 3000);
-  }, []);
-  
   const setScriptContent = (content: string | null) => setProjectState((p: any) => ({...p, scriptContent: content}));
   // FIX: Updated setScriptAnalysis to handle functional updates, resolving multiple type errors.
   const setScriptAnalysis = (updater: React.SetStateAction<ScriptAnalysis | null>) => setProjectState((p: any) => ({...p, scriptAnalysis: typeof updater === 'function' ? updater(p.scriptAnalysis) : updater}));
   const setTimelineClips = (updater: React.SetStateAction<TimelineClip[]>) => setProjectState((p: any) => ({...p, timelineClips: typeof updater === 'function' ? updater(p.timelineClips) : updater}));
 
-
   // --- API Key Management ---
-    useEffect(() => {
-        if (initialHasGeminiKey) {
-            setIsKeyReady(true);
-            setIsCheckingKey(false);
-            return;
-        }
-        verifyGeminiKey();
-    }, [initialHasGeminiKey, verifyGeminiKey]);
+  useEffect(() => {
+      const unsubscribe = onGeminiApiKeyChange((value) => {
+          setIsKeyReady(value.length > 0);
+          if (value.length > 0) {
+              setIsCheckingKey(false);
+          }
+      });
+      return unsubscribe;
+  }, []);
 
-    useEffect(() => {
-        const unsubscribe = onGeminiApiKeyChange((value) => {
-            setIsKeyReady(value.length > 0);
-            if (value.length > 0) {
-                setIsCheckingKey(false);
-            }
-        });
-        return unsubscribe;
-    }, []);
-
-    useEffect(() => {
-        const handleKeyError = () => {
-            if (envHasGeminiKey) {
-                showToast("The server-configured Gemini API key appears invalid. Please update the Vercel environment variable.", 'error');
-                return;
-            }
-            clearGeminiApiKey();
-            setIsKeyReady(false);
-            setIsCheckingKey(false);
-            showToast("Your API key seems invalid. Please select another.", 'error');
-        };
-        window.addEventListener('invalid-api-key', handleKeyError);
-        return () => window.removeEventListener('invalid-api-key', handleKeyError);
-    }, [envHasGeminiKey, showToast]);
+  useEffect(() => {
+      const handleKeyError = () => {
+          if (envHasGeminiKey) {
+              showToast("The server-configured Gemini API key appears invalid. Please update the Vercel environment variable.", 'error');
+              return;
+          }
+          clearGeminiApiKey();
+          setIsKeyReady(false);
+          setIsCheckingKey(false);
+          showToast("Your API key seems invalid. Please select another.", 'error');
+      };
+      window.addEventListener('invalid-api-key', handleKeyError);
+      return () => window.removeEventListener('invalid-api-key', handleKeyError);
+  }, [envHasGeminiKey, showToast]);
 
   // --- Saving UI state (sidebar/tab) on change ---
   useEffect(() => {
@@ -982,17 +949,17 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const renderContent = () => {
     switch (activeTab) {
       case 'script':
-        return <ScriptTab 
+        return <ScriptTab
                   scriptContent={scriptContent}
                   analysis={scriptAnalysis}
                   onScriptUpdate={handleScriptUpdate}
                   isAnalyzing={isAnalyzing}
                   analysisError={analysisError}
                   analysisMessage={analysisMessage}
-                  onAnalyze={handleAnalyze} 
+                  onAnalyze={handleAnalyze}
                 />;
       case 'moodboard':
-        return <MoodboardTab 
+        return <MoodboardTab
                   moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
                   onUpdateMoodboardTemplates={handleSetMoodboardTemplates}
                   scriptAnalyzed={!!scriptAnalysis}
@@ -1000,7 +967,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       case 'presentation':
         return <PresentationTab scriptAnalysis={scriptAnalysis} />;
       case 'cast_locations':
-        return <CastLocationsTab 
+        return <CastLocationsTab
                   characters={scriptAnalysis?.characters || []}
                   setCharacters={handleSetCharacters}
                   locations={scriptAnalysis?.locations || []}
@@ -1019,8 +986,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                   user={user}
                 />;
       case 'timeline':
-        return <FramesTab 
-                  clips={timelineClips} 
+        return <FramesTab
+                  clips={timelineClips}
                   onUpdateClips={setTimelineClips}
                   onAddNewVideoClip={handleAddNewVideoClip}
                   projectState={projectState}
@@ -1034,31 +1001,30 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       case 'exports':
         return <ExportsTab timelineClips={timelineClips} />;
       default:
-        return <ScriptTab 
+        return <ScriptTab
                   scriptContent={scriptContent}
                   analysis={scriptAnalysis}
                   onScriptUpdate={handleScriptUpdate}
                   isAnalyzing={isAnalyzing}
                   analysisError={analysisError}
                   analysisMessage={analysisMessage}
-                  onAnalyze={handleAnalyze} 
+                  onAnalyze={handleAnalyze}
                 />;
     }
   };
 
-  // Show splash screen on initial load
+  // Early returns AFTER all hooks have been declared
   if (showSplash) {
-    return <SplashScreen onComplete={handleSplashComplete} />;
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
   }
 
-  // Show loading screen while auth is initializing
   if (authLoading) {
     return (
-        <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
+        <div className="flex items-center justify-center h-screen bg-[#0B0B0B]">
             <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className={`w-12 h-12 border-4 border-t-transparent ${isDark ? 'border-emerald-500' : 'border-emerald-600'} rounded-full`}
+                className="w-12 h-12 border-4 border-t-transparent border-emerald-500 rounded-full"
             />
         </div>
     );
@@ -1066,18 +1032,40 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   if (isCheckingKey) {
     return (
-        <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
+        <div className="flex items-center justify-center h-screen bg-[#0B0B0B]">
             <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className={`w-12 h-12 border-4 border-t-transparent ${isDark ? 'border-emerald-500' : 'border-emerald-600'} rounded-full`}
+                className="w-12 h-12 border-4 border-t-transparent border-emerald-500 rounded-full"
             />
         </div>
     );
   }
 
   if (!isKeyReady) {
-    return <ApiKeyPrompt onKeySelected={verifyGeminiKey} />;
+    return <ApiKeyPrompt onKeySelected={async () => {
+      setIsCheckingKey(true);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 150));
+        if (hasGeminiApiKey()) {
+          setIsKeyReady(true);
+          return;
+        }
+        const aistudio = window.aistudio;
+        if (aistudio?.hasSelectedApiKey && await aistudio.hasSelectedApiKey()) {
+          if (hasGeminiApiKey()) {
+            setIsKeyReady(true);
+            return;
+          }
+        }
+        setIsKeyReady(false);
+      } catch (error) {
+        console.warn('Could not verify Gemini API key', error);
+        setIsKeyReady(false);
+      } finally {
+        setIsCheckingKey(false);
+      }
+    }} isDark={isDark} />;
   }
 
   // Show welcome screen if no project exists
