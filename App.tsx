@@ -236,7 +236,37 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   
   // --- Project State Management ---
   const [projectState, setProjectState] = useState<any>(() => {
-    // Initialize with default state
+    // Try to load from localStorage first
+    try {
+      const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Convert base64 back to blob URLs for timeline clips if needed
+        if (parsed.timelineClips && parsed.timelineClips.length > 0) {
+          parsed.timelineClips = parsed.timelineClips.map((clip: any) => {
+            if (clip._isBlobConverted && clip.url && clip.url.startsWith('data:')) {
+              const byteString = atob(clip.url.split(',')[1]);
+              const mimeString = clip.url.split(',')[0].split(':')[1].split(';')[0];
+              const ab = new ArrayBuffer(byteString.length);
+              const ia = new Uint8Array(ab);
+              for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+              const blob = new Blob([ab], { type: mimeString });
+              return { ...clip, url: URL.createObjectURL(blob), _isBlobConverted: undefined };
+            }
+            return clip;
+          });
+        }
+        console.log('[Initialization] Loaded project from localStorage');
+        return parsed;
+      }
+    } catch (e) {
+      console.warn('[Initialization] Failed to load from localStorage:', e);
+    }
+
+    // Initialize with default state (no active project)
+    console.log('[Initialization] Starting with empty state (will show WelcomeScreen)');
     return {
       scriptContent: null,
       scriptAnalysis: null,
@@ -352,18 +382,20 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   // Create new project
   const createNewProject = useCallback(async (title: string = 'Untitled Project') => {
+    const newProjectState = {
+      scriptContent: '',
+      scriptAnalysis: null,
+      timelineClips: [],
+      ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
+    };
+
     if (supabaseEnabled && isAuthenticated && user) {
       try {
         const { project, error } = await projectService.createProject(user.id, title);
         if (error) throw error;
 
         setCurrentProject(project);
-        setProjectState({
-          scriptContent: '',
-          scriptAnalysis: null,
-          timelineClips: [],
-          ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
-        });
+        setProjectState(newProjectState);
 
         // Refresh project list
         await loadUserProjects();
@@ -381,36 +413,39 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       } catch (error) {
         console.error('Failed to create project:', error);
         showToast('Failed to create project', 'error');
+        // Don't return here - fall through to localStorage fallback
       }
-    } else {
-      // Fallback to localStorage
-      const newProject = {
-        id: `local-${Date.now()}`,
-        user_id: 'anonymous',
-        title,
-        script_content: null,
-        script_analysis: null,
-        timeline_clips: [],
-        moodboard_data: null,
-        project_settings: {},
-        is_public: false,
-        shared_with: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        last_accessed_at: new Date().toISOString(),
-      };
-
-      setCurrentProject(newProject);
-      setProjectState({
-        scriptContent: '',
-        scriptAnalysis: null,
-        timelineClips: [],
-        ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
-      });
-
-      showToast('New project started!', 'success');
-      return newProject;
     }
+
+    // Fallback to localStorage (for non-authenticated users or if database save fails)
+    const newProject = {
+      id: `local-${Date.now()}`,
+      user_id: 'anonymous',
+      title,
+      script_content: '',
+      script_analysis: null,
+      timeline_clips: [],
+      moodboard_data: null,
+      project_settings: {},
+      is_public: false,
+      shared_with: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      last_accessed_at: new Date().toISOString(),
+    };
+
+    setCurrentProject(newProject);
+    setProjectState(newProjectState);
+
+    // Save to localStorage immediately
+    try {
+      localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(newProjectState));
+    } catch (e) {
+      console.error('Failed to save project to localStorage:', e);
+    }
+
+    showToast('New project started!', 'success');
+    return newProject;
   }, [supabaseEnabled, isAuthenticated, user, projectService, loadUserProjects, usageService, showToast]);
   
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
