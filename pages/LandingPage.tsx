@@ -6,59 +6,108 @@ import { useTheme } from '@/theme/ThemeContext';
 import { DynamicFrameLayout } from '@/components/ui/dynamic-frame-layout';
 import { isSupabaseConfigured } from '@/services/supabase';
 
-// Demo frames data showcasing the platform
+/**
+ * ALKEMY AI WORKFLOW DEMO VIDEOS
+ * ================================
+ * Replace these placeholder URLs with your recorded Alkemy demos:
+ *
+ * VIDEO 1 (Top-Left): Script Analysis
+ *   - Show: Script upload → AI analyzing → Scene/Character/Location breakdown
+ *   - Duration: 8-10s
+ *
+ * VIDEO 2 (Top-Center): AI Character Generation
+ *   - Show: Cast & Locations → Generate character → Imagen/Flux creating portraits
+ *   - Duration: 8-10s
+ *
+ * VIDEO 3 (Top-Right): AI Location Generation
+ *   - Show: Locations → Generate environment → AI creating cinematic settings
+ *   - Duration: 8-10s
+ *
+ * VIDEO 4 (Middle-Left): Moodboard Creation
+ *   - Show: Moodboard tab → Adding references → AI description generation
+ *   - Duration: 8-10s
+ *
+ * VIDEO 5 (Middle-Center): Shot Composition ⭐️
+ *   - Show: Compositing → Scene shots → Frame with camera specs
+ *   - Duration: 10-12s
+ *
+ * VIDEO 6 (Middle-Right): Veo Animation
+ *   - Show: Still frame → Animate button → Progress → Video playing
+ *   - Duration: 10-12s
+ *
+ * VIDEO 7 (Bottom-Left): 3D World Generation
+ *   - Show: 3D Worlds → Text prompt → Luma generating → 3D environment
+ *   - Duration: 10-12s
+ *
+ * VIDEO 8 (Bottom-Center): Timeline Editing
+ *   - Show: Timeline → Multiple clips → Editing → Preview
+ *   - Duration: 10-12s
+ *
+ * VIDEO 9 (Bottom-Right): Final Output 🎬
+ *   - Show: Finished cinema-quality scene with "Made with Alkemy AI"
+ *   - Duration: 10-12s
+ */
 const demoFrames = [
   {
     id: 1,
-    video: "https://static.cdn-luma.com/files/981e483f71aa764b/Company%20Thing%20Exported.mp4",
+    title: "Script Analysis", // VIDEO 1: Script Upload & AI Breakdown
+    video: "https://static.cdn-luma.com/files/981e483f71aa764b/Company%20Thing%20Exported.mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 0, y: 0, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 2,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/WebGL%20Exported%20(1).mp4",
+    title: "Character Generation", // VIDEO 2: AI Creating Photorealistic Characters
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/WebGL%20Exported%20(1).mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 4, y: 0, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 3,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Jitter%20Exported%20Poster.mp4",
+    title: "Location Generation", // VIDEO 3: AI Creating Film Environments
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Jitter%20Exported%20Poster.mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 8, y: 0, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 4,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Exported%20Web%20Video.mp4",
+    title: "Moodboard Creation", // VIDEO 4: Visual References & AI Descriptions
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Exported%20Web%20Video.mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 0, y: 4, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 5,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Logo%20Exported.mp4",
+    title: "Shot Composition", // VIDEO 5: Compositing Cinematic Frames (HERO)
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Logo%20Exported.mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 4, y: 4, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 6,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Animation%20Exported%20(4).mp4",
+    title: "Veo Animation", // VIDEO 6: Still → Video Animation
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Animation%20Exported%20(4).mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 8, y: 4, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 7,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Illustration%20Exported%20(1).mp4",
+    title: "3D World Generation", // VIDEO 7: Text-to-3D Environments
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Illustration%20Exported%20(1).mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 0, y: 8, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 8,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Art%20Direction%20Exported.mp4",
+    title: "Timeline Editing", // VIDEO 8: Professional Video Assembly
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Art%20Direction%20Exported.mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 4, y: 8, w: 4, h: 4 },
     mediaSize: 1.1,
   },
   {
     id: 9,
-    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Product%20Video.mp4",
+    title: "Final Output", // VIDEO 9: Finished Cinema-Quality Scene
+    video: "https://static.cdn-luma.com/files/58ab7363888153e3/Product%20Video.mp4", // REPLACE WITH YOUR VIDEO
     defaultPos: { x: 8, y: 8, w: 4, h: 4 },
     mediaSize: 1.1,
   },
@@ -66,10 +115,14 @@ const demoFrames = [
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
-    const { signInWithProvider, isLoading } = useAuth();
+    const { signIn, signUp, signInWithProvider, isLoading } = useAuth();
     const { isDark } = useTheme();
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
     const supabaseConfigured = isSupabaseConfigured();
 
@@ -77,8 +130,34 @@ export const LandingPage: React.FC = () => {
         const { error } = await signInWithProvider(provider);
         if (error) {
             console.error('Sign in error:', error);
+            setError(error.message);
         }
         // Redirect will be handled by Supabase OAuth flow
+    };
+
+    const handleEmailAuth = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+
+        if (authMode === 'signin') {
+            const { error } = await signIn(email, password);
+            if (error) {
+                setError(error.message);
+            } else {
+                navigate('/');
+            }
+        } else {
+            if (!name.trim()) {
+                setError('Please enter your name');
+                return;
+            }
+            const { error } = await signUp(email, password, name);
+            if (error) {
+                setError(error.message);
+            } else {
+                navigate('/');
+            }
+        }
     };
 
     // If Supabase is not configured, redirect to main app
@@ -180,16 +259,104 @@ export const LandingPage: React.FC = () => {
                             <div className="text-center space-y-6">
                                 <div>
                                     <h2 className="text-3xl font-bold text-white mb-2">
-                                        {authMode === 'signin' ? 'Welcome Back' : 'Get Started'}
+                                        {authMode === 'signin' ? 'Welcome Back' : 'Start Creating'}
                                     </h2>
                                     <p className="text-gray-300 text-sm">
                                         {authMode === 'signin'
-                                            ? 'Sign in to access your AI film production workspace'
-                                            : 'Create your account to start producing films with AI'}
+                                            ? 'Sign in to continue your production'
+                                            : 'Transform your screenplay into cinema with AI'}
                                     </p>
                                 </div>
 
-                                <div className="space-y-3">
+                                <div className="space-y-4">
+                                    {/* Error Message */}
+                                    {error && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="p-3 rounded-lg"
+                                            style={{
+                                                background: 'rgba(239, 68, 68, 0.1)',
+                                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                color: '#ef4444',
+                                            }}
+                                        >
+                                            {error}
+                                        </motion.div>
+                                    )}
+
+                                    {/* Email/Password Form */}
+                                    <form onSubmit={handleEmailAuth} className="space-y-4 text-left">
+                                        {authMode === 'signup' && (
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2 text-white">
+                                                    Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={name}
+                                                    onChange={(e) => setName(e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-lg outline-none transition-all bg-white/5 border border-gray-600 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                    placeholder="John Doe"
+                                                    required
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-white">
+                                                Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg outline-none transition-all bg-white/5 border border-gray-600 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                placeholder="you@example.com"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2 text-white">
+                                                Password
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg outline-none transition-all bg-white/5 border border-gray-600 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                                placeholder="••••••••"
+                                                required
+                                                minLength={6}
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="w-full py-3 px-4 rounded-lg font-medium text-white transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #10b981 0%, #14b8a6 100%)',
+                                            }}
+                                        >
+                                            {isLoading ? 'Loading...' : authMode === 'signin' ? 'Sign In' : 'Create Account'}
+                                        </button>
+                                    </form>
+
+                                    {/* Divider */}
+                                    <div className="relative my-4">
+                                        <div className="absolute inset-0 flex items-center">
+                                            <div className="w-full border-t border-gray-600" />
+                                        </div>
+                                        <div className="relative flex justify-center text-sm">
+                                            <span className="px-4 bg-transparent text-gray-400">
+                                                Or continue with
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* OAuth Buttons */}
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={() => handleProviderSignIn('google')}
@@ -217,12 +384,15 @@ export const LandingPage: React.FC = () => {
                                     </div>
 
                                     {/* Toggle Mode */}
-                                    <div className="pt-4">
+                                    <div className="pt-2 text-center">
                                         <p className="text-sm text-gray-400">
                                             {authMode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
                                             {' '}
                                             <button
-                                                onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
+                                                onClick={() => {
+                                                    setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
+                                                    setError(null);
+                                                }}
                                                 className="text-emerald-400 hover:text-emerald-300 font-semibold"
                                             >
                                                 {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
