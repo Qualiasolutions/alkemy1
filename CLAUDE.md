@@ -541,3 +541,28 @@ The DirectorWidget has been enhanced with a premium glassmorphic UI featuring:
 - **Command Hints**: Contextual examples displayed in the input footer
 
 The "Send" button has been fixed to use proper Framer Motion integration and improved disabled state styling.
+## Troubleshooting
+
+### Production Deployment Issues
+
+**Symptom**: All AI models generate mock/fallback images instead of real generations in production.
+
+**Root Causes**:
+1. **Newline characters in API keys**: Vercel environment variables with trailing `\n` characters cause authentication failures
+2. **AI Studio keys vs Google AI API keys**: Keys starting with "AQ." (AI Studio) are incompatible with Gemini API endpoints - use keys starting with "AIza" instead
+3. **FORCE_DEMO_MODE or USE_FALLBACK_MODE**: If set to `true` in environment variables, forces fallback mode
+
+**Solution**:
+```bash
+# Check for problematic environment variables
+vercel env pull .env.vercel.production --environment=production
+
+# Remove and re-add keys without newlines  
+vercel env rm GEMINI_API_KEY production
+echo "YOUR_KEY_HERE" | vercel env add GEMINI_API_KEY production
+
+# Redeploy
+vercel --prod
+```
+
+**API Key Validation**: The app validates API keys at runtime (see `services/apiKeys.ts` and `aiService.ts:69-76`). Invalid keys trigger an `invalid-api-key` event, prompting users to reselect their key.
