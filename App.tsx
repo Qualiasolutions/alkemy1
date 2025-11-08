@@ -1120,9 +1120,11 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
             isOpen={showAuthModal}
             onClose={() => setShowAuthModal(false)}
             initialMode={authModalMode}
-            onSuccess={() => {
+            onSuccess={async () => {
               setShowAuthModal(false);
               showToast('Successfully signed in!', 'success');
+              // Create a new project for the newly authenticated user
+              await createNewProject('Untitled Project');
             }}
           />
         )}
@@ -1254,9 +1256,13 @@ return (
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         initialMode={authModalMode}
-        onSuccess={() => {
+        onSuccess={async () => {
           setShowAuthModal(false);
           showToast('Successfully signed in!', 'success');
+          // If user doesn't have an active project, create one
+          if (!hasActiveProject) {
+            await createNewProject('Untitled Project');
+          }
         }}
       />
     )}
