@@ -117,16 +117,6 @@ const Button: React.FC<ButtonProps> = ({
         children
       )}
 
-      {/* CSS for ripple animation */}
-      <style jsx>{`
-        @keyframes ripple {
-          to {
-            width: 300px;
-            height: 300px;
-            opacity: 0;
-          }
-        }
-      `}</style>
     </motion.button>
   );
 };

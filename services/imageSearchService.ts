@@ -6,7 +6,13 @@
 import { GoogleGenAI } from '@google/genai';
 import { getGeminiApiKey } from './apiKeys';
 
-const BRAVE_API_KEY = (process.env.BRAVE_SEARCH_API_KEY ?? '').trim();
+// Brave API configuration - always use proxy in browser environment
+const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
+const BRAVE_PROXY_URL =
+    (importMetaEnv.VITE_BRAVE_PROXY_URL as string | undefined) ||
+    '/api/brave-proxy';
+// Always use proxy in browser environment for security (API key should never be exposed client-side)
+const shouldUseBraveProxy = true;
 
 export interface SearchedImage {
     url: string;
@@ -78,29 +84,33 @@ Return ONLY a JSON array of search queries, nothing else:
             progress: 50
         });
 
-        if (!BRAVE_API_KEY) {
-            throw new Error('Brave Search API key is not configured');
-        }
-
         const images: SearchedImage[] = [];
 
         // Search with Brave API for each query
-        for (const query of searchQueries.slice(0, 3)) { // Limit to 3 queries to avoid rate limits
-            try {
-                const response = await fetch(`https://api.search.brave.com/res/v1/images/search?q=${encodeURIComponent(query)}&count=4&safesearch=moderate`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Accept-Encoding': 'gzip',
-                        'X-Subscription-Token': BRAVE_API_KEY
-                    }
-                });
+        for (let i = 0; i < Math.min(searchQueries.length, 3); i++) { // Limit to 3 queries to avoid rate limits
+            const query = searchQueries[i];
 
-                if (!response.ok) {
-                    console.warn(`Brave Search API error for query "${query}": ${response.status} ${response.statusText}`);
+            // Add delay between requests to avoid rate limiting (except for first request)
+            if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay between requests
+            }
+
+            try {
+                const response = await fetchBraveResponse(query, 4, 'strict');
+
+                if (!response || !response.ok) {
+                    console.warn(`Brave Search API error for query "${query}": ${response?.status ?? 'network'} ${response?.statusText ?? 'failed request'}`);
                     continue;
                 }
 
-                const data = await response.json();
+                const rawBody = await response.text();
+                let data: any;
+                try {
+                    data = JSON.parse(rawBody);
+                } catch (parseError) {
+                    console.error(`Brave proxy response was not valid JSON for "${query}":`, parseError, rawBody.slice(0, 200));
+                    continue;
+                }
 
                 if (data.results && Array.isArray(data.results)) {
                     for (const result of data.results) {
@@ -147,6 +157,43 @@ Return ONLY a JSON array of search queries, nothing else:
         throw new Error(`Failed to search images: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 };
+
+type BraveSafeSearchLevel = 'strict' | 'off';
+
+function buildProxyRequestUrl(params: URLSearchParams): string {
+    const baseUrl = BRAVE_PROXY_URL || '/api/brave-proxy';
+    const delimiter = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${delimiter}${params.toString()}`;
+}
+
+async function fetchBraveResponse(
+    query: string,
+    count: number,
+    safesearch: BraveSafeSearchLevel
+): Promise<Response | undefined> {
+    const params = new URLSearchParams({ query, count: String(count), safesearch });
+
+    try {
+        const proxyUrl = buildProxyRequestUrl(params);
+        const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            console.error(`Brave proxy request failed with status ${response.status} for query: "${query}"`);
+            const errorBody = await response.text();
+            console.error('Error response:', errorBody);
+        }
+
+        return response;
+    } catch (error) {
+        console.error('Brave proxy request failed:', error);
+        return undefined;
+    }
+}
 
 /**
  * Enhanced image search with specific cinematography focus

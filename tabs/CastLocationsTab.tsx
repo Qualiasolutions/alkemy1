@@ -6,6 +6,7 @@ import { UsersIcon, MapPinIcon, ArrowLeftIcon, AlkemyLoadingIcon, XIcon, PlusIco
 import { generateStillVariants, refineVariant, upscaleImage } from '../services/aiService';
 import { useTheme } from '../theme/ThemeContext';
 import { motion } from 'framer-motion';
+import ImageCarousel from '../components/ImageCarousel';
 
 // --- FullScreen Image Viewer Modal ---
 const FullScreenImagePlayer: React.FC<{
@@ -394,7 +395,7 @@ const GenerationView: React.FC<{
     moodboardTemplates?: MoodboardTemplate[];
 }> = ({ item, onBack, onUpdateBatch, moodboard, moodboardTemplates = [] }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
+    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [editingGeneration, setEditingGeneration] = useState<Generation | null>(null);
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
@@ -550,27 +551,36 @@ const GenerationView: React.FC<{
                         </div>
                     )}
                     
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {(item.data.generations || []).map((generation) => (
-                           <div key={generation.id} onClick={() => generation.url && setViewingGeneration(generation)} className={`relative group rounded-lg overflow-hidden ${aspectRatioClasses[generation.aspectRatio] || 'aspect-square'} bg-black/10 ${generation.url ? 'cursor-pointer' : ''}`}>
-                                {generation.isLoading ? <LoadingSkeleton aspectRatio={generation.aspectRatio} progress={generation.progress || 0} /> : 
-                                 generation.url ? (
-                                    <>
-                                        <img src={generation.url} alt={`Generated visual`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2">
-                                            <ExpandIcon className="w-8 h-8 text-white" />
-                                        </div>
-                                        <button onClick={(e) => handleDeleteGeneration(e, generation.id)} className="absolute top-1.5 right-1.5 p-1 bg-black/50 rounded-full text-gray-300 hover:text-red-500 hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100" aria-label="Delete"><Trash2Icon className="w-3 h-3" /></button>
-                                    </>
-                                ) : (
-                                    <div className="p-2 text-center flex flex-col items-center justify-center h-full bg-red-900/20">
-                                        <p className="text-xs text-red-400 font-semibold">Generation Failed</p>
-                                        <p className="text-[10px] text-gray-400 mt-1 line-clamp-3">{generation.error}</p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                    {item.data.generations && item.data.generations.length > 0 && (
+                        <div className="w-full max-w-4xl mx-auto">
+                            <ImageCarousel
+                                images={item.data.generations
+                                    .filter(g => g.url && !g.isLoading)
+                                    .map(g => ({
+                                        url: g.url!,
+                                        title: `Generated visual ${g.id}`
+                                    }))}
+                                className="w-full"
+                                aspectRatio="16/9"
+                                showArrows={true}
+                                showDots={true}
+                                enableKeyboard={true}
+                            />
+
+                            {/* Show loading generations below carousel */}
+                            {item.data.generations.some(g => g.isLoading) && (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                                    {item.data.generations.filter(g => g.isLoading).map(generation => (
+                                        <LoadingSkeleton
+                                            key={generation.id}
+                                            aspectRatio={generation.aspectRatio}
+                                            progress={generation.progress || 0}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </main>
 
@@ -644,12 +654,13 @@ const GenerationView: React.FC<{
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <select
                                             value={model}
-                                            onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')}
+                                            onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi')}
                                             className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-teal-500/50 transition-all backdrop-blur-sm shadow-lg"
                                         >
                                             <option className="bg-gray-800 text-white">Imagen</option>
                                             <option className="bg-gray-800 text-white">Gemini Nano Banana</option>
                                             <option className="bg-gray-800 text-white">Flux</option>
+                                            <option className="bg-gray-800 text-white" value="Flux Kontext Max Multi">Flux Kontext Max Multi (FAL)</option>
                                         </select>
                                         <select
                                             value={aspectRatio}
@@ -892,13 +903,19 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     };
     
     useEffect(() => {
-        if (selectedItem) {
-            const collection = selectedItem.type === 'character' ? characters : locations;
-            const currentItemData = collection.find(item => item.id === selectedItem.data.id);
-            if (currentItemData) {
-                setSelectedItem(prev => prev ? { ...prev, data: currentItemData } : null);
+        if (!selectedItem) return;
+
+        const collection = selectedItem.type === 'character' ? characters : locations;
+        const currentItemData = collection.find(item => item.id === selectedItem.data.id);
+        if (!currentItemData) return;
+
+        setSelectedItem(prev => {
+            if (!prev) return null;
+            if (prev.data === currentItemData) {
+                return prev; // Avoid creating a new object when nothing changed
             }
-        }
+            return { ...prev, data: currentItemData };
+        });
     }, [characters, locations, selectedItem]);
     
     const handleAttachClick = (item: AnalyzedCharacter | AnalyzedLocation, type: 'character' | 'location') => {

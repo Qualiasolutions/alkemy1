@@ -5,6 +5,7 @@ import { fallbackScriptAnalysis, fallbackMoodboardDescription, fallbackDirectorR
 import { getGeminiApiKey, clearGeminiApiKey, getApiKeyValidationError, isValidGeminiApiKeyFormat } from './apiKeys';
 import { getMediaService } from './mediaService';
 import { logAIUsage, USAGE_ACTIONS } from './usageService';
+import { isFluxApiAvailable, generateImageWithFlux, isFluxModelVariant, getFluxModelDisplayName, type FluxModelVariant } from './fluxService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
@@ -943,40 +944,140 @@ export const generateVisual = async (
         context
     });
 
-    if (!prefersLiveGemini()) {
-        onProgress?.(100);
-        return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
-    }
+    const canUseGemini = prefersLiveGemini();
 
     // Normalize model labels so that "Gemini Nano Banana" routes through the same
     // implementation path as "Gemini Flash Image" while preserving logging intent.
     const normalizedModel = model === 'Gemini Nano Banana' ? 'Gemini Flash Image' : model;
+    const fluxVariant: FluxModelVariant | null = isFluxModelVariant(model) ? model : null;
 
-    // When Imagen/Flux have reference images, use Gemini Flash Image instead (multimodal)
+    // FLUX API ROUTING: Use FLUX API when a Flux variant is selected AND no reference images
+    // When Flux has reference images, fallback to Gemini Flash Image (multimodal)
+    const shouldUseFluxApi = !!fluxVariant && reference_images.length === 0 && isFluxApiAvailable();
+
+    // When Imagen/Flux variants have reference images, use Gemini Flash Image instead (multimodal)
     // Otherwise, use the requested model as-is
-    const effectiveModel = ((normalizedModel === 'Imagen' || normalizedModel === 'Flux') && reference_images.length > 0)
+    const effectiveModel = ((normalizedModel === 'Imagen' || !!fluxVariant) && reference_images.length > 0)
         ? 'Gemini Flash Image'
         : normalizedModel;
+
+    if (!canUseGemini && !shouldUseFluxApi) {
+        onProgress?.(100);
+        return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+    }
 
     console.log("[generateVisual] Model routing", {
         originalModel: model,
         normalizedModel,
         effectiveModel,
-        hasReferenceImages: reference_images.length > 0
+        hasReferenceImages: reference_images.length > 0,
+        willUseFluxApi: shouldUseFluxApi,
+        fluxApiAvailable: isFluxApiAvailable(),
+        fluxVariant: fluxVariant ?? undefined
     });
 
     try {
         if (!prompt || !prompt.trim()) {
             throw new Error("Please enter a prompt to generate an image.");
         }
+
+        // === FLUX API PATH ===
+        if (shouldUseFluxApi && fluxVariant) {
+            console.log("[generateVisual] Using FLUX API via FAL.AI");
+
+            onProgress?.(10);
+
+            const imageUrl = await generateImageWithFlux(
+                prompt,
+                aspect_ratio,
+                onProgress,
+                true, // Enable raw mode for more photorealistic results
+                fluxVariant
+            );
+
+            // Log usage for analytics
+            if (context?.userId && context?.projectId) {
+                await logAIUsage(
+                    context.userId,
+                    USAGE_ACTIONS.IMAGE_GENERATION,
+                    undefined, // Token count not available for FLUX
+                    context.projectId,
+                    {
+                        model: getFluxModelDisplayName(fluxVariant),
+                        prompt: prompt.substring(0, 200),
+                        aspectRatio: aspect_ratio,
+                        hasReferenceImages: false,
+                        sceneId: context.sceneId,
+                        frameId: context.frameId,
+                        provider: 'FAL.AI'
+                    }
+                );
+            }
+
+            // Convert to base64 and upload to Supabase if context is available
+            if (context?.projectId && context?.userId) {
+                try {
+                    // Fetch the image and convert to base64
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+
+                    // Convert blob to base64
+                    const base64 = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const dataUrl = reader.result as string;
+                            const base64Data = dataUrl.split(',')[1];
+                            resolve(base64Data);
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+
+                    const fileName = `flux_${aspect_ratio}_${seed}`;
+                        const { url: uploadedUrl, error } = await uploadImageToSupabase(
+                            base64,
+                            fileName,
+                            context.projectId,
+                            context.userId,
+                            {
+                                model: getFluxModelDisplayName(fluxVariant),
+                                prompt: prompt.substring(0, 200),
+                                aspectRatio: aspect_ratio,
+                                generationType: 'image_generation_flux',
+                            sceneId: context.sceneId,
+                            frameId: context.frameId,
+                            provider: 'FAL.AI'
+                        }
+                    );
+
+                    onProgress?.(100);
+
+                    if (error) {
+                        console.warn('Failed to upload FLUX image to Supabase, returning original URL:', error);
+                        return { url: imageUrl, fromFallback: false };
+                    }
+
+                    return { url: uploadedUrl, fromFallback: false };
+                } catch (uploadError) {
+                    console.warn('Failed to process FLUX image for upload:', uploadError);
+                    onProgress?.(100);
+                    return { url: imageUrl, fromFallback: false };
+                }
+            }
+
+            onProgress?.(100);
+            return { url: imageUrl, fromFallback: false };
+        }
+
+        // === GEMINI API PATH (Imagen and Gemini Flash Image) ===
         const ai = requireGeminiClient();
 
         onProgress?.(10);
         await new Promise(res => setTimeout(res, 200));
         onProgress?.(30);
 
-        // Use Imagen API for Imagen and Flux models (when NO reference images)
-        if ((normalizedModel === 'Imagen' || normalizedModel === 'Flux') && reference_images.length === 0) {
+        // Use Imagen API for Imagen model (when NO reference images)
+        if (normalizedModel === 'Imagen' && reference_images.length === 0) {
             const response = await ai.models.generateImages({
                 model: 'imagen-4.0-generate-001',
                 prompt: prompt, // Use the fully constructed prompt directly

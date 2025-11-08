@@ -53,7 +53,7 @@ const SimpleFullScreenViewer: React.FC<{
 const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: MoodboardTemplate[] }> = ({ moodboard, moodboardTemplates = [] }) => {
     const [mode, setMode] = useState<'generate' | 'search'>('search');
     const [prompt, setPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
+    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -329,10 +329,11 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                          <div className="flex items-center justify-between pl-10">
                              {mode === 'generate' && (
                                 <div className="flex items-center gap-2">
-                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
+                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi')} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
                                         <option>Imagen</option>
                                         <option>Gemini Nano Banana</option>
                                         <option>Flux</option>
+                                        <option value="Flux Kontext Max Multi">Flux Kontext Max Multi (FAL)</option>
                                     </select>
                                     <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="bg-gray-700 text-black text-xs rounded-full font-semibold px-3 py-1.5 appearance-none focus:outline-none cursor-pointer">
                                         <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>

@@ -199,6 +199,16 @@ export interface AuthState {
   error: string | null;
 }
 
+export interface RoadmapBlock {
+  id: string;
+  type: 'task' | 'milestone' | 'note' | 'decision';
+  title: string;
+  description: string;
+  position: { x: number; y: number };
+  color: string;
+  connections: string[]; // IDs of connected blocks
+}
+
 export interface Project {
   id: string;
   user_id: string;
@@ -207,6 +217,7 @@ export interface Project {
   script_analysis?: ScriptAnalysis | null;
   timeline_clips?: TimelineClip[] | null;
   moodboard_data?: Moodboard | null;
+  roadmap_blocks?: RoadmapBlock[] | null;
   project_settings?: any | null;
   is_public: boolean;
   shared_with?: string[] | null;
