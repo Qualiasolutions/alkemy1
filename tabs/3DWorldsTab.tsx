@@ -7,6 +7,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GaussianSplatViewer } from '@/components/GaussianSplatViewer';
 import { enhanced3DWorldService, type Enhanced3DWorld, type WorldType } from '@/services/enhanced3DWorldService';
+import { proceduralWorldService, type ProceduralWorld } from '@/services/proceduralWorldService';
 import { useTheme } from '@/theme/ThemeContext';
 import type { ScriptAnalysis } from '@/types';
 
@@ -20,12 +21,14 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
     const viewerContainerRef = useRef<HTMLDivElement>(null);
 
     const [activeWorld, setActiveWorld] = useState<Enhanced3DWorld | null>(null);
+    const [activeProceduralWorld, setActiveProceduralWorld] = useState<ProceduralWorld | null>(null);
     const [worlds, setWorlds] = useState<Enhanced3DWorld[]>([]);
+    const [proceduralWorlds, setProceduralWorlds] = useState<ProceduralWorld[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
     const [generationStatus, setGenerationStatus] = useState('');
     const [prompt, setPrompt] = useState('');
-    const [worldType, setWorldType] = useState<WorldType>('emu-world');
+    const [worldType, setWorldType] = useState<'procedural' | 'gaussian-splat' | 'emu-world'>('procedural');
     const [showGallery, setShowGallery] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -39,22 +42,50 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
         setGenerationStatus('Initializing generation...');
 
         try {
-            const world = await enhanced3DWorldService.createWorld({
-                type: worldType,
-                prompt: prompt.trim(),
-                container: viewerContainerRef.current || undefined,
-                onProgress: (progress, status) => {
-                    setGenerationProgress(progress);
-                    setGenerationStatus(status);
-                }
-            });
+            if (worldType === 'procedural') {
+                // Use new fast, free procedural generation
+                const world = await proceduralWorldService.generateWorld({
+                    prompt: prompt.trim(),
+                    style: 'stylized',
+                    size: 'medium',
+                    complexity: 'medium',
+                    onProgress: (progress, status) => {
+                        setGenerationProgress(progress);
+                        setGenerationStatus(status);
+                    }
+                });
 
-            setWorlds(prev => [...prev, world]);
-            setActiveWorld(world);
-            setGenerationStatus('Generation complete!');
+                setProceduralWorlds(prev => [...prev, world]);
+                setActiveProceduralWorld(world);
+                setActiveWorld(null); // Clear old-style world
+
+                // Attach to container after generation
+                if (viewerContainerRef.current) {
+                    viewerContainerRef.current.innerHTML = ''; // Clear container
+                    proceduralWorldService.attachToContainer(world.id, viewerContainerRef.current, true);
+                }
+
+                setGenerationStatus('World generation complete!');
+            } else {
+                // Use existing Emu/Gaussian generation for compatibility
+                const world = await enhanced3DWorldService.createWorld({
+                    type: worldType as WorldType,
+                    prompt: prompt.trim(),
+                    container: viewerContainerRef.current || undefined,
+                    onProgress: (progress, status) => {
+                        setGenerationProgress(progress);
+                        setGenerationStatus(status);
+                    }
+                });
+
+                setWorlds(prev => [...prev, world]);
+                setActiveWorld(world);
+                setActiveProceduralWorld(null); // Clear procedural world
+                setGenerationStatus('Generation complete!');
+            }
         } catch (error) {
             console.error('Failed to generate world:', error);
-            setGenerationStatus('Generation failed');
+            setGenerationStatus(`Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsGenerating(false);
         }
@@ -178,7 +209,7 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                     3D Worlds
                 </h2>
                 <p style={{ color: colors.text_secondary }}>
-                    Generate, import, and explore immersive 3D environments using Gaussian Splatting technology
+                    Generate, import, and explore immersive 3D environments using AI-powered procedural generation (free & fast) or advanced technologies
                 </p>
             </div>
 
@@ -198,7 +229,7 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                         </label>
                         <select
                             value={worldType}
-                            onChange={(e) => setWorldType(e.target.value as WorldType)}
+                            onChange={(e) => setWorldType(e.target.value as 'procedural' | 'gaussian-splat' | 'emu-world')}
                             className="px-3 py-2 rounded-lg"
                             style={{
                                 backgroundColor: colors.bg_secondary,
@@ -206,13 +237,14 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                 border: `1px solid ${colors.border_primary}`
                             }}
                         >
-                            <option value="emu-world">Emu3-Gen World</option>
+                            <option value="procedural">🚀 Procedural (Fast & Free)</option>
+                            <option value="emu-world">Emu3-Gen World (Expensive)</option>
                             <option value="gaussian-splat">Import Splat</option>
                         </select>
                     </div>
 
                     {/* Prompt Input */}
-                    {worldType === 'emu-world' && (
+                    {(worldType === 'procedural' || worldType === 'emu-world') && (
                         <div className="flex-1">
                             <label
                                 className="block text-sm mb-2"
@@ -376,6 +408,29 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                             {demo.name}
                         </button>
                     ))}
+                    {/* Procedural prompts - fast and free */}
+                    {[
+                        { name: 'Cyberpunk Street', prompt: 'Neon-lit cyberpunk city street with holographic signs and futuristic buildings' },
+                        { name: 'Fantasy Village', prompt: 'Medieval fantasy village with cobblestone paths, wooden houses, and a castle in the distance' },
+                        { name: 'Alien Planet', prompt: 'Alien planet surface with strange rock formations, purple sky, and exotic vegetation' },
+                        { name: 'Desert Oasis', prompt: 'Desert oasis with palm trees, sand dunes, and a water pool reflecting the sky' }
+                    ].map((demo) => (
+                        <button
+                            key={demo.name}
+                            onClick={() => {
+                                setPrompt(demo.prompt);
+                                setWorldType('procedural');
+                            }}
+                            className="px-3 py-1.5 rounded-lg text-sm transition-all hover:scale-105"
+                            style={{
+                                backgroundColor: colors.bg_secondary,
+                                color: colors.text_primary,
+                                border: `1px solid ${colors.border_primary}`
+                            }}
+                        >
+                            🚀 {demo.name}
+                        </button>
+                    ))}
                     {demoScenes.prompts.map((demo) => (
                         <button
                             key={demo.name}
@@ -390,7 +445,7 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                 border: `1px solid ${colors.border_primary}`
                             }}
                         >
-                            💡 {demo.name}
+                            💡 {demo.name} (Old)
                         </button>
                     ))}
                 </div>
@@ -408,7 +463,19 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                             border: `1px solid ${colors.border}`
                         }}
                     >
-                        {activeWorld?.gaussianWorld && (
+                        {activeProceduralWorld && (
+                            <div className="w-full h-full">
+                                {/* Procedural world renders via Three.js - container is managed by service */}
+                                <div
+                                    className="absolute top-4 left-4 bg-black/60 text-white px-3 py-2 rounded-lg text-sm z-10"
+                                    style={{ pointerEvents: 'none' }}
+                                >
+                                    <p className="font-semibold">Navigation Controls:</p>
+                                    <p className="text-xs mt-1">WASD - Move | Mouse Drag - Look | Q/E - Up/Down</p>
+                                </div>
+                            </div>
+                        )}
+                        {!activeProceduralWorld && activeWorld?.gaussianWorld && (
                             <div className="w-full h-full">
                                 {/* The viewer is already attached to the container by the service */}
                                 <div
@@ -419,7 +486,7 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                 </div>
                             </div>
                         )}
-                        {activeWorld?.emuWorld && (
+                        {!activeProceduralWorld && activeWorld?.emuWorld && (
                             <div className="w-full h-full flex items-center justify-center">
                                 <div className="text-center">
                                     <img
@@ -436,7 +503,7 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                 </div>
                             </div>
                         )}
-                        {!activeWorld && (
+                        {!activeProceduralWorld && !activeWorld && (
                             <div
                                 className="w-full h-full flex items-center justify-center"
                                 style={{ color: colors.text_tertiary }}
