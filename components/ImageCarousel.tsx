@@ -114,14 +114,14 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
         <>
           <button
             onClick={goToPrevious}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all opacity-80 hover:opacity-100 backdrop-blur-sm z-10"
             aria-label="Previous image"
           >
             <ChevronLeftIcon className="w-6 h-6" />
           </button>
           <button
             onClick={goToNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all opacity-80 hover:opacity-100 backdrop-blur-sm z-10"
             aria-label="Next image"
           >
             <ChevronRightIcon className="w-6 h-6" />

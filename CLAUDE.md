@@ -58,11 +58,20 @@ FLUX_API_KEY=your_flux_api_key_here  # Optional: for Flux model support
 WAN_API_KEY=your_wan_api_key_here  # Optional: for Wan 2.2 motion transfer
 LUMA_API_KEY=your_luma_api_key_here  # Optional: for Luma AI 3D generation
 REPLICATE_API_TOKEN=your_replicate_api_token_here  # Optional: for Emu3-Gen world generation
+
+# Image Search APIs (Optional but recommended for better moodboard search results)
+BRAVE_SEARCH_API_KEY=your_brave_api_key_here  # Web image search (https://brave.com/search/api/)
+VITE_PEXELS_API_KEY=your_pexels_api_key_here  # Curated photos (https://www.pexels.com/api/)
+VITE_UNSPLASH_ACCESS_KEY=your_unsplash_key_here  # Professional photography (https://unsplash.com/developers)
+
+# Authentication (Optional)
 VITE_SUPABASE_URL=your_supabase_url  # Optional: for authentication
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key  # Optional: for authentication
 FORCE_DEMO_MODE=false  # Optional: enable to force demo project on load
 USE_FALLBACK_MODE=false  # Optional: enable to use fallback content instead of AI generation
 ```
+
+See `.env.example` for detailed API key setup instructions and feature descriptions.
 
 **API Key Management:**
 - If `GEMINI_API_KEY` is set via environment variable (e.g., in Vercel), the app skips the API key prompt
