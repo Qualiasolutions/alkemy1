@@ -8,6 +8,7 @@ import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon
 import ThreeDWorldViewer from '../components/3DWorldViewer';
 import { generate3DWorld } from '../services/3dWorldService';
 import ImageCarousel from '../components/ImageCarousel';
+import MiniDirectorWidget from '../components/MiniDirectorWidget';
 
 type Workspace = 'grid' | 'still-studio' | 'refine-studio' | 'animate-studio' | 'image-upscale-studio' | 'video-upscale-studio';
 
@@ -291,7 +292,8 @@ const useDropdownDirection = (
 
     useEffect(() => {
         if (!isOpen) {
-            setDirection(prev => (prev === 'down' ? prev : 'down'));
+            // Reset to down when closed, but don't trigger re-render if already down
+            setDirection(prev => prev === 'down' ? prev : 'down');
             return;
         }
 
@@ -316,7 +318,8 @@ const useDropdownDirection = (
             frame = requestAnimationFrame(measureDirection);
         };
 
-        scheduleMeasure();
+        // Immediate synchronous measurement on open to prevent flicker
+        measureDirection();
 
         const resizeObserver = typeof ResizeObserver !== 'undefined'
             ? new ResizeObserver(() => scheduleMeasure())
@@ -567,7 +570,7 @@ const StillStudio: React.FC<{
     locations: AnalyzedLocation[];
     currentProject?: any;
     user?: any;
-}> = ({ frame, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations, currentProject, user }) => {
+}> = ({ frame, scene, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations, currentProject, user }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -577,7 +580,7 @@ const StillStudio: React.FC<{
     const [selectedLocationId, setSelectedLocationId] = useState<string>('');
     const [promptWasAdjusted, setPromptWasAdjusted] = useState(false);
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
-    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [viewingMetadata, setViewingMetadata] = useState<Generation | null>(null);
 
 
     const handleGenerate = async () => {
@@ -618,13 +621,13 @@ const StillStudio: React.FC<{
                 });
             };
 
-            const { urls, errors, wasAdjusted } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates || [], characterNames, locationName, onProgress, {
+            const { urls, errors, wasAdjusted, metadata } = await generateStillVariants(frame.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates || [], characterNames, locationName, onProgress, {
                 projectId: currentProject?.id || null,
                 userId: user?.id || null,
                 sceneId: scene.id,
                 frameId: frame.id
             });
-            
+
             if (wasAdjusted) {
                 setPromptWasAdjusted(true);
             }
@@ -636,7 +639,18 @@ const StillStudio: React.FC<{
                     const loaderId = loadingGenerations[i].id;
                     const index = currentGenerations.findIndex(g => g.id === loaderId);
                     if (index !== -1) {
-                         currentGenerations[index] = { ...currentGenerations[index], url: url || null, isLoading: false, error: error || undefined };
+                         currentGenerations[index] = {
+                            ...currentGenerations[index],
+                            url: url || null,
+                            isLoading: false,
+                            error: error || undefined,
+                            // Store metadata with each generation
+                            promptUsed: metadata.promptUsed,
+                            referenceImages: metadata.referenceImages,
+                            selectedCharacters: metadata.selectedCharacters,
+                            selectedLocation: metadata.selectedLocation,
+                            model: metadata.model
+                         };
                     }
                 });
                 return { ...prevFrame, generations: currentGenerations.filter(g => g.url || g.isLoading || g.error) };
@@ -686,7 +700,6 @@ const StillStudio: React.FC<{
     // Get all valid generations
     const allGenerations = frame.generations || [];
     const validGenerations = allGenerations.filter(g => g.url && !g.isLoading);
-    const currentImage = validGenerations[selectedImageIndex] || null;
 
     return (
         <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
@@ -705,213 +718,339 @@ const StillStudio: React.FC<{
                 />
             )}
 
+            {/* Metadata Modal */}
+            <AnimatePresence>
+                {viewingMetadata && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-8"
+                        onClick={() => setViewingMetadata(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-2xl p-6 max-w-2xl w-full border border-gray-700/50 shadow-2xl"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-white">Generation Metadata</h3>
+                                <button
+                                    onClick={() => setViewingMetadata(null)}
+                                    className="text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <XIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="space-y-4">
+                                {viewingMetadata.promptUsed && (
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-400 mb-1">Prompt Used:</p>
+                                        <p className="text-white text-sm bg-gray-800/50 rounded-lg p-3">{viewingMetadata.promptUsed}</p>
+                                    </div>
+                                )}
+                                {viewingMetadata.model && (
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-400 mb-1">Model:</p>
+                                        <p className="text-white text-sm">{viewingMetadata.model}</p>
+                                    </div>
+                                )}
+                                {viewingMetadata.selectedCharacters && viewingMetadata.selectedCharacters.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-400 mb-1">Characters:</p>
+                                        <p className="text-white text-sm">{viewingMetadata.selectedCharacters.join(', ')}</p>
+                                    </div>
+                                )}
+                                {viewingMetadata.selectedLocation && (
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-400 mb-1">Location:</p>
+                                        <p className="text-white text-sm">{viewingMetadata.selectedLocation}</p>
+                                    </div>
+                                )}
+                                {viewingMetadata.referenceImages && viewingMetadata.referenceImages.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-400 mb-2">Reference Images ({viewingMetadata.referenceImages.length}):</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {viewingMetadata.referenceImages.slice(0, 6).map((url, idx) => (
+                                                <img key={idx} src={url} alt={`Ref ${idx + 1}`} className="w-full aspect-video object-cover rounded-lg border border-gray-700" />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Header */}
             <header className="flex-shrink-0 p-6 pb-4 border-b border-gray-800/50">
                 <div className="flex items-center justify-between gap-4">
                     <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2 flex-shrink-0">
                         <ArrowLeftIcon className="w-4 h-4" /> Back to Compositing
                     </Button>
-                    <h2 className="text-xl font-bold text-white truncate flex-1 text-center">Shot {frame.shot_number}</h2>
+                    <h2 className="text-xl font-bold text-white truncate flex-1 text-center">Shot {frame.shot_number} - Still Studio</h2>
                     <div className="w-24 flex-shrink-0"></div>
                 </div>
             </header>
 
-            {/* Main Content: 3-column layout */}
+            {/* Main Content: Left Sidebar + Main Grid */}
             <main className="flex-1 overflow-hidden flex">
-                {/* LEFT SIDEBAR: Generated Images */}
-                <aside className="w-80 border-r border-gray-800/50 flex flex-col bg-[#0a0a0a]">
-                    <div className="p-4 border-b border-gray-800/50">
-                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generated Shots</h3>
-                        <p className="text-xs text-gray-500 mt-1">{validGenerations.length} variants</p>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                        {/* Hero frames */}
-                        {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
-                            <div className="mb-4 pb-4 border-b border-gray-800/30">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Hero Frames</p>
-                                {frame.media.start_frame_url && (
-                                    <div className="mb-2 rounded-lg overflow-hidden border-2 border-emerald-500/50">
-                                        <img src={frame.media.start_frame_url} alt="Hero" className="w-full aspect-video object-cover" />
-                                        <div className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-1 text-center font-semibold">Hero Frame</div>
-                                    </div>
-                                )}
-                                {frame.media.end_frame_url && (
-                                    <div className="rounded-lg overflow-hidden border-2 border-blue-500/50">
-                                        <img src={frame.media.end_frame_url} alt="End" className="w-full aspect-video object-cover" />
-                                        <div className="bg-blue-500/20 text-blue-300 text-xs px-2 py-1 text-center font-semibold">End Frame</div>
-                                    </div>
-                                )}
+                {/* LEFT SIDEBAR: Prompt Controls + Director Widget */}
+                <aside className="w-[320px] border-r border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
+                    {/* Prompt Controls Section */}
+                    <div className="p-4 space-y-4">
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">Generation Settings</h3>
+
+                            {/* Prompt Textarea */}
+                            <div className="mb-3">
+                                <label className="text-xs text-gray-400 mb-1 block">Prompt</label>
+                                <textarea
+                                    value={detailedPrompt}
+                                    onChange={(e) => setDetailedPrompt(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (detailedPrompt.trim()) handleGenerate();
+                                        }
+                                    }}
+                                    placeholder="Describe your shot in detail..."
+                                    rows={4}
+                                    className="w-full bg-gray-800/40 text-white text-sm rounded-xl p-3 border border-gray-700/30 focus:border-teal-500/50 focus:bg-gray-800/60 transition-all resize-none focus:outline-none placeholder-gray-500"
+                                />
                             </div>
-                        )}
 
-                        {/* Generated shots */}
-                        {validGenerations.map((gen, index) => (
-                            <div
-                                key={gen.id}
-                                className={`relative group rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectedImageIndex === index ? 'border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]' : 'border-gray-800 hover:border-teal-500/50 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)]'}`}
-                                onClick={() => setSelectedImageIndex(index)}
-                            >
-                                <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full aspect-video object-cover" />
-                                <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded font-semibold">#{index + 1}</div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleSetFrame('start', gen.url!);
-                                            }}
-                                            className="bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-400 transition shadow-lg"
-                                        >
-                                            Set Hero
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onEnterRefinement(gen);
-                                            }}
-                                            className="bg-teal-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-teal-400 transition shadow-lg"
-                                        >
-                                            Refine
-                                        </button>
-                                    </div>
-                                </div>
+                            {/* Model Selector */}
+                            <div className="mb-3">
+                                <label className="text-xs text-gray-400 mb-1 block">Model</label>
+                                <select
+                                    value={model}
+                                    onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi')}
+                                    className="w-full bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm"
+                                >
+                                    <option>Imagen</option>
+                                    <option>Gemini Nano Banana</option>
+                                    <option>Flux</option>
+                                    <option value="Flux Kontext Max Multi">Flux Kontext Max Multi (FAL)</option>
+                                </select>
                             </div>
-                        ))}
 
-                        {/* Loading generations */}
-                        {allGenerations.filter(g => g.isLoading).map(gen => (
-                            <div key={gen.id} className="rounded-lg overflow-hidden">
-                                <LoadingSkeleton aspectRatio={gen.aspectRatio} progress={gen.progress || 0} />
+                            {/* Aspect Ratio */}
+                            <div className="mb-3">
+                                <label className="text-xs text-gray-400 mb-1 block">Aspect Ratio</label>
+                                <select
+                                    value={aspectRatio}
+                                    onChange={e => setAspectRatio(e.target.value)}
+                                    className="w-full bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm"
+                                >
+                                    <option>16:9</option>
+                                    <option>9:16</option>
+                                    <option>1:1</option>
+                                    <option>4:3</option>
+                                    <option>3:4</option>
+                                </select>
                             </div>
-                        ))}
 
-                        {/* Empty state */}
-                        {validGenerations.length === 0 && !allGenerations.some(g => g.isLoading) && (
-                            <div className="text-center py-12">
-                                <p className="text-gray-500 text-sm">No shots generated</p>
-                                <p className="text-gray-600 text-xs mt-1">Use the form below to create</p>
+                            {/* Location Selector */}
+                            <div className="mb-3">
+                                <label className="text-xs text-gray-400 mb-1 block">Location</label>
+                                <LocationSelect
+                                    locations={locations}
+                                    selectedId={selectedLocationId}
+                                    onChange={setSelectedLocationId}
+                                />
                             </div>
-                        )}
-                    </div>
-                </aside>
 
-                {/* CENTER: Main Display - with space for Director Widget */}
-                <div className="flex-1 flex items-center justify-center bg-black p-8 pr-[500px] pb-32">
-                    {currentImage ? (
-                        <div className="relative max-w-full max-h-full">
-                            <img
-                                src={currentImage.url!}
-                                alt="Selected"
-                                className="max-w-full max-h-full object-contain rounded-2xl border-4 border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]"
-                            />
-                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-emerald-500/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
-                        </div>
-                    ) : frame.media?.start_frame_url ? (
-                        <div className="relative max-w-full max-h-full">
-                            <img
-                                src={frame.media.start_frame_url}
-                                alt="Hero"
-                                className="max-w-full max-h-full object-contain rounded-2xl border-4 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.2)]"
-                            />
-                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/20 rounded-2xl -z-10 blur-xl"></div>
-                        </div>
-                    ) : (
-                        <div className="text-center">
-                            <p className="text-gray-500 text-lg mb-2">No shot selected</p>
-                            <p className="text-gray-600 text-sm">Generate variants using the form below</p>
-                        </div>
-                    )}
-                </div>
-            </main>
+                            {/* Character Selector */}
+                            <div className="mb-3">
+                                <label className="text-xs text-gray-400 mb-1 block">Characters</label>
+                                <CharacterMultiSelect
+                                    characters={characters}
+                                    selectedIds={selectedCharacterIds}
+                                    onChange={setSelectedCharacterIds}
+                                />
+                            </div>
 
-            <footer className="flex-shrink-0 p-6 pt-4 border-t border-gray-800/50">
-                 <div className="max-w-4xl mx-auto">
-                    {/* Multi-layered animated gradient glow container */}
-                    <div className="relative group">
-                        {/* Animated gradient glow */}
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-[28px] opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500"></div>
-
-                        {/* Main content container with glassmorphism */}
-                        <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 rounded-3xl p-5 border border-gray-700/30 shadow-2xl">
-                            {promptWasAdjusted && (
-                                <div className="text-xs text-yellow-400/90 px-4 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mb-3 backdrop-blur-sm">
-                                    <span className="font-semibold">Note:</span> Your prompt was adjusted for safety.
-                                </div>
-                            )}
+                            {/* Attached Image Preview */}
                             {attachedImage && (
-                                <div className="relative self-start p-1.5 bg-gray-800/60 backdrop-blur-sm rounded-2xl ml-3 mb-3 border border-gray-700/50 shadow-lg">
-                                    <img src={attachedImage} alt="Attached reference" className="w-20 h-20 object-cover rounded-xl"/>
+                                <div className="relative p-1.5 bg-gray-800/60 backdrop-blur-sm rounded-2xl mb-3 border border-gray-700/50 shadow-lg">
+                                    <img src={attachedImage} alt="Attached reference" className="w-full aspect-video object-cover rounded-xl"/>
                                     <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1 hover:bg-red-600 hover:scale-110 transition-all shadow-lg">
                                         <XIcon className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             )}
 
-                            {/* Input area with gradient border on focus */}
-                            <div className="relative group/input mb-3">
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/20 group-focus-within/input:via-purple-500/20 group-focus-within/input:to-pink-500/20 rounded-2xl blur transition-all duration-300"></div>
-                                <div className="relative flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
-                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
-                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 rounded-xl hover:bg-gray-700/50 hover:text-white transition-all hover:scale-110">
-                                        <PaperclipIcon className="w-5 h-5"/>
-                                    </button>
-                                    <textarea
-                                        value={detailedPrompt}
-                                        onChange={(e) => setDetailedPrompt(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                if (detailedPrompt.trim()) handleGenerate();
-                                            }
-                                        }}
-                                        placeholder="Describe your shot in detail... (Press Enter to generate)"
-                                        rows={1}
-                                        className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Controls row */}
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
-                                        <option>Imagen</option><option>Gemini Nano Banana</option><option>Flux</option><option value="Flux Kontext Max Multi">Flux Kontext Max Multi (FAL)</option>
-                                    </select>
-                                    <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
-                                        <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>
-                                    </select>
-                                    <LocationSelect
-                                        locations={locations}
-                                        selectedId={selectedLocationId}
-                                        onChange={setSelectedLocationId}
-                                    />
-                                    <CharacterMultiSelect
-                                        characters={characters}
-                                        selectedIds={selectedCharacterIds}
-                                        onChange={setSelectedCharacterIds}
-                                    />
-                                </div>
-
-                                {/* Modern Generate button with animated arrow */}
+                            {/* Attach Image + Generate Button */}
+                            <div className="flex gap-2">
+                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="px-4 py-2 text-gray-400 bg-gray-800/40 rounded-xl hover:bg-gray-700/50 hover:text-white transition-all text-xs font-semibold border border-gray-700/30"
+                                >
+                                    <PaperclipIcon className="w-4 h-4 inline mr-1"/>
+                                    Attach
+                                </button>
                                 <Button
                                     onClick={handleGenerate}
                                     disabled={!detailedPrompt.trim()}
-                                    className="!bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg"
+                                    className="flex-1 !bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-2 !px-4 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !text-xs"
                                 >
-                                    <span>Generate</span>
-                                    <motion.span
-                                        animate={{ x: [0, 3, 0] }}
-                                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                        className="text-lg"
-                                    >
-                                        →
-                                    </motion.span>
+                                    Generate
                                 </Button>
                             </div>
+
+                            {promptWasAdjusted && (
+                                <div className="text-xs text-yellow-400/90 px-3 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mt-3">
+                                    <span className="font-semibold">Note:</span> Prompt was adjusted for safety.
+                                </div>
+                            )}
                         </div>
                     </div>
-                 </div>
-            </footer>
+
+                    {/* Director Widget */}
+                    <div className="flex-1 p-4 pt-0">
+                        <MiniDirectorWidget
+                            scriptAnalysis={{
+                                title: '',
+                                logline: '',
+                                summary: '',
+                                scenes: [scene],
+                                characters,
+                                locations,
+                                props: [],
+                                styling: [],
+                                setDressing: [],
+                                makeupAndHair: [],
+                                sound: []
+                            }}
+                            setScriptAnalysis={() => {}}
+                        />
+                    </div>
+                </aside>
+
+                {/* MAIN AREA: 3-Column Image Grid */}
+                <div className="flex-1 overflow-y-auto p-8 bg-black">
+                    {/* Hero Frames Section */}
+                    {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
+                        <div className="mb-8">
+                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Hero Frames</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                {frame.media.start_frame_url && (
+                                    <div className="rounded-xl overflow-hidden border-2 border-emerald-500/50 group relative">
+                                        <img src={frame.media.start_frame_url} alt="Hero" className="w-full aspect-video object-cover" />
+                                        <div className="absolute top-2 left-2 bg-emerald-500/90 text-white text-xs px-3 py-1 rounded-lg font-bold shadow-lg">Hero Frame</div>
+                                    </div>
+                                )}
+                                {frame.media.end_frame_url && (
+                                    <div className="rounded-xl overflow-hidden border-2 border-blue-500/50 group relative">
+                                        <img src={frame.media.end_frame_url} alt="End" className="w-full aspect-video object-cover" />
+                                        <div className="absolute top-2 left-2 bg-blue-500/90 text-white text-xs px-3 py-1 rounded-lg font-bold shadow-lg">End Frame</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Generated Images Grid */}
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generated Variants ({validGenerations.length})</h3>
+                        </div>
+
+                        {validGenerations.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-6">
+                                {validGenerations.map((gen, index) => (
+                                    <motion.div
+                                        key={gen.id}
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: index * 0.05 }}
+                                        className="group relative rounded-xl overflow-hidden border-2 border-gray-800 hover:border-teal-500/70 transition-all duration-300 hover:shadow-[0_0_30px_rgba(20,184,166,0.3)] bg-gray-900/50"
+                                    >
+                                        <div className="aspect-video relative overflow-hidden">
+                                            <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+
+                                            {/* Top Badge */}
+                                            <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-lg">
+                                                #{index + 1}
+                                            </div>
+
+                                            {/* Hover Overlay with Actions */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-2 p-4">
+                                                <button
+                                                    onClick={() => setViewingGeneration(gen)}
+                                                    className="bg-white/90 text-black text-xs px-4 py-2 rounded-lg font-bold hover:bg-white hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
+                                                >
+                                                    View Fullscreen
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSetFrame('start', gen.url!)}
+                                                    className="bg-emerald-500/90 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-emerald-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
+                                                >
+                                                    Set as Hero
+                                                </button>
+                                                <button
+                                                    onClick={() => onEnterRefinement(gen)}
+                                                    className="bg-teal-500/90 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-teal-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
+                                                >
+                                                    Refine
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Metadata Footer */}
+                                        <div className="p-3 bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-t border-gray-700/50">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1 min-w-0">
+                                                    {gen.model && (
+                                                        <p className="text-xs text-gray-400 truncate">{gen.model}</p>
+                                                    )}
+                                                    {gen.selectedCharacters && gen.selectedCharacters.length > 0 && (
+                                                        <p className="text-xs text-teal-400 truncate mt-1">{gen.selectedCharacters.join(', ')}</p>
+                                                    )}
+                                                </div>
+                                                {gen.promptUsed && (
+                                                    <button
+                                                        onClick={() => setViewingMetadata(gen)}
+                                                        className="ml-2 text-gray-400 hover:text-white transition-colors"
+                                                        title="View metadata"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20 border-2 border-dashed border-gray-800 rounded-2xl">
+                                <p className="text-gray-500 text-lg mb-2">No variants generated yet</p>
+                                <p className="text-gray-600 text-sm">Use the controls on the left to create images</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Loading Generations */}
+                    {allGenerations.filter(g => g.isLoading).length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Generating...</h3>
+                            <div className="grid grid-cols-3 gap-6">
+                                {allGenerations.filter(g => g.isLoading).map(gen => (
+                                    <div key={gen.id} className="rounded-xl overflow-hidden border-2 border-gray-800">
+                                        <LoadingSkeleton aspectRatio={gen.aspectRatio} progress={gen.progress || 0} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </main>
         </div>
     );
 };
@@ -1063,6 +1202,10 @@ const AnimateStudio: React.FC<{
         onBack();
     };
 
+    const videoGenerations = frame.videoGenerations || [];
+    const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
+    const selectedVideo = videoGenerations.find(g => g.url && !g.isLoading) || videoGenerations[selectedVideoIndex];
+
     return (
         <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
             {fullScreenVideoUrl && (
@@ -1072,125 +1215,224 @@ const AnimateStudio: React.FC<{
                     onSelect={() => handleSelectVideo(fullScreenVideoUrl)}
                 />
             )}
-            <header className="flex-shrink-0 p-6 pb-4">
-                <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to Compositing</Button>
-            </header>
-            <main className="flex-1 overflow-y-auto px-6 pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
-                    {(frame.videoGenerations || []).map(gen => (
-                        <div key={gen.id} className="relative aspect-video group bg-black rounded-lg border border-gray-800 flex items-center justify-center overflow-hidden">
-                           {gen.isLoading ? (
-                                <LoadingSkeleton aspectRatio="16:9" progress={gen.progress || 0} />
-                           ) : gen.url ? (
-                                <>
-                                    <video src={gen.url} muted loop autoPlay playsInline className="w-full h-full object-cover" />
 
-                                    {/* Top-left: Use this video button */}
-                                    <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Header */}
+            <header className="flex-shrink-0 p-6 pb-4 border-b border-gray-800/50">
+                <div className="flex items-center justify-between gap-4">
+                    <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2 flex-shrink-0">
+                        <ArrowLeftIcon className="w-4 h-4" /> Back to Compositing
+                    </Button>
+                    <h2 className="text-xl font-bold text-white truncate flex-1 text-center">Shot {frame.shot_number} - Animate Studio</h2>
+                    <div className="w-24 flex-shrink-0"></div>
+                </div>
+            </header>
+
+            {/* Main Content: Three-Column Layout */}
+            <main className="flex-1 overflow-hidden flex">
+                {/* LEFT COLUMN: Controls */}
+                <aside className="w-[320px] border-r border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
+                    <div className="p-4 space-y-4">
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Animation Settings</h3>
+
+                            {/* Frame Upload Section */}
+                            <div className="mb-4">
+                                <label className="text-xs text-gray-400 mb-2 block">Frames</label>
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+
+                                {/* Start Frame */}
+                                <div className="mb-3">
+                                    <p className="text-xs text-gray-500 mb-1">Hero Frame</p>
+                                    <div className="relative group">
+                                        <div className="w-full aspect-video rounded-xl border-2 border-green-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-green-400 transition-all">
+                                            {(frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url) ? (
+                                                <img src={frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url} alt="Starting frame" className="w-full h-full object-cover"/>
+                                            ) : (
+                                                <p className="text-xs text-gray-500">Not Set</p>
+                                            )}
+                                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button onClick={() => handleFrameControlClick('start')} className="p-2 text-white bg-green-500/20 rounded-xl hover:bg-green-500/30 hover:scale-110 transition-all border border-green-500/50" title="Upload Start Frame">
+                                                    <ImagePlusIcon className="w-4 h-4"/>
+                                                </button>
+                                                {(frame.media?.start_frame_url || frame.media?.upscaled_start_frame_url) && (
+                                                    <button onClick={() => handleRemoveFrame('start')} className="p-2 text-white bg-red-500/20 rounded-xl hover:bg-red-500/30 hover:scale-110 transition-all border border-red-500/50" title="Remove Start Frame">
+                                                        <Trash2Icon className="w-4 h-4"/>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* End Frame */}
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">End Frame (Optional)</p>
+                                    <div className="relative group">
+                                        <div className="w-full aspect-video rounded-xl border-2 border-blue-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-blue-400 transition-all">
+                                            {frame.media?.end_frame_url ? (
+                                                <img src={frame.media.end_frame_url} alt="Ending frame" className="w-full h-full object-cover"/>
+                                            ) : (
+                                                <p className="text-xs text-gray-500">Not Set</p>
+                                            )}
+                                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button onClick={() => handleFrameControlClick('end')} className="p-2 text-white bg-blue-500/20 rounded-xl hover:bg-blue-500/30 hover:scale-110 transition-all border border-blue-500/50" title="Upload End Frame">
+                                                    <ImagePlusIcon className="w-4 h-4"/>
+                                                </button>
+                                                {frame.media?.end_frame_url && (
+                                                    <button onClick={() => handleRemoveFrame('end')} className="p-2 text-white bg-red-500/20 rounded-xl hover:bg-red-500/30 hover:scale-110 transition-all border border-red-500/50" title="Remove End Frame">
+                                                        <Trash2Icon className="w-4 h-4"/>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Motion Prompt */}
+                            <div className="mb-4">
+                                <label className="text-xs text-gray-400 mb-1 block">Motion Description</label>
+                                <textarea
+                                    value={motionPrompt}
+                                    onChange={(e) => setMotionPrompt(e.target.value)}
+                                    placeholder="Describe the motion, e.g., slow dolly zoom in, camera pans left..."
+                                    rows={4}
+                                    className="w-full bg-gray-800/40 text-white text-sm rounded-xl p-3 border border-gray-700/30 focus:border-teal-500/50 focus:bg-gray-800/60 transition-all resize-none focus:outline-none placeholder-gray-500"
+                                />
+                            </div>
+
+                            {/* Animate Button */}
+                            <Button
+                                onClick={handleGenerate}
+                                disabled={isGenerating}
+                                isLoading={isGenerating}
+                                className="w-full !bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-3 !px-6 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !text-sm"
+                            >
+                                {isGenerating ? 'Animating...' : 'Animate'}
+                            </Button>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* CENTER COLUMN: Video Player */}
+                <div className="flex-1 flex flex-col items-center justify-center bg-black p-8">
+                    {selectedVideo ? (
+                        <div className="relative w-full max-w-4xl">
+                            {selectedVideo.isLoading ? (
+                                <div className="aspect-video rounded-2xl overflow-hidden border-2 border-gray-800">
+                                    <LoadingSkeleton aspectRatio="16:9" progress={selectedVideo.progress || 0} />
+                                </div>
+                            ) : selectedVideo.url ? (
+                                <div className="relative group">
+                                    <video
+                                        src={selectedVideo.url}
+                                        muted
+                                        loop
+                                        autoPlay
+                                        playsInline
+                                        className="w-full aspect-video rounded-2xl border-4 border-teal-500/30 shadow-[0_0_40px_rgba(20,184,166,0.2)] object-cover"
+                                    />
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-emerald-500/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
+
+                                    {/* Overlay Controls */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end justify-center pb-8 gap-3">
                                         <Button
-                                            onClick={() => handleSelectVideo(gen.url!)}
+                                            onClick={() => handleSelectVideo(selectedVideo.url!)}
                                             variant="primary"
-                                            className="!bg-white !text-black !font-semibold !py-2 !px-4 !rounded-lg hover:!bg-gray-100 !transition-all !shadow-lg"
+                                            className="!bg-white !text-black !font-bold !py-2 !px-6 !rounded-lg hover:!bg-gray-100 !transition-all !shadow-lg"
                                         >
                                             Use this video
                                         </Button>
-                                    </div>
-
-                                    {/* Top-right: Download and Fullscreen buttons */}
-                                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Button
                                             onClick={() => {
-                                                // Download video
                                                 const a = document.createElement('a');
-                                                a.href = gen.url!;
-                                                a.download = `video-${gen.id}.mp4`;
+                                                a.href = selectedVideo.url!;
+                                                a.download = `video-${selectedVideo.id}.mp4`;
                                                 document.body.appendChild(a);
                                                 a.click();
                                                 document.body.removeChild(a);
                                             }}
                                             variant="secondary"
-                                            className="!bg-black/70 !text-white !p-2.5 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
-                                            title="Download video"
+                                            className="!bg-black/70 !text-white !py-2 !px-6 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
                                         >
-                                            <DownloadIcon className="w-5 h-5" />
+                                            Download
                                         </Button>
                                         <Button
-                                            onClick={() => setFullScreenVideoUrl(gen.url!)}
+                                            onClick={() => setFullScreenVideoUrl(selectedVideo.url!)}
                                             variant="secondary"
-                                            className="!bg-black/70 !text-white !p-2.5 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
-                                            title="Fullscreen"
+                                            className="!bg-black/70 !text-white !p-2 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
                                         >
                                             <ExpandIcon className="w-5 h-5" />
                                         </Button>
                                     </div>
-                                </>
-                           ) : (
-                                <div className="p-2 text-center flex flex-col items-center justify-center h-full bg-red-900/20">
-                                    <p className="text-xs text-red-400 font-semibold">Generation Failed</p>
-                                    <p className="text-[10px] text-gray-400 mt-1 line-clamp-3">{gen.error}</p>
                                 </div>
-                           )}
+                            ) : (
+                                <div className="aspect-video rounded-2xl border-2 border-red-500/50 bg-red-900/20 flex flex-col items-center justify-center">
+                                    <p className="text-red-400 font-semibold mb-2">Generation Failed</p>
+                                    <p className="text-gray-400 text-sm max-w-md text-center">{selectedVideo.error}</p>
+                                </div>
+                            )}
                         </div>
-                    ))}
-                    {(!frame.videoGenerations || frame.videoGenerations.length === 0) && !isGenerating && (
-                         <div className="md:col-span-2 aspect-video bg-gray-900/50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-700">
-                             <p className="text-gray-500">Video generations will appear here</p>
+                    ) : (
+                        <div className="text-center py-20">
+                            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center">
+                                <PlayIcon className="w-12 h-12 text-teal-400" />
+                            </div>
+                            <p className="text-gray-500 text-lg mb-2">No videos generated yet</p>
+                            <p className="text-gray-600 text-sm">Set frames and describe motion to animate</p>
                         </div>
                     )}
                 </div>
-            </main>
-            <footer className="flex-shrink-0 p-6 pt-4 border-t border-gray-800/50">
-                 <div className="max-w-3xl mx-auto">
-                    <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all">
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                        <div className="flex items-center justify-center gap-4 px-2 mb-2">
-                            <div className="text-center relative group">
-                                <div className="w-28 h-16 object-cover rounded-xl border-2 border-green-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-green-400 transition-all">
-                                    {(frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url) ? (
-                                        <img src={frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url} alt="Starting frame" className="w-full h-full object-cover"/>
-                                    ) : (
-                                        <p className="text-xs text-gray-500 p-1">Not Set</p>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 backdrop-blur-sm">
-                                        <button onClick={() => handleFrameControlClick('start')} className="p-2 text-white bg-green-500/20 rounded-xl hover:bg-green-500/30 hover:scale-110 transition-all border border-green-500/50" title="Upload Start Frame"><ImagePlusIcon className="w-4 h-4"/></button>
-                                        {(frame.media?.start_frame_url || frame.media?.upscaled_start_frame_url) && (
-                                            <button onClick={() => handleRemoveFrame('start')} className="p-2 text-white bg-red-500/20 rounded-xl hover:bg-red-500/30 hover:scale-110 transition-all border border-red-500/50" title="Remove Start Frame"><Trash2Icon className="w-4 h-4"/></button>
+
+                {/* RIGHT COLUMN: Details Panel */}
+                <aside className="w-[320px] border-l border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
+                    <div className="p-4">
+                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Generated Videos ({videoGenerations.filter(g => g.url && !g.isLoading).length})</h3>
+
+                        {videoGenerations.length > 0 ? (
+                            <div className="space-y-3">
+                                {videoGenerations.map((gen, index) => (
+                                    <div
+                                        key={gen.id}
+                                        onClick={() => setSelectedVideoIndex(index)}
+                                        className={`relative group rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectedVideoIndex === index ? 'border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]' : 'border-gray-800 hover:border-teal-500/50'}`}
+                                    >
+                                        {gen.isLoading ? (
+                                            <div className="aspect-video">
+                                                <LoadingSkeleton aspectRatio="16:9" progress={gen.progress || 0} />
+                                            </div>
+                                        ) : gen.url ? (
+                                            <>
+                                                <video
+                                                    src={gen.url}
+                                                    muted
+                                                    loop
+                                                    playsInline
+                                                    className="w-full aspect-video object-cover"
+                                                    onMouseEnter={(e) => e.currentTarget.play()}
+                                                    onMouseLeave={(e) => e.currentTarget.pause()}
+                                                />
+                                                <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-lg">
+                                                    #{index + 1}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="aspect-video bg-red-900/20 flex flex-col items-center justify-center">
+                                                <p className="text-xs text-red-400 font-semibold">Failed</p>
+                                            </div>
                                         )}
                                     </div>
-                                </div>
-                                <label className="text-xs text-gray-400 mt-2 block font-semibold">Hero Frame</label>
+                                ))}
                             </div>
-                            <div className="text-gray-500 self-center pb-4"><ArrowRightIcon className="w-7 h-7"/></div>
-                             <div className="text-center relative group">
-                                <div className="w-28 h-16 object-cover rounded-xl border-2 border-blue-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-blue-400 transition-all">
-                                    {frame.media?.end_frame_url ? (
-                                        <img src={frame.media.end_frame_url} alt="Ending frame" className="w-full h-full object-cover"/>
-                                    ) : (
-                                        <p className="text-xs text-gray-500 p-1">Not Set</p>
-                                    )}
-                                     <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 backdrop-blur-sm">
-                                        <button onClick={() => handleFrameControlClick('end')} className="p-2 text-white bg-blue-500/20 rounded-xl hover:bg-blue-500/30 hover:scale-110 transition-all border border-blue-500/50" title="Upload End Frame"><ImagePlusIcon className="w-4 h-4"/></button>
-                                        {frame.media?.end_frame_url && (
-                                            <button onClick={() => handleRemoveFrame('end')} className="p-2 text-white bg-red-500/20 rounded-xl hover:bg-red-500/30 hover:scale-110 transition-all border border-red-500/50" title="Remove End Frame"><Trash2Icon className="w-4 h-4"/></button>
-                                        )}
-                                    </div>
-                                </div>
-                                <label className="text-xs text-gray-400 mt-2 block font-semibold">End Frame</label>
+                        ) : (
+                            <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-xl">
+                                <p className="text-gray-500 text-sm">No videos yet</p>
+                                <p className="text-gray-600 text-xs mt-1">Generate to create</p>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
-                            <textarea
-                                value={motionPrompt}
-                                onChange={(e) => setMotionPrompt(e.target.value)}
-                                placeholder="Describe the motion, e.g., slow dolly zoom in, camera pans left..."
-                                rows={1}
-                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
-                            />
-                             <Button onClick={handleGenerate} disabled={isGenerating} isLoading={isGenerating} className="!bg-gradient-to-r !from-white !to-gray-100 !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-lg hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100">Animate</Button>
-                        </div>
+                        )}
                     </div>
-                 </div>
-            </footer>
+                </aside>
+            </main>
         </div>
     );
 };

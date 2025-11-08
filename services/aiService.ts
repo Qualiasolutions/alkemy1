@@ -418,7 +418,18 @@ export const generateStillVariants = async (
     locationName?: string,
     onProgress?: (index: number, progress: number) => void,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
-): Promise<{ urls: string[], errors: (string | null)[], wasAdjusted: boolean }> => {
+): Promise<{
+    urls: string[],
+    errors: (string | null)[],
+    wasAdjusted: boolean,
+    metadata: {
+        promptUsed: string;
+        referenceImages: string[];
+        selectedCharacters: string[];
+        selectedLocation: string;
+        model: string;
+    }
+}> => {
     console.log("[API Action] generateStillVariants", { frame_id, model, prompt, reference_images, n, aspect_ratio, moodboard, characterNames, locationName });
     
     const prioritizedImages = reference_images;
@@ -481,7 +492,18 @@ export const generateStillVariants = async (
         }
     });
 
-    return { urls, errors, wasAdjusted };
+    return {
+        urls,
+        errors,
+        wasAdjusted,
+        metadata: {
+            promptUsed: finalPrompt,
+            referenceImages: allReferenceImages,
+            selectedCharacters: characterNames || [],
+            selectedLocation: locationName || '',
+            model: model
+        }
+    };
 };
 
 
