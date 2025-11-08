@@ -291,23 +291,14 @@ class GaussianSplatService {
 
     /**
      * Get demo splat URLs for testing
+     * Note: Hugging Face URLs require authentication, use public demos or uploaded files
      */
     getDemoScenes(): Array<{ name: string; url: string; description: string }> {
         return [
             {
-                name: 'Garden',
-                url: 'https://huggingface.co/datasets/gsplat/datasets/resolve/main/garden.splat',
-                description: 'A beautiful garden scene'
-            },
-            {
-                name: 'Bicycle',
-                url: 'https://huggingface.co/datasets/gsplat/datasets/resolve/main/bicycle.splat',
-                description: 'Detailed bicycle model'
-            },
-            {
-                name: 'Bonsai',
-                url: 'https://huggingface.co/datasets/gsplat/datasets/resolve/main/bonsai.splat',
-                description: 'Traditional bonsai tree'
+                name: 'Sample Scene',
+                url: 'https://antimatter15.com/splat-data/train.splat',
+                description: 'Demo gaussian splat scene'
             }
         ];
     }
