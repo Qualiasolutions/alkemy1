@@ -748,19 +748,19 @@ const StillStudio: React.FC<{
                         {validGenerations.map((gen, index) => (
                             <div
                                 key={gen.id}
-                                className={`relative group rounded-lg overflow-hidden cursor-pointer border-2 ${selectedImageIndex === index ? 'border-teal-500' : 'border-transparent hover:border-gray-600'}`}
+                                className={`relative group rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectedImageIndex === index ? 'border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]' : 'border-gray-800 hover:border-teal-500/50 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)]'}`}
                                 onClick={() => setSelectedImageIndex(index)}
                             >
                                 <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full aspect-video object-cover" />
-                                <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">#{index + 1}</div>
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <div className="flex flex-col gap-2">
+                                <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded font-semibold">#{index + 1}</div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
+                                    <div className="flex gap-2">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleSetFrame('start', gen.url!);
                                             }}
-                                            className="bg-emerald-500/80 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-500 transition"
+                                            className="bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-400 transition shadow-lg"
                                         >
                                             Set Hero
                                         </button>
@@ -769,7 +769,7 @@ const StillStudio: React.FC<{
                                                 e.stopPropagation();
                                                 onEnterRefinement(gen);
                                             }}
-                                            className="bg-teal-500/80 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-teal-500 transition"
+                                            className="bg-teal-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-teal-400 transition shadow-lg"
                                         >
                                             Refine
                                         </button>
@@ -795,20 +795,26 @@ const StillStudio: React.FC<{
                     </div>
                 </aside>
 
-                {/* CENTER: Main Display */}
-                <div className="flex-1 flex items-center justify-center bg-black p-8">
+                {/* CENTER: Main Display - with space for Director Widget */}
+                <div className="flex-1 flex items-center justify-center bg-black p-8 pr-[500px] pb-32">
                     {currentImage ? (
-                        <img
-                            src={currentImage.url!}
-                            alt="Selected"
-                            className="max-w-full max-h-full object-contain rounded-lg"
-                        />
+                        <div className="relative max-w-full max-h-full">
+                            <img
+                                src={currentImage.url!}
+                                alt="Selected"
+                                className="max-w-full max-h-full object-contain rounded-2xl border-4 border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]"
+                            />
+                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-emerald-500/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
+                        </div>
                     ) : frame.media?.start_frame_url ? (
-                        <img
-                            src={frame.media.start_frame_url}
-                            alt="Hero"
-                            className="max-w-full max-h-full object-contain rounded-lg"
-                        />
+                        <div className="relative max-w-full max-h-full">
+                            <img
+                                src={frame.media.start_frame_url}
+                                alt="Hero"
+                                className="max-w-full max-h-full object-contain rounded-2xl border-4 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.2)]"
+                            />
+                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/20 rounded-2xl -z-10 blur-xl"></div>
+                        </div>
                     ) : (
                         <div className="text-center">
                             <p className="text-gray-500 text-lg mb-2">No shot selected</p>
