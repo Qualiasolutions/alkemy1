@@ -1154,13 +1154,12 @@ const AnimateStudio: React.FC<{
                 aspectRatio = '16:9';
             }
 
-            const videoBlobs = await animateFrame(motionPrompt, startFrame, endFrame, N_VIDEO_GENERATIONS, aspectRatio, onProgress, {
+            const videoUrls = await animateFrame(motionPrompt, startFrame, endFrame, N_VIDEO_GENERATIONS, aspectRatio, onProgress, {
                 projectId: currentProject?.id || null,
                 userId: user?.id || null,
                 sceneId: scene?.id || null,
                 frameId: frame.id
             });
-            const videoUrls = videoBlobs.map(blob => URL.createObjectURL(blob));
 
             onUpdateFrame(prevFrame => {
                 let currentGenerations = [...(prevFrame.videoGenerations || [])];
