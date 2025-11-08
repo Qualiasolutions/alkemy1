@@ -29,6 +29,7 @@ import { commandHistory } from './services/commandHistory';
 import Button from './components/Button';
 import { DEMO_PROJECT_DATA, DEMO_SCRIPT } from './data/demoProject';
 import Toast, { ToastMessage } from './components/Toast';
+import ProjectSelectorModal from './components/ProjectSelectorModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { hasGeminiApiKey, hasEnvGeminiApiKey, onGeminiApiKeyChange, clearGeminiApiKey, setGeminiApiKey } from './services/apiKeys';
 import { isSupabaseConfigured } from './services/supabase';
@@ -210,6 +211,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const { toggleTheme, isDark } = useTheme();
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [showProjectSelector, setShowProjectSelector] = useState<boolean>(false);
   const loadProjectInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize services
@@ -222,7 +224,6 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [projectList, setProjectList] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState<boolean>(false);
-  const [showProjectSelector, setShowProjectSelector] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
@@ -249,6 +250,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisMessage, setAnalysisMessage] = useState<string>('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [autoProjectCreated, setAutoProjectCreated] = useState<boolean>(false); // Moved up to fix hooks order
 
   // --- Project State Management ---
   // Initialize with empty state - projects will be loaded from Supabase for authenticated users
@@ -753,13 +755,23 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   useKeyboardShortcuts({
       onNewProject: () => handleNewProject(false),
       onSaveProject: handleSaveProject,
-      onLoadProject: handleLoadProjectFromWelcome,
+      onLoadProject: () => {
+        if (isAuthenticated) {
+          setShowProjectSelector(true);
+        }
+      },
       onTabSwitch: (tabIndex: number) => {
           if (tabIndex < TABS.length) {
               setActiveTab(TABS[tabIndex].id);
           }
       }
   });
+
+  // Show welcome screen if no project exists
+  // FIX: Check for actual content, not just non-null values
+  // Also handle authenticated user redirect - they should always have a project
+  // For authenticated users, having a currentProject object means they have an active project
+  const hasActiveProject = currentProject || (scriptContent !== null && scriptContent !== '') || scriptAnalysis;
 
   const handleScriptUpdate = (content: string | null) => {
     setScriptContent(content);
@@ -971,6 +983,15 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   }, []);
 
 
+  // If authenticated user has no active project, create one for them automatically
+  useEffect(() => {
+    if (isAuthenticated && !hasActiveProject && !autoProjectCreated && isKeyReady) {
+      console.log('[Auth] Creating new project for authenticated user');
+      setAutoProjectCreated(true);
+      createNewProject('Untitled Project');
+    }
+  }, [isAuthenticated, hasActiveProject, autoProjectCreated, isKeyReady, createNewProject]);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'script':
@@ -1097,21 +1118,6 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     }} isDark={isDark} />;
   }
 
-  // Show welcome screen if no project exists
-  // FIX: Check for actual content, not just non-null values
-  // Also handle authenticated user redirect - they should always have a project
-  const hasActiveProject = (scriptContent !== null && scriptContent !== '') || scriptAnalysis;
-
-  // If authenticated user has no active project, create one for them automatically
-  const [autoProjectCreated, setAutoProjectCreated] = useState(false);
-  useEffect(() => {
-    if (isAuthenticated && !hasActiveProject && !autoProjectCreated && isKeyReady) {
-      console.log('[Auth] Creating new project for authenticated user');
-      setAutoProjectCreated(true);
-      createNewProject('Untitled Project');
-    }
-  }, [isAuthenticated, hasActiveProject, autoProjectCreated, isKeyReady, createNewProject]);
-
   if (!hasActiveProject) {
     // Show WelcomeScreen for non-authenticated users or while project is being created
     return (
@@ -1172,8 +1178,6 @@ return (
       isSidebarExpanded={isSidebarExpanded}
       setIsSidebarExpanded={setIsSidebarExpanded}
       onNewProject={handleNewProject}
-      onDownloadProject={handleDownloadProject}
-      onLoadProject={handleLoadProject}
     />
 
     <div className="relative flex flex-1 flex-col">
@@ -1232,7 +1236,7 @@ return (
                 <UserMenu
                   onProfileClick={() => console.log('Profile clicked')}
                   onSettingsClick={() => console.log('Settings clicked')}
-                  onProjectsClick={() => console.log('Projects clicked')}
+                  onProjectsClick={() => setShowProjectSelector(true)}
                 />
               ) : (
                 <Button
@@ -1291,6 +1295,14 @@ return (
         }}
       />
     )}
+
+    {/* Project Selector Modal */}
+    <ProjectSelectorModal
+      isOpen={showProjectSelector}
+      onClose={() => setShowProjectSelector(false)}
+      onSelectProject={loadProject}
+      currentProjectId={currentProject?.id}
+    />
   </div>
 );
 };

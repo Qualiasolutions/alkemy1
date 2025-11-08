@@ -1,7 +1,7 @@
-import React, { useState, useRef, Fragment } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TABS_CONFIG, TABS } from '../constants';
-import { LogoIcon, ChevronDownIcon, ChevronsLeftIcon, ChevronsRightIcon, PlusIcon, DownloadIcon, UploadIcon } from './icons/Icons';
+import { LogoIcon, ChevronDownIcon, ChevronsLeftIcon, ChevronsRightIcon, PlusIcon } from './icons/Icons';
 import Button from './Button';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -11,14 +11,11 @@ interface SidebarProps {
   isSidebarExpanded: boolean;
   setIsSidebarExpanded: (isExpanded: boolean) => void;
   onNewProject: () => void;
-  onDownloadProject: () => void;
-  onLoadProject: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExpanded, setIsSidebarExpanded, onNewProject, onDownloadProject, onLoadProject }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExpanded, setIsSidebarExpanded, onNewProject }) => {
   const [expandedSections, setExpandedSections] = useState<string[]>(['Development', 'Production', 'Media']);
   const { colors, isDark } = useTheme();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleSection = (sectionName: string) => {
     setExpandedSections(prev =>
@@ -165,8 +162,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
           </>
         )}
       </ul>
-      
-      <div className={`mt-auto border-t border-[var(--color-border-color)] ${isSidebarExpanded ? 'pt-6 space-y-2' : 'pt-4 space-y-1.5'}`}>
+  
+      <div className={`mt-auto border-t border-[var(--color-border-color)] ${isSidebarExpanded ? 'pt-6' : 'pt-4'}`}>
         <Button
             onClick={onNewProject}
             variant="secondary"
@@ -176,33 +173,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
             <PlusIcon className="w-4 h-4 flex-shrink-0" />
             {isSidebarExpanded && <span className="whitespace-nowrap">New Project</span>}
         </Button>
-        <Button
-            onClick={onDownloadProject}
-            variant="secondary"
-            size={isSidebarExpanded ? 'md' : 'sm'}
-            className={`w-full ${isSidebarExpanded ? '' : '!px-0'}`}
-            title="Save Project As..."
-        >
-            <DownloadIcon className="w-4 h-4 flex-shrink-0" />
-            {isSidebarExpanded && <span className="whitespace-nowrap">Save As...</span>}
-        </Button>
-        <Button
-            onClick={() => fileInputRef.current?.click()}
-            variant="secondary"
-            size={isSidebarExpanded ? 'md' : 'sm'}
-            className={`w-full ${isSidebarExpanded ? '' : '!px-0'}`}
-            title="Load Project"
-        >
-            <UploadIcon className="w-4 h-4 flex-shrink-0" />
-            {isSidebarExpanded && <span className="whitespace-nowrap">Load Project</span>}
-        </Button>
-        <input
-            ref={fileInputRef}
-            type="file"
-            accept=".alkemy.json,application/json"
-            onChange={onLoadProject}
-            className="hidden"
-        />
       </div>
 
       {/* Beautiful Toggle Button */}
