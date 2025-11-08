@@ -1,6 +1,8 @@
 import path from 'path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
 
 const createBraveProxyDevPlugin = (apiKey: string | undefined): Plugin => ({
     name: 'alkemy-dev-brave-proxy',
@@ -91,6 +93,8 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [
         react(),
+        wasm(),
+        topLevelAwait(),
         ...(mode === 'development' ? [createBraveProxyDevPlugin(braveSearchKey)] : [])
       ],
       build: {
@@ -143,6 +147,7 @@ export default defineConfig(({ mode }) => {
       },
       optimizeDeps: {
         include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
+        exclude: ['@dimforge/rapier3d', '@mkkellogg/gaussian-splats-3d'],
       },
     };
 });
