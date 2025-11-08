@@ -1083,9 +1083,11 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   }
 
   // Show welcome screen if no project exists
-  // FIX: Check for null explicitly instead of truthy value since empty string '' is falsy
-  const hasActiveProject = scriptContent !== null || scriptAnalysis;
+  // FIX: Check for actual content, not just non-null values
+  const hasActiveProject = (scriptContent !== null && scriptContent !== '') || scriptAnalysis;
   if (!hasActiveProject) {
+    // Show WelcomeScreen regardless of authentication status
+    // Users can use local storage mode without authentication
     return (
       <>
         <WelcomeScreen
@@ -1262,6 +1264,9 @@ return (
 );
 };
 
+// Simplified - no protected routes needed
+
+
 // Main App wrapper with proper provider hierarchy
 const AppWithProviders: React.FC = () => {
   const supabaseConfigured = isSupabaseConfigured();
@@ -1271,16 +1276,16 @@ const AppWithProviders: React.FC = () => {
       {supabaseConfigured ? (
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<AppContentWithAuth />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route path="/*" element={<AppContentWithAuth />} />
           </Routes>
         </AuthProvider>
       ) : (
         <Routes>
+          <Route path="/" element={<AppContentWithoutAuth />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/*" element={<AppContentWithoutAuth />} />
         </Routes>
       )}
     </ThemeProvider>
