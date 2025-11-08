@@ -94,6 +94,12 @@ export interface Generation {
   isLoading: boolean;
   error?: string;
   progress?: number;
+  // Metadata for generation details
+  promptUsed?: string;
+  referenceImages?: string[];
+  selectedCharacters?: string[];
+  selectedLocation?: string;
+  model?: string;
 }
 
 export interface AnalyzedCharacter {
