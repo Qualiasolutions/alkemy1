@@ -496,7 +496,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   return (
     <>
       {/* Fixed position container for the chat widget */}
-      <div className="fixed bottom-6 right-6 z-40 pointer-events-none">
+      <div className="fixed bottom-6 right-6 z-[60] pointer-events-none">
         <div className="pointer-events-auto">
           {isOpen ? (
             <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_50px_100px_rgba(3,7,18,0.9),0_0_80px_rgba(16,163,127,0.15)] backdrop-blur-2xl before:absolute before:inset-0 before:rounded-3xl before:p-[1px] before:bg-gradient-to-b before:from-[rgba(16,163,127,0.2)] before:via-transparent before:to-transparent before:-z-10">

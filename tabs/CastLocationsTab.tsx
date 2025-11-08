@@ -401,6 +401,7 @@ const GenerationView: React.FC<{
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     
     const aspectRatioClasses: { [key: string]: string } = {
         '1:1': 'aspect-square', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]',
@@ -524,6 +525,11 @@ const GenerationView: React.FC<{
                 />
     }
 
+    // Get all valid generations (including loading ones)
+    const allGenerations = item.data.generations || [];
+    const validGenerations = allGenerations.filter(g => g.url && !g.isLoading);
+    const currentImage = validGenerations[selectedImageIndex] || null;
+
     return (
         <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
             {viewingGeneration && (
@@ -540,45 +546,110 @@ const GenerationView: React.FC<{
                     }}
                 />
             )}
-            <header className="flex-shrink-0 p-6 pb-4"><Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to List</Button></header>
 
-            <main className="flex-1 overflow-y-auto px-6 pb-8">
-                <div className="w-full mx-auto">
-                    {item.data.imageUrl && (
-                        <div className="mb-8">
-                            <h4 className={`text-lg font-semibold mb-3 text-[var(--color-text-primary)]`}>Main Visual</h4>
-                            <img src={item.data.imageUrl} alt={`Main visual for ${item.data.name}`} className="rounded-lg max-w-lg mx-auto aspect-video object-cover" />
-                        </div>
-                    )}
-                    
-                    {item.data.generations && item.data.generations.length > 0 && (
-                        <div className="w-full max-w-4xl mx-auto">
-                            <ImageCarousel
-                                images={item.data.generations
-                                    .filter(g => g.url && !g.isLoading)
-                                    .map(g => ({
-                                        url: g.url!,
-                                        title: `Generated visual ${g.id}`
-                                    }))}
-                                className="w-full"
-                                aspectRatio="16/9"
-                                showArrows={true}
-                                showDots={true}
-                                enableKeyboard={true}
-                            />
+            {/* Header */}
+            <header className="flex-shrink-0 p-6 pb-4 border-b border-gray-800/50">
+                <div className="flex items-center justify-between gap-4">
+                    <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2 flex-shrink-0">
+                        <ArrowLeftIcon className="w-4 h-4" /> Back to List
+                    </Button>
+                    <h2 className="text-xl font-bold text-white truncate flex-1 text-center">{item.data.name}</h2>
+                    <div className="w-24 flex-shrink-0"></div>
+                </div>
+            </header>
 
-                            {/* Show loading generations below carousel */}
-                            {item.data.generations.some(g => g.isLoading) && (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                                    {item.data.generations.filter(g => g.isLoading).map(generation => (
-                                        <LoadingSkeleton
-                                            key={generation.id}
-                                            aspectRatio={generation.aspectRatio}
-                                            progress={generation.progress || 0}
-                                        />
-                                    ))}
+            {/* Main Content: 3-column layout */}
+            <main className="flex-1 overflow-hidden flex">
+                {/* LEFT SIDEBAR: Generated Images */}
+                <aside className="w-80 border-r border-gray-800/50 flex flex-col bg-[#0a0a0a]">
+                    <div className="p-4 border-b border-gray-800/50">
+                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generated Images</h3>
+                        <p className="text-xs text-gray-500 mt-1">{validGenerations.length} variants</p>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {/* Main image if exists */}
+                        {item.data.imageUrl && (
+                            <div
+                                className={`relative group rounded-lg overflow-hidden cursor-pointer border-2 ${!currentImage ? 'border-teal-500' : 'border-transparent hover:border-gray-600'}`}
+                                onClick={() => setSelectedImageIndex(-1)}
+                            >
+                                <img src={item.data.imageUrl} alt="Main" className="w-full aspect-video object-cover" />
+                                <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Main</div>
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <p className="text-white font-semibold text-sm">View Main Image</p>
                                 </div>
-                            )}
+                            </div>
+                        )}
+
+                        {/* Generated images */}
+                        {validGenerations.map((gen, index) => (
+                            <div
+                                key={gen.id}
+                                className={`relative group rounded-lg overflow-hidden cursor-pointer border-2 ${selectedImageIndex === index ? 'border-teal-500' : 'border-transparent hover:border-gray-600'}`}
+                                onClick={() => setSelectedImageIndex(index)}
+                            >
+                                <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full aspect-video object-cover" />
+                                <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">#{index + 1}</div>
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSetMainImage(gen.url!);
+                                            }}
+                                            className="bg-white/90 text-black text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-white transition"
+                                        >
+                                            Set Main
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingGeneration(gen);
+                                            }}
+                                            className="bg-teal-500/80 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-teal-500 transition"
+                                        >
+                                            Refine
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Loading generations */}
+                        {allGenerations.filter(g => g.isLoading).map(gen => (
+                            <div key={gen.id} className="rounded-lg overflow-hidden">
+                                <LoadingSkeleton aspectRatio={gen.aspectRatio} progress={gen.progress || 0} />
+                            </div>
+                        ))}
+
+                        {/* Empty state */}
+                        {validGenerations.length === 0 && !allGenerations.some(g => g.isLoading) && (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500 text-sm">No generations yet</p>
+                                <p className="text-gray-600 text-xs mt-1">Use the form below to create</p>
+                            </div>
+                        )}
+                    </div>
+                </aside>
+
+                {/* CENTER: Main Display */}
+                <div className="flex-1 flex items-center justify-center bg-black p-8">
+                    {currentImage ? (
+                        <img
+                            src={currentImage.url!}
+                            alt="Selected"
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                        />
+                    ) : item.data.imageUrl ? (
+                        <img
+                            src={item.data.imageUrl}
+                            alt="Main"
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                        />
+                    ) : (
+                        <div className="text-center">
+                            <p className="text-gray-500 text-lg mb-2">No image selected</p>
+                            <p className="text-gray-600 text-sm">Generate variants using the form below</p>
                         </div>
                     )}
                 </div>
