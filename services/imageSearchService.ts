@@ -60,8 +60,16 @@ export const searchImages = async (
 User Request: "${prompt}"
 ${moodboardContext ? `Current Moodboard Context: ${moodboardContext}` : ''}
 
-Generate 5-8 specific search queries that would find high-quality reference images for this request.
-Consider cinematographic aspects like composition, lighting, color palette, and mood.
+Generate 3-5 HIGHLY SPECIFIC search queries that would find exactly what the user wants.
+Be very precise and literal - if they say "haunted houses", focus on haunted houses, not general architecture.
+Add relevant descriptive terms like "dark", "spooky", "abandoned" for mood-specific searches.
+Consider cinematographic aspects like composition, lighting, color palette, and atmosphere.
+
+IMPORTANT: Make queries specific to the exact subject matter requested.
+Examples:
+- For "haunted houses": ["abandoned victorian mansion dark", "spooky haunted house night", "derelict gothic manor"]
+- For "cyberpunk city": ["neon cyberpunk cityscape night", "futuristic tokyo street lights", "blade runner style urban"]
+- For "forest sunset": ["golden hour forest cinematography", "sunset through trees atmospheric", "woodland dusk photography"]
 
 Return ONLY a JSON array of search queries, nothing else:
 ["query1", "query2", "query3", ...]`;
@@ -77,17 +85,33 @@ Return ONLY a JSON array of search queries, nothing else:
                 .trim()
         );
 
-        // Step 2: Search using Brave Search API
+        // Step 2: Search using multiple image sources for better quality and diversity
         onProgress?.({
             stage: 'searching',
-            message: 'Searching for relevant images...',
+            message: 'Searching across multiple image sources...',
             progress: 50
         });
 
         const images: SearchedImage[] = [];
 
-        // Search with Brave API for each query
-        for (let i = 0; i < Math.min(searchQueries.length, 3); i++) { // Limit to 3 queries to avoid rate limits
+        // Try Pexels first (high-quality curated photos)
+        try {
+            const pexelsImages = await searchPexels(searchQueries[0], 8);
+            images.push(...pexelsImages);
+        } catch (error) {
+            console.warn('Pexels search failed:', error);
+        }
+
+        // Then try Unsplash (professional photography)
+        try {
+            const unsplashImages = await searchUnsplash(searchQueries[0], 8);
+            images.push(...unsplashImages);
+        } catch (error) {
+            console.warn('Unsplash search failed:', error);
+        }
+
+        // Finally use Brave for additional diverse results
+        for (let i = 0; i < Math.min(searchQueries.length, 2); i++) { // Limit to 2 queries
             const query = searchQueries[i];
 
             // Add delay between requests to avoid rate limiting (except for first request)
@@ -96,7 +120,7 @@ Return ONLY a JSON array of search queries, nothing else:
             }
 
             try {
-                const response = await fetchBraveResponse(query, 4, 'strict');
+                const response = await fetchBraveResponse(query, 6, 'strict');
 
                 if (!response || !response.ok) {
                     console.warn(`Brave Search API error for query "${query}": ${response?.status ?? 'network'} ${response?.statusText ?? 'failed request'}`);
@@ -119,7 +143,7 @@ Return ONLY a JSON array of search queries, nothing else:
                                 url: result.properties.url,
                                 title: result.title || query,
                                 description: result.description || `Image related to: ${query}`,
-                                source: result.page_fetched || 'Web',
+                                source: result.page_fetched || 'Brave Search',
                                 width: result.properties.width || 1600,
                                 height: result.properties.height || 900,
                                 license: 'Web Content'
@@ -333,3 +357,87 @@ export const downloadImagesAsDataUrls = async (
 
     return results;
 };
+
+/**
+ * Search Pexels API for high-quality curated photos
+ */
+async function searchPexels(query: string, count: number): Promise<SearchedImage[]> {
+    const PEXELS_API_KEY = (import.meta as any)?.env?.VITE_PEXELS_API_KEY;
+    if (!PEXELS_API_KEY) {
+        console.warn('Pexels API key not configured');
+        return [];
+    }
+
+    try {
+        const response = await fetch(
+            `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}&orientation=landscape`,
+            {
+                headers: {
+                    'Authorization': PEXELS_API_KEY
+                }
+            }
+        );
+
+        if (!response.ok) {
+            console.warn('Pexels API error:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+
+        return (data.photos || []).map((photo: any) => ({
+            url: photo.src.large2x || photo.src.large,
+            title: photo.alt || query,
+            description: `Photo by ${photo.photographer}`,
+            source: `Pexels - ${photo.photographer}`,
+            width: photo.width,
+            height: photo.height,
+            license: 'Pexels License'
+        }));
+    } catch (error) {
+        console.error('Pexels search error:', error);
+        return [];
+    }
+}
+
+/**
+ * Search Unsplash API for professional photography
+ */
+async function searchUnsplash(query: string, count: number): Promise<SearchedImage[]> {
+    const UNSPLASH_ACCESS_KEY = (import.meta as any)?.env?.VITE_UNSPLASH_ACCESS_KEY;
+    if (!UNSPLASH_ACCESS_KEY) {
+        console.warn('Unsplash API key not configured');
+        return [];
+    }
+
+    try {
+        const response = await fetch(
+            `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&orientation=landscape`,
+            {
+                headers: {
+                    'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            console.warn('Unsplash API error:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+
+        return (data.results || []).map((photo: any) => ({
+            url: photo.urls.regular,
+            title: photo.description || photo.alt_description || query,
+            description: `Photo by ${photo.user.name}`,
+            source: `Unsplash - ${photo.user.name}`,
+            width: photo.width,
+            height: photo.height,
+            license: 'Unsplash License'
+        }));
+    } catch (error) {
+        console.error('Unsplash search error:', error);
+        return [];
+    }
+}
