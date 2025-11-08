@@ -39,11 +39,14 @@ const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
 const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography. I have reviewed the current project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
 const WELCOME_MESSAGE_NO_CONTEXT = 'Welcome. I am your Director of Photography. I can help you craft prompts, pick lenses, plan lighting, or solve cinematography questions. Load or analyze a script whenever you have one and I will adapt instantly to that story.';
 const ACCENT_HEX = '#10A37F';
-const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' => {
+const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi' => {
   const normalized = (model ?? '').toLowerCase();
   if (normalized.includes('imagen')) return 'Imagen';
   if (normalized.includes('nano') || normalized.includes('banana') || normalized.includes('gemini') || normalized.includes('flash')) {
     return 'Gemini Nano Banana';
+  }
+  if (normalized.includes('kontext') || normalized.includes('max') || normalized.includes('multi')) {
+    return 'Flux Kontext Max Multi';
   }
   return 'Flux';
 };
@@ -124,7 +127,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     const lowerInput = input.toLowerCase();
 
     // Check for generate command
-    const generateMatch = lowerInput.match(/generate\s+(\d+)\s+(flux|imagen)?\s*(?:images?|photos?)?\s*(?:of|for)?\s*(.+?)(?:\s+(\d+):(\d+))?$/i);
+    const generateMatch = lowerInput.match(/generate\s+(\d+)\s+(flux|imagen|kontext|max|multi)?\s*(?:images?|photos?)?\s*(?:of|for)?\s*(.+?)(?:\s+(\d+):(\d+))?$/i);
     if (generateMatch) {
       const count = parseInt(generateMatch[1], 10);
       const model = generateMatch[2] || 'flux';

@@ -14,7 +14,6 @@ import { TABS, TABS_CONFIG } from './constants';
 import { SunIcon, MoonIcon, RoadmapIcon } from './components/icons/Icons';
 import ScriptTab from './tabs/ScriptTab';
 import MoodboardTab from './tabs/MoodboardTab';
-import ImageGenTab from './tabs/ImageGenTab';
 import PresentationTab from './tabs/PresentationTab';
 import CastLocationsTab from './tabs/CastLocationsTab';
 import CompositingTab from './tabs/SceneAssemblerTab';
@@ -23,6 +22,7 @@ import WanTransferTab from './tabs/WanTransferTab';
 import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
+import { ThreeDWorldsTab } from './tabs/3DWorldsTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
 import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
@@ -42,6 +42,10 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
+const isSupabaseProjectId = (id?: string | null): boolean => {
+    if (!id) return false;
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id);
+};
 
 const getVideoDuration = (url: string): Promise<number> => {
     return new Promise((resolve) => {
@@ -337,7 +341,9 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       timelineClips,
     };
 
-    if (supabaseEnabled && isAuthenticated && user && currentProject) {
+    const canSyncToSupabase = supabaseEnabled && isAuthenticated && user && currentProject && isSupabaseProjectId(currentProject.id);
+
+    if (canSyncToSupabase) {
       // Save to database
       try {
         const { error } = await projectService.saveProjectData(currentProject.id, dataToSave);
@@ -968,11 +974,6 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                   onUpdateMoodboardTemplates={handleSetMoodboardTemplates}
                   scriptAnalyzed={!!scriptAnalysis}
                 />;
-      case 'image_gen':
-        return <ImageGenTab
-                  moodboard={scriptAnalysis?.moodboard}
-                  moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
-                />;
       case 'presentation':
         return <PresentationTab scriptAnalysis={scriptAnalysis} />;
       case 'cast_locations':
@@ -984,6 +985,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                   moodboard={scriptAnalysis?.moodboard}
                   moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
                 />;
+      case '3d_worlds':
+        return <ThreeDWorldsTab scriptAnalysis={scriptAnalysis} />;
       case 'compositing':
         return <CompositingTab
                   scriptAnalysis={scriptAnalysis}

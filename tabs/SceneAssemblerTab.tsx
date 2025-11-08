@@ -7,6 +7,7 @@ import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upsca
 import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon, ChevronDownIcon, DownloadIcon } from '../components/icons/Icons';
 import ThreeDWorldViewer from '../components/3DWorldViewer';
 import { generate3DWorld } from '../services/3dWorldService';
+import ImageCarousel from '../components/ImageCarousel';
 
 type Workspace = 'grid' | 'still-studio' | 'refine-studio' | 'animate-studio' | 'image-upscale-studio' | 'video-upscale-studio';
 
@@ -568,7 +569,7 @@ const StillStudio: React.FC<{
     user?: any;
 }> = ({ frame, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations, currentProject, user }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux'>('Imagen');
+    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -727,27 +728,50 @@ const StillStudio: React.FC<{
 
                     <div>
                         <h4 className={`text-lg font-semibold mb-4 text-[var(--color-text-primary)]`}>Generated Variants</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {(frame.generations || []).map((generation) => (
-                           <div key={generation.id} onClick={() => generation.url && setViewingGeneration(generation)} className={`relative group rounded-xl overflow-hidden border border-[var(--color-border-color)] hover:border-emerald-500/50 transition-all duration-300 ${aspectRatioClasses[generation.aspectRatio] || 'aspect-square'} bg-[var(--color-surface-card)] ${generation.url ? 'cursor-pointer' : ''}`}>
-                                {generation.isLoading ? <LoadingSkeleton aspectRatio={generation.aspectRatio} progress={generation.progress || 0} /> : 
-                                 generation.url ? (
-                                    <>
-                                        <img src={generation.url} alt={`Generated shot`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2">
-                                            <ExpandIcon className="w-8 h-8 text-white" />
-                                        </div>
-                                        <button onClick={(e) => handleDeleteGeneration(e, generation.id)} className="absolute top-1.5 right-1.5 p-1 bg-black/50 rounded-full text-gray-300 hover:text-red-500 hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100" aria-label="Delete"><Trash2Icon className="w-3 h-3" /></button>
-                                    </>
-                                ) : (
-                                    <div className="p-2 text-center flex flex-col items-center justify-center h-full bg-red-900/20">
-                                        <p className="text-xs text-red-400 font-semibold">Generation Failed</p>
-                                        <p className="text-[10px] text-gray-400 mt-1 line-clamp-3">{generation.error}</p>
+                        {frame.generations && frame.generations.length > 0 && (
+                            <div className="w-full max-w-4xl mx-auto">
+                                <ImageCarousel
+                                    images={frame.generations
+                                        .filter(g => g.url && !g.isLoading)
+                                        .map(g => ({
+                                            url: g.url!,
+                                            title: `Generated shot ${g.id}`
+                                        }))}
+                                    className="w-full"
+                                    aspectRatio="16/9"
+                                    showArrows={true}
+                                    showDots={true}
+                                    enableKeyboard={true}
+                                    onIndexChange={(index) => {
+                                        const validGenerations = frame.generations?.filter(g => g.url && !g.isLoading) || [];
+                                        if (validGenerations[index]) {
+                                            // Auto-select the current image for viewing
+                                            setViewingGeneration(validGenerations[index]);
+                                        }
+                                    }}
+                                />
+
+                                {/* Show loading generations below carousel */}
+                                {frame.generations.some(g => g.isLoading) && (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                                        {frame.generations.filter(g => g.isLoading).map(generation => (
+                                            <LoadingSkeleton
+                                                key={generation.id}
+                                                aspectRatio={generation.aspectRatio}
+                                                progress={generation.progress || 0}
+                                            />
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                        ))}
-                        </div>
+                        )}
+
+                        {/* Show empty state if no generations */}
+                        {(!frame.generations || frame.generations.filter(g => g.url || g.isLoading).length === 0) && (
+                            <div className={`text-center py-8 bg-[var(--color-surface-card)] border border-dashed border-[var(--color-border-color)] rounded-lg`}>
+                                <p className={`text-[var(--color-text-secondary)]`}>No variants generated yet. Use the form below to create some.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
@@ -802,8 +826,8 @@ const StillStudio: React.FC<{
                             {/* Controls row */}
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
-                                        <option>Imagen</option><option>Gemini Nano Banana</option><option>Flux</option>
+                                    <select value={model} onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi')} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
+                                        <option>Imagen</option><option>Gemini Nano Banana</option><option>Flux</option><option value="Flux Kontext Max Multi">Flux Kontext Max Multi (FAL)</option>
                                     </select>
                                     <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as string)} className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm">
                                         <option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option>

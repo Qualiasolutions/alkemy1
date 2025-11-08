@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, PaletteIcon, SearchIcon } from './components/icons/Icons';
+import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, PaletteIcon, SearchIcon, GlobeIcon } from './components/icons/Icons';
 
 export const THEME_COLORS = {
   background_primary: "#0B0B0B",
@@ -25,8 +25,8 @@ export const TABS_CONFIG = [
     tabs: [
       { id: 'script', name: 'Script', icon: React.createElement(ScriptIcon) },
       { id: 'moodboard', name: 'Moodboard', icon: React.createElement(PaletteIcon) },
-      { id: 'image_gen', name: 'Image Studio', icon: React.createElement(SearchIcon) },
       { id: 'cast_locations', name: 'Cast & Locations', icon: React.createElement(UsersIcon) },
+      { id: '3d_worlds', name: '3D Worlds', icon: React.createElement(GlobeIcon) },
       { id: 'compositing', name: 'Compositing', icon: React.createElement(ClapperboardIcon) },
       { id: 'presentation', name: 'Presentation', icon: React.createElement(PresentationIcon) },
     ],

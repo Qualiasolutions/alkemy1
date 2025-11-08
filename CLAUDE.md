@@ -60,6 +60,8 @@ LUMA_API_KEY=your_luma_api_key_here  # Optional: for Luma AI 3D generation
 REPLICATE_API_TOKEN=your_replicate_api_token_here  # Optional: for Emu3-Gen world generation
 VITE_SUPABASE_URL=your_supabase_url  # Optional: for authentication
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key  # Optional: for authentication
+FORCE_DEMO_MODE=false  # Optional: enable to force demo project on load
+USE_FALLBACK_MODE=false  # Optional: enable to use fallback content instead of AI generation
 ```
 
 **API Key Management:**
@@ -424,6 +426,59 @@ Cleared when loading a new project (see `handleLoadProject()` in App.tsx).
 
 The service is used by `App.tsx` for API key validation flow and by `aiService.ts` for authenticated API calls.
 
+### Cloud Services (Optional Supabase Integration)
+
+The app supports optional cloud persistence via Supabase with graceful degradation to localStorage:
+
+**Project Service** (`services/projectService.ts`):
+- **createProject()**: Creates new project in database or localStorage
+- **getProjects()**: Fetches user's project list
+- **saveProjectData()**: Persists script, analysis, timeline clips, and moodboard
+- **updateLastAccessed()**: Tracks project access for sorting
+- **deleteProject()**: Removes project from database
+- **getProject()**: Retrieves single project by ID
+
+**Media Service** (`services/mediaService.ts`):
+- **uploadMedia()**: Uploads images/videos to Supabase Storage
+- **getMediaUrl()**: Retrieves signed URLs for private media
+- **deleteMedia()**: Removes media from storage
+- **Bucket Organization**: `project-media` bucket for user uploads
+
+**Usage Service** (`services/usageService.ts`):
+- **logUsage()**: Tracks user actions for analytics and quotas
+- **logAIUsage()**: Monitors AI API consumption
+- **USAGE_ACTIONS**: Constants for tracked events (PROJECT_CREATED, SCRIPT_ANALYZED, IMAGE_GENERATED, etc.)
+- **getUsageStats()**: Retrieves user's usage statistics
+
+**Dual-Mode Operation**:
+- When `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are configured, the app uses cloud storage
+- Without Supabase, the app falls back to localStorage-only mode
+- All components check `isSupabaseConfigured()` before rendering auth UI
+- See `App.tsx:194-212` for service initialization pattern
+
+### Routing and Auth Pages
+
+The app uses React Router v7 for client-side routing:
+
+**Routes**:
+- `/` - Main app interface (requires API key)
+- `/reset-password` - Password reset confirmation page (`pages/ResetPasswordPage.tsx`)
+- `/auth/callback` - OAuth callback handler (`pages/AuthCallbackPage.tsx`)
+
+**Auth Flow**:
+1. User clicks "Sign In" → `AuthModal` opens
+2. On success, Supabase redirects to `/auth/callback`
+3. `AuthCallbackPage` exchanges code for session
+4. User is redirected to main app with authenticated session
+5. Password reset emails link to `/reset-password` with recovery token
+
+**Provider Hierarchy** (App.tsx:1241-1264):
+```typescript
+ThemeProvider → (AuthProvider?) → Routes → AppContent
+```
+
+AuthProvider is only rendered when Supabase is configured, preventing unnecessary API calls in localStorage-only mode.
+
 ## Dependencies
 
 Key packages used in this project:
@@ -433,6 +488,7 @@ Key packages used in this project:
 - **@supabase/auth-ui-react**: Pre-built authentication UI components
 - **three**: 3D rendering library for landscape visualization
 - **react** & **react-dom**: React 19.2.0 (latest)
+- **react-router-dom**: React Router v7 for client-side routing
 - **framer-motion**: Animation library for smooth UI transitions
 - **vite**: Build tool and dev server
 - **typescript**: Type safety (v5.8.2)
