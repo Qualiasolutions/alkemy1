@@ -577,6 +577,7 @@ const StillStudio: React.FC<{
     const [selectedLocationId, setSelectedLocationId] = useState<string>('');
     const [promptWasAdjusted, setPromptWasAdjusted] = useState(false);
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
 
     const handleGenerate = async () => {
@@ -682,8 +683,13 @@ const StillStudio: React.FC<{
         }));
     };
 
+    // Get all valid generations
+    const allGenerations = frame.generations || [];
+    const validGenerations = allGenerations.filter(g => g.url && !g.isLoading);
+    const currentImage = validGenerations[selectedImageIndex] || null;
+
     return (
-        <div className="flex flex-col h-full bg-[var(--color-background-primary)]">
+        <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
             {viewingGeneration && (
                 <FullScreenImagePlayer
                     generation={viewingGeneration}
@@ -698,81 +704,117 @@ const StillStudio: React.FC<{
                     }}
                 />
             )}
-            <header className="flex-shrink-0 p-6 pb-4 border-b border-[var(--color-border-color)]">
-                <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2">
-                    <ArrowLeftIcon className="w-4 h-4" /> Back to Compositing
-                </Button>
+
+            {/* Header */}
+            <header className="flex-shrink-0 p-6 pb-4 border-b border-gray-800/50">
+                <div className="flex items-center justify-between gap-4">
+                    <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2 flex-shrink-0">
+                        <ArrowLeftIcon className="w-4 h-4" /> Back to Compositing
+                    </Button>
+                    <h2 className="text-xl font-bold text-white truncate flex-1 text-center">Shot {frame.shot_number}</h2>
+                    <div className="w-24 flex-shrink-0"></div>
+                </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-6 pb-8">
-                 <div className="py-6">
-                    {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
-                        <div className="mb-8 p-6 bg-[var(--color-surface-card)] rounded-xl border border-[var(--color-border-color)]">
-                            <h4 className={`text-lg font-semibold mb-4 text-[var(--color-text-primary)]`}>Hero Frames</h4>
-                            <div className="flex gap-4 justify-center">
+            {/* Main Content: 3-column layout */}
+            <main className="flex-1 overflow-hidden flex">
+                {/* LEFT SIDEBAR: Generated Images */}
+                <aside className="w-80 border-r border-gray-800/50 flex flex-col bg-[#0a0a0a]">
+                    <div className="p-4 border-b border-gray-800/50">
+                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generated Shots</h3>
+                        <p className="text-xs text-gray-500 mt-1">{validGenerations.length} variants</p>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {/* Hero frames */}
+                        {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
+                            <div className="mb-4 pb-4 border-b border-gray-800/30">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Hero Frames</p>
                                 {frame.media.start_frame_url && (
-                                    <div className="text-center">
-                                        <img src={frame.media.start_frame_url} alt="Start frame" className="rounded-xl w-72 h-40 object-cover border-2 border-emerald-500 shadow-lg"/>
-                                        <p className="text-xs text-[var(--color-text-secondary)] mt-2 font-medium">Hero Frame</p>
+                                    <div className="mb-2 rounded-lg overflow-hidden border-2 border-emerald-500/50">
+                                        <img src={frame.media.start_frame_url} alt="Hero" className="w-full aspect-video object-cover" />
+                                        <div className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-1 text-center font-semibold">Hero Frame</div>
                                     </div>
                                 )}
                                 {frame.media.end_frame_url && (
-                                    <div className="text-center">
-                                        <img src={frame.media.end_frame_url} alt="End frame" className="rounded-xl w-72 h-40 object-cover border-2 border-blue-500 shadow-lg"/>
-                                        <p className="text-xs text-[var(--color-text-secondary)] mt-2 font-medium">End Frame</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    <div>
-                        <h4 className={`text-lg font-semibold mb-4 text-[var(--color-text-primary)]`}>Generated Variants</h4>
-                        {frame.generations && frame.generations.length > 0 && (
-                            <div className="w-full max-w-4xl mx-auto">
-                                <ImageCarousel
-                                    images={frame.generations
-                                        .filter(g => g.url && !g.isLoading)
-                                        .map(g => ({
-                                            url: g.url!,
-                                            title: `Generated shot ${g.id}`
-                                        }))}
-                                    className="w-full"
-                                    aspectRatio="16/9"
-                                    showArrows={true}
-                                    showDots={true}
-                                    enableKeyboard={true}
-                                    onIndexChange={(index) => {
-                                        const validGenerations = frame.generations?.filter(g => g.url && !g.isLoading) || [];
-                                        if (validGenerations[index]) {
-                                            // Auto-select the current image for viewing
-                                            setViewingGeneration(validGenerations[index]);
-                                        }
-                                    }}
-                                />
-
-                                {/* Show loading generations below carousel */}
-                                {frame.generations.some(g => g.isLoading) && (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                                        {frame.generations.filter(g => g.isLoading).map(generation => (
-                                            <LoadingSkeleton
-                                                key={generation.id}
-                                                aspectRatio={generation.aspectRatio}
-                                                progress={generation.progress || 0}
-                                            />
-                                        ))}
+                                    <div className="rounded-lg overflow-hidden border-2 border-blue-500/50">
+                                        <img src={frame.media.end_frame_url} alt="End" className="w-full aspect-video object-cover" />
+                                        <div className="bg-blue-500/20 text-blue-300 text-xs px-2 py-1 text-center font-semibold">End Frame</div>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* Show empty state if no generations */}
-                        {(!frame.generations || frame.generations.filter(g => g.url || g.isLoading).length === 0) && (
-                            <div className={`text-center py-8 bg-[var(--color-surface-card)] border border-dashed border-[var(--color-border-color)] rounded-lg`}>
-                                <p className={`text-[var(--color-text-secondary)]`}>No variants generated yet. Use the form below to create some.</p>
+                        {/* Generated shots */}
+                        {validGenerations.map((gen, index) => (
+                            <div
+                                key={gen.id}
+                                className={`relative group rounded-lg overflow-hidden cursor-pointer border-2 ${selectedImageIndex === index ? 'border-teal-500' : 'border-transparent hover:border-gray-600'}`}
+                                onClick={() => setSelectedImageIndex(index)}
+                            >
+                                <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full aspect-video object-cover" />
+                                <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">#{index + 1}</div>
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSetFrame('start', gen.url!);
+                                            }}
+                                            className="bg-emerald-500/80 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-500 transition"
+                                        >
+                                            Set Hero
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEnterRefinement(gen);
+                                            }}
+                                            className="bg-teal-500/80 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-teal-500 transition"
+                                        >
+                                            Refine
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Loading generations */}
+                        {allGenerations.filter(g => g.isLoading).map(gen => (
+                            <div key={gen.id} className="rounded-lg overflow-hidden">
+                                <LoadingSkeleton aspectRatio={gen.aspectRatio} progress={gen.progress || 0} />
+                            </div>
+                        ))}
+
+                        {/* Empty state */}
+                        {validGenerations.length === 0 && !allGenerations.some(g => g.isLoading) && (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500 text-sm">No shots generated</p>
+                                <p className="text-gray-600 text-xs mt-1">Use the form below to create</p>
                             </div>
                         )}
                     </div>
+                </aside>
+
+                {/* CENTER: Main Display */}
+                <div className="flex-1 flex items-center justify-center bg-black p-8">
+                    {currentImage ? (
+                        <img
+                            src={currentImage.url!}
+                            alt="Selected"
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                        />
+                    ) : frame.media?.start_frame_url ? (
+                        <img
+                            src={frame.media.start_frame_url}
+                            alt="Hero"
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                        />
+                    ) : (
+                        <div className="text-center">
+                            <p className="text-gray-500 text-lg mb-2">No shot selected</p>
+                            <p className="text-gray-600 text-sm">Generate variants using the form below</p>
+                        </div>
+                    )}
                 </div>
             </main>
 
