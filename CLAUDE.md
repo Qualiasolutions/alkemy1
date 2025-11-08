@@ -28,6 +28,12 @@ npm run preview
 
 **Vite Development Server**: Configured in `vite.config.ts` to run on port 3000 with host `0.0.0.0` (network accessible). Environment variables are exposed to the client via `define` config.
 
+**Build Optimization**: `vite.config.ts` includes manual chunk splitting for better caching:
+- `react-vendor`: React, React DOM, React Router DOM
+- `ui-vendor`: Framer Motion
+- `three-vendor`: Three.js
+Terser minification is configured to preserve class names and function names to avoid initialization issues.
+
 **Tailwind CSS Setup**: The project uses Tailwind CSS v3.4.17 with PostCSS and Autoprefixer. Configuration is in `tailwind.config.ts` with custom CSS variables defined in `index.css`.
 
 ## Deployment
@@ -36,17 +42,19 @@ The project is linked to Vercel:
 - **Project Name**: `alkemy1`
 - **Default URL**: `https://alkemy1.vercel.app`
 - **Vercel Config**: Project details stored in `.vercel/project.json` (do not commit)
-- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, `REPLICATE_API_TOKEN`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in Vercel dashboard under project settings
-- **Serverless Functions**: API routes in `api/` directory are deployed as Vercel serverless functions (`luma-proxy.ts` and `replicate-proxy.ts`)
+- **Environment Variables**: Set `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, `REPLICATE_API_TOKEN`, `BRAVE_SEARCH_API_KEY`, `VITE_PEXELS_API_KEY`, `VITE_UNSPLASH_ACCESS_KEY`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` in Vercel dashboard under project settings
+- **Serverless Functions**: API routes in `api/` directory are deployed as Vercel serverless functions (`luma-proxy.ts`, `replicate-proxy.ts`, `brave-proxy.ts`)
 
 The app auto-deploys on push to `main` branch. Vercel builds use `npm run build` and serve from `dist/`.
 
-**Serverless API Proxy Pattern**: The `api/luma-proxy.ts` function demonstrates the pattern for creating CORS-safe API proxies. If adding more external APIs that have CORS restrictions, follow this pattern:
+**Serverless API Proxy Pattern**: The `api/luma-proxy.ts` and `api/brave-proxy.ts` functions demonstrate the pattern for creating CORS-safe API proxies. If adding more external APIs that have CORS restrictions, follow this pattern:
 1. Create a new `.ts` file in `api/` directory
 2. Export a default handler function with `VercelRequest` and `VercelResponse` types
 3. Add CORS headers for preflight OPTIONS requests
 4. Proxy the request to the external API using server-side fetch
 5. Pass API keys from environment variables (never expose them client-side)
+
+**Development Proxy**: `vite.config.ts` includes a dev-only Brave Search proxy middleware (`createBraveProxyDevPlugin`) that serves `/api/brave-proxy` during local development, mirroring production behavior.
 
 ## Environment Configuration
 
@@ -356,40 +364,54 @@ Keep commits focused with descriptive messages. Include screenshots for UI chang
 
 FFmpeg is loaded lazily when first needed and runs entirely in-browser via WebAssembly.
 
-### 3D World Service
+### 3D World Services
 
-`services/3dWorldService.ts` integrates Luma AI Dream Machine API for text-to-3D landscape generation:
+#### Procedural World Service (Recommended)
+
+`services/proceduralWorldService.ts` provides fast, free, and mobile-friendly 3D world generation:
+
+- **generateWorld()**: Creates navigable 3D environments using AI-powered procedural generation
+- **AI-Powered Structure**: Uses Gemini to analyze prompts and generate world parameters (terrain, buildings, props, lighting)
+- **Client-Side Rendering**: Three.js renders everything locally for instant performance
+- **Real-Time Navigation**: WASD + Mouse controls for first-person exploration
+- **Zero API Costs**: Only uses existing Gemini API for structure generation (fast, cheap)
+- **Mobile Optimized**: Adaptive quality and limited pixel ratio for smooth mobile performance
+- **Procedural Techniques**: Implements noise functions for terrain, parametric geometry for buildings, shader-based skyboxes
+- **attachToContainer()**: Manages Three.js rendering loop and camera controls
+- **disposeWorld()**: Properly cleans up GPU resources to prevent memory leaks
+
+**Key Features**:
+- Instant generation (5-10 seconds total)
+- Fully navigable with keyboard/mouse controls
+- No external API dependencies beyond Gemini
+- Works offline after generation
+- Supports multiple world styles: realistic, stylized, low-poly, voxel
+
+Used in the **3D Worlds Tab** as the default generation method (marked "Fast & Free" in UI).
+
+#### Legacy 3D World Service
+
+`services/3dWorldService.ts` integrates Luma AI Dream Machine API (expensive, slow, not recommended):
 
 - **generate3DWorld()**: Generates 3D environments from text prompts
 - **API Integration**: Polls Luma API for completion (max 2 minutes) using the `ray-3` model
-- **Serverless Proxy**: Uses Vercel serverless function at `/api/luma-proxy` to avoid CORS issues (see `api/luma-proxy.ts`)
+- **Serverless Proxy**: Uses Vercel serverless function at `/api/luma-proxy` to avoid CORS issues
 - **Model Formats**: Returns GLB/GLTF models for Three.js rendering
 - **Environment Variable**: Requires `LUMA_API_KEY` to be configured in Vercel environment
-- **Helper Functions**: `download3DModel()`, `isValid3DModelUrl()` for model management
 
-Used in the **3DWorldViewer** component (`components/3DWorldViewer.tsx`) which renders 3D landscapes using Three.js.
+**Note**: This service is retained for backward compatibility but not recommended for new implementations due to high API costs and slow generation times. Use `proceduralWorldService` instead.
 
-**Important**: The Luma API proxy (`api/luma-proxy.ts`) is a Vercel serverless function that:
-- Handles CORS headers for cross-origin requests
-- Securely passes the `LUMA_API_KEY` from server environment
-- Supports GET/POST requests to Luma API endpoints
-- Returns responses with proper status codes and error handling
+### Emu World Service (Legacy - Expensive)
 
-### Emu World Service
-
-`services/emuWorldService.ts` integrates Replicate API for Emu3-Gen world generation:
+`services/emuWorldService.ts` integrates Replicate API for Emu3-Gen world generation (not recommended):
 
 - **generateEmuWorld()**: Generates 3D environments using baaivision/emu3-gen model
 - **API Integration**: Uses Replicate prediction API with polling for completion
-- **Serverless Proxy**: Uses Vercel serverless function at `/api/replicate-proxy` to avoid CORS issues (see `api/replicate-proxy.ts`)
+- **Serverless Proxy**: Uses Vercel serverless function at `/api/replicate-proxy` to avoid CORS issues
 - **Environment Variable**: Requires `REPLICATE_API_TOKEN` to be configured in Vercel environment
 - **Actions Supported**: `create_prediction`, `get_prediction`, `cancel_prediction`
 
-**Replicate API Proxy** (`api/replicate-proxy.ts`) is a Vercel serverless function that:
-- Handles CORS headers for cross-origin requests
-- Securely passes the `REPLICATE_API_TOKEN` from server environment
-- Supports action-based routing for prediction lifecycle management
-- Returns responses with proper status codes and error handling
+**Note**: Emu3-Gen via Replicate is very expensive ($0.35+ per generation) and slow (1-2 minutes). Use `proceduralWorldService` instead for free, instant generation with full navigation support.
 
 ### Wan Motion Transfer Service
 
@@ -403,6 +425,36 @@ Used in the **3DWorldViewer** component (`components/3DWorldViewer.tsx`) which r
 - **Helper Functions**: `isWanApiAvailable()` checks if API key is configured
 
 Used in the **Wan Transfer Tab** for applying motion from reference videos to generated characters. Supports 720p resolution output at 16 fps with up to 81 frames.
+
+### Image Search Service
+
+`services/imageSearchService.ts` provides AI-enhanced image search with multi-source aggregation:
+
+- **searchImages()**: Main search function that uses Gemini to generate search queries, then aggregates results from multiple APIs
+- **Multi-Source Search**: Combines results from Pexels (curated photos), Unsplash (professional photography), and Brave Search (web images)
+- **AI Query Generation**: Uses Gemini 2.0 Flash to analyze user prompts and generate 3-5 highly specific search queries
+- **Smart Rate Limiting**: Adds 500ms delays between requests to avoid API rate limits
+- **searchCinematographyReferences()**: Specialized search for cinematography, lighting, composition, and color references
+- **searchSimilarImages()**: Uses Gemini vision to analyze reference images and find visually similar content
+- **downloadImagesAsDataUrls()**: Batch downloads images as base64 data URLs for offline use
+- **API Keys**: Requires `BRAVE_SEARCH_API_KEY`, `VITE_PEXELS_API_KEY`, and `VITE_UNSPLASH_ACCESS_KEY` (all optional)
+- **Proxy Pattern**: Uses `/api/brave-proxy` serverless function to avoid exposing API keys client-side
+
+**Important**: The service gracefully degrades when API keys are unavailable. Pexels and Unsplash failures are logged but don't stop the search.
+
+Used in the **Moodboard Tab** for intelligent visual reference gathering.
+
+### Additional Services
+
+The `services/` directory includes several specialized modules:
+
+- **fluxService.ts**: Integration with Flux image generation model (alternative to Imagen)
+- **gaussianSplatService.ts**: 3D Gaussian Splatting support for advanced 3D rendering
+- **enhanced3DWorldService.ts**: Enhanced 3D world generation with additional features
+- **directorKnowledge.ts**: Cinematography knowledge base for the Director Widget (DOF calculations, lens recommendations, lighting setups)
+- **fallbackContent.ts**: Mock/fallback content for development and testing when APIs are unavailable
+
+These services follow the same architectural patterns as the core services (progress callbacks, error handling, API key management).
 
 ### Command History Service
 
@@ -504,7 +556,7 @@ Key packages used in this project:
 
 ## Notes for Future Development
 
-- **Testing**: No automated test suite currently wired. When adding tests, colocate them per feature (e.g., `tabs/FramesTab.test.tsx`)
+- **Testing**: Playwright is installed as a dev dependency (`@playwright/test@^1.56.1`) for end-to-end testing. No test suite is currently implemented. When adding tests, consider using Playwright for integration/E2E tests and colocate them per feature (e.g., `tabs/FramesTab.spec.ts`)
 - **API Keys**: Never commit secrets. Use `.env.local` for local development. The app supports `GEMINI_API_KEY`, `FLUX_API_KEY`, `LUMA_API_KEY`, `WAN_API_KEY`, `REPLICATE_API_TOKEN`, and Supabase keys
 - **Storage Optimization**: The serialization logic in `getSerializableState()` strips large generated variants to avoid localStorage quota issues. If adding new generation arrays, update this function. Timeline clips with blob URLs are converted to base64 for persistence and back to blob URLs on load.
 - **Video Duration**: `getVideoDuration()` helper in App.tsx extracts metadata for timeline clips. It defaults to 5 seconds on error.
@@ -531,7 +583,19 @@ Key packages used in this project:
 
 ## Recent Enhancements
 
-### DirectorWidget Premium UI (Latest)
+### Authentication Flow Improvements (Latest - 2025-11-08)
+Recent fixes to improve the authentication and project initialization experience:
+- **Automatic Project Creation**: After successful authentication, a new project is automatically created for the user (commit 80e1e6a)
+- **Blank Homepage Fix**: Resolved issue where authenticated users would see a blank homepage instead of the WelcomeScreen (commit a14002c)
+- **Proper Project Detection**: Fixed logic that checks for active project content (empty strings are now treated as no project)
+- **Video Blob URL Handling**: Resolved video generation errors related to Blob URL creation (commit 7502bd5)
+
+### UI/UX Redesigns
+- **StillStudio & AnimateStudio**: Professional layouts with improved visual hierarchy (commit 13d0e36)
+- **Landing Page**: Green aesthetic theme with elegant top-right auth buttons and documented video grid structure (commits f5d2815, 37d9f55, 39fe646)
+- **Canvas Rendering**: Graceful error handling for missing canvas elements (commit b0d54d8)
+
+### DirectorWidget Premium UI
 The DirectorWidget has been enhanced with a premium glassmorphic UI featuring:
 - **Modern Chat Interface**: Gradient backgrounds, glassmorphism effects, and smooth animations
 - **Enhanced Command System**: Extended natural language parsing for technical cinematography queries
@@ -540,7 +604,9 @@ The DirectorWidget has been enhanced with a premium glassmorphic UI featuring:
 - **Technical Calculations**: Real-time DOF calculations with hyperfocal distance formulas
 - **Command Hints**: Contextual examples displayed in the input footer
 
-The "Send" button has been fixed to use proper Framer Motion integration and improved disabled state styling.
+### Safety & Fallback Improvements
+- **FLUX Fallback**: Automatic fallback to FLUX model when Imagen encounters PROHIBITED_CONTENT safety errors (commit f3029f4)
+- **Content Safety**: Enhanced prompt engineering to reduce safety blocks while maintaining SFW content generation
 ## Troubleshooting
 
 ### Production Deployment Issues

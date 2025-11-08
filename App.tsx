@@ -251,51 +251,19 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   // --- Project State Management ---
-  const [projectState, setProjectState] = useState<any>(() => {
-    // Try to load from localStorage first
-    try {
-      const saved = localStorage.getItem(PROJECT_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Convert base64 back to blob URLs for timeline clips if needed
-        if (parsed.timelineClips && parsed.timelineClips.length > 0) {
-          parsed.timelineClips = parsed.timelineClips.map((clip: any) => {
-            if (clip._isBlobConverted && clip.url && clip.url.startsWith('data:')) {
-              const byteString = atob(clip.url.split(',')[1]);
-              const mimeString = clip.url.split(',')[0].split(':')[1].split(';')[0];
-              const ab = new ArrayBuffer(byteString.length);
-              const ia = new Uint8Array(ab);
-              for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-              }
-              const blob = new Blob([ab], { type: mimeString });
-              return { ...clip, url: URL.createObjectURL(blob), _isBlobConverted: undefined };
-            }
-            return clip;
-          });
-        }
-        console.log('[Initialization] Loaded project from localStorage');
-        return parsed;
-      }
-    } catch (e) {
-      console.warn('[Initialization] Failed to load from localStorage:', e);
+  // Initialize with empty state - projects will be loaded from Supabase for authenticated users
+  const [projectState, setProjectState] = useState<any>({
+    scriptContent: null,
+    scriptAnalysis: null,
+    timelineClips: [],
+    roadmapBlocks: [],
+    ui: {
+      leftWidth: 280,
+      rightWidth: 300,
+      timelineHeight: 220,
+      zoom: 1,
+      playhead: 0,
     }
-
-    // Initialize with default state (no active project)
-    console.log('[Initialization] Starting with empty state (will show WelcomeScreen)');
-    return {
-      scriptContent: null,
-      scriptAnalysis: null,
-      timelineClips: [],
-      roadmapBlocks: [],
-      ui: {
-        leftWidth: 280,
-        rightWidth: 300,
-        timelineHeight: 220,
-        zoom: 1,
-        playhead: 0,
-      }
-    };
   });
 
   const { scriptContent, scriptAnalysis, timelineClips, roadmapBlocks } = projectState;
@@ -323,17 +291,35 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     }
   }, [isAuthenticated, user, supabaseEnabled, projectService]);
 
-  // Load projects when user authenticates
+  // Load projects when user authenticates and auto-load most recent project
   useEffect(() => {
-    if (isAuthenticated && user) {
-      loadUserProjects();
+    if (isAuthenticated && user && supabaseEnabled) {
+      console.log('[Auth] User authenticated, loading projects from Supabase');
+
+      // Clear localStorage when user signs in - we'll use Supabase from now on
+      localStorage.removeItem(PROJECT_STORAGE_KEY);
+
+      loadUserProjects().then(async () => {
+        // After loading project list, auto-load the most recent project
+        const { projects } = await projectService.getProjects(user.id);
+        if (projects && projects.length > 0) {
+          // Sort by last_accessed_at and load the most recent
+          const mostRecent = projects.sort((a, b) =>
+            new Date(b.last_accessed_at || b.updated_at).getTime() -
+            new Date(a.last_accessed_at || a.updated_at).getTime()
+          )[0];
+
+          console.log('[Auth] Auto-loading most recent project:', mostRecent.title);
+          await loadProject(mostRecent);
+        }
+      });
     } else {
       setProjectList([]);
       setCurrentProject(null);
     }
-  }, [isAuthenticated, user, loadUserProjects]);
+  }, [isAuthenticated, user, supabaseEnabled, loadUserProjects]);
 
-  // Save project to database or localStorage
+  // Save project to database ONLY (no localStorage for authenticated users)
   const saveProject = useCallback(async (projectData?: any) => {
     const dataToSave = projectData || {
       scriptContent,
@@ -341,10 +327,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       timelineClips,
     };
 
-    const canSyncToSupabase = supabaseEnabled && isAuthenticated && user && currentProject && isSupabaseProjectId(currentProject.id);
-
-    if (canSyncToSupabase) {
-      // Save to database
+    // Authenticated users MUST use Supabase - no localStorage fallback
+    if (supabaseEnabled && isAuthenticated && user && currentProject && isSupabaseProjectId(currentProject.id)) {
       try {
         const { error } = await projectService.saveProjectData(currentProject.id, dataToSave);
         if (error) throw error;
@@ -359,19 +343,15 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       } catch (error) {
         console.error('[Database] Failed to save project:', error);
         showToast('Failed to save project to cloud', 'error');
-
-        // Fallback to localStorage
-        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
+        throw error; // Don't fallback to localStorage
       }
+    } else if (!isAuthenticated) {
+      // Only use localStorage for anonymous/non-authenticated users
+      console.warn('[LocalStorage] Using localStorage for anonymous user - please sign in to save to cloud');
+      showToast('Sign in to save your projects to the cloud!', 'warning');
     } else {
-      // Fallback to localStorage
-      try {
-        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(dataToSave));
-        console.log('[LocalStorage] Project saved successfully');
-      } catch (error) {
-        console.error('[LocalStorage] Failed to save project:', error);
-        showToast('Failed to save project', 'error');
-      }
+      console.error('[Save] Invalid project state - cannot save');
+      showToast('Please create a project first', 'error');
     }
   }, [scriptContent, scriptAnalysis, timelineClips, supabaseEnabled, isAuthenticated, user, currentProject, projectService, showToast]);
 
@@ -414,6 +394,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
     };
 
+    // Authenticated users create projects in Supabase database
     if (supabaseEnabled && isAuthenticated && user) {
       try {
         const { project, error } = await projectService.createProject(user.id, title);
@@ -433,18 +414,19 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           });
         }
 
+        console.log('[Database] New project created:', project.title);
         showToast('New project created successfully!', 'success');
         return project;
       } catch (error) {
         console.error('Failed to create project:', error);
-        showToast('Failed to create project', 'error');
-        // Don't return here - fall through to localStorage fallback
+        showToast('Failed to create project in database', 'error');
+        throw error; // Don't fallback - user must fix their Supabase connection
       }
     }
 
-    // Fallback to localStorage (for non-authenticated users or if database save fails)
-    const newProject = {
-      id: `local-${Date.now()}`,
+    // Anonymous users can use local state (but it won't persist)
+    const tempProject = {
+      id: `temp-${Date.now()}`,
       user_id: 'anonymous',
       title,
       script_content: '',
@@ -459,18 +441,12 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       last_accessed_at: new Date().toISOString(),
     };
 
-    setCurrentProject(newProject);
+    setCurrentProject(tempProject);
     setProjectState(newProjectState);
 
-    // Save to localStorage immediately
-    try {
-      localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(newProjectState));
-    } catch (e) {
-      console.error('Failed to save project to localStorage:', e);
-    }
-
-    showToast('New project started!', 'success');
-    return newProject;
+    console.log('[Temporary] Created temporary project (will not persist). Sign in to save!');
+    showToast('Temporary project created. Sign in to save your work!', 'warning');
+    return tempProject;
   }, [supabaseEnabled, isAuthenticated, user, projectService, loadUserProjects, usageService, showToast]);
 
   const setScriptContent = (content: string | null) => setProjectState((p: any) => ({...p, scriptContent: content}));
@@ -698,8 +674,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       loadProjectInputRef.current?.click();
   };
 
-  // Load demo project
-  const handleTryDemo = () => {
+  // Load demo project (creates a temporary project with demo data)
+  const handleTryDemo = async () => {
       const demoData = DEMO_PROJECT_DATA();
       const demoState = {
           scriptContent: DEMO_SCRIPT,
@@ -707,14 +683,53 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           timelineClips: [],
           ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
       };
-      setProjectState(demoState);
-      setActiveTab('script');
-      try {
-          localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(demoState));
-      } catch (e) {
-          console.error("Failed to save demo project", e);
+
+      if (supabaseEnabled && isAuthenticated && user) {
+        // Create actual project in database with demo data
+        try {
+          const { project, error } = await projectService.createProject(user.id, 'Demo: The Inheritance');
+          if (error) throw error;
+
+          setCurrentProject(project);
+          setProjectState(demoState);
+
+          // Save demo data to the project
+          await projectService.saveProjectData(project.id, demoState);
+
+          // Refresh project list
+          await loadUserProjects();
+
+          console.log('[Database] Demo project created in database');
+          showToast("Demo project loaded! Explore all features with sample data.", 'success');
+        } catch (error) {
+          console.error('Failed to create demo project:', error);
+          showToast('Failed to create demo project', 'error');
+        }
+      } else {
+        // Anonymous users get temporary demo project
+        const tempDemoProject = {
+          id: `demo-${Date.now()}`,
+          user_id: 'anonymous',
+          title: 'Demo: The Inheritance',
+          script_content: DEMO_SCRIPT,
+          script_analysis: demoData,
+          timeline_clips: [],
+          moodboard_data: null,
+          project_settings: {},
+          is_public: false,
+          shared_with: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_accessed_at: new Date().toISOString(),
+        };
+
+        setCurrentProject(tempDemoProject);
+        setProjectState(demoState);
+        setActiveTab('script');
+
+        console.log('[Temporary] Demo project loaded (will not persist). Sign in to save!');
+        showToast("Demo project loaded! Sign in to save your changes.", 'warning');
       }
-      showToast("Demo project loaded! Explore all features with sample data.", 'success');
   };
 
   // Auto-save to database or localStorage every 2 minutes
@@ -1084,10 +1099,21 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   // Show welcome screen if no project exists
   // FIX: Check for actual content, not just non-null values
+  // Also handle authenticated user redirect - they should always have a project
   const hasActiveProject = (scriptContent !== null && scriptContent !== '') || scriptAnalysis;
+
+  // If authenticated user has no active project, create one for them automatically
+  const [autoProjectCreated, setAutoProjectCreated] = useState(false);
+  useEffect(() => {
+    if (isAuthenticated && !hasActiveProject && !autoProjectCreated && isKeyReady) {
+      console.log('[Auth] Creating new project for authenticated user');
+      setAutoProjectCreated(true);
+      createNewProject('Untitled Project');
+    }
+  }, [isAuthenticated, hasActiveProject, autoProjectCreated, isKeyReady, createNewProject]);
+
   if (!hasActiveProject) {
-    // Show WelcomeScreen regardless of authentication status
-    // Users can use local storage mode without authentication
+    // Show WelcomeScreen for non-authenticated users or while project is being created
     return (
       <>
         <WelcomeScreen
@@ -1123,8 +1149,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
             onSuccess={async () => {
               setShowAuthModal(false);
               showToast('Successfully signed in!', 'success');
-              // Create a new project for the newly authenticated user
-              await createNewProject('Untitled Project');
+              // Project will be auto-created by the useEffect above
             }}
           />
         )}
