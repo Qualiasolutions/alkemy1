@@ -231,3 +231,100 @@ export interface Project {
   updated_at: string;
   last_accessed_at: string;
 }
+
+// Analytics Types (Epic 6)
+
+export interface FlaggedShot {
+  frameId: string;
+  sceneId: string;
+  issue: 'color-inconsistency' | 'lighting-incoherence' | 'look-bible-drift';
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+  suggestion: string;
+  autoFixCommand?: string;
+}
+
+export interface ImprovementSuggestion {
+  id: string;
+  issue: string;
+  impact: string;
+  suggestion: string;
+  category: 'color' | 'lighting' | 'look-bible' | 'cost' | 'time' | 'error' | 'workflow';
+  autoFixCommand?: string;
+}
+
+export interface SceneQualityReport {
+  sceneId: string;
+  sceneName: string;
+  overallScore: number;
+  colorConsistency: number;
+  lightingCoherence: number;
+  lookBibleAdherence: number;
+  flaggedShots: string[];
+}
+
+export interface CreativeQualityReport {
+  projectId: string;
+  overallScore: number;
+  colorConsistency: number;
+  lightingCoherence: number;
+  lookBibleAdherence: number;
+  sceneReports: SceneQualityReport[];
+  flaggedShots: FlaggedShot[];
+  improvementSuggestions: ImprovementSuggestion[];
+  analyzedAt: string;
+}
+
+export interface TechnicalPerformanceMetrics {
+  projectId: string;
+  userId: string;
+  renderTimes: {
+    imageGeneration: { model: string; avgTime: number; count: number }[];
+    videoAnimation: { avgTime: number; count: number };
+    timelineExport: { avgTime: number; count: number };
+    audioGeneration: { type: 'music' | 'dialogue' | 'effects'; avgTime: number; count: number }[];
+  };
+  apiCosts: {
+    imageGenerationCost: number;
+    videoGenerationCost: number;
+    audioGenerationCost: number;
+    totalProjectCost: number;
+  };
+  errorRates: {
+    failedGenerations: { type: 'image' | 'video' | 'audio'; count: number; reasons: string[] }[];
+    apiErrors: { type: string; count: number }[];
+    safetyBlocks: number;
+  };
+  efficiencyMetrics: {
+    generationsPerHour: number;
+    successRate: number;
+    avgRetriesPerSuccess: number;
+    queueWaitTimes: number[];
+  };
+  lastUpdated: string;
+}
+
+export interface OptimizationSuggestion extends ImprovementSuggestion {
+  potentialSavings?: number;
+  estimatedTimeReduction?: number;
+}
+
+export interface ProjectPerformanceComparison {
+  projectId: string;
+  projectName: string;
+  totalCost: number;
+  totalTime: number;
+  errorRate: number;
+  successRate: number;
+  completedAt: string;
+}
+
+export type QualityLevel = 'excellent' | 'good' | 'fair' | 'needs-improvement';
+
+export interface ContinuityIssue {
+  type: 'lighting-jump' | 'costume-change' | 'spatial-mismatch' | 'prop-continuity' | 'other';
+  location: string;
+  description: string;
+  severity: 'critical' | 'warning' | 'info';
+  affectedFrames: string[];
+}
