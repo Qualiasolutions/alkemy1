@@ -1,0 +1,53 @@
+Technology Name,Category,Visual Quality (Rating /10),Visual Quality Points (25%),FPS (Desktop GPU),Performance Points (25%),Interactivity (Features),Interactivity Points (15%),Export Format,Export Points (15%),Gen Speed (sec),Gen Speed Points (10%),Infrastructure,Infra Points (10%),Total Score (100),Recommendation Tier,Notes
+World Labs Service (Existing),Browser-based,,,,,,,,,,,,,,,
+Enhanced Procedural Service,Browser-based,,,,,,,,,,,,,,,
+Unreal Pixel Streaming,Server-based,,,,,,,,,,,,,,,
+Unreal WebAssembly,Browser-based,,,,,,,,,,,,,,,
+Gaussian Splatting (Luma),API-based,,,,,,,,,,,,,,,
+Matterport-Style,Image-based,,,,,,,,,,,,,,,
+
+SCORING RUBRIC,,,,,,,,,,,,,,,
+Visual Quality (25%),"Rating 9-10 = 22-25 pts, 7-8 = 17-21 pts, 5-6 = 12-16 pts, <5 = 0-11 pts",,,,,,,,,,,,,,
+Performance (25%),">60fps = 25 pts, >45fps = 20 pts, >30fps = 15 pts, >15fps = 10 pts, <15fps = 0 pts",,,,,,,,,,,,,,
+Interactivity (15%),"All 3 features = 15 pts, 2 features = 10 pts, 1 feature = 5 pts, 0 features = 0 pts (Camera + Marking + Lighting)",,,,,,,,,,,,,,
+Export Compatibility (15%),"GLTF/JSON export = 15 pts, Partial export = 10 pts, Incompatible = 0 pts",,,,,,,,,,,,,,
+Generation Speed (10%),"<30s = 10 pts, 30-60s = 7 pts, 60-120s = 4 pts, >120s = 0 pts",,,,,,,,,,,,,,
+Infrastructure (10%),"Vercel serverless = 10 pts, Requires server = 5 pts, Complex (GPU servers) = 0 pts",,,,,,,,,,,,,,
+
+RECOMMENDATION TIERS,,,,,,,,,,,,,,,
+Tier 1 (Recommended),"Total Score ≥70, 60fps on desktop, camera marking working, Vercel compatible",,,,,,,,,,,,,,
+Tier 2 (Viable with Caveats),"Total Score ≥50, meets most requirements, may need infrastructure or quality trade-offs",,,,,,,,,,,,,,
+Tier 3 (Not Recommended),"Total Score <50, fails FPS or compatibility requirements, too complex/expensive",,,,,,,,,,,,,,
+
+TEST ENVIRONMENTS,,,,,,,,,,,,,,,
+Environment 1,Industrial Warehouse (interior),50m x 30m x 10m high,"Props: crates, pallets, machinery",Materials: metal/concrete/glass,,,,,,,,,,,
+Environment 2,Urban Street (exterior),100m length with buildings,"Props: vehicles, storefronts, signage",Materials: concrete/glass/asphalt,,,,,,,,,,,
+Environment 3,Natural Forest (outdoor),50m diameter clearing,"Features: trees, undergrowth, terrain",Materials: wood/leaves/dirt/moss,,,,,,,,,,,
+
+LIGHTING PRESETS (test all 5 for each environment),,,,,,,,,,,,,,,
+Preset 1,Golden Hour,Warm sunlight (3500K),Azimuth 270° Elev 10-15°,Long shadows,,,,,,,,,,,
+Preset 2,Overcast,Diffused daylight (6500K),No direct sun,Minimal shadows,,,,,,,,,,,
+Preset 3,Neon Night,Artificial colored lighting,Cyan/magenta neons,High contrast,,,,,,,,,,,
+Preset 4,Studio,3-point lighting setup,Key/Fill/Rim lights,Professional control,,,,,,,,,,,
+Preset 5,Dramatic Low-Key,Film noir style (4000K),Hard directional light,Deep shadows,,,,,,,,,,,
+
+CAMERA POSITIONS TO MARK (for each environment),,,,,,,,,,,,,,,
+Position A,Wide shot / Establishing,Full environment visible,,,,,,,,,,,,,
+Position B,Medium shot / Character interaction,Partial environment,,,,,,,,,,,,,
+Position C,Close-up / Dramatic reveal,Focused detail,,,,,,,,,,,,,
+
+PERFORMANCE BENCHMARKS,,,,,,,,,,,,,,,
+Hardware Tier 1,"Desktop RTX 3060, 16GB RAM",Target: >60fps,,,,,,,,,,,,,
+Hardware Tier 2,"Laptop M1 Max / RTX 3070 Mobile",Target: >45fps,,,,,,,,,,,,,
+Hardware Tier 3,"Laptop Integrated GPU, 8GB RAM",Target: >30fps or quality degradation,,,,,,,,,,,,,
+
+USER TESTING (5+ filmmakers),,,,,,,,,,,,,,,
+Navigation Usability,"Rate WASD+mouse controls (1-10)",Target: >8/10,,,,,,,,,,,,,
+Camera Marking Workflow,"Rate ease of marking positions (1-10)",Target: >8/10,,,,,,,,,,,,,
+Lighting Preset Quality,"Rate lighting changes (1-10)",Target: >8/10,,,,,,,,,,,,,
+Overall Experience,"Would you use for filmmaking? (Yes/No)",Target: >80% Yes,,,,,,,,,,,,,
+
+COST PROJECTIONS,,,,,,,,,,,,,,,
+Monthly Cost (1k generations),"API cost + Infrastructure cost",,,,,,,,,,,,,
+Monthly Cost (10k generations),"API cost + Infrastructure cost",,,,,,,,,,,,,
+Monthly Cost (100k generations),"API cost + Infrastructure cost",,,,,,,,,,,,,
