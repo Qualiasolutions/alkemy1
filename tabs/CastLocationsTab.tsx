@@ -7,6 +7,7 @@ import { generateStillVariants, refineVariant, upscaleImage } from '../services/
 import { useTheme } from '../theme/ThemeContext';
 import { motion } from 'framer-motion';
 import CharacterIdentityModal from '../components/CharacterIdentityModal';
+import { CharacterIdentityTestPanel } from '../components/CharacterIdentityTestPanel';
 import { getCharacterIdentityStatus } from '../services/characterIdentityService';
 import ImageCarousel from '../components/ImageCarousel';
 
@@ -404,6 +405,11 @@ const GenerationView: React.FC<{
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [activeTab, setActiveTab] = useState<'main' | 'identity'>('main');
+
+    // Check if this is a character (not a location)
+    const isCharacter = item.type === 'character';
+    const character = isCharacter ? (item.data as AnalyzedCharacter) : null;
     
     const aspectRatioClasses: { [key: string]: string } = {
         '1:1': 'aspect-square', '16:9': 'aspect-video', '9:16': 'aspect-[9/16]',
@@ -551,19 +557,73 @@ const GenerationView: React.FC<{
 
             {/* Header */}
             <header className="flex-shrink-0 p-6 pb-4 border-b border-gray-800/50">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 mb-4">
                     <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2 flex-shrink-0">
                         <ArrowLeftIcon className="w-4 h-4" /> Back to List
                     </Button>
                     <h2 className="text-xl font-bold text-white truncate flex-1 text-center">{item.data.name}</h2>
                     <div className="w-24 flex-shrink-0"></div>
                 </div>
+
+                {/* Tab Navigation (only show for characters) */}
+                {isCharacter && (
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setActiveTab('main')}
+                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                                activeTab === 'main'
+                                    ? 'bg-teal-500 text-white shadow-lg'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                            }`}
+                        >
+                            Main Image
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('identity')}
+                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 ${
+                                activeTab === 'identity'
+                                    ? 'bg-purple-500 text-white shadow-lg'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                            }`}
+                        >
+                            <UploadIcon className="w-4 h-4" />
+                            Character Identity
+                        </button>
+                    </div>
+                )}
             </header>
 
-            {/* Main Content: 3-column layout */}
-            <main className="flex-1 overflow-hidden flex">
-                {/* LEFT SIDEBAR: Generated Images */}
-                <aside className="w-80 border-r border-gray-800/50 flex flex-col bg-[#0a0a0a]">
+            {/* Main Content: Conditional based on active tab */}
+            {activeTab === 'identity' && isCharacter && character ? (
+                <main className="flex-1 overflow-y-auto p-6">
+                    <CharacterIdentityTestPanel
+                        character={character}
+                        onTestsComplete={(tests) => {
+                            // Update character with new tests
+                            onUpdateBatch(prev => ({
+                                ...prev,
+                                identity: {
+                                    ...(prev as AnalyzedCharacter).identity!,
+                                    tests
+                                }
+                            }));
+                        }}
+                        onApprovalChange={(approved) => {
+                            // Update character approval status
+                            onUpdateBatch(prev => ({
+                                ...prev,
+                                identity: {
+                                    ...(prev as AnalyzedCharacter).identity!,
+                                    approvalStatus: approved ? 'approved' : 'rejected'
+                                }
+                            }));
+                        }}
+                    />
+                </main>
+            ) : (
+                <main className="flex-1 overflow-hidden flex">
+                    {/* LEFT SIDEBAR: Generated Images */}
+                    <aside className="w-80 border-r border-gray-800/50 flex flex-col bg-[#0a0a0a]">
                     <div className="p-4 border-b border-gray-800/50">
                         <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generated Images</h3>
                         <p className="text-xs text-gray-500 mt-1">{validGenerations.length} variants</p>
@@ -661,8 +721,11 @@ const GenerationView: React.FC<{
                         </div>
                     )}
                 </div>
-            </main>
+                </main>
+            )}
 
+            {/* Footer (only show for main tab, not identity tab) */}
+            {activeTab === 'main' && (
             <footer className="flex-shrink-0 p-6 pt-4 z-20 bg-gradient-to-t from-[#0B0B0B] via-[#0B0B0B]/95 to-transparent border-t border-gray-800/50">
                  <motion.div
                     initial={{ y: 20, opacity: 0 }}
@@ -781,6 +844,7 @@ const GenerationView: React.FC<{
                     </div>
                  </motion.div>
             </footer>
+            )}
         </div>
     );
 };
