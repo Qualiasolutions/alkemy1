@@ -84,21 +84,34 @@ class ProjectServiceImpl implements ProjectService {
     }
   }
 
-  async getProjects(userId: string): Promise<{ projects: Project[] | null; error: any }> {
+  async getProjects(userId: string, limit: number = 50): Promise<{ projects: Project[] | null; error: any }> {
     if (!this.isConfigured) {
       return { projects: null, error: new Error('Supabase is not configured') };
     }
 
     try {
+      // Fetch only essential fields to avoid timeout on large script_analysis JSONB
+      // Full project data is loaded on-demand when opening a specific project
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select('id, user_id, title, is_public, created_at, updated_at, last_accessed_at')
         .eq('user_id', userId)
-        .order('updated_at', { ascending: false });
+        .order('last_accessed_at', { ascending: false, nullsFirst: false })
+        .limit(limit);
 
       if (error) throw error;
 
-      const projects = data.map(project => this.transformDbProject(project));
+      // Transform lightweight project list (missing full data, will be loaded on-demand)
+      const projects = data.map(project => ({
+        ...project,
+        script_content: null,
+        script_analysis: null,
+        timeline_clips: null,
+        moodboard_data: null,
+        project_settings: {},
+        shared_with: [],
+      } as Project));
+
       return { projects, error: null };
     } catch (error) {
       console.error('Error getting projects:', error);
