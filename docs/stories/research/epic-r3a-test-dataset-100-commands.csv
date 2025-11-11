@@ -1,0 +1,131 @@
+Category,Command ID,Expected Transcription,Command Type,Film Terminology Used,Difficulty Level,Test Notes
+
+# CATEGORY 1: SHOT GENERATION COMMANDS (30 total)
+Shot Generation,CMD-001,Generate a close-up of Sarah with 85mm lens,Image Generation,"close-up, 85mm lens",Medium,"Tests focal length recognition"
+Shot Generation,CMD-002,Create a wide shot of the warehouse with golden hour lighting,Image Generation,"wide shot, golden hour",Easy,"Tests lighting term recognition"
+Shot Generation,CMD-003,Make 3 variations of John in profile view with f/1.4,Image Generation,"profile view, f/1.4",Hard,"Tests aperture notation (f-stop with decimal)"
+Shot Generation,CMD-004,Show me a bird's eye view of the street scene,Image Generation,"bird's eye view",Medium,"Tests camera angle terminology"
+Shot Generation,CMD-005,Generate an over-the-shoulder shot of the conversation,Image Generation,"over-the-shoulder shot",Medium,"Tests framing terminology"
+Shot Generation,CMD-006,Create a Dutch angle shot of the alley at night,Image Generation,"Dutch angle",Medium,"Tests specialized camera angle"
+Shot Generation,CMD-007,Generate 5 flux images of Elena in 16:9 aspect ratio,Image Generation,"flux, 16:9 aspect ratio",Medium,"Tests model name and aspect ratio"
+Shot Generation,CMD-008,Make a tracking shot following the car with 35mm lens,Image Generation,"tracking shot, 35mm lens",Medium,"Tests camera movement + focal length"
+Shot Generation,CMD-009,Create an extreme close-up of the character's eyes with 100mm macro,Image Generation,"extreme close-up, 100mm macro",Hard,"Tests shot type + specialized lens"
+Shot Generation,CMD-010,Generate a cowboy shot of the detective with shallow depth of field,Image Generation,"cowboy shot, shallow depth of field",Hard,"Tests specialized framing + DOF term"
+Shot Generation,CMD-011,Show me a low angle shot with f/2.8 aperture,Image Generation,"low angle shot, f/2.8",Medium,"Tests angle + aperture notation"
+Shot Generation,CMD-012,Create 4 imagen variations of the cafe location in 3:2,Image Generation,"imagen, 3:2",Medium,"Tests model name + aspect ratio"
+Shot Generation,CMD-013,Generate a two-shot of Anna and Marcus with 50mm lens,Image Generation,"two-shot, 50mm",Medium,"Tests framing term + focal length"
+Shot Generation,CMD-014,Make a high angle establishing shot with 24mm wide angle,Image Generation,"high angle, establishing shot, 24mm wide angle",Hard,"Tests multiple technical terms"
+Shot Generation,CMD-015,Create a rack focus shot from foreground to background,Image Generation,"rack focus",Hard,"Tests camera technique term"
+Shot Generation,CMD-016,Generate a medium shot with natural lighting at f/4,Image Generation,"medium shot, natural lighting, f/4",Medium,"Tests shot type + lighting + aperture"
+Shot Generation,CMD-017,Show me a point of view shot from the driver's perspective,Image Generation,"point of view shot",Medium,"Tests POV terminology"
+Shot Generation,CMD-018,Create a silhouette shot during magic hour with backlight,Image Generation,"silhouette, magic hour, backlight",Hard,"Tests lighting terminology"
+Shot Generation,CMD-019,Generate a Steadicam shot moving through the corridor,Image Generation,"Steadicam",Medium,"Tests equipment name"
+Shot Generation,CMD-020,Make 3 kontext max images of the warehouse in 21:9,Image Generation,"kontext max, 21:9",Hard,"Tests alternative model + wide aspect"
+Shot Generation,CMD-021,Create a whip pan transition shot at 180 degree shutter,Image Generation,"whip pan, 180 degree shutter",Very Hard,"Tests movement + shutter angle"
+Shot Generation,CMD-022,Generate a tilt-shift miniature effect of the city,Image Generation,"tilt-shift, miniature effect",Hard,"Tests specialized lens technique"
+Shot Generation,CMD-023,Show me a canted angle shot with film grain texture,Image Generation,"canted angle, film grain",Medium,"Tests angle + post-processing term"
+Shot Generation,CMD-024,Create a dolly zoom shot with vertigo effect,Image Generation,"dolly zoom, vertigo effect",Hard,"Tests advanced camera technique"
+Shot Generation,CMD-025,Generate a symmetrical composition shot with one-point perspective,Image Generation,"symmetrical composition, one-point perspective",Hard,"Tests compositional terms"
+Shot Generation,CMD-026,Make an insert shot of the watch with 85mm at f/1.8,Image Generation,"insert shot, 85mm, f/1.8",Hard,"Tests shot type + focal + aperture"
+Shot Generation,CMD-027,Create a moonlight scene with blue hour color temperature,Image Generation,"moonlight, blue hour, color temperature",Hard,"Tests lighting + color terminology"
+Shot Generation,CMD-028,Generate a worm's eye view with 14mm fisheye lens,Image Generation,"worm's eye view, 14mm fisheye",Hard,"Tests extreme angle + specialized lens"
+Shot Generation,CMD-029,Show me a cross-dissolve transition with lens flare,Image Generation,"cross-dissolve, lens flare",Medium,"Tests transition + optical effect"
+Shot Generation,CMD-030,Create a handheld camera shot with natural shake,Image Generation,"handheld camera, natural shake",Easy,"Tests equipment style"
+
+# CATEGORY 2: TECHNICAL QUERIES (30 total)
+Technical Query,CMD-031,What's the hyperfocal distance for f/2.8 at 5 meters?,Calculation,"hyperfocal distance, f/2.8",Hard,"Tests aperture recognition in question"
+Technical Query,CMD-032,Calculate depth of field for 50mm at f/1.8 focusing at 3 meters,Calculation,"depth of field, 50mm, f/1.8",Hard,"Tests DOF calculation with decimals"
+Technical Query,CMD-033,Recommend lens for an over-the-shoulder shot,Lens Recommendation,"over-the-shoulder shot",Easy,"Tests framing term in query"
+Technical Query,CMD-034,Explain the 180-degree rule,Cinematography Concept,"180-degree rule",Medium,"Tests degree symbol + rule name"
+Technical Query,CMD-035,What's the best aperture for bokeh?,Aperture Recommendation,"aperture, bokeh",Medium,"Tests Japanese photography term"
+Technical Query,CMD-036,How do I achieve shallow depth of field with 85mm lens?,Technique Question,"shallow depth of field, 85mm",Medium,"Tests DOF terminology"
+Technical Query,CMD-037,What focal length creates compression in portraits?,Lens Recommendation,"focal length, compression, portraits",Medium,"Tests optical effect term"
+Technical Query,CMD-038,Calculate circle of confusion for full-frame sensor,Calculation,"circle of confusion, full-frame sensor",Very Hard,"Tests advanced technical terms"
+Technical Query,CMD-039,What's the difference between f/1.4 and f/2.8 in low light?,Aperture Comparison,"f/1.4, f/2.8, low light",Medium,"Tests multiple aperture values"
+Technical Query,CMD-040,Recommend shutter speed for 24 frames per second,Shutter Recommendation,"shutter speed, 24 frames per second",Medium,"Tests frame rate terminology"
+Technical Query,CMD-041,What's the crop factor for APS-C sensor?,Sensor Question,"crop factor, APS-C",Hard,"Tests sensor format name"
+Technical Query,CMD-042,How do I use the Sunny 16 rule?,Exposure Rule,"Sunny 16 rule",Medium,"Tests classic photography rule"
+Technical Query,CMD-043,What's the T-stop of an f/2.8 cine lens?,Lens Specification,"T-stop, f/2.8, cine lens",Very Hard,"Tests cinema lens terminology"
+Technical Query,CMD-044,Calculate equivalent focal length for Super 35 sensor,Calculation,"equivalent focal length, Super 35",Very Hard,"Tests cinema sensor format"
+Technical Query,CMD-045,What ISO should I use for 800T tungsten film stock?,Film Stock Question,"ISO, 800T tungsten, film stock",Very Hard,"Tests film stock notation"
+Technical Query,CMD-046,Explain chromatic aberration and how to fix it,Optical Issue,"chromatic aberration",Hard,"Tests optical defect term"
+Technical Query,CMD-047,What's the minimum focusing distance for a 100mm macro?,Lens Specification,"minimum focusing distance, 100mm macro",Medium,"Tests macro lens terminology"
+Technical Query,CMD-048,How many stops of light between f/1.4 and f/5.6?,Exposure Calculation,"stops of light, f/1.4, f/5.6",Hard,"Tests stop calculation"
+Technical Query,CMD-049,What's the field of view for 24mm on full frame?,FOV Question,"field of view, 24mm, full frame",Medium,"Tests FOV + sensor terminology"
+Technical Query,CMD-050,Recommend ND filter for bright sunlight at f/2,Filter Recommendation,"ND filter, bright sunlight, f/2",Medium,"Tests filter terminology"
+Technical Query,CMD-051,What's the reciprocal rule for handheld shooting?,Camera Technique,"reciprocal rule, handheld shooting",Hard,"Tests photography rule"
+Technical Query,CMD-052,Calculate angle of view for 50mm lens on MFT sensor,Calculation,"angle of view, 50mm, MFT sensor",Very Hard,"Tests sensor format acronym"
+Technical Query,CMD-053,What's the difference between spherical and anamorphic lenses?,Lens Comparison,"spherical, anamorphic lenses",Hard,"Tests cinema lens types"
+Technical Query,CMD-054,How do I meter for 18% middle gray?,Exposure Technique,"meter, 18% middle gray",Hard,"Tests exposure metering term"
+Technical Query,CMD-055,What shutter angle equals 1/48 shutter speed at 24fps?,Calculation,"shutter angle, 1/48, 24fps",Very Hard,"Tests cinema shutter terminology"
+Technical Query,CMD-056,Explain vignetting and when to use it creatively,Optical Effect,"vignetting",Medium,"Tests optical effect term"
+Technical Query,CMD-057,What's the sweet spot aperture for sharpness?,Aperture Question,"sweet spot aperture, sharpness",Medium,"Tests lens performance term"
+Technical Query,CMD-058,Calculate exposure compensation for backlit subjects,Exposure Calculation,"exposure compensation, backlit",Medium,"Tests exposure terminology"
+Technical Query,CMD-059,What's the Kelvin temperature for daylight white balance?,Color Temperature,"Kelvin temperature, daylight white balance",Hard,"Tests color temp measurement"
+Technical Query,CMD-060,How many stops of dynamic range does Rec. 709 have?,Video Standard,"stops of dynamic range, Rec. 709",Very Hard,"Tests video standard notation"
+
+# CATEGORY 3: DIRECTOR REQUESTS (20 total)
+Director Request,CMD-061,Suggest camera movement for a tense chase scene,Movement Recommendation,"camera movement, chase scene",Easy,"Tests movement terminology"
+Director Request,CMD-062,Setup lighting for a film noir mood,Lighting Setup,"lighting, film noir mood",Medium,"Tests genre-specific lighting"
+Director Request,CMD-063,Color grade this shot for a cyberpunk aesthetic,Color Grading,"color grade, cyberpunk aesthetic",Medium,"Tests post-production term"
+Director Request,CMD-064,Recommend shot list for romantic dinner scene,Shot List,"shot list, romantic dinner",Easy,"Tests production planning term"
+Director Request,CMD-065,How should I block the actors for three-point lighting?,Blocking Question,"block, three-point lighting",Medium,"Tests staging + lighting term"
+Director Request,CMD-066,Suggest camera angles for a power dynamic scene,Angle Recommendation,"camera angles, power dynamic",Easy,"Tests narrative cinematography"
+Director Request,CMD-067,Setup practical lights for natural interior look,Lighting Setup,"practical lights, natural interior",Medium,"Tests lighting equipment term"
+Director Request,CMD-068,Recommend color palette for melancholic atmosphere,Color Design,"color palette, melancholic",Easy,"Tests color theory term"
+Director Request,CMD-069,How do I shoot a montage sequence with jump cuts?,Editing Technique,"montage sequence, jump cuts",Medium,"Tests editing terminology"
+Director Request,CMD-070,Suggest motivated lighting setup for morning scene,Lighting Setup,"motivated lighting, morning scene",Medium,"Tests lighting concept"
+Director Request,CMD-071,Create a storyboard for the rooftop confrontation,Pre-production,"storyboard, confrontation",Easy,"Tests pre-production term"
+Director Request,CMD-072,Recommend lens choices for emotional close-ups,Lens Recommendation,"lens choices, emotional close-ups",Easy,"Tests creative lens selection"
+Director Request,CMD-073,Setup rim lighting for dramatic silhouette effect,Lighting Setup,"rim lighting, silhouette effect",Medium,"Tests specialized lighting"
+Director Request,CMD-074,Suggest camera movement to reveal the plot twist,Movement Design,"camera movement, plot twist",Medium,"Tests narrative movement"
+Director Request,CMD-075,How should I use negative space in wide compositions?,Composition Question,"negative space, wide compositions",Medium,"Tests composition terminology"
+Director Request,CMD-076,Recommend color temperature shift for flashback scenes,Color Design,"color temperature shift, flashback",Hard,"Tests color + narrative term"
+Director Request,CMD-077,Setup high-key lighting for comedy scene,Lighting Setup,"high-key lighting, comedy",Medium,"Tests lighting style term"
+Director Request,CMD-078,Suggest framing for long take dialogue scene,Framing Recommendation,"framing, long take, dialogue",Medium,"Tests camera technique"
+Director Request,CMD-079,How do I create tension using the rule of thirds?,Composition Question,"tension, rule of thirds",Medium,"Tests composition rule"
+Director Request,CMD-080,Recommend lighting ratio for Rembrandt lighting,Lighting Setup,"lighting ratio, Rembrandt lighting",Hard,"Tests classic lighting technique"
+
+# CATEGORY 4: CHARACTER/LOCATION QUERIES (20 total)
+Character/Location,CMD-081,Show me all images of the warehouse location,Asset Request,"warehouse location",Easy,"Tests location asset retrieval"
+Character/Location,CMD-082,Generate a character sheet for Sarah,Character Asset,"character sheet",Easy,"Tests character documentation term"
+Character/Location,CMD-083,Find reference images for industrial cinematography,Reference Search,"reference images, industrial cinematography",Medium,"Tests production research term"
+Character/Location,CMD-084,Create a moodboard for cyberpunk aesthetic,Moodboard Creation,"moodboard, cyberpunk",Easy,"Tests pre-production term"
+Character/Location,CMD-085,Show me the 16:9 variations of Elena's portrait,Asset Request,"16:9 variations, portrait",Medium,"Tests aspect ratio + shot type"
+Character/Location,CMD-086,Generate costume references for 1940s film noir,Reference Search,"costume references, 1940s film noir",Medium,"Tests period + genre research"
+Character/Location,CMD-087,Create location scout photos for the cafe scene,Location Scouting,"location scout photos, cafe scene",Medium,"Tests production planning term"
+Character/Location,CMD-088,Show me backlit variations of the detective character,Asset Request,"backlit variations, character",Medium,"Tests lighting term in query"
+Character/Location,CMD-089,Find cinematography references for neon-lit streets,Reference Search,"cinematography references, neon-lit",Medium,"Tests lighting research term"
+Character/Location,CMD-090,Generate production design concepts for the laboratory,Production Design,"production design concepts, laboratory",Medium,"Tests design department term"
+Character/Location,CMD-091,Show me 3:2 crop of the warehouse establishing shot,Asset Request,"3:2 crop, establishing shot",Medium,"Tests aspect + shot type"
+Character/Location,CMD-092,Create lighting reference for soft window light,Reference Search,"lighting reference, soft window light",Medium,"Tests natural lighting term"
+Character/Location,CMD-093,Generate practical location alternatives for the park,Location Alternatives,"practical location alternatives, park",Medium,"Tests production planning"
+Character/Location,CMD-094,Show me all flux kontext images of Marcus,Asset Request,"flux kontext, character",Medium,"Tests model variant recognition"
+Character/Location,CMD-095,Find color grading references for desaturated look,Reference Search,"color grading references, desaturated",Medium,"Tests post-production term"
+Character/Location,CMD-096,Create wardrobe options for the protagonist in 21:9,Costume Design,"wardrobe options, protagonist, 21:9",Hard,"Tests costume + aspect ratio"
+Character/Location,CMD-097,Show me overhead shots of the crime scene location,Asset Request,"overhead shots, crime scene",Medium,"Tests camera angle + context"
+Character/Location,CMD-098,Generate set dressing references for vintage apartment,Production Design,"set dressing references, vintage",Medium,"Tests design department term"
+Character/Location,CMD-099,Find lens test comparisons for 35mm versus 50mm,Lens Testing,"lens test comparisons, 35mm versus 50mm",Hard,"Tests technical testing term"
+Character/Location,CMD-100,Create blocking diagram for the four-actor scene,Staging,"blocking diagram, four-actor",Medium,"Tests staging documentation term"
+
+# TEST METADATA
+# Total Commands: 100
+# Difficulty Breakdown:
+# - Easy: 20 commands (20%)
+# - Medium: 50 commands (50%)
+# - Hard: 20 commands (20%)
+# - Very Hard: 10 commands (10%)
+#
+# Film Terminology Coverage:
+# - Camera angles: 15 commands
+# - Lens specifications: 18 commands
+# - Aperture/f-stops: 17 commands
+# - Lighting terminology: 16 commands
+# - Shot types/framing: 20 commands
+# - Technical calculations: 8 commands
+# - Color/grading: 6 commands
+#
+# Expected Accuracy Targets:
+# - Tier 1 Services (Deepgram, Whisper): >90% actionable match rate
+# - Tier 2 Services (Web Speech API, AssemblyAI): >80% actionable match rate
+# - Tier 3 Services: >70% actionable match rate

@@ -6,6 +6,7 @@ import { getGeminiApiKey, clearGeminiApiKey, getApiKeyValidationError, isValidGe
 import { getMediaService } from './mediaService';
 import { logAIUsage, USAGE_ACTIONS } from './usageService';
 import { isFluxApiAvailable, generateImageWithFlux, isFluxModelVariant, getFluxModelDisplayName, type FluxModelVariant } from './fluxService';
+import { trackGenerationMetrics, API_COST_ESTIMATES } from './analyticsService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
@@ -463,19 +464,58 @@ export const generateStillVariants = async (
 
     const urls: string[] = [];
     const errors: (string | null)[] = [];
-    
-    const generationPromises = Array.from({ length: n }).map((_, index) =>
-        generateVisual(finalPrompt, model, allReferenceImages, aspect_ratio, (progress) => {
+
+    const generationPromises = Array.from({ length: n }).map((_, index) => {
+        const startTime = Date.now();
+
+        return generateVisual(finalPrompt, model, allReferenceImages, aspect_ratio, (progress) => {
             onProgress?.(index, progress);
         }, `${frame_id}-${index}-${aspect_ratio}`, {
             ...context,
             frameId: context?.frameId || `${frame_id}-${index}`,
             sceneId: context?.sceneId || frame_id.split('-')[0],
         })
-    );
+        .then((result) => {
+            // Track successful generation
+            const duration = Date.now() - startTime;
+            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
+                                  model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
+                                  API_COST_ESTIMATES.image.imagen;
+
+            trackGenerationMetrics(
+                context?.projectId || 'temp',
+                'image',
+                model,
+                duration / 1000, // Convert to seconds
+                estimatedCost,
+                true // success
+            );
+
+            return result;
+        })
+        .catch((error) => {
+            // Track failed generation
+            const duration = Date.now() - startTime;
+            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
+                                  model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
+                                  API_COST_ESTIMATES.image.imagen;
+
+            trackGenerationMetrics(
+                context?.projectId || 'temp',
+                'image',
+                model,
+                duration / 1000,
+                0, // No cost for failed generation
+                false, // failure
+                error instanceof Error ? error.message : 'Unknown error'
+            );
+
+            throw error;
+        });
+    });
 
     const results = await Promise.allSettled(generationPromises);
-    
+
     results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
             urls.push(result.value.url);
@@ -486,7 +526,7 @@ export const generateStillVariants = async (
                 urls.push(fallbackUrl);
                 errors.push('Fallback image generated due to API quota or authorization failure.');
             } else {
-                urls.push(''); 
+                urls.push('');
                 errors.push(result.reason instanceof Error ? result.reason.message : 'Unknown error during generation');
             }
         }
@@ -516,6 +556,9 @@ export const animateFrame = async (
     onProgress?: (progress: number) => void,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
 ): Promise<string[]> => {
+    const startTime = Date.now();
+    const model = 'veo-3.1-fast-generate-preview';
+
     if (!prefersLiveGemini()) {
         console.warn('[API Action] animateFrame using fallback videos because live service is unavailable.');
         onProgress?.(100);
@@ -650,11 +693,35 @@ export const animateFrame = async (
             return uploadedUrls;
         }
 
+        // Track successful video generation
+        const duration = Date.now() - startTime;
+        trackGenerationMetrics(
+            context?.projectId || 'temp',
+            'video',
+            model,
+            duration / 1000, // Convert to seconds
+            API_COST_ESTIMATES.video.veo * n, // Cost per video * count
+            true // success
+        );
+
         // Return blob URLs if Supabase is not available
         return videoBlobs.map(blob => URL.createObjectURL(blob));
 
     } catch (error) {
         onProgress?.(100);
+
+        // Track failed video generation
+        const duration = Date.now() - startTime;
+        trackGenerationMetrics(
+            context?.projectId || 'temp',
+            'video',
+            model,
+            duration / 1000,
+            0, // No cost for failed generation
+            false, // failure
+            error instanceof Error ? error.message : 'Unknown error'
+        );
+
         if (shouldUseFallbackForError(error)) {
             console.warn('[API Action] animateFrame fallback triggered due to API failure.');
             const fallbackBlobs = getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url ?? 'none'}`);

@@ -4,6 +4,29 @@ import { askTheDirector, generateStillVariants, upscaleImage } from '../services
 import Button from './Button';
 import PromptModal from './PromptModal';
 import { BrainIcon, SendIcon, XIcon } from './icons/Icons';
+import {
+    initializeVoiceRecognition,
+    isVoiceRecognitionSupported,
+    VoiceRecognitionService,
+    getVoiceMode,
+    setVoiceMode,
+    VoiceMode,
+    // Voice output (TTS) imports
+    isVoiceSynthesisSupported,
+    getAvailableVoices,
+    speakText,
+    stopSpeech,
+    pauseSpeech,
+    resumeSpeech,
+    isSpeaking,
+    isSpeechPaused,
+    isVoiceOutputEnabled,
+    setVoiceOutputEnabled,
+    getSavedVoice,
+    setSavedVoiceId,
+    getSavedSpeechRate,
+    setSavedSpeechRate,
+} from '../services/voiceService';
 
 type Author = 'user' | 'director';
 
@@ -83,6 +106,24 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const activeRequestIdRef = useRef<number | null>(null);
 
+  // Voice input state
+  const [isListening, setIsListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const voiceService = useRef<VoiceRecognitionService | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Voice output (TTS) state
+  const [voiceOutputSupported, setVoiceOutputSupported] = useState(false);
+  const [voiceOutputActive, setVoiceOutputActive] = useState(false); // Opt-in (default: false)
+  const [isSpeakingNow, setIsSpeakingNow] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [speechRate, setSpeechRate] = useState(1.0); // 0.5 - 2.0
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+
   const analysisForChat = scriptAnalysis ?? DEFAULT_SCRIPT_ANALYSIS;
   const welcomeMessage = hasProjectContext ? WELCOME_MESSAGE : WELCOME_MESSAGE_NO_CONTEXT;
   const canResetChat = messages.some((message, index) => {
@@ -122,6 +163,243 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       textareaRef.current?.focus();
     }
   }, [isOpen]);
+
+  // Initialize voice recognition on mount
+  useEffect(() => {
+    setVoiceSupported(isVoiceRecognitionSupported());
+
+    if (isVoiceRecognitionSupported()) {
+      initializeVoiceRecognition().then(service => {
+        voiceService.current = service;
+
+        // Handle transcription results
+        service.onResult((transcript, isFinal, confidence) => {
+          setVoiceTranscript(transcript);
+          setVoiceError(null);
+
+          // If final result, populate input field and stop listening
+          if (isFinal) {
+            setUserInput(transcript);
+            setIsListening(false);
+            setVoiceTranscript('');
+            // Focus input so user can edit or submit
+            setTimeout(() => textareaRef.current?.focus(), 100);
+          }
+        });
+
+        // Handle errors
+        service.onError((error) => {
+          console.error('Voice recognition error:', error);
+          setVoiceError(error);
+          setIsListening(false);
+          setVoiceTranscript('');
+          stopWaveformAnimation();
+        });
+
+        // Handle recognition end
+        service.onEnd(() => {
+          setIsListening(false);
+          setVoiceTranscript('');
+          stopWaveformAnimation();
+        });
+
+        // Handle recognition start
+        service.onStart(() => {
+          setVoiceError(null);
+          startWaveformAnimation();
+        });
+      }).catch(error => {
+        console.error('Failed to initialize voice recognition:', error);
+        setVoiceSupported(false);
+      });
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (voiceService.current && isListening) {
+        voiceService.current.stop();
+      }
+      stopWaveformAnimation();
+    };
+  }, []);
+
+  // Initialize voice output (TTS) on mount
+  useEffect(() => {
+    setVoiceOutputSupported(isVoiceSynthesisSupported());
+
+    if (isVoiceSynthesisSupported()) {
+      // Load saved preferences
+      const savedEnabled = isVoiceOutputEnabled();
+      setVoiceOutputActive(savedEnabled);
+
+      const savedRate = getSavedSpeechRate();
+      setSpeechRate(savedRate);
+
+      // Load available voices
+      getAvailableVoices().then(voices => {
+        setAvailableVoices(voices);
+
+        // Try to restore saved voice
+        getSavedVoice().then(savedVoice => {
+          if (savedVoice) {
+            setSelectedVoice(savedVoice);
+          } else if (voices.length > 0) {
+            // Default to first English voice
+            const englishVoice = voices.find(v => v.lang.startsWith('en'));
+            setSelectedVoice(englishVoice || voices[0]);
+          }
+        });
+      });
+    }
+
+    // Cleanup on unmount
+    return () => {
+      stopSpeech();
+    };
+  }, []);
+
+  // Waveform animation functions
+  const startWaveformAnimation = useCallback(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const animate = () => {
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw waveform bars
+      const barCount = 5;
+      const barWidth = 3;
+      const barSpacing = 4;
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      ctx.fillStyle = ACCENT_HEX;
+
+      for (let i = 0; i < barCount; i++) {
+        const offset = (i - Math.floor(barCount / 2)) * (barWidth + barSpacing);
+        const phase = Date.now() / 300 + i * 0.5;
+        const amplitude = Math.sin(phase) * 0.5 + 0.5;
+        const barHeight = 10 + amplitude * 20;
+
+        ctx.fillRect(
+          centerX + offset - barWidth / 2,
+          centerY - barHeight / 2,
+          barWidth,
+          barHeight
+        );
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+  }, []);
+
+  const stopWaveformAnimation = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+    }
+  }, []);
+
+  // Handle microphone button click
+  const handleMicrophoneClick = useCallback(() => {
+    if (!voiceService.current) return;
+
+    if (isListening) {
+      voiceService.current.stop();
+      setIsListening(false);
+      setVoiceTranscript('');
+      stopWaveformAnimation();
+    } else {
+      voiceService.current.start();
+      setIsListening(true);
+      setVoiceError(null);
+    }
+  }, [isListening, stopWaveformAnimation]);
+
+  // Handle voice output (speak director response)
+  const handleSpeakResponse = useCallback((text: string) => {
+    if (!voiceOutputActive || !voiceOutputSupported) return;
+
+    // Stop any current speech (auto-interrupt)
+    stopSpeech();
+
+    speakText(
+      text,
+      {
+        voice: selectedVoice,
+        rate: speechRate,
+        pitch: 1.0,
+        volume: 1.0,
+      },
+      {
+        onStart: () => setIsSpeakingNow(true),
+        onEnd: () => setIsSpeakingNow(false),
+        onError: (error) => {
+          console.error('TTS error:', error);
+          setIsSpeakingNow(false);
+          // Silent fallback - text is still visible in chat
+        },
+      }
+    );
+  }, [voiceOutputActive, voiceOutputSupported, selectedVoice, speechRate]);
+
+  // Handle voice output toggle
+  const handleToggleVoiceOutput = useCallback(() => {
+    const newValue = !voiceOutputActive;
+    setVoiceOutputActive(newValue);
+    setVoiceOutputEnabled(newValue);
+
+    // Stop any current speech when disabling
+    if (!newValue) {
+      stopSpeech();
+      setIsSpeakingNow(false);
+    }
+  }, [voiceOutputActive]);
+
+  // Handle voice selection change
+  const handleVoiceChange = useCallback((voiceId: string) => {
+    const voice = availableVoices.find(v => v.name === voiceId) || null;
+    setSelectedVoice(voice);
+    if (voice) {
+      setSavedVoiceId(voice.name);
+    }
+  }, [availableVoices]);
+
+  // Handle speech rate change
+  const handleRateChange = useCallback((rate: number) => {
+    setSpeechRate(rate);
+    setSavedSpeechRate(rate);
+  }, []);
+
+  // Handle pause/resume speech
+  const handleTogglePauseSpeech = useCallback(() => {
+    if (isSpeechPaused()) {
+      resumeSpeech();
+    } else if (isSpeaking()) {
+      pauseSpeech();
+    }
+  }, []);
+
+  // Handle stop speech
+  const handleStopSpeech = useCallback(() => {
+    stopSpeech();
+    setIsSpeakingNow(false);
+  }, []);
 
   const parseCommand = (input: string) => {
     const lowerInput = input.toLowerCase();
@@ -436,25 +714,31 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
         const result = await executeCommand(command, nextMessages, trimmedInput);
         if (activeRequestIdRef.current !== requestId) return;
         if (result) {
+          const directorMessage = result.message;
           setMessages([
             ...nextMessages,
             {
               author: 'director',
-              text: result.message,
+              text: directorMessage,
               isCommand: true,
               images: result.images
             }
           ]);
+          // Speak the response if voice output is enabled
+          handleSpeakResponse(directorMessage);
         } else {
           if (activeRequestIdRef.current !== requestId) return;
+          const errorMessage = "Sorry, I couldn't execute that command. Please check your syntax.";
           setMessages([
             ...nextMessages,
             {
               author: 'director',
-              text: "Sorry, I couldn't execute that command. Please check your syntax.",
+              text: errorMessage,
               isCommand: true
             }
           ]);
+          // Speak the error message if voice output is enabled
+          handleSpeakResponse(errorMessage);
         }
       } else {
         const reply = await askTheDirector(analysisForChat, trimmedInput, nextMessages);
@@ -462,28 +746,36 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
         if (promptRequest) {
           const preparedPrompt = reply.trim();
           setPromptModal(preparedPrompt);
+          const promptReadyMessage = "Sure—your prompt is ready. Tap the popup to copy it to your clipboard.";
           setMessages([
             ...nextMessages,
             {
               author: 'director',
-              text: "Sure—your prompt is ready. Tap the popup to copy it to your clipboard.",
+              text: promptReadyMessage,
               promptData: preparedPrompt // Store the prompt in the message
             }
           ]);
+          // Speak the prompt ready message if voice output is enabled
+          handleSpeakResponse(promptReadyMessage);
         } else {
           setMessages([...nextMessages, { author: 'director', text: reply }]);
+          // Speak the response if voice output is enabled
+          handleSpeakResponse(reply);
         }
       }
     } catch (error) {
       if (activeRequestIdRef.current !== requestId) return;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const fullErrorMessage = `Sorry, I encountered an error: ${errorMessage}`;
       setMessages([
         ...nextMessages,
         {
           author: 'director',
-          text: `Sorry, I encountered an error: ${errorMessage}`,
+          text: fullErrorMessage,
         },
       ]);
+      // Speak the error message if voice output is enabled
+      handleSpeakResponse(fullErrorMessage);
     } finally {
       if (activeRequestIdRef.current === requestId) {
         activeRequestIdRef.current = null;
@@ -504,17 +796,46 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.08)] to-transparent px-6 py-4">
                 <div className="flex items-center gap-3">
                   <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.25)] to-[rgba(16,163,127,0.1)] shadow-[0_0_20px_rgba(16,163,127,0.3)]"
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.25)] to-[rgba(16,163,127,0.1)] shadow-[0_0_20px_rgba(16,163,127,0.3)] ${isSpeakingNow ? 'animate-pulse' : ''}`}
                     style={{ color: ACCENT_HEX }}
                   >
                     <BrainIcon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-semibold text-white truncate">AI Director Assistant</h3>
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 truncate">Creative Partner</p>
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 truncate">
+                      {isSpeakingNow ? '🔊 Speaking...' : 'Creative Partner'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Voice output toggle button */}
+                  {voiceOutputSupported && (
+                    <button
+                      type="button"
+                      onClick={handleToggleVoiceOutput}
+                      className={`rounded-full border ${voiceOutputActive ? 'border-[rgba(16,163,127,0.5)] bg-[rgba(16,163,127,0.15)]' : 'border-white/10 bg-white/5'} p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105`}
+                      title={voiceOutputActive ? 'Voice output enabled' : 'Voice output disabled'}
+                    >
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                      </svg>
+                    </button>
+                  )}
+                  {/* Voice settings button */}
+                  {voiceOutputSupported && (
+                    <button
+                      type="button"
+                      onClick={() => setShowVoiceSettings(!showVoiceSettings)}
+                      className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105"
+                      title="Voice settings"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={resetConversation}
@@ -533,6 +854,98 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   </button>
                 </div>
               </header>
+
+              {/* Voice Settings Panel */}
+              {showVoiceSettings && voiceOutputSupported && (
+                <div className="border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.05)] to-transparent px-6 py-4 space-y-4">
+                  <h4 className="text-xs font-semibold text-white/90 uppercase tracking-wider">Voice Output Settings</h4>
+
+                  {/* Voice Selection */}
+                  <div className="space-y-2">
+                    <label className="text-xs text-white/70">Voice</label>
+                    <select
+                      value={selectedVoice?.name || ''}
+                      onChange={(e) => handleVoiceChange(e.target.value)}
+                      className="w-full rounded-lg border border-white/10 bg-[#13161d] px-3 py-2 text-sm text-white/90 outline-none focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)]"
+                    >
+                      {availableVoices.map(voice => (
+                        <option key={voice.name} value={voice.name}>
+                          {voice.name} ({voice.lang})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Speech Rate */}
+                  <div className="space-y-2">
+                    <label className="text-xs text-white/70 flex items-center justify-between">
+                      <span>Speech Rate</span>
+                      <span className="text-[rgba(16,163,127,0.9)]">{speechRate.toFixed(1)}x</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2"
+                      step="0.1"
+                      value={speechRate}
+                      onChange={(e) => handleRateChange(parseFloat(e.target.value))}
+                      className="w-full accent-[#10A37F]"
+                    />
+                    <div className="flex justify-between text-[10px] text-white/40">
+                      <span>0.5x (Slow)</span>
+                      <span>1.0x (Normal)</span>
+                      <span>2.0x (Fast)</span>
+                    </div>
+                  </div>
+
+                  {/* Preview Button */}
+                  <button
+                    type="button"
+                    onClick={() => speakText('This is a preview of the voice output settings.', { voice: selectedVoice, rate: speechRate, pitch: 1.0, volume: 1.0 }, { onStart: () => setIsSpeakingNow(true), onEnd: () => setIsSpeakingNow(false) })}
+                    className="w-full rounded-lg border border-[rgba(16,163,127,0.3)] bg-[rgba(16,163,127,0.1)] px-4 py-2 text-sm font-medium text-[#10A37F] transition-all hover:bg-[rgba(16,163,127,0.2)] hover:shadow-[0_0_15px_rgba(16,163,127,0.2)]"
+                  >
+                    Preview Voice
+                  </button>
+                </div>
+              )}
+
+              {/* Playback Controls (when speaking) */}
+              {isSpeakingNow && (
+                <div className="border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.1)] to-transparent px-6 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-[#10A37F] animate-pulse" />
+                    <span className="text-xs text-white/70">Director is speaking...</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleTogglePauseSpeech}
+                      className="rounded-full border border-white/10 bg-white/5 p-1.5 text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                      title={isSpeechPaused() ? 'Resume' : 'Pause'}
+                    >
+                      {isSpeechPaused() ? (
+                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      ) : (
+                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleStopSpeech}
+                      className="rounded-full border border-white/10 bg-white/5 p-1.5 text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                      title="Stop"
+                    >
+                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 6h12v12H6z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {!hasProjectContext && (
                 <div className="border-b border-white/10 bg-white/5 px-6 py-3 text-xs text-white/70">
@@ -615,6 +1028,41 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
 
                 {/* Input Area */}
                 <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-gradient-to-b from-[#0f1117] to-[#0a0d12] px-6 py-4 shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+                  {/* Voice listening indicator */}
+                  {isListening && (
+                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-[rgba(16,163,127,0.3)] bg-[rgba(16,163,127,0.1)] px-4 py-2.5">
+                      <div className="relative flex items-center justify-center">
+                        <canvas
+                          ref={canvasRef}
+                          width="40"
+                          height="40"
+                          className="absolute"
+                        />
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.3)] to-[rgba(16,163,127,0.1)] animate-pulse" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs font-semibold text-[#10A37F]">Listening...</div>
+                        <div className="text-[10px] text-white/50">
+                          {voiceTranscript || 'Speak now...'}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleMicrophoneClick}
+                        className="text-xs text-white/70 hover:text-white transition-colors"
+                      >
+                        Stop
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Voice error indicator */}
+                  {voiceError && (
+                    <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs text-red-300">
+                      {voiceError}
+                    </div>
+                  )}
+
                   <div className="relative flex items-end gap-3">
                     <div className="flex-1">
                       <textarea
@@ -633,6 +1081,31 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                         disabled={isLoading}
                       />
                     </div>
+
+                    {/* Microphone button */}
+                    {voiceSupported && (
+                      <button
+                        type="button"
+                        onClick={handleMicrophoneClick}
+                        disabled={isLoading}
+                        className={`shrink-0 rounded-xl p-3 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                          isListening
+                            ? 'bg-gradient-to-r from-red-500 to-red-600 shadow-[0_4px_15px_rgba(239,68,68,0.4)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.5)]'
+                            : 'border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] hover:border-[rgba(16,163,127,0.3)] hover:bg-[rgba(16,163,127,0.05)]'
+                        }`}
+                        title={isListening ? 'Stop listening' : 'Start voice input'}
+                      >
+                        <svg
+                          className="h-4 w-4 text-white/90"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                        </svg>
+                      </button>
+                    )}
+
                     <Button
                       type="submit"
                       variant="primary"

@@ -1244,7 +1244,7 @@ const AnimateStudio: React.FC<{
                                     <p className="text-xs text-gray-500 mb-1">Hero Frame</p>
                                     <div className="relative group">
                                         <div className="w-full aspect-video rounded-xl border-2 border-green-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-green-400 transition-all">
-                                            {(frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url) ? (
+                                            {((frame.media?.upscaled_start_frame_url && frame.media.upscaled_start_frame_url.trim()) || (frame.media?.start_frame_url && frame.media.start_frame_url.trim())) ? (
                                                 <img src={frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url} alt="Starting frame" className="w-full h-full object-cover"/>
                                             ) : (
                                                 <p className="text-xs text-gray-500">Not Set</p>

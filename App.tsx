@@ -22,6 +22,7 @@ import WanTransferTab from './tabs/WanTransferTab';
 import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
+import AnalyticsTab from './tabs/AnalyticsTab';
 import { ThreeDWorldsTab } from './tabs/3DWorldsTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
 import { analyzeScript } from './services/aiService';
@@ -40,6 +41,7 @@ import { getUsageService, USAGE_ACTIONS, logAIUsage } from './services/usageServ
 // Import the new auth pages
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+// import GenerationPage from './pages/GenerationPage'; // Commented out - separate Epic 2 demo page
 
 const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
@@ -1048,6 +1050,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
         return <PostProductionTab />;
       case 'exports':
         return <ExportsTab timelineClips={timelineClips} />;
+      case 'analytics':
+        return <AnalyticsTab scriptAnalysis={scriptAnalysis} projectId={currentProject?.id || 'temp'} />;
       case 'roadmap':
         return <RoadmapTab blocks={roadmapBlocks || []} onUpdateBlocks={setRoadmapBlocks} />;
       default:
@@ -1320,6 +1324,7 @@ const AppWithProviders: React.FC = () => {
         <AuthProvider>
           <Routes>
             <Route path="/" element={<AppContentWithAuth />} />
+            {/* <Route path="/generation" element={<GenerationPage />} /> */}
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
           </Routes>
@@ -1327,6 +1332,7 @@ const AppWithProviders: React.FC = () => {
       ) : (
         <Routes>
           <Route path="/" element={<AppContentWithoutAuth />} />
+          {/* <Route path="/generation" element={<GenerationPage />} /> */}
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
         </Routes>

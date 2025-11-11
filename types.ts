@@ -110,6 +110,8 @@ export interface AnalyzedCharacter {
   generations?: Generation[];
   refinedGenerationUrls?: string[];
   upscaledImageUrl?: string | null;
+  // NEW: Character Identity (Epic 2)
+  identity?: CharacterIdentity;
 }
 
 export interface AnalyzedLocation {
@@ -328,3 +330,112 @@ export interface ContinuityIssue {
   severity: 'critical' | 'warning' | 'info';
   affectedFrames: string[];
 }
+
+// Character Identity Types (Epic 2)
+
+export type CharacterIdentityStatus = 'none' | 'preparing' | 'ready' | 'error';
+
+export type CharacterIdentityTechnology = 'lora' | 'reference' | 'hybrid';
+
+export interface CharacterIdentityTest {
+  id: string;
+  testType: 'portrait' | 'fullbody' | 'profile' | 'lighting' | 'expression';
+  generatedImageUrl: string;
+  similarityScore: number; // 0-100 (CLIP + pHash combined score)
+  timestamp: string;
+}
+
+export interface CharacterIdentity {
+  // Status tracking
+  status: CharacterIdentityStatus;
+
+  // Reference images (URLs or base64 data URLs)
+  referenceImages: string[];
+
+  // Testing and approval (Story 2.2)
+  tests?: CharacterIdentityTest[];
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+
+  // Timestamps
+  createdAt: string;
+  lastUpdated: string;
+
+  // Cost tracking
+  trainingCost?: number;
+
+  // Error handling
+  errorMessage?: string;
+
+  // Technology-specific data (determined by Epic R1 research)
+  // This flexible structure allows for LoRA, reference-based, or hybrid approaches
+  technologyData?: {
+    type: CharacterIdentityTechnology;
+
+    // LoRA-specific fields (if Epic R1 chooses LoRA)
+    loraModelId?: string;
+    loraCheckpoint?: string;
+    loraWeights?: string; // URL to weights file
+
+    // Reference-based fields (if Epic R1 chooses Flux Dev/IPAdapter/etc)
+    referenceStrength?: number; // 0-100
+    preprocessedData?: string; // Base64 or URL to preprocessed reference
+    embeddingId?: string; // ID of character embedding
+
+    // Fal.ai-specific fields (Epic R1 selected Fal.ai - 9.6/10 score)
+    falCharacterId?: string; // Fal.ai character identity ID
+
+    // Hybrid approach fields
+    primaryMethod?: 'lora' | 'reference';
+    fallbackMethod?: 'lora' | 'reference';
+
+    // Additional metadata
+    [key: string]: any; // Allow future extensions without type changes
+  };
+}
+
+// Audio Production Types (Epic R3b)
+
+export interface AudioStem {
+  id: string;
+  type: 'dialogue' | 'music' | 'effects' | 'ambient';
+  url: string;
+  volume: number; // 0.0 to 1.0
+  isMuted: boolean;
+  startTime: number; // timeline offset in seconds
+  duration: number;
+  metadata?: {
+    provider?: 'udio' | 'suno' | 'stable-audio' | 'musicgen' | 'aiva' | 'elevenlabs' | 'audiocraft' | 'freesound';
+    prompt?: string;
+    emotion?: string;
+    genre?: string;
+    generationTime?: number;
+  };
+}
+
+export interface MusicGenerationParams {
+  prompt: string;
+  emotion?: 'happy' | 'sad' | 'tense' | 'mysterious' | 'triumphant' | 'melancholic' | 'energetic' | 'peaceful';
+  genre?: 'orchestral' | 'electronic' | 'ambient' | 'rock' | 'jazz' | 'cinematic' | 'folk' | 'classical';
+  duration?: number; // in seconds (max 180 for most providers)
+  tempo?: 'slow' | 'medium' | 'fast';
+  intensity?: 'low' | 'medium' | 'high';
+  withStems?: boolean;
+}
+
+export interface SFXGenerationParams {
+  prompt: string;
+  duration?: number; // in seconds (typically 1-30s)
+  category?: 'foley' | 'ambient' | 'environmental' | 'impact' | 'transition' | 'nature' | 'urban';
+  intensity?: 'subtle' | 'moderate' | 'intense';
+}
+
+export interface AudioMixerState {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  stems: AudioStem[];
+  masterVolume: number;
+}
+
+export type MusicProvider = 'udio' | 'suno' | 'stable-audio' | 'musicgen' | 'aiva';
+export type SFXProvider = 'elevenlabs' | 'audiocraft' | 'freesound';

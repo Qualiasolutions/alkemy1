@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AnalyzedCharacter, AnalyzedLocation, Generation, Moodboard, MoodboardTemplate } from '../types';
+import { AnalyzedCharacter, AnalyzedLocation, Generation, Moodboard, MoodboardTemplate, CharacterIdentity } from '../types';
 import Button from '../components/Button';
-import { UsersIcon, MapPinIcon, ArrowLeftIcon, AlkemyLoadingIcon, XIcon, PlusIcon, ImagePlusIcon, Trash2Icon, PaperclipIcon, ExpandIcon } from '../components/icons/Icons';
+import { UsersIcon, MapPinIcon, ArrowLeftIcon, AlkemyLoadingIcon, XIcon, PlusIcon, ImagePlusIcon, Trash2Icon, PaperclipIcon, ExpandIcon, CheckCircleIcon, AlertCircleIcon, UploadIcon } from '../components/icons/Icons';
 import { generateStillVariants, refineVariant, upscaleImage } from '../services/aiService';
 import { useTheme } from '../theme/ThemeContext';
 import { motion } from 'framer-motion';
+import CharacterIdentityModal from '../components/CharacterIdentityModal';
+import { getCharacterIdentityStatus } from '../services/characterIdentityService';
 import ImageCarousel from '../components/ImageCarousel';
 
 // --- FullScreen Image Viewer Modal ---
@@ -789,10 +791,15 @@ const Card: React.FC<{
     onClick: () => void;
     onAttach: () => void;
     onDelete: () => void;
-}> = ({ item, icon, onClick, onAttach, onDelete }) => {
+    onPrepareIdentity?: () => void;
+}> = ({ item, icon, onClick, onAttach, onDelete, onPrepareIdentity }) => {
     const { isDark } = useTheme();
     const hasImage = !!item.imageUrl;
     const variantCount = item.generations?.length || 0;
+
+    // Check if this is a character with identity status
+    const character = 'identity' in item ? (item as AnalyzedCharacter) : null;
+    const identityStatus = character ? getCharacterIdentityStatus(character.identity) : 'none';
 
     return (
         <motion.div
@@ -806,8 +813,9 @@ const Card: React.FC<{
                 isDark ? 'hover:shadow-teal-500/20' : 'hover:shadow-teal-500/30'
             }`}
         >
-            {/* Status Badge */}
-            <div className="absolute top-3 right-3 z-20">
+            {/* Status Badges */}
+            <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
+                {/* Image Status Badge */}
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -819,6 +827,34 @@ const Card: React.FC<{
                 >
                     {hasImage ? 'Ready' : 'Draft'}
                 </motion.div>
+
+                {/* Identity Status Badge (only for characters) */}
+                {character && (
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md flex items-center gap-1 ${
+                            identityStatus === 'ready'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : identityStatus === 'preparing'
+                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                : identityStatus === 'error'
+                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                : 'bg-gray-500/20 text-gray-500 border border-gray-500/30'
+                        }`}
+                    >
+                        {identityStatus === 'ready' && <CheckCircleIcon className="w-3 h-3" />}
+                        {identityStatus === 'error' && <AlertCircleIcon className="w-3 h-3" />}
+                        {identityStatus === 'preparing' && (
+                            <svg className="w-3 h-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        )}
+                        {identityStatus === 'ready' ? 'Identity' : identityStatus === 'preparing' ? 'Training' : identityStatus === 'error' ? 'Error' : 'No ID'}
+                    </motion.div>
+                )}
             </div>
 
             {/* Image Section */}
@@ -891,6 +927,22 @@ const Card: React.FC<{
                         >
                             <ImagePlusIcon className="w-4 h-4" />
                         </motion.button>
+                        {/* Prepare Identity Button (only for characters) */}
+                        {character && onPrepareIdentity && (
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
+                                aria-label={`Prepare identity for ${item.name}`}
+                                className={`p-2.5 rounded-xl backdrop-blur-md transition-all ${
+                                    isDark
+                                        ? 'bg-black/70 text-gray-300 hover:bg-purple-500/90 hover:text-white'
+                                        : 'bg-white/90 text-gray-600 hover:bg-purple-500 hover:text-white'
+                                }`}
+                            >
+                                <UploadIcon className="w-4 h-4" />
+                            </motion.button>
+                        )}
                     </div>
                 </div>
 
@@ -970,6 +1022,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     const [itemToUpdate, setItemToUpdate] = useState<{ id: string; type: 'character' | 'location' } | null>(null);
     const attachImageInputRef = useRef<HTMLInputElement>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState<'character' | 'location' | null>(null);
+    const [identityModalCharacter, setIdentityModalCharacter] = useState<AnalyzedCharacter | null>(null);
     
     const handleItemUpdateBatch = (updater: (prev: AnalyzedCharacter | AnalyzedLocation) => AnalyzedCharacter | AnalyzedLocation) => {
          if (selectedItem?.type === 'character') {
@@ -1054,6 +1107,11 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
         }
     };
 
+    const handleIdentitySuccess = (characterId: string, identity: CharacterIdentity) => {
+        setCharacters(prev => prev.map(c => c.id === characterId ? { ...c, identity } : c));
+        setIdentityModalCharacter(null);
+    };
+
 
     if (selectedItem) {
         return <GenerationView
@@ -1076,6 +1134,15 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                     onClose={() => setIsAddModalOpen(null)}
                     onSubmit={handleAddNewItem}
                 />
+                {identityModalCharacter && (
+                    <CharacterIdentityModal
+                        isOpen={true}
+                        characterId={identityModalCharacter.id}
+                        characterName={identityModalCharacter.name}
+                        onClose={() => setIdentityModalCharacter(null)}
+                        onSuccess={(identity) => handleIdentitySuccess(identityModalCharacter.id, identity)}
+                    />
+                )}
                 <input type="file" ref={attachImageInputRef} onChange={handleFileAttached} className="hidden" accept="image/*" />
 
                 {/* Hero Header */}
@@ -1157,6 +1224,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                                     onClick={() => setSelectedItem({ type: 'character', data: char })}
                                     onAttach={() => handleAttachClick(char, 'character')}
                                     onDelete={() => handleDeleteItem(char.id, 'character')}
+                                    onPrepareIdentity={() => setIdentityModalCharacter(char)}
                                 />
                             </motion.div>
                         ))}
