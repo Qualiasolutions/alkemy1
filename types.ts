@@ -345,6 +345,8 @@ export interface CharacterIdentityTest {
   timestamp: string;
 }
 
+export type CharacterIdentityTestType = 'portrait' | 'fullbody' | 'profile' | 'lighting' | 'expression';
+
 export interface CharacterIdentity {
   // Status tracking
   status: CharacterIdentityStatus;
