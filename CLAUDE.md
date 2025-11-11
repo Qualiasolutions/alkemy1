@@ -224,13 +224,77 @@ Note: `VideoReady` status is retained for compatibility but the new flow uses `A
 - `hooks/`: Custom React hooks (`useKeyboardShortcuts.ts` for power-user shortcuts)
 - `data/`: Demo project data (`demoProject.ts` with sample screenplay and analysis)
 
+### Voice Recognition Service
+
+`services/voiceService.ts` implements hands-free voice input using the Web Speech API:
+
+- **initializeVoiceRecognition()**: Initializes browser-native speech recognition with film terminology support
+- **isVoiceRecognitionSupported()**: Checks browser compatibility (Chrome, Edge, Safari)
+- **getVoiceMode()** / **setVoiceMode()**: Manage voice mode preferences (push-to-talk, always-listening, text-only)
+- **requestMicrophonePermission()**: Trigger browser permission prompt
+- **getMicrophoneInstructions()**: Browser-specific instructions for enabling microphone access
+
+**Browser Support**:
+- Chrome/Edge: Full support (webkit prefix)
+- Safari: Good support (webkit prefix)
+- Firefox: Limited support (graceful degradation)
+
+**Performance** (from Epic R3a research):
+- Latency: 800-1200ms (meets <2s target)
+- Accuracy: 78% for film terminology (meets >75% target)
+- Cost: $0 (free, browser-native)
+
+**Integration**: Used by DirectorWidget for hands-free command input. Voice transcripts are routed through the same `parseCommand()` logic as text input.
+
+### Voice Output Service (Text-to-Speech)
+
+`services/voiceService.ts` also implements text-to-speech (TTS) functionality for spoken Director responses:
+
+- **isVoiceSynthesisSupported()**: Checks if Web Speech API TTS is available in the browser
+- **getAvailableVoices()**: Returns all voices supported by the browser (handles async loading)
+- **speakText()**: Synthesizes text to speech with options for voice, rate, pitch, and volume
+- **pauseSpeech()** / **resumeSpeech()**: Pause and resume playback
+- **stopSpeech()**: Stop current speech and clear queue
+- **isSpeaking()** / **isSpeechPaused()**: Check playback status
+
+**Voice Output Preferences** (localStorage):
+- **isVoiceOutputEnabled()** / **setVoiceOutputEnabled()**: Toggle voice output (opt-in, default: false)
+- **getSavedVoiceId()** / **setSavedVoiceId()**: Save/retrieve selected voice
+- **getSavedSpeechRate()** / **setSavedSpeechRate()**: Save/retrieve speech rate (0.5 - 2.0x)
+- **getSavedVoice()**: Get saved voice object from stored voice ID
+
+**Browser Support**:
+- Chrome/Edge: Excellent support with multiple voices
+- Safari: Good support with system voices
+- Firefox: Good support
+
+**Performance**:
+- Latency: <1s from text to audio playback start
+- Cost: $0 (free, browser-native)
+- Quality: Natural-sounding voices (browser-dependent)
+
+**Integration**: Used by DirectorWidget to automatically speak Director responses when voice output is enabled. Supports auto-interrupt (new responses stop current speech), error handling with graceful fallback to text-only, and independent toggle from voice input.
+
 ### DirectorWidget - AI Assistant
 
 The `DirectorWidget` component (`components/DirectorWidget.tsx`) is a persistent chat interface that provides an AI-powered cinematography assistant:
 
 **Features:**
 - **Chat Interface**: Fixed bottom-right widget that expands to a full chat window
-- **Command Parsing**: Recognizes natural language commands for image generation and technical queries
+- **Voice Input**: Hands-free voice commands via Web Speech API (push-to-talk mode)
+  - Microphone button appears in chat input area (only if browser supports Web Speech API)
+  - Real-time transcription with animated waveform during listening
+  - Final transcript populates input field for editing before submission
+  - Error handling for permission denied, network errors, and recognition timeouts
+- **Voice Output** (NEW - Story 1.2): Text-to-speech for Director responses
+  - Opt-in feature (disabled by default, user must enable)
+  - Automatically speaks all Director responses when enabled
+  - Independent from voice input (can use voice input + text output, or vice versa)
+  - Auto-interrupt: new responses stop current speech playback
+  - Graceful fallback: errors are silent, text remains visible in chat
+  - Supports voice selection and speech rate control (0.5x - 2.0x)
+  - Settings persist across sessions via localStorage
+- **Command Parsing**: Recognizes natural language commands for image generation and technical queries (works for both text and voice input)
 - **Image Generation**: "Generate [N] [flux/imagen] images of [character/location] [aspect]" - generates images directly into character/location state
 - **Image Upscaling**: "Upscale the [character/location] image" - enhances existing images
 - **Technical Queries**: Cinematography questions leverage `askTheDirector()` from `services/aiService.ts` with enhanced director knowledge from `services/directorKnowledge.ts`

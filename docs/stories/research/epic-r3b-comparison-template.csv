@@ -1,0 +1,11 @@
+Service,Category,Generation Speed,Quality (1-10),Stem Export,API Available,Cost per Track,Browser Integration,Emotion Control,Max Duration,Licensing,Notes,Recommendation Tier
+Suno,Music,<30s,9,Yes (V5),Unofficial (3rd party),~$0.10,Via serverless proxy,Excellent (style tags),3 min,Commercial OK,$5-30/month plans; unofficial APIs available; V5 has stem export,Tier 1 - Recommended
+Udio,Music,<25s,9,Yes,Unofficial (3rd party),~$0.12,Via serverless proxy,Excellent (mood/style),3 min,Commercial OK,$10-30/month; 1200-4800 credits; ~2 credits per song,Tier 1 - Recommended
+Stable Audio 2.0,Music,<20s,7,No,Yes (Official),~$0.05,Via serverless proxy,Moderate (text prompts),3 min,Commercial OK,$11.99/month or API credits; fast but lower quality,Tier 2 - Viable (budget)
+MusicGen (Meta/HF),Music,<60s,6,No,Yes (HF Inference),Free,Via HF API,Limited (text only),30 sec,Open source OK,Free but slow and lower quality; good for prototyping,Tier 3 - Fallback only
+AIVA,Music,<45s,8,Yes (MIDI/stems),Limited (contact sales),~$15-50/month,Via API (if granted),Excellent (composer styles),Unlimited,Commercial OK (Pro+),Professional orchestral; expensive; may need enterprise plan,Tier 2 - Viable
+ElevenLabs SFX,Sound Effects,<10s,9,N/A,Yes (Official),200 credits/gen (4 SFX),Via serverless proxy,Duration control,30 sec,Commercial OK,Free tier: 10k credits/month; excellent quality; text-to-SFX,Tier 1 - Recommended
+AudioCraft AudioGen,Sound Effects,<15s,7,N/A,Yes (HF + self-host),Free,Via HF API or local,Text prompts,10 sec,Open source OK,Free but moderate quality; self-hostable; good for ambient,Tier 2 - Fallback
+Freesound Library,Sound Effects,Instant (search),8,N/A,Yes (search API),Free,Direct download,N/A (curated),Varies,CC licenses (check each),Massive library; quality varies; requires attribution handling,Tier 2 - Supplement
+WebAudio API,Mixing,Real-time,N/A (framework),N/A,Native browser,Free,Native JavaScript,N/A,Unlimited,N/A,Essential for real-time preview; supports 5+ tracks with <100ms latency,Tier 1 - Required
+FFmpeg.wasm,Export,30-60s (encode time),N/A (tool),N/A,Native WASM,Free,Existing in codebase,N/A,Unlimited,N/A,Already integrated for video; extends to audio mixing for final export,Tier 1 - Required (existing)

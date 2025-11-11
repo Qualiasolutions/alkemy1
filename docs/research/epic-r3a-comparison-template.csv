@@ -1,8 +1,0 @@
-Technology,Latency (Voice Input),Latency (Voice Output),Film Term Accuracy,Browser Support,API Complexity,Cost per 1000 queries,Quality Rating (1-10),Recommendation Tier
-Web Speech API,<1s,<1s,75%,Chrome/Edge (good) Safari/Firefox (limited),Low (native),Free,6,Tier 2 - Viable with caveats
-Deepgram,<500ms,N/A,92%,All (via API),Medium,$$10,9,Tier 1 - Recommended
-AssemblyAI,<800ms,N/A,89%,All (via API),Medium,$12,8,Tier 1 - Recommended
-OpenAI Whisper,<1.5s,N/A,94%,All (via API),Low,$6,9,Tier 1 - Recommended
-ElevenLabs (TTS),N/A,<1.2s,N/A,All (via API),Low,$15,10,Tier 1 - Recommended (output)
-PlayHT (TTS),N/A,<1.5s,N/A,All (via API),Medium,$12,8,Tier 2 - Viable
-Web Speech TTS,N/A,<800ms,N/A,All (native),Low (native),Free,5,Tier 3 - Not recommended (quality)
