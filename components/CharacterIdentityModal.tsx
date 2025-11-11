@@ -244,6 +244,9 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={handleClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="character-identity-modal-title"
         >
             <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -262,7 +265,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                     isDark ? 'border-gray-800' : 'border-gray-200'
                 }`}>
                     <div>
-                        <h3 className={`text-xl font-bold ${
+                        <h3 id="character-identity-modal-title" className={`text-xl font-bold ${
                             isDark ? 'text-white' : 'text-gray-900'
                         }`}>
                             Prepare Character Identity
@@ -276,6 +279,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                     <button
                         onClick={handleClose}
                         disabled={isProcessing}
+                        aria-label="Close modal"
                         className={`p-2 rounded-lg transition-colors ${
                             isProcessing
                                 ? 'opacity-50 cursor-not-allowed'
@@ -305,6 +309,15 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                                 onDragLeave={handleDragLeave}
                                 onDrop={handleDrop}
                                 onClick={() => fileInputRef.current?.click()}
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Upload reference images by clicking or dragging files here"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        fileInputRef.current?.click();
+                                    }
+                                }}
                                 className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                                     isDragging
                                         ? 'border-teal-500 bg-teal-500/10'
@@ -333,6 +346,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                                     multiple
                                     onChange={handleFileInputChange}
                                     className="hidden"
+                                    aria-label="Select reference images to upload"
                                 />
                             </div>
                         )}
@@ -375,6 +389,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                                         <button
                                             onClick={() => handleRemoveImage(img.id)}
                                             disabled={isProcessing}
+                                            aria-label={`Remove reference image ${index + 1}`}
                                             className="absolute top-1 right-1 p-1 bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 disabled:opacity-50"
                                         >
                                             <Trash2Icon className="w-3 h-3 text-white" />
@@ -432,7 +447,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
 
                     {/* Processing Status */}
                     {isProcessing && (
-                        <div className="space-y-3">
+                        <div className="space-y-3" role="status" aria-live="polite" aria-atomic="true">
                             <div className="flex justify-between items-center">
                                 <span className={`text-sm font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                     {statusMessage}
@@ -443,7 +458,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                             </div>
                             <div className={`w-full h-2 rounded-full overflow-hidden ${
                                 isDark ? 'bg-gray-800' : 'bg-gray-200'
-                            }`}>
+                            }`} role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Character identity preparation progress">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${progress}%` }}
