@@ -834,6 +834,8 @@ const Card: React.FC<{
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.1 }}
+                        role="status"
+                        aria-label={`Character identity status: ${identityStatus === 'ready' ? 'Ready' : identityStatus === 'preparing' ? 'Training in progress' : identityStatus === 'error' ? 'Error occurred' : 'Not prepared'}`}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md flex items-center gap-1 ${
                             identityStatus === 'ready'
                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
@@ -901,6 +903,12 @@ const Card: React.FC<{
 
                     {/* Action Buttons */}
                     <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        {/* Show Prepare Identity button hint when character has no identity */}
+                        {character && identityStatus === 'none' && !item.imageUrl && (
+                            <div className="absolute -top-16 left-0 bg-purple-500/90 text-white text-xs px-3 py-2 rounded-lg shadow-lg opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none whitespace-nowrap">
+                                ⬅️ Hover to prepare identity
+                            </div>
+                        )}
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
