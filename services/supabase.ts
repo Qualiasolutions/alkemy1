@@ -248,3 +248,32 @@ export const db = {
         },
     },
 };
+
+/**
+ * Get the current authenticated user's ID
+ *
+ * Epic 2 - Character Identity System
+ * Used by characterIdentityService.ts for uploading reference images to user-scoped storage paths
+ *
+ * @returns User ID (UUID) or null if not authenticated
+ */
+export async function getCurrentUserId(): Promise<string | null> {
+    if (!supabase) {
+        console.warn('Supabase is not configured - cannot get current user ID');
+        return null;
+    }
+
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error) {
+            console.error('Failed to get current user:', error);
+            return null;
+        }
+
+        return user?.id || null;
+    } catch (error) {
+        console.error('Error getting current user ID:', error);
+        return null;
+    }
+}
