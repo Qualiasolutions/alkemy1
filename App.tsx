@@ -46,6 +46,7 @@ import SaveStatusIndicator from './components/SaveStatusIndicator';
 // Import the new auth pages
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+import HomePage from './pages/HomePage';
 // import GenerationPage from './pages/GenerationPage'; // Commented out - separate Epic 2 demo page
 
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
@@ -1351,7 +1352,8 @@ const AppWithProviders: React.FC = () => {
       {supabaseConfigured ? (
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<AppContentWithAuth />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/app" element={<AppContentWithAuth />} />
             {/* <Route path="/generation" element={<GenerationPage />} /> */}
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
@@ -1359,7 +1361,8 @@ const AppWithProviders: React.FC = () => {
         </AuthProvider>
       ) : (
         <Routes>
-          <Route path="/" element={<AppContentWithoutAuth />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/app" element={<AppContentWithoutAuth />} />
           {/* <Route path="/generation" element={<GenerationPage />} /> */}
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
