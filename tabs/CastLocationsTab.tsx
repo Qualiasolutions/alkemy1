@@ -1149,6 +1149,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                 imageUrl: null,
                 generations: [],
                 refinedGenerationUrls: [],
+                identity: undefined,
             };
             setCharacters(prev => [...prev, newCharacter]);
         } else if (isAddModalOpen === 'location') {
