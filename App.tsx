@@ -226,6 +226,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [projectList, setProjectList] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState<boolean>(false);
+  const [hasLoadedInitialProject, setHasLoadedInitialProject] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
@@ -295,9 +296,9 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     }
   }, [isAuthenticated, user, supabaseEnabled, projectService]);
 
-  // Load projects when user authenticates and auto-load most recent project
+  // Load projects when user authenticates and auto-load most recent project (ONCE only)
   useEffect(() => {
-    if (isAuthenticated && user && supabaseEnabled) {
+    if (isAuthenticated && user && supabaseEnabled && !hasLoadedInitialProject) {
       console.log('[Auth] User authenticated, loading projects from Supabase');
 
       // Clear localStorage when user signs in - we'll use Supabase from now on
@@ -315,13 +316,17 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
           console.log('[Auth] Auto-loading most recent project:', mostRecent.title);
           await loadProject(mostRecent);
+          setHasLoadedInitialProject(true); // Prevent re-loading
+        } else {
+          setHasLoadedInitialProject(true); // Mark as loaded even if no projects
         }
       });
-    } else {
+    } else if (!isAuthenticated) {
       setProjectList([]);
       setCurrentProject(null);
+      setHasLoadedInitialProject(false); // Reset flag when user signs out
     }
-  }, [isAuthenticated, user, supabaseEnabled, loadUserProjects]);
+  }, [isAuthenticated, user, supabaseEnabled, hasLoadedInitialProject, projectService]);
 
   // Save project to database ONLY (no localStorage for authenticated users)
   const saveProject = useCallback(async (projectData?: any) => {
