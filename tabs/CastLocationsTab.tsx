@@ -782,7 +782,7 @@ const GenerationView: React.FC<{
                 </aside>
 
                 {/* CENTER: Main Display - with enhanced borders */}
-                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-8 pr-[500px] pb-32">
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-8 pb-32">
                     {currentImage ? (
                         <div className="relative max-w-full max-h-full">
                             <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/30 via-emerald-500/30 to-teal-500/30 rounded-3xl blur-2xl"></div>
@@ -815,6 +815,16 @@ const GenerationView: React.FC<{
                         </div>
                     )}
                 </div>
+
+                {/* RIGHT SIDEBAR: Video Generation Panel */}
+                <aside className="w-[500px] border-l-2 border-purple-500/20 flex flex-col bg-gradient-to-b from-[#0a0a0a] to-[#050505] overflow-hidden">
+                    <VideoGenerationPanel
+                        item={item}
+                        moodboard={moodboard}
+                        moodboardTemplates={moodboardTemplates}
+                        onUpdateItem={onUpdateBatch}
+                    />
+                </aside>
                 </main>
             )}
 

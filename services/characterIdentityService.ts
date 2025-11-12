@@ -11,6 +11,7 @@
  */
 
 import type { CharacterIdentity, CharacterIdentityStatus, CharacterIdentityTest, CharacterIdentityTestType } from '@/types';
+import { supabase, getCurrentUserId } from './supabase';
 
 export interface PrepareCharacterIdentityRequest {
     characterId: string;
@@ -162,8 +163,7 @@ export async function deleteCharacterIdentity(characterId: string): Promise<bool
         const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL;
 
         if (isSupabaseConfigured) {
-            // Import Supabase client dynamically to avoid errors when not configured
-            const { supabase } = await import('./supabase');
+            // Use Supabase client
 
             // Delete all files in character-references/{characterId}/ folder
             const { data: files, error: listError } = await supabase.storage
@@ -337,8 +337,6 @@ async function uploadToSupabaseStorage(
     images: File[],
     onProgress?: (progress: number, status: string) => void
 ): Promise<string[]> {
-    const { supabase } = await import('./supabase');
-    const { getCurrentUserId } = await import('./supabase');
 
     const userId = await getCurrentUserId();
     if (!userId) {
@@ -729,8 +727,6 @@ export async function approveCharacterIdentity(
     const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL;
     if (isSupabaseConfigured) {
         try {
-            const { supabase } = await import('./supabase');
-            const { getCurrentUserId } = await import('./supabase');
 
             const userId = await getCurrentUserId();
             if (userId) {
