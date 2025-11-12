@@ -967,7 +967,17 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               {/* Voice Settings Panel */}
               {showVoiceSettings && voiceOutputSupported && (
                 <div className="border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.05)] to-transparent px-6 py-4 space-y-4">
-                  <h4 className="text-xs font-semibold text-white/90 uppercase tracking-wider">Voice Output Settings</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-white/90 uppercase tracking-wider">Voice Output Settings</h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowVoiceSettings(false)}
+                      className="shrink-0 rounded-full border border-white/10 bg-white/5 p-1.5 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105"
+                      aria-label="Close voice settings"
+                    >
+                      <XIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
 
                   {/* Voice Selection */}
                   <div className="space-y-2">

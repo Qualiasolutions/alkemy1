@@ -180,6 +180,7 @@ const extractCharacters = (lines: string[]): AnalyzedCharacter[] => {
     });
 
     return Array.from(candidates).slice(0, 8).map((name, index) => ({
+        identity: undefined,
         id: `char-${index}-${name}`,
         name,
         description: `${name} is a key character identified from the script. Please refine their description once AI services are available.`,

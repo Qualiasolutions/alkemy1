@@ -323,12 +323,23 @@ export interface ProjectPerformanceComparison {
 
 export type QualityLevel = 'excellent' | 'good' | 'fair' | 'needs-improvement';
 
+// Continuity Checking Types (Epic 1, Story 1.4)
+
+export type ContinuityIssueType = 'lighting-jump' | 'costume-change' | 'spatial-mismatch';
+export type ContinuityIssueSeverity = 'critical' | 'warning' | 'info';
+
 export interface ContinuityIssue {
-  type: 'lighting-jump' | 'costume-change' | 'spatial-mismatch' | 'prop-continuity' | 'other';
-  location: string;
-  description: string;
-  severity: 'critical' | 'warning' | 'info';
-  affectedFrames: string[];
+  id: string; // Unique ID for dismissal tracking
+  type: ContinuityIssueType;
+  severity: ContinuityIssueSeverity;
+  clip1: TimelineClip; // First affected clip
+  clip2: TimelineClip; // Second affected clip
+  sceneId: string | null; // Scene where issue occurs (null if no scene data)
+  description: string; // Human-readable description
+  suggestedFix: string; // Actionable recommendation
+  autoFixCommand?: string; // Optional command to auto-fix (e.g., "regenerate-shot")
+  dismissed: boolean; // User dismissed this warning
+  dismissalReason?: string; // "Intentional", "Not an issue", "Will fix manually"
 }
 
 // Character Identity Types (Epic 2)

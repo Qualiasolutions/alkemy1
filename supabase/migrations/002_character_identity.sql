@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS character_identity_tests (
   similarity_score NUMERIC(5, 2) CHECK (similarity_score >= 0 AND similarity_score <= 100),
 
   -- Timestamp
-  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  test_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   -- Additional metadata
   metadata JSONB -- Can store CLIP score, pHash score, evaluation details
@@ -105,7 +105,7 @@ CREATE INDEX IF NOT EXISTS idx_character_tests_identity
   ON character_identity_tests(character_identity_id);
 
 CREATE INDEX IF NOT EXISTS idx_character_tests_timestamp
-  ON character_identity_tests(timestamp DESC);
+  ON character_identity_tests(test_timestamp DESC);
 
 -- ============================================================================
 -- 3. ROW LEVEL SECURITY (RLS)
@@ -186,7 +186,7 @@ RETURNS TABLE (
   test_type TEXT,
   generated_image_url TEXT,
   similarity_score NUMERIC,
-  timestamp TIMESTAMPTZ
+  test_timestamp TIMESTAMPTZ
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -195,10 +195,10 @@ BEGIN
     t.test_type,
     t.generated_image_url,
     t.similarity_score,
-    t.timestamp
+    t.test_timestamp
   FROM character_identity_tests t
   WHERE t.character_identity_id = p_character_identity_id
-  ORDER BY t.timestamp DESC
+  ORDER BY t.test_timestamp DESC
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
