@@ -82,9 +82,9 @@ const HomePage = () => {
     await signOut();
   };
 
-  // Media content for Alkemy
+  // Media content for Alkemy - using provided video URL
   const alkemyMediaContent = {
-    src: 'https://me7aitdbxq.ufs.sh/f/2wsMIGDMQRdYuZ5R8ahEEZ4aQK56LizRdfBSqeDMsmUIrJN1', // Epic video
+    src: 'https://static1.squarespace.com/static/66d6e9faade6f84968af1f82/t/691489b43805884a3df4e53f/1762953657150/video-vgen-1762441256328-0.mp4',
     poster: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1920&auto=format&fit=crop',
     background: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920&auto=format&fit=crop',
     title: 'Alkemy AI Studio',
