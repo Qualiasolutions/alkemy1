@@ -715,6 +715,42 @@ const StillStudio: React.FC<{
         }));
     };
 
+    // Manual image assignment handlers
+    const handleAssignImage = (slot: 'main' | '2nd' | '3rd' | '4th', imageUrl: string) => {
+        const slotMapping = {
+            'main': 'start_frame_url',
+            '2nd': 'secondary_image_url',
+            '3rd': 'tertiary_image_url',
+            '4th': 'quaternary_image_url'
+        };
+
+        onUpdateFrame(prev => ({
+            ...prev,
+            media: {
+                ...prev.media,
+                [slotMapping[slot]]: imageUrl,
+            },
+            status: FrameStatus.GeneratedStill
+        }));
+    };
+
+    const handleClearSlot = (slot: 'main' | '2nd' | '3rd' | '4th') => {
+        const slotMapping = {
+            'main': 'start_frame_url',
+            '2nd': 'secondary_image_url',
+            '3rd': 'tertiary_image_url',
+            '4th': 'quaternary_image_url'
+        };
+
+        onUpdateFrame(prev => ({
+            ...prev,
+            media: {
+                ...prev.media,
+                [slotMapping[slot]]: null,
+            }
+        }));
+    };
+
     // Get all valid generations
     const allGenerations = frame.generations || [];
     const validGenerations = allGenerations.filter(g => g.url && !g.isLoading);
@@ -814,10 +850,10 @@ const StillStudio: React.FC<{
                 </div>
             </header>
 
-            {/* Main Content: Left Sidebar + Main Grid */}
+            {/* Main Content: Left Sidebar + Main Grid + Right Sidebar */}
             <main className="flex-1 overflow-hidden flex">
                 {/* LEFT SIDEBAR: Prompt Controls + Director Widget */}
-                <aside className="w-[320px] border-r border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
+                <aside className="w-[280px] border-r border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
                     {/* Prompt Controls Section */}
                     <div className="p-4 space-y-4">
                         <div>
@@ -990,8 +1026,8 @@ const StillStudio: React.FC<{
                                         transition={{ delay: index * 0.05 }}
                                         className="group relative rounded-xl overflow-hidden border-2 border-gray-800 hover:border-teal-500/70 transition-all duration-300 hover:shadow-[0_0_30px_rgba(20,184,166,0.3)] bg-gray-900/50"
                                     >
-                                        <div className="aspect-video relative overflow-hidden">
-                                            <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+                                        <div className="aspect-video relative overflow-hidden bg-black">
+                                            <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full h-full object-contain transition-transform group-hover:scale-105 duration-300" />
 
                                             {/* Top Badge */}
                                             <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-lg">
@@ -999,22 +1035,42 @@ const StillStudio: React.FC<{
                                             </div>
 
                                             {/* Hover Overlay with Actions */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-2 p-4">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1.5 p-3">
                                                 <button
                                                     onClick={() => setViewingGeneration(gen)}
-                                                    className="bg-white/90 text-black text-xs px-4 py-2 rounded-lg font-bold hover:bg-white hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
+                                                    className="bg-white/90 text-black text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-white hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
                                                 >
                                                     View Fullscreen
                                                 </button>
-                                                <button
-                                                    onClick={() => handleSetFrame('start', gen.url!)}
-                                                    className="bg-emerald-500/90 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-emerald-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
-                                                >
-                                                    Set as Hero
-                                                </button>
+                                                <div className="grid grid-cols-2 gap-1.5 w-full">
+                                                    <button
+                                                        onClick={() => handleAssignImage('main', gen.url!)}
+                                                        className="bg-emerald-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-emerald-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
+                                                    >
+                                                        Main
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAssignImage('2nd', gen.url!)}
+                                                        className="bg-blue-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-blue-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
+                                                    >
+                                                        2nd
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAssignImage('3rd', gen.url!)}
+                                                        className="bg-purple-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-purple-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
+                                                    >
+                                                        3rd
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAssignImage('4th', gen.url!)}
+                                                        className="bg-orange-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-orange-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
+                                                    >
+                                                        4th
+                                                    </button>
+                                                </div>
                                                 <button
                                                     onClick={() => onEnterRefinement(gen)}
-                                                    className="bg-teal-500/90 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-teal-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
+                                                    className="bg-teal-500/90 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-teal-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
                                                 >
                                                     Refine
                                                 </button>
@@ -1068,6 +1124,106 @@ const StillStudio: React.FC<{
                         </div>
                     )}
                 </div>
+
+                {/* RIGHT SIDEBAR: Image Assignment Slots */}
+                <aside className="w-[320px] border-l border-gray-800/50 bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 p-4 overflow-y-auto">
+                    <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Image Assignments</h3>
+
+                    <div className="space-y-4">
+                        {/* Main Image Slot */}
+                        <div className="rounded-xl overflow-hidden border-2 border-emerald-500/50 bg-gray-900/50">
+                            <div className="bg-emerald-500/20 px-3 py-2 border-b border-emerald-500/50">
+                                <p className="text-emerald-400 text-xs font-bold uppercase">Main Image</p>
+                            </div>
+                            {frame.media?.start_frame_url ? (
+                                <div className="relative group">
+                                    <img src={frame.media.start_frame_url} alt="Main" className="w-full aspect-video object-contain bg-black" />
+                                    <button
+                                        onClick={() => handleClearSlot('main')}
+                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
+                                    >
+                                        <XIcon className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
+                                    <p className="text-gray-600 text-xs">No main image set</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 2nd Image Slot */}
+                        <div className="rounded-xl overflow-hidden border-2 border-blue-500/50 bg-gray-900/50">
+                            <div className="bg-blue-500/20 px-3 py-2 border-b border-blue-500/50">
+                                <p className="text-blue-400 text-xs font-bold uppercase">2nd Image</p>
+                            </div>
+                            {frame.media?.secondary_image_url ? (
+                                <div className="relative group">
+                                    <img src={frame.media.secondary_image_url} alt="2nd" className="w-full aspect-video object-contain bg-black" />
+                                    <button
+                                        onClick={() => handleClearSlot('2nd')}
+                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
+                                    >
+                                        <XIcon className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
+                                    <p className="text-gray-600 text-xs">No 2nd image set</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 3rd Image Slot */}
+                        <div className="rounded-xl overflow-hidden border-2 border-purple-500/50 bg-gray-900/50">
+                            <div className="bg-purple-500/20 px-3 py-2 border-b border-purple-500/50">
+                                <p className="text-purple-400 text-xs font-bold uppercase">3rd Image</p>
+                            </div>
+                            {frame.media?.tertiary_image_url ? (
+                                <div className="relative group">
+                                    <img src={frame.media.tertiary_image_url} alt="3rd" className="w-full aspect-video object-contain bg-black" />
+                                    <button
+                                        onClick={() => handleClearSlot('3rd')}
+                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
+                                    >
+                                        <XIcon className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
+                                    <p className="text-gray-600 text-xs">No 3rd image set</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 4th Image Slot */}
+                        <div className="rounded-xl overflow-hidden border-2 border-orange-500/50 bg-gray-900/50">
+                            <div className="bg-orange-500/20 px-3 py-2 border-b border-orange-500/50">
+                                <p className="text-orange-400 text-xs font-bold uppercase">4th Image</p>
+                            </div>
+                            {frame.media?.quaternary_image_url ? (
+                                <div className="relative group">
+                                    <img src={frame.media.quaternary_image_url} alt="4th" className="w-full aspect-video object-contain bg-black" />
+                                    <button
+                                        onClick={() => handleClearSlot('4th')}
+                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
+                                    >
+                                        <XIcon className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
+                                    <p className="text-gray-600 text-xs">No 4th image set</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mt-6 p-3 rounded-lg bg-teal-500/10 border border-teal-500/30">
+                        <p className="text-teal-400 text-[10px] font-semibold mb-1">💡 Pro Tip</p>
+                        <p className="text-gray-400 text-[10px]">Hover over any generated image and click the assignment buttons to set main, 2nd, 3rd, or 4th images manually.</p>
+                    </div>
+                </aside>
             </main>
         </div>
     );

@@ -51,8 +51,11 @@ export interface Frame {
   location_name?: string;
   status: FrameStatus;
   media?: {
-    start_frame_url?: string | null; // The first hero still image
+    start_frame_url?: string | null; // The main/hero still image
     end_frame_url?: string | null; // The second hero still image for Veo
+    secondary_image_url?: string | null; // 2nd assigned image
+    tertiary_image_url?: string | null; // 3rd assigned image
+    quaternary_image_url?: string | null; // 4th assigned image
     variants?: (string | {url: string, type: 'video' | 'image'})[]; // Can store URLs or objects for mixed types
     refinedVariantUrls?: string[]; // URLs of variants that have been refined
     upscaled_start_frame_url?: string | null;
