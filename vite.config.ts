@@ -100,13 +100,44 @@ export default defineConfig(({ mode }) => {
       build: {
         rollupOptions: {
           output: {
-            manualChunks: {
-              'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-              'ui-vendor': ['framer-motion'],
-              'three-vendor': ['three'],
+            manualChunks: (id) => {
+              // Vendor chunks
+              if (id.includes('node_modules')) {
+                if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                  return 'react-vendor';
+                }
+                if (id.includes('framer-motion') || id.includes('@radix-ui')) {
+                  return 'ui-vendor';
+                }
+                if (id.includes('three') || id.includes('@react-three') || id.includes('gaussian')) {
+                  return 'three-vendor';
+                }
+                if (id.includes('supabase')) {
+                  return 'supabase-vendor';
+                }
+                if (id.includes('recharts') || id.includes('d3')) {
+                  return 'charts-vendor';
+                }
+                if (id.includes('ffmpeg')) {
+                  return 'ffmpeg-vendor';
+                }
+              }
+              // Service chunks - keep core services together
+              if (id.includes('/services/')) {
+                if (id.includes('aiService') || id.includes('directorKnowledge')) {
+                  return 'ai-services';
+                }
+                if (id.includes('supabase') || id.includes('characterIdentity')) {
+                  return 'data-services';
+                }
+                if (id.includes('wanService') || id.includes('fluxService') || id.includes('lumaService')) {
+                  return 'generation-services';
+                }
+              }
             },
           },
         },
+        chunkSizeWarningLimit: 800,
         minify: 'terser',
         terserOptions: {
           compress: {
