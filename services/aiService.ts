@@ -418,7 +418,8 @@ export const generateStillVariants = async (
     characterNames?: string[],
     locationName?: string,
     onProgress?: (index: number, progress: number) => void,
-    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
+    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string },
+    characterIdentities?: Array<{ loraUrl: string; scale?: number }> // NEW: Character identity LoRAs
 ): Promise<{
     urls: string[],
     errors: (string | null)[],
@@ -468,13 +469,20 @@ export const generateStillVariants = async (
     const generationPromises = Array.from({ length: n }).map((_, index) => {
         const startTime = Date.now();
 
-        return generateVisual(finalPrompt, model, allReferenceImages, aspect_ratio, (progress) => {
-            onProgress?.(index, progress);
-        }, `${frame_id}-${index}-${aspect_ratio}`, {
-            ...context,
-            frameId: context?.frameId || `${frame_id}-${index}`,
-            sceneId: context?.sceneId || frame_id.split('-')[0],
-        })
+        return generateVisual(
+            finalPrompt,
+            model,
+            allReferenceImages,
+            aspect_ratio,
+            (progress) => { onProgress?.(index, progress); },
+            `${frame_id}-${index}-${aspect_ratio}`,
+            {
+                ...context,
+                frameId: context?.frameId || `${frame_id}-${index}`,
+                sceneId: context?.sceneId || frame_id.split('-')[0],
+            },
+            characterIdentities // NEW: Pass character identity LoRAs
+        )
         .then((result) => {
             // Track successful generation
             const duration = Date.now() - startTime;
@@ -1019,7 +1027,8 @@ export const generateVisual = async (
     aspect_ratio: string,
     onProgress?: (progress: number) => void,
     seed: string = `${model}-${prompt}`,
-    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
+    context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string },
+    characterIdentities?: Array<{ loraUrl: string; scale?: number }> // NEW: Character identity LoRAs
 ): Promise<VisualGenerationResult> => {
     console.log("[generateVisual] Starting generation", {
         model,
@@ -1069,16 +1078,26 @@ export const generateVisual = async (
 
         // === FLUX API PATH ===
         if (shouldUseFluxApi && fluxVariant) {
-            console.log("[generateVisual] Using FLUX API via FAL.AI");
+            console.log("[generateVisual] Using FLUX API via FAL.AI", {
+                hasCharacterIdentities: !!characterIdentities && characterIdentities.length > 0,
+                identityCount: characterIdentities?.length || 0
+            });
 
             onProgress?.(10);
+
+            // Prepare LoRA parameters from character identities
+            const loras = characterIdentities?.map(identity => ({
+                path: identity.loraUrl,
+                scale: identity.scale ?? 1.0 // Default to full strength
+            }));
 
             const imageUrl = await generateImageWithFlux(
                 prompt,
                 aspect_ratio,
                 onProgress,
                 true, // Enable raw mode for more photorealistic results
-                fluxVariant
+                fluxVariant,
+                loras // Pass character identity LoRAs
             );
 
             // Log usage for analytics
