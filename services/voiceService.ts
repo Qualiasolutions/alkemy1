@@ -72,9 +72,12 @@ export interface VoiceRecognitionService {
 // Voice mode preference type
 export type VoiceMode = 'push-to-talk' | 'always-listening' | 'text-only';
 
-// localStorage keys
-const VOICE_MODE_KEY = 'alkemy_voice_mode_preference';
-const VOICE_PRIVACY_WARNING_KEY = 'alkemy_voice_privacy_warning_shown';
+// Import userDataService for persisting preferences
+import { userDataService } from './userDataService';
+
+// Temporary cache for non-authenticated users (in-memory only)
+let voiceModeCache: VoiceMode | null = null;
+let privacyWarningCache: boolean | null = null;
 
 /**
  * Initialize Web Speech API voice recognition
@@ -203,41 +206,68 @@ export function isVoiceRecognitionSupported(): boolean {
 }
 
 /**
- * Get current voice mode preference from localStorage
+ * Get current voice mode preference
  *
- * @returns VoiceMode - 'push-to-talk' (default), 'always-listening', or 'text-only'
+ * @param userId - Optional user ID for database lookup
+ * @returns Promise<VoiceMode> - 'push-to-talk' (default), 'always-listening', or 'text-only'
  */
-export function getVoiceMode(): VoiceMode {
-    const stored = localStorage.getItem(VOICE_MODE_KEY);
-    if (stored === 'always-listening' || stored === 'text-only' || stored === 'push-to-talk') {
-        return stored;
+export async function getVoiceMode(userId?: string): Promise<VoiceMode> {
+    // For authenticated users, use database
+    if (userId) {
+        const prefs = await userDataService.getUserPreferences(userId);
+        return prefs.voiceSettings.mode || 'push-to-talk';
     }
-    return 'push-to-talk'; // Default
+
+    // For anonymous users, use in-memory cache
+    return voiceModeCache || 'push-to-talk';
 }
 
 /**
- * Set voice mode preference and persist to localStorage
+ * Set voice mode preference
  *
  * @param mode - 'push-to-talk', 'always-listening', or 'text-only'
+ * @param userId - Optional user ID for database persistence
  */
-export function setVoiceMode(mode: VoiceMode): void {
-    localStorage.setItem(VOICE_MODE_KEY, mode);
+export async function setVoiceMode(mode: VoiceMode, userId?: string): Promise<void> {
+    // For authenticated users, persist to database
+    if (userId) {
+        await userDataService.updateVoiceSettings(userId, { mode });
+    } else {
+        // For anonymous users, use in-memory cache only
+        voiceModeCache = mode;
+    }
 }
 
 /**
  * Check if privacy warning for always-listening mode has been shown
  *
- * @returns boolean - true if warning has been shown, false if needs to be displayed
+ * @param userId - Optional user ID for database lookup
+ * @returns Promise<boolean> - true if warning has been shown, false if needs to be displayed
  */
-export function hasShownPrivacyWarning(): boolean {
-    return localStorage.getItem(VOICE_PRIVACY_WARNING_KEY) === 'true';
+export async function hasShownPrivacyWarning(userId?: string): Promise<boolean> {
+    // For authenticated users, use database
+    if (userId) {
+        const prefs = await userDataService.getUserPreferences(userId);
+        return prefs.voiceSettings.privacyWarningShown || false;
+    }
+
+    // For anonymous users, use in-memory cache
+    return privacyWarningCache || false;
 }
 
 /**
  * Mark privacy warning as shown (for always-listening mode)
+ *
+ * @param userId - Optional user ID for database persistence
  */
-export function markPrivacyWarningShown(): void {
-    localStorage.setItem(VOICE_PRIVACY_WARNING_KEY, 'true');
+export async function markPrivacyWarningShown(userId?: string): Promise<void> {
+    // For authenticated users, persist to database
+    if (userId) {
+        await userDataService.updateVoiceSettings(userId, { privacyWarningShown: true });
+    } else {
+        // For anonymous users, use in-memory cache only
+        privacyWarningCache = true;
+    }
 }
 
 /**
@@ -324,10 +354,10 @@ export interface TTSCallbacks {
     onResume?: () => void;
 }
 
-// localStorage keys for voice output preferences
-const VOICE_OUTPUT_ENABLED_KEY = 'alkemy_voice_output_enabled';
-const VOICE_OUTPUT_VOICE_ID_KEY = 'alkemy_voice_output_voice_id';
-const VOICE_OUTPUT_RATE_KEY = 'alkemy_voice_output_speech_rate';
+// Temporary cache for voice output preferences (non-authenticated users)
+let voiceOutputEnabledCache: boolean | null = null;
+let voiceOutputVoiceIdCache: string | null = null;
+let voiceOutputRateCache: number | null = null;
 
 // Current utterance tracking (for pause/resume/stop)
 let currentUtterance: SpeechSynthesisUtterance | null = null;
@@ -517,58 +547,94 @@ export function isSpeechPaused(): boolean {
 }
 
 // ========================================================================================
-// Voice Output Preferences (localStorage)
+// Voice Output Preferences (Database/Cache)
 // ========================================================================================
 
 /**
  * Check if voice output is enabled (user preference)
  *
- * @returns boolean - true if enabled, false if disabled (default: false, opt-in)
+ * @param userId - Optional user ID for database lookup
+ * @returns Promise<boolean> - true if enabled, false if disabled (default: false, opt-in)
  */
-export function isVoiceOutputEnabled(): boolean {
-    return localStorage.getItem(VOICE_OUTPUT_ENABLED_KEY) === 'true';
+export async function isVoiceOutputEnabled(userId?: string): Promise<boolean> {
+    // For authenticated users, use database
+    if (userId) {
+        const prefs = await userDataService.getUserPreferences(userId);
+        return prefs.voiceSettings.outputEnabled || false;
+    }
+
+    // For anonymous users, use in-memory cache
+    return voiceOutputEnabledCache || false;
 }
 
 /**
  * Set voice output enabled preference
  *
  * @param enabled - true to enable, false to disable
+ * @param userId - Optional user ID for database persistence
  */
-export function setVoiceOutputEnabled(enabled: boolean): void {
-    localStorage.setItem(VOICE_OUTPUT_ENABLED_KEY, enabled.toString());
+export async function setVoiceOutputEnabled(enabled: boolean, userId?: string): Promise<void> {
+    // For authenticated users, persist to database
+    if (userId) {
+        await userDataService.updateVoiceSettings(userId, { outputEnabled: enabled });
+    } else {
+        // For anonymous users, use in-memory cache only
+        voiceOutputEnabledCache = enabled;
+    }
 }
 
 /**
  * Get saved voice preference (voice ID)
  *
- * @returns string | null - Saved voice name, or null if not set
+ * @param userId - Optional user ID for database lookup
+ * @returns Promise<string | null> - Saved voice name, or null if not set
  */
-export function getSavedVoiceId(): string | null {
-    return localStorage.getItem(VOICE_OUTPUT_VOICE_ID_KEY);
+export async function getSavedVoiceId(userId?: string): Promise<string | null> {
+    // For authenticated users, use database
+    if (userId) {
+        const prefs = await userDataService.getUserPreferences(userId);
+        return prefs.voiceSettings.outputVoiceId;
+    }
+
+    // For anonymous users, use in-memory cache
+    return voiceOutputVoiceIdCache;
 }
 
 /**
  * Set voice preference (save voice ID)
  *
  * @param voiceId - Voice name to save
+ * @param userId - Optional user ID for database persistence
  */
-export function setSavedVoiceId(voiceId: string): void {
-    localStorage.setItem(VOICE_OUTPUT_VOICE_ID_KEY, voiceId);
+export async function setSavedVoiceId(voiceId: string, userId?: string): Promise<void> {
+    // For authenticated users, persist to database
+    if (userId) {
+        await userDataService.updateVoiceSettings(userId, { outputVoiceId: voiceId });
+    } else {
+        // For anonymous users, use in-memory cache only
+        voiceOutputVoiceIdCache = voiceId;
+    }
 }
 
 /**
  * Get saved speech rate preference
  *
- * @returns number - Speech rate (0.5 - 2.0), default 1.0
+ * @param userId - Optional user ID for database lookup
+ * @returns Promise<number> - Speech rate (0.5 - 2.0), default 1.0
  */
-export function getSavedSpeechRate(): number {
-    const stored = localStorage.getItem(VOICE_OUTPUT_RATE_KEY);
-    if (stored) {
-        const rate = parseFloat(stored);
-        if (!isNaN(rate) && rate >= 0.5 && rate <= 2.0) {
+export async function getSavedSpeechRate(userId?: string): Promise<number> {
+    // For authenticated users, use database
+    if (userId) {
+        const prefs = await userDataService.getUserPreferences(userId);
+        const rate = prefs.voiceSettings.speechRate;
+        if (rate && rate >= 0.5 && rate <= 2.0) {
             return rate;
         }
+    } else if (voiceOutputRateCache !== null) {
+        // For anonymous users, use in-memory cache
+        return voiceOutputRateCache;
     }
+
     return 1.0; // Default
 }
 
@@ -576,20 +642,29 @@ export function getSavedSpeechRate(): number {
  * Set speech rate preference
  *
  * @param rate - Speech rate (0.5 - 2.0)
+ * @param userId - Optional user ID for database persistence
  */
-export function setSavedSpeechRate(rate: number): void {
+export async function setSavedSpeechRate(rate: number, userId?: string): Promise<void> {
     // Clamp to valid range
     const clampedRate = Math.max(0.5, Math.min(2.0, rate));
-    localStorage.setItem(VOICE_OUTPUT_RATE_KEY, clampedRate.toString());
+
+    // For authenticated users, persist to database
+    if (userId) {
+        await userDataService.updateVoiceSettings(userId, { speechRate: clampedRate });
+    } else {
+        // For anonymous users, use in-memory cache only
+        voiceOutputRateCache = clampedRate;
+    }
 }
 
 /**
  * Get saved voice object from saved voice ID
  *
+ * @param userId - Optional user ID for database lookup
  * @returns Promise<SpeechSynthesisVoice | null> - Saved voice or null
  */
-export async function getSavedVoice(): Promise<SpeechSynthesisVoice | null> {
-    const savedId = getSavedVoiceId();
+export async function getSavedVoice(userId?: string): Promise<SpeechSynthesisVoice | null> {
+    const savedId = await getSavedVoiceId(userId);
     if (!savedId) return null;
 
     const voices = await getAvailableVoices();

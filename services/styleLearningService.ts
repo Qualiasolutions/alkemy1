@@ -11,11 +11,12 @@
 
 import { StyleProfile, StylePatterns, PatternType } from '../types';
 import { supabase } from './supabase';
+import { userDataService } from './userDataService';
 
-// localStorage keys
-const STYLE_LEARNING_ENABLED_KEY = 'alkemy_style_learning_enabled';
-const STYLE_PROFILE_KEY = 'alkemy_director_style_profile';
-const STYLE_OPT_IN_SHOWN_KEY = 'alkemy_style_learning_opt_in_shown';
+// Temporary cache for non-authenticated users (in-memory only)
+let styleLearningEnabledCache: boolean | null = null;
+let styleOptInShownCache: boolean | null = null;
+let styleProfileCache: StyleProfile | null = null;
 
 // Default empty patterns
 const DEFAULT_PATTERNS: StylePatterns = {
@@ -28,30 +29,61 @@ const DEFAULT_PATTERNS: StylePatterns = {
 
 /**
  * Check if style learning is enabled (opt-in)
+ * @param userId - Optional user ID for database lookup
  */
-export function isStyleLearningEnabled(): boolean {
-  return localStorage.getItem(STYLE_LEARNING_ENABLED_KEY) === 'true';
+export async function isStyleLearningEnabled(userId?: string): Promise<boolean> {
+  // For authenticated users, use database
+  if (userId) {
+    const prefs = await userDataService.getUserPreferences(userId);
+    return prefs.styleLearningEnabled || false;
+  }
+
+  // For anonymous users, use in-memory cache
+  return styleLearningEnabledCache || false;
 }
 
 /**
  * Enable or disable style learning
+ * @param enabled - Enable or disable style learning
+ * @param userId - Optional user ID for database persistence
  */
-export function setStyleLearningEnabled(enabled: boolean): void {
-  localStorage.setItem(STYLE_LEARNING_ENABLED_KEY, enabled ? 'true' : 'false');
+export async function setStyleLearningEnabled(enabled: boolean, userId?: string): Promise<void> {
+  // For authenticated users, persist to database
+  if (userId) {
+    await userDataService.updatePreference(userId, 'styleLearningEnabled', enabled);
+  } else {
+    // For anonymous users, use in-memory cache only
+    styleLearningEnabledCache = enabled;
+  }
 }
 
 /**
  * Check if opt-in prompt has been shown
+ * @param userId - Optional user ID for database lookup
  */
-export function hasShownOptInPrompt(): boolean {
-  return localStorage.getItem(STYLE_OPT_IN_SHOWN_KEY) === 'true';
+export async function hasShownOptInPrompt(userId?: string): Promise<boolean> {
+  // For authenticated users, use database
+  if (userId) {
+    const prefs = await userDataService.getUserPreferences(userId);
+    return prefs.styleOptInShown || false;
+  }
+
+  // For anonymous users, use in-memory cache
+  return styleOptInShownCache || false;
 }
 
 /**
  * Mark opt-in prompt as shown
+ * @param userId - Optional user ID for database persistence
  */
-export function setOptInPromptShown(): void {
-  localStorage.setItem(STYLE_OPT_IN_SHOWN_KEY, 'true');
+export async function setOptInPromptShown(userId?: string): Promise<void> {
+  // For authenticated users, persist to database
+  if (userId) {
+    await userDataService.updatePreference(userId, 'styleOptInShown', true);
+  } else {
+    // For anonymous users, use in-memory cache only
+    styleOptInShownCache = true;
+  }
 }
 
 /**
@@ -79,27 +111,28 @@ async function getCurrentUserId(): Promise<string | null> {
 }
 
 /**
- * Get style profile from Supabase or localStorage
+ * Get style profile from Supabase or cache
  */
-export async function getStyleProfile(): Promise<StyleProfile> {
-  if (!isStyleLearningEnabled()) {
+export async function getStyleProfile(userId?: string): Promise<StyleProfile> {
+  const enabledCheck = await isStyleLearningEnabled(userId);
+  if (!enabledCheck) {
     throw new Error('Style learning is not enabled');
   }
 
   // Try Supabase first (if configured)
   if (await isSupabaseConfigured()) {
-    const userId = await getCurrentUserId();
-    if (userId) {
+    const supabaseUserId = userId || await getCurrentUserId();
+    if (supabaseUserId) {
       try {
         const { data, error } = await supabase
           .from('user_style_profiles')
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', supabaseUserId)
           .single();
 
         if (data && !error) {
           return {
-            userId,
+            userId: supabaseUserId,
             patterns: data.patterns as StylePatterns,
             totalProjects: data.total_projects,
             totalShots: data.total_shots,
@@ -108,24 +141,19 @@ export async function getStyleProfile(): Promise<StyleProfile> {
           };
         }
       } catch (err) {
-        console.warn('Failed to fetch style profile from Supabase, falling back to localStorage', err);
+        console.warn('Failed to fetch style profile from Supabase, using cache', err);
       }
     }
   }
 
-  // Fallback to localStorage
-  const storedProfile = localStorage.getItem(STYLE_PROFILE_KEY);
-  if (storedProfile) {
-    try {
-      return JSON.parse(storedProfile);
-    } catch {
-      console.warn('Failed to parse stored style profile, creating new one');
-    }
+  // For anonymous users, use in-memory cache
+  if (styleProfileCache) {
+    return styleProfileCache;
   }
 
   // Create new profile
   const newProfile: StyleProfile = {
-    userId: (await getCurrentUserId()) || 'local-user',
+    userId: userId || (await getCurrentUserId()) || 'local-user',
     patterns: DEFAULT_PATTERNS,
     totalProjects: 0,
     totalShots: 0,
@@ -133,19 +161,27 @@ export async function getStyleProfile(): Promise<StyleProfile> {
     createdAt: new Date().toISOString(),
   };
 
+  // Cache for anonymous users
+  if (!userId) {
+    styleProfileCache = newProfile;
+  }
+
   return newProfile;
 }
 
 /**
- * Save style profile to Supabase and/or localStorage
+ * Save style profile to Supabase and/or cache
  */
 async function saveStyleProfile(profile: StyleProfile): Promise<void> {
-  // Save to localStorage (always, as fallback)
-  localStorage.setItem(STYLE_PROFILE_KEY, JSON.stringify(profile));
+  // For anonymous users, save to cache
+  if (!profile.userId || profile.userId === 'local-user') {
+    styleProfileCache = profile;
+    return;
+  }
 
   // Save to Supabase (if configured)
   if (await isSupabaseConfigured()) {
-    const userId = await getCurrentUserId();
+    const userId = profile.userId || await getCurrentUserId();
     if (userId) {
       try {
         await supabase
@@ -159,8 +195,13 @@ async function saveStyleProfile(profile: StyleProfile): Promise<void> {
           });
       } catch (err) {
         console.warn('Failed to save style profile to Supabase', err);
+        // Fall back to cache on error
+        styleProfileCache = profile;
       }
     }
+  } else {
+    // No Supabase, use cache
+    styleProfileCache = profile;
   }
 }
 
@@ -170,17 +211,20 @@ async function saveStyleProfile(profile: StyleProfile): Promise<void> {
  * @param patternType - Type of pattern (shotType, lensChoice, lighting, colorGrade, cameraMovement)
  * @param value - Value of the pattern (e.g., "close-up", "50mm", "natural")
  * @param context - Optional context (e.g., shotType for lens choices)
+ * @param userId - Optional user ID for database operations
  */
 export async function trackPattern(
   patternType: PatternType,
   value: string,
-  context?: { shotType?: string }
+  context?: { shotType?: string },
+  userId?: string
 ): Promise<void> {
-  if (!isStyleLearningEnabled()) return;
+  const enabled = await isStyleLearningEnabled(userId);
+  if (!enabled) return;
   if (!value) return;
 
   try {
-    const profile = await getStyleProfile();
+    const profile = await getStyleProfile(userId);
 
     // Update patterns
     if (patternType === 'lensChoice' && context?.shotType) {
@@ -212,17 +256,19 @@ export async function trackPattern(
  * Get style-adapted suggestion based on learned patterns (AC3: Style-Adapted Suggestions)
  *
  * @param context - Context for suggestion (sceneEmotion, shotType, lighting)
+ * @param userId - Optional user ID for database lookup
  * @returns Personalized suggestion or null if no patterns learned
  */
 export async function getStyleSuggestion(context: {
   sceneEmotion?: string;
   shotType?: string;
   lighting?: string;
-}): Promise<string | null> {
-  if (!isStyleLearningEnabled()) return null;
+}, userId?: string): Promise<string | null> {
+  const enabled = await isStyleLearningEnabled(userId);
+  if (!enabled) return null;
 
   try {
-    const profile = await getStyleProfile();
+    const profile = await getStyleProfile(userId);
 
     // Need at least 10 shots to provide meaningful suggestions
     if (profile.totalShots < 10) return null;
@@ -308,20 +354,23 @@ export async function resetStyleProfile(): Promise<void> {
 
 /**
  * Export style profile as JSON - AC5: Style Profile Management
+ * @param userId - Optional user ID for database lookup
  */
-export async function exportStyleProfile(): Promise<string> {
-  const profile = await getStyleProfile();
+export async function exportStyleProfile(userId?: string): Promise<string> {
+  const profile = await getStyleProfile(userId);
   return JSON.stringify(profile, null, 2);
 }
 
 /**
  * Get summary stats for style learning badge - AC4: Style Learning Indicator
+ * @param userId - Optional user ID for database lookup
  */
-export async function getStyleLearningSummary(): Promise<{ projectsAnalyzed: number; shotsTracked: number } | null> {
-  if (!isStyleLearningEnabled()) return null;
+export async function getStyleLearningSummary(userId?: string): Promise<{ projectsAnalyzed: number; shotsTracked: number } | null> {
+  const enabled = await isStyleLearningEnabled(userId);
+  if (!enabled) return null;
 
   try {
-    const profile = await getStyleProfile();
+    const profile = await getStyleProfile(userId);
     return {
       projectsAnalyzed: profile.totalProjects,
       shotsTracked: profile.totalShots,
