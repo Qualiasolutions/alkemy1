@@ -441,3 +441,24 @@ export interface AudioMixerState {
 
 export type MusicProvider = 'udio' | 'suno' | 'stable-audio' | 'musicgen' | 'aiva';
 export type SFXProvider = 'elevenlabs' | 'audiocraft' | 'freesound';
+
+// Style Learning Types (Epic 1, Story 1.3)
+
+export type PatternType = 'shotType' | 'lensChoice' | 'lighting' | 'colorGrade' | 'cameraMovement';
+
+export interface StylePatterns {
+  shotTypes: { [shotType: string]: number };
+  lensChoices: { [shotType: string]: { [lens: string]: number } };
+  lighting: { [lightingType: string]: number };
+  colorGrade: { [gradeType: string]: number };
+  cameraMovement: { [movementType: string]: number };
+}
+
+export interface StyleProfile {
+  userId: string;
+  patterns: StylePatterns;
+  totalProjects: number;
+  totalShots: number;
+  lastUpdated: string;
+  createdAt: string;
+}
