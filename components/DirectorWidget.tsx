@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ScriptAnalysis, Generation } from '../types';
+import { ScriptAnalysis, Generation, TimelineClip, ContinuityIssue } from '../types';
 import { askTheDirector, generateStillVariants, upscaleImage } from '../services/aiService';
 import Button from './Button';
 import PromptModal from './PromptModal';
@@ -37,6 +37,11 @@ import {
     getStyleSuggestion,
     getStyleLearningSummary,
 } from '../services/styleLearningService';
+import {
+    analyzeContinuity,
+    dismissWarning,
+    generateContinuityReport,
+} from '../services/continuityService';
 
 type Author = 'user' | 'director';
 
@@ -46,11 +51,13 @@ interface Message {
   isCommand?: boolean;
   images?: string[];
   promptData?: string; // Store the generated prompt for later viewing
+  continuityIssues?: ContinuityIssue[]; // Continuity warnings to display
 }
 
 interface DirectorWidgetProps {
   scriptAnalysis: ScriptAnalysis | null;
   setScriptAnalysis: (analysis: ScriptAnalysis | ((prev: ScriptAnalysis | null) => ScriptAnalysis | null)) => void;
+  timelineClips?: TimelineClip[]; // Optional timeline clips for continuity checking
 }
 
 const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
@@ -69,7 +76,7 @@ const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
   moodboardTemplates: [],
 };
 
-const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography. I have reviewed the current project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
+const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography. I have reviewed the current project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Check continuity" - Analyze timeline for continuity issues\n• "Show continuity report" - View detailed continuity report\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
 const WELCOME_MESSAGE_NO_CONTEXT = 'Welcome. I am your Director of Photography. I can help you craft prompts, pick lenses, plan lighting, or solve cinematography questions. Load or analyze a script whenever you have one and I will adapt instantly to that story.';
 const ACCENT_HEX = '#10A37F';
 const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi' => {
@@ -102,7 +109,7 @@ const buildGenerationEntries = (urls: string[], errors: (string | null)[], aspec
 };
 
 
-const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScriptAnalysis }) => {
+const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScriptAnalysis, timelineClips }) => {
   const hasProjectContext = Boolean(scriptAnalysis);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => [{
@@ -138,6 +145,10 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const [showOptInPrompt, setShowOptInPrompt] = useState(false);
   const [styleLearningActive, setStyleLearningActive] = useState(false);
   const [styleSummary, setStyleSummary] = useState<{ projectsAnalyzed: number; shotsTracked: number } | null>(null);
+
+  // Continuity checking state (Epic 1, Story 1.4)
+  const [continuityIssues, setContinuityIssues] = useState<ContinuityIssue[]>([]);
+  const [lastContinuityCheck, setLastContinuityCheck] = useState<number | null>(null);
 
   const analysisForChat = scriptAnalysis ?? DEFAULT_SCRIPT_ANALYSIS;
   const welcomeMessage = hasProjectContext ? WELCOME_MESSAGE : WELCOME_MESSAGE_NO_CONTEXT;
@@ -470,8 +481,33 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     setShowOptInPrompt(false);
   }, []);
 
+  // Handle dismissing continuity issues (Story 1.4, AC4)
+  const handleDismissIssue = useCallback((issueId: string, reason?: string) => {
+    dismissWarning(issueId, reason);
+    // Remove from local state
+    setContinuityIssues(prev => prev.filter(issue => issue.id !== issueId));
+    // Update messages to remove the dismissed issue
+    setMessages(prev => prev.map(msg => {
+      if (msg.continuityIssues) {
+        return {
+          ...msg,
+          continuityIssues: msg.continuityIssues.filter(issue => issue.id !== issueId)
+        };
+      }
+      return msg;
+    }));
+  }, []);
+
   const parseCommand = (input: string) => {
     const lowerInput = input.toLowerCase();
+
+    // Check for continuity checking commands (Story 1.4)
+    if (lowerInput.match(/check\s+continuity|continuity\s+check|analyze\s+continuity/i)) {
+      return { type: 'continuity', subType: 'check' };
+    }
+    if (lowerInput.match(/show\s+continuity\s+report|continuity\s+report|report\s+continuity/i)) {
+      return { type: 'continuity', subType: 'report' };
+    }
 
     // Check for generate command
     const generateMatch = lowerInput.match(/generate\s+(\d+)\s+(flux|imagen|kontext|max|multi)?\s*(?:images?|photos?)?\s*(?:of|for)?\s*(.+?)(?:\s+(\d+):(\d+))?$/i);
@@ -530,6 +566,60 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     const analysisContext = scriptAnalysis ?? DEFAULT_SCRIPT_ANALYSIS;
 
     try {
+      // Handle continuity commands (Story 1.4)
+      if (command.type === 'continuity') {
+        if (!timelineClips || timelineClips.length < 2) {
+          return {
+            success: false,
+            message: 'No timeline clips available for continuity analysis. Add at least 2 clips to your timeline first.'
+          };
+        }
+
+        if (command.subType === 'check') {
+          // Run continuity analysis
+          const issues = await analyzeContinuity(timelineClips, analysisContext, (progress) => {
+            // Progress callback - could show progress in UI in future
+            console.log(`Continuity analysis progress: ${progress}%`);
+          });
+
+          setContinuityIssues(issues);
+          setLastContinuityCheck(Date.now());
+
+          if (issues.length === 0) {
+            return {
+              success: true,
+              message: '✅ **Continuity Check Complete**\n\nNo continuity issues detected! Your timeline looks great.',
+              continuityIssues: []
+            };
+          }
+
+          const criticalCount = issues.filter(i => i.severity === 'critical').length;
+          const warningCount = issues.filter(i => i.severity === 'warning').length;
+          const infoCount = issues.filter(i => i.severity === 'info').length;
+
+          return {
+            success: true,
+            message: `**Continuity Check Complete**\n\nFound ${issues.length} continuity issue${issues.length > 1 ? 's' : ''}:\n• 🔴 ${criticalCount} critical\n• 🟡 ${warningCount} warning${warningCount > 1 ? 's' : ''}\n• 🔵 ${infoCount} info\n\nSee details below. You can dismiss issues or use suggested fixes.`,
+            continuityIssues: issues
+          };
+        }
+
+        if (command.subType === 'report') {
+          if (continuityIssues.length === 0 && !lastContinuityCheck) {
+            return {
+              success: false,
+              message: 'No continuity analysis has been run yet. Use "check continuity" first.'
+            };
+          }
+
+          const report = generateContinuityReport(continuityIssues);
+          return {
+            success: true,
+            message: report
+          };
+        }
+      }
+
       // Handle new technical commands
       if (command.type === 'technical') {
         const { askTheDirector } = await import('../services/aiService');
@@ -773,7 +863,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     }
 
     return null;
-  }, [scriptAnalysis, setScriptAnalysis]);
+  }, [scriptAnalysis, setScriptAnalysis, timelineClips, continuityIssues, lastContinuityCheck, styleLearningActive]);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
@@ -806,7 +896,8 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               author: 'director',
               text: directorMessage,
               isCommand: true,
-              images: result.images
+              images: result.images,
+              continuityIssues: result.continuityIssues // Add continuity issues to message
             }
           ]);
           // Speak the response if voice output is enabled
@@ -1122,6 +1213,48 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                             </svg>
                             View Prompt
                           </button>
+                        )}
+                        {/* Continuity Issues (Story 1.4) */}
+                        {message.continuityIssues && message.continuityIssues.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {message.continuityIssues.map((issue) => (
+                              <div
+                                key={issue.id}
+                                className={`rounded-lg border px-3 py-2 text-xs ${
+                                  issue.severity === 'critical'
+                                    ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                                    : issue.severity === 'warning'
+                                      ? 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300'
+                                      : 'border-blue-500/30 bg-blue-500/10 text-blue-300'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-base">
+                                        {issue.severity === 'critical' ? '🔴' : issue.severity === 'warning' ? '🟡' : '🔵'}
+                                      </span>
+                                      <span className="font-semibold">
+                                        {issue.type === 'lighting-jump' ? 'Lighting Jump' : issue.type === 'costume-change' ? 'Costume Change' : 'Spatial Mismatch'}
+                                      </span>
+                                    </div>
+                                    <p className="text-white/80">{issue.description}</p>
+                                    <p className="text-white/60 italic">💡 {issue.suggestedFix}</p>
+                                    <p className="text-[10px] text-white/40">
+                                      Between: {issue.clip1.sceneHeading || 'Scene ' + issue.clip1.sceneId} → {issue.clip2.sceneHeading || 'Scene ' + issue.clip2.sceneId}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDismissIssue(issue.id)}
+                                    className="shrink-0 rounded-md border border-white/20 bg-white/5 px-2 py-1 text-[10px] text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                                    title="Dismiss this warning"
+                                  >
+                                    Dismiss
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
