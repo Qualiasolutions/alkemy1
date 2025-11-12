@@ -276,44 +276,47 @@ const ScrollExpandMedia = ({
                     />
                   </div>
                 )}
-
-                <div className='flex flex-col items-center text-center relative z-10 mt-4 transition-none'>
-                  {date && (
-                    <p
-                      className='text-2xl text-blue-200'
-                      style={{ transform: `translateX(-${textTranslateX}vw)` }}
-                    >
-                      {date}
-                    </p>
-                  )}
-                  {scrollToExpand && (
-                    <p
-                      className='text-blue-200 font-medium text-center'
-                      style={{ transform: `translateX(${textTranslateX}vw)` }}
-                    >
-                      {scrollToExpand}
-                    </p>
-                  )}
-                </div>
               </div>
 
-              <div
-                className={`flex items-center justify-center text-center gap-4 w-full relative z-10 transition-none flex-col ${
-                  textBlend ? 'mix-blend-difference' : 'mix-blend-normal'
-                }`}
-              >
-                <motion.h2
-                  className='text-4xl md:text-5xl lg:text-6xl font-bold text-blue-200 transition-none'
-                  style={{ transform: `translateX(-${textTranslateX}vw)` }}
+              {/* Text elements positioned absolutely in the viewport */}
+              <div className='absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10'>
+                <div
+                  className={`flex flex-col items-center justify-center text-center gap-4 w-full ${
+                    textBlend ? 'mix-blend-difference' : 'mix-blend-normal'
+                  }`}
                 >
-                  {firstWord}
-                </motion.h2>
-                <motion.h2
-                  className='text-4xl md:text-5xl lg:text-6xl font-bold text-center text-blue-200 transition-none'
-                  style={{ transform: `translateX(${textTranslateX}vw)` }}
-                >
-                  {restOfTitle}
-                </motion.h2>
+                  <motion.h2
+                    className='text-4xl md:text-5xl lg:text-6xl font-bold text-white transition-none'
+                    style={{ transform: `translateX(-${textTranslateX}px)` }}
+                  >
+                    {firstWord}
+                  </motion.h2>
+                  <motion.h2
+                    className='text-4xl md:text-5xl lg:text-6xl font-bold text-center text-white transition-none'
+                    style={{ transform: `translateX(${textTranslateX}px)` }}
+                  >
+                    {restOfTitle}
+                  </motion.h2>
+                </div>
+
+                <div className='flex flex-col items-center text-center mt-8 transition-none gap-2'>
+                  {date && (
+                    <motion.p
+                      className='text-2xl text-gray-300'
+                      style={{ transform: `translateY(${scrollProgress * 30}px)` }}
+                    >
+                      {date}
+                    </motion.p>
+                  )}
+                  {scrollToExpand && (
+                    <motion.p
+                      className='text-gray-400 font-medium text-center'
+                      style={{ transform: `translateY(${scrollProgress * 30}px)`, opacity: 1 - scrollProgress }}
+                    >
+                      {scrollToExpand}
+                    </motion.p>
+                  )}
+                </div>
               </div>
             </div>
 
