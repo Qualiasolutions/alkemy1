@@ -38,12 +38,16 @@ import { getProjectService } from './services/projectService';
 import { getMediaService } from './services/mediaService';
 import { getUsageService, USAGE_ACTIONS, logAIUsage } from './services/usageService';
 
+// Import enterprise data management services
+import { saveManager } from './services/saveManager';
+import { userDataService, useUserPreferences } from './services/userDataService';
+import SaveStatusIndicator from './components/SaveStatusIndicator';
+
 // Import the new auth pages
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 // import GenerationPage from './pages/GenerationPage'; // Commented out - separate Epic 2 demo page
 
-const UI_STATE_STORAGE_KEY = 'alkemy_ai_studio_ui_state';
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
 const isSupabaseProjectId = (id?: string | null): boolean => {
     if (!id) return false;
@@ -228,25 +232,16 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const [isLoadingProjects, setIsLoadingProjects] = useState<boolean>(false);
   const [hasLoadedInitialProject, setHasLoadedInitialProject] = useState<boolean>(false);
 
+  // Use user preferences hook for UI state management
+  const userPreferences = useUserPreferences(user?.id || null);
+
   const [activeTab, setActiveTab] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem(UI_STATE_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved).activeTab;
-        if (typeof parsed === 'string' && TABS.some(tab => tab.id === parsed)) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to load active tab from storage", e);
-    }
+    // Will be overridden by userPreferences once loaded
     return 'script';
   });
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
-    try {
-        const saved = localStorage.getItem(UI_STATE_STORAGE_KEY);
-        return saved ? JSON.parse(saved).isSidebarExpanded : true;
-    } catch { return true; }
+    // Will be overridden by userPreferences once loaded
+    return true;
   });
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
@@ -296,6 +291,21 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     }
   }, [isAuthenticated, user, supabaseEnabled, projectService]);
 
+  // Load UI preferences when they change from database
+  useEffect(() => {
+    if (!userPreferences.loading && userPreferences.preferences.uiState) {
+      setActiveTab(userPreferences.preferences.uiState.activeTab || 'script');
+      setIsSidebarExpanded(userPreferences.preferences.uiState.isSidebarExpanded ?? true);
+    }
+  }, [userPreferences.loading, userPreferences.preferences.uiState]);
+
+  // Migrate localStorage data on first load for authenticated users
+  useEffect(() => {
+    if (user?.id && !userPreferences.loading) {
+      userPreferences.migrateFromLocalStorage();
+    }
+  }, [user?.id, userPreferences.loading]);
+
   // Load projects when user authenticates and auto-load most recent project (ONCE only)
   useEffect(() => {
     if (isAuthenticated && user && supabaseEnabled && !hasLoadedInitialProject) {
@@ -328,7 +338,14 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     }
   }, [isAuthenticated, user, supabaseEnabled, hasLoadedInitialProject, projectService]);
 
-  // Save project to database ONLY (no localStorage for authenticated users)
+  // Initialize SaveManager when project changes
+  useEffect(() => {
+    if (currentProject && user && isSupabaseProjectId(currentProject.id)) {
+      saveManager.initialize(currentProject.id, user.id);
+    }
+  }, [currentProject, user]);
+
+  // Save project to database using SaveManager for optimistic updates
   const saveProject = useCallback(async (projectData?: any) => {
     const dataToSave = projectData || {
       scriptContent,
@@ -336,23 +353,23 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       timelineClips,
     };
 
-    // Authenticated users MUST use Supabase - no localStorage fallback
+    // Authenticated users use SaveManager for optimistic updates
     if (supabaseEnabled && isAuthenticated && user && currentProject && isSupabaseProjectId(currentProject.id)) {
-      try {
-        const { error } = await projectService.saveProjectData(currentProject.id, dataToSave);
-        if (error) throw error;
+      // Use SaveManager for optimistic updates and debounced saving
+      Object.entries(dataToSave).forEach(([field, value]) => {
+        saveManager.updateOptimistic(field, value);
+      });
 
-        // Update last accessed time
-        await projectService.updateLastAccessed(currentProject.id);
-
-        // Update local project state
-        setCurrentProject(prev => prev ? { ...prev, ...dataToSave } : null);
-
-        console.log('[Database] Project saved successfully');
-      } catch (error) {
-        console.error('[Database] Failed to save project:', error);
-        showToast('Failed to save project to cloud', 'error');
-        throw error; // Don't fallback to localStorage
+      // For immediate save (e.g., manual save button)
+      if (projectData === undefined) {
+        // This is an auto-save, let SaveManager handle debouncing
+        return;
+      } else {
+        // This is a manual save, save immediately
+        const success = await saveManager.saveNow({ showNotification: false });
+        if (!success) {
+          showToast('Failed to save project to cloud', 'error');
+        }
       }
     } else if (!isAuthenticated) {
       // Only use localStorage for anonymous/non-authenticated users
@@ -362,7 +379,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       console.error('[Save] Invalid project state - cannot save');
       showToast('Please create a project first', 'error');
     }
-  }, [scriptContent, scriptAnalysis, timelineClips, supabaseEnabled, isAuthenticated, user, currentProject, projectService, showToast]);
+  }, [scriptContent, scriptAnalysis, timelineClips, supabaseEnabled, isAuthenticated, user, currentProject, showToast]);
 
   // Load project from database or localStorage
   const loadProject = useCallback(async (project: Project) => {
@@ -492,11 +509,14 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   // --- Saving UI state (sidebar/tab) on change ---
   useEffect(() => {
-    try {
-      const uiState = { activeTab, isSidebarExpanded };
-      localStorage.setItem(UI_STATE_STORAGE_KEY, JSON.stringify(uiState));
-    } catch (e) { console.error("Failed to save UI state to storage", e); }
-  }, [activeTab, isSidebarExpanded]);
+    if (user?.id) {
+      // Save UI state to database for authenticated users
+      userPreferences.updateUIState({
+        activeTab,
+        isSidebarExpanded
+      });
+    }
+  }, [activeTab, isSidebarExpanded, user?.id]);
   
   // Convert blob URL to base64 for persistence
   const blobUrlToBase64 = async (blobUrl: string): Promise<string | null> => {
@@ -1287,6 +1307,9 @@ return (
 
     <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
     <Toast toast={toast} onClose={() => setToast(null)} />
+
+    {/* Save Status Indicator - shows manual save controls */}
+    <SaveStatusIndicator projectId={currentProject?.id || null} userId={user?.id || null} />
 
     {/* Auth Modal - Only render if Supabase is configured */}
     {isSupabaseConfigured() && (
