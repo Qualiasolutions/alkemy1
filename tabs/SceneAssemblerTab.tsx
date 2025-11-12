@@ -609,6 +609,24 @@ const StillStudio: React.FC<{
             const characterNames = selectedCharacters.map(c => c.name);
             const locationName = selectedLocation?.name;
 
+            // ===== CHARACTER IDENTITY INTEGRATION =====
+            const characterIdentities = selectedCharacters
+                .map(char => char.identity)
+                .filter(identity => identity?.status === 'ready' && identity?.technologyData?.falCharacterId)
+                .map(identity => ({
+                    loraUrl: identity!.technologyData!.falCharacterId!,
+                    scale: (identity!.technologyData!.referenceStrength || 80) / 100
+                }));
+
+            if (characterIdentities.length > 0) {
+                console.log('[SceneAssemblerTab] Using character identities:', {
+                    count: characterIdentities.length,
+                    characterNames: selectedCharacters
+                        .filter(c => c.identity?.status === 'ready')
+                        .map(c => c.name)
+                });
+            }
+
             const onProgress = (index: number, progress: number) => {
                 onUpdateFrame(prevFrame => {
                     const newGenerations = [...(prevFrame.generations || [])];
@@ -626,7 +644,7 @@ const StillStudio: React.FC<{
                 userId: user?.id || null,
                 sceneId: scene.id,
                 frameId: frame.id
-            });
+            }, characterIdentities.length > 0 ? characterIdentities : undefined);
 
             if (wasAdjusted) {
                 setPromptWasAdjusted(true);
