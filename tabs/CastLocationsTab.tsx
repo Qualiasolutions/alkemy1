@@ -10,6 +10,7 @@ import CharacterIdentityModal from '../components/CharacterIdentityModal';
 import { CharacterIdentityTestPanel } from '../components/CharacterIdentityTestPanel';
 import { getCharacterIdentityStatus } from '../services/characterIdentityService';
 import ImageCarousel from '../components/ImageCarousel';
+import VideoGenerationPanel from '../components/VideoGenerationPanel';
 
 // --- FullScreen Image Viewer Modal ---
 const FullScreenImagePlayer: React.FC<{

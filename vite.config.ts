@@ -115,8 +115,11 @@ export default defineConfig(({ mode }) => {
                 if (id.includes('supabase')) {
                   return 'supabase-vendor';
                 }
-                if (id.includes('recharts') || id.includes('d3')) {
-                  return 'charts-vendor';
+                if (id.includes('recharts')) {
+                  return 'recharts-vendor';
+                }
+                if (id.includes('d3')) {
+                  return 'd3-vendor';
                 }
                 if (id.includes('ffmpeg')) {
                   return 'ffmpeg-vendor';
