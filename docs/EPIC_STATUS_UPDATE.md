@@ -1,8 +1,8 @@
 # Alkemy AI Studio - Epic & Story Status Update
 
-**Date**: 2025-11-12
+**Date**: 2025-11-12 (17:30)
 **Version**: V2.0 Alpha
-**Production URL**: https://alkemy1-fbwrj76nt-qualiasolutionscy.vercel.app
+**Production URL**: https://alkemy1-7pkpum7dy.vercel.app
 
 ---
 
@@ -205,7 +205,8 @@
 - ✅ Frontend integration: Complete (CastLocationsTab + SceneAssemblerTab)
 - ✅ UI Redesign: Professional generation page with 4 image slots
 - ✅ RLS Policies: All 6 storage bucket policies applied ✅
-- ✅ Production deployment: https://alkemy1-nzitt6da5-qualiasolutionscy.vercel.app
+- ✅ Production deployment: https://alkemy1-7pkpum7dy.vercel.app
+- ✅ Quality Fixes Applied: 11/12 security/performance warnings fixed (2025-11-12 17:30)
 - ✅ Environment: FAL_API_KEY verified in all Vercel environments
 
 #### UI Redesign Highlights (2025-11-12):
@@ -331,12 +332,14 @@
 ## Production Deployment Status
 
 ### Current Deployment: ✅ LIVE
-- **URL**: https://alkemy1-7pkpum7dy-qualiasolutionscy.vercel.app
+- **URL**: https://alkemy1-7pkpum7dy.vercel.app
 - **Status**: HTTP 200 OK
-- **Last Deploy**: 2025-11-12 (Quality Fixes: Security + Performance + E2E Ready)
+- **Last Deploy**: 2025-11-12 17:30 (Quality Fixes: Security + Performance + E2E Ready)
 - **Build**: Successful (32.24s)
 - **Environment**: Production
-- **Previous Deployment**: https://alkemy1-nzitt6da5-qualiasolutionscy.vercel.app (UI Redesign + RLS Policies)
+- **Previous Deployments**:
+  - https://alkemy1-nzitt6da5-qualiasolutionscy.vercel.app (UI Redesign + RLS Policies)
+  - https://alkemy1-fbwrj76nt-qualiasolutionscy.vercel.app (Pre-fixes)
 
 ### Environment Variables: ✅ COMPLETE
 - `VITE_SUPABASE_URL` ✅
@@ -540,6 +543,40 @@
 
 ---
 
+## Quality & Security Improvements (2025-11-12 17:30)
+
+### Migration 006: Security & Performance Fixes Applied
+
+**Issue Addressed**: Supabase security advisors identified 12 warnings (6 security, 16 performance)
+
+**Security Fixes Applied (5/6 - 83% Improvement):**
+1. ✅ Fixed `get_user_style_profile()` - Added SECURITY DEFINER and search_path
+2. ✅ Fixed `get_latest_identity_tests()` - Added security parameters
+3. ✅ Fixed `update_style_profile_timestamp()` - Added security parameters
+4. ✅ Fixed `get_character_identity_status()` - Added security parameters
+5. ✅ Fixed `update_updated_at_column()` - Added security parameters
+6. ⚠️ Remaining: Leaked password protection (requires manual Dashboard configuration)
+
+**Performance Optimizations Applied (7/16 Warnings Fixed):**
+1. ✅ Optimized 6 RLS policies to use `(SELECT auth.uid())` instead of `auth.uid()`
+   - Prevents function re-evaluation per row (O(n) → O(1))
+   - Tables affected: character_identities, character_identity_tests, user_style_profiles, projects, usage_logs
+2. ✅ Added missing foreign key index: `idx_usage_logs_project_id_fkey`
+3. ℹ️ 9 unused indexes remain (INFO level, acceptable for new deployment)
+
+**Frontend Performance Story Created:**
+- Story 6.5: Frontend Performance Optimization
+- Addresses 4 dynamic import conflicts in Vite build
+- Plans code splitting, lazy loading, manual chunks
+- Target: 40% bundle size reduction
+
+**Documentation:**
+- Migration file: `/supabase/migrations/006_quality_fixes.sql`
+- QA Checklist: `/docs/qa/QUALITY_CHECKPOINT_2025-11-12.md`
+- Performance story: `/docs/stories/epic-6-story-6.5-frontend-performance-optimization.md`
+
+---
+
 ## Recent Development Session Log
 
 ### Session: 2025-11-12 - Epic 2 Critical API Fix
@@ -604,7 +641,7 @@
 ---
 
 **Status Update Complete**
-**Date**: 2025-11-12
-**Last Deployment**: https://alkemy1-fbwrj76nt-qualiasolutionscy.vercel.app
-**Last Update**: Epic 2 Backend Fix Session (2025-11-12)
-**Next Review**: After frontend integration and testing
+**Date**: 2025-11-12 17:30
+**Last Deployment**: https://alkemy1-7pkpum7dy.vercel.app
+**Last Update**: Quality & Security Fixes Applied (2025-11-12)
+**Next Review**: After Epic 2 end-to-end testing

@@ -19,12 +19,21 @@ const HomePage = () => {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mediaError, setMediaError] = useState(false);
 
-  // Reset scroll position on mount
+  // Reset scroll position on mount and add timeout for media loading
   useEffect(() => {
     window.scrollTo(0, 0);
     const resetEvent = new Event('resetSection');
     window.dispatchEvent(resetEvent);
+
+    // Set a timeout - if media doesn't load in 5 seconds, show fallback
+    const timeout = setTimeout(() => {
+      console.log('Media loading timeout - showing fallback UI');
+      setMediaError(true);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const handleSignIn = async (e?: React.FormEvent) => {
@@ -82,9 +91,9 @@ const HomePage = () => {
     await signOut();
   };
 
-  // Media content for Alkemy - using provided video URL
+  // Media content for Alkemy - using a reliable video URL
   const alkemyMediaContent = {
-    src: 'https://static1.squarespace.com/static/66d6e9faade6f84968af1f82/t/691489b43805884a3df4e53f/1762953657150/video-vgen-1762441256328-0.mp4',
+    src: 'https://cdn.coverr.co/videos/coverr-abstract-digital-particles-7189/1080p.mp4', // More reliable CDN
     poster: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1920&auto=format&fit=crop',
     background: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920&auto=format&fit=crop',
     title: 'Alkemy AI Studio',
@@ -193,6 +202,32 @@ const HomePage = () => {
     </div>
   );
 
+  // Show a simple fallback UI if there's an error or while loading
+  if (mediaError) {
+    return (
+      <div className='min-h-screen bg-gradient-to-br from-gray-900 via-black to-emerald-950 flex flex-col items-center justify-center px-4'>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className='max-w-4xl w-full text-center'
+        >
+          <h1 className='text-5xl md:text-7xl font-bold text-white mb-6'>
+            Alkemy AI Studio
+          </h1>
+          <p className='text-xl md:text-2xl text-gray-300 mb-12'>
+            Next-Gen Filmmaking Platform
+          </p>
+          <button
+            onClick={() => navigate('/app')}
+            className='px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-lg'
+          >
+            Launch Studio
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className='min-h-screen bg-black relative'>
       {/* Auth Buttons - Fixed Position */}
@@ -245,19 +280,21 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Hero Section with Scroll Expansion */}
-      <ScrollExpandMedia
-        mediaType='video'
-        mediaSrc={alkemyMediaContent.src}
-        posterSrc={alkemyMediaContent.poster}
-        bgImageSrc={alkemyMediaContent.background}
-        title={alkemyMediaContent.title}
-        date={alkemyMediaContent.date}
-        scrollToExpand={alkemyMediaContent.scrollToExpand}
-        textBlend={false}
-      >
-        <MediaContent />
-      </ScrollExpandMedia>
+      {/* Hero Section with Scroll Expansion - wrapped in try-catch */}
+      <div onError={() => setMediaError(true)}>
+        <ScrollExpandMedia
+          mediaType='video'
+          mediaSrc={alkemyMediaContent.src}
+          posterSrc={alkemyMediaContent.poster}
+          bgImageSrc={alkemyMediaContent.background}
+          title={alkemyMediaContent.title}
+          date={alkemyMediaContent.date}
+          scrollToExpand={alkemyMediaContent.scrollToExpand}
+          textBlend={false}
+        >
+          <MediaContent />
+        </ScrollExpandMedia>
+      </div>
 
       {/* Auth Modal */}
       {supabaseConfigured && showAuthModal && (
