@@ -44,6 +44,10 @@ export interface FluxGenerationParams {
     output_format?: 'jpeg' | 'png';
     aspect_ratio?: string;
     raw?: boolean; // Enable "raw" mode for more photographic results
+    loras?: Array<{
+        path: string; // LoRA model URL
+        scale: number; // Strength (0-1)
+    }>; // NEW: Character identity LoRA models
 }
 
 export interface FluxGenerationResult {
@@ -99,7 +103,8 @@ export const generateImageWithFlux = async (
     aspectRatio: string = '16:9',
     onProgress?: (progress: number) => void,
     raw: boolean = false,
-    variant: FluxModelVariant = 'Flux'
+    variant: FluxModelVariant = 'Flux',
+    loras?: Array<{ path: string; scale: number }> // NEW: Character identity LoRAs
 ): Promise<string> => {
     if (!isFluxApiAvailable()) {
         throw new Error('FLUX API key is not configured. Please set FLUX_API_KEY in environment variables.');
@@ -116,6 +121,8 @@ export const generateImageWithFlux = async (
         aspectRatio,
         raw,
         modelVariant: variant,
+        hasLoras: !!loras && loras.length > 0,
+        loraCount: loras?.length || 0,
         timestamp: new Date().toISOString()
     });
 
@@ -134,6 +141,12 @@ export const generateImageWithFlux = async (
             output_format: 'jpeg',
             raw: raw, // Enable raw mode for more photographic results
         };
+
+        // Add LoRA parameters if character identity is provided
+        if (loras && loras.length > 0) {
+            requestBody.loras = loras;
+            console.log('[FLUX Service] Using character identity LoRAs:', loras.map(l => ({ path: l.path.substring(0, 50) + '...', scale: l.scale })));
+        }
 
         onProgress?.(30);
 

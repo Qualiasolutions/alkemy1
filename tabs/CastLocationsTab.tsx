@@ -439,7 +439,26 @@ const GenerationView: React.FC<{
             if (item.data.imageUrl) {
                 referenceImages.push(item.data.imageUrl);
             }
-            
+
+            // ===== CHARACTER IDENTITY INTEGRATION =====
+            let characterIdentities: Array<{ loraUrl: string; scale: number }> | undefined = undefined;
+
+            if (isCharacter && character?.identity) {
+                const identityStatus = getCharacterIdentityStatus(character.identity);
+                if (identityStatus === 'ready' && character.identity.technologyData?.falCharacterId) {
+                    const referenceStrength = character.identity.technologyData.referenceStrength || 80;
+                    characterIdentities = [{
+                        loraUrl: character.identity.technologyData.falCharacterId,
+                        scale: referenceStrength / 100
+                    }];
+                    console.log('[CastLocationsTab] Using character identity:', {
+                        characterName: character.name,
+                        loraUrl: character.identity.technologyData.falCharacterId.substring(0, 50) + '...',
+                        scale: referenceStrength / 100
+                    });
+                }
+            }
+
             const onProgress = (index: number, progress: number) => {
                 onUpdateBatch(prevItem => {
                     const newGenerations = [...(prevItem.generations || [])];
@@ -453,7 +472,20 @@ const GenerationView: React.FC<{
             };
 
             const { urls, errors } = await generateStillVariants(
-                item.data.id, model, detailedPrompt, referenceImages, [], aspectRatio, N_GENERATIONS, moodboard, moodboardTemplates, undefined, undefined, onProgress
+                item.data.id,
+                model,
+                detailedPrompt,
+                referenceImages,
+                [],
+                aspectRatio,
+                N_GENERATIONS,
+                moodboard,
+                moodboardTemplates,
+                isCharacter ? [character!.name] : undefined,
+                !isCharacter ? (item.data as AnalyzedLocation).name : undefined,
+                onProgress,
+                undefined,
+                characterIdentities // ✅ Pass character identity LoRAs
             );
 
             onUpdateBatch(prevItem => {
@@ -473,7 +505,7 @@ const GenerationView: React.FC<{
         } catch (error) {
             console.error(`Failed to generate visual for ${item.data.name}:`, error);
             alert(`Error generating visual: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            
+
             onUpdateBatch(prevItem => ({
                 ...prevItem,
                 generations: (prevItem.generations || []).filter(g => !g.isLoading)
@@ -538,6 +570,14 @@ const GenerationView: React.FC<{
     const validGenerations = allGenerations.filter(g => g.url && !g.isLoading);
     const currentImage = validGenerations[selectedImageIndex] || null;
 
+    // Define image slots for better organization
+    const imageSlots = [
+        { id: 'main', label: 'Main', priority: 1, color: 'emerald' },
+        { id: 'secondary', label: 'Secondary', priority: 2, color: 'blue' },
+        { id: 'tertiary', label: 'Tertiary', priority: 3, color: 'purple' },
+        { id: 'fourth', label: 'Fourth', priority: 4, color: 'pink' }
+    ];
+
     return (
         <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
             {viewingGeneration && (
@@ -556,34 +596,34 @@ const GenerationView: React.FC<{
             )}
 
             {/* Header */}
-            <header className="flex-shrink-0 p-6 pb-4 border-b border-gray-800/50">
+            <header className="flex-shrink-0 p-6 pb-4 border-b-2 border-teal-500/20 bg-gradient-to-r from-gray-900/50 via-gray-800/50 to-gray-900/50">
                 <div className="flex items-center justify-between gap-4 mb-4">
-                    <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2 flex-shrink-0">
+                    <Button onClick={onBack} variant="secondary" className="!text-sm !gap-2 !px-4 !py-2.5 flex-shrink-0 !border-2 !border-gray-700/50 hover:!border-teal-500/50">
                         <ArrowLeftIcon className="w-4 h-4" /> Back to List
                     </Button>
-                    <h2 className="text-xl font-bold text-white truncate flex-1 text-center">{item.data.name}</h2>
-                    <div className="w-24 flex-shrink-0"></div>
+                    <h2 className="text-2xl font-bold text-white truncate flex-1 text-center bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">{item.data.name}</h2>
+                    <div className="w-28 flex-shrink-0"></div>
                 </div>
 
                 {/* Tab Navigation (only show for characters) */}
                 {isCharacter && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                         <button
                             onClick={() => setActiveTab('main')}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all border-2 ${
                                 activeTab === 'main'
-                                    ? 'bg-teal-500 text-white shadow-lg'
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                                    ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/50 border-teal-400'
+                                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 hover:text-gray-300 border-gray-700/50 hover:border-teal-500/30'
                             }`}
                         >
-                            Main Image
+                            Generation Studio
                         </button>
                         <button
                             onClick={() => setActiveTab('identity')}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 ${
+                            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 border-2 ${
                                 activeTab === 'identity'
-                                    ? 'bg-purple-500 text-white shadow-lg'
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/50 border-purple-400'
+                                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 hover:text-gray-300 border-gray-700/50 hover:border-purple-500/30'
                             }`}
                         >
                             <UploadIcon className="w-4 h-4" />
@@ -622,101 +662,155 @@ const GenerationView: React.FC<{
                 </main>
             ) : (
                 <main className="flex-1 overflow-hidden flex">
-                    {/* LEFT SIDEBAR: Generated Images */}
-                    <aside className="w-80 border-r border-gray-800/50 flex flex-col bg-[#0a0a0a]">
-                    <div className="p-4 border-b border-gray-800/50">
-                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generated Images</h3>
-                        <p className="text-xs text-gray-500 mt-1">{validGenerations.length} variants</p>
+                    {/* LEFT SIDEBAR: Image Slot Manager */}
+                    <aside className="w-96 border-r-2 border-teal-500/20 flex flex-col bg-gradient-to-b from-[#0a0a0a] to-[#050505]">
+                    <div className="p-5 border-b-2 border-gray-800/50 bg-gray-900/30">
+                        <h3 className="text-base font-bold text-teal-400 uppercase tracking-wide flex items-center gap-2">
+                            <ImagePlusIcon className="w-5 h-5" />
+                            Image Variants
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1.5 font-medium">{validGenerations.length} generated • {4 - validGenerations.length} slots available</p>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                        {/* Main image if exists */}
-                        {item.data.imageUrl && (
-                            <div
-                                className={`relative group rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${!currentImage ? 'border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'border-gray-800 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]'}`}
-                                onClick={() => setSelectedImageIndex(-1)}
-                            >
-                                <img src={item.data.imageUrl} alt="Main" className="w-full aspect-video object-cover" />
-                                <div className="absolute top-2 left-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-2 py-1 rounded font-semibold">Main</div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
-                                    <p className="text-white font-semibold text-sm">View Main Image</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Generated images */}
-                        {validGenerations.map((gen, index) => (
-                            <div
-                                key={gen.id}
-                                className={`relative group rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectedImageIndex === index ? 'border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]' : 'border-gray-800 hover:border-teal-500/50 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)]'}`}
-                                onClick={() => setSelectedImageIndex(index)}
-                            >
-                                <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full aspect-video object-cover" />
-                                <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded font-semibold">#{index + 1}</div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleSetMainImage(gen.url!);
-                                            }}
-                                            className="bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-400 transition shadow-lg"
-                                        >
-                                            Set Main
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingGeneration(gen);
-                                            }}
-                                            className="bg-teal-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-teal-400 transition shadow-lg"
-                                        >
-                                            Refine
-                                        </button>
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        {/* Main image slot with enhanced border */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                Main Image
+                            </h4>
+                            {item.data.imageUrl ? (
+                                <div
+                                    className={`relative group rounded-xl overflow-hidden cursor-pointer border-3 transition-all ${!currentImage ? 'border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.4)]' : 'border-gray-700/50 hover:border-emerald-500/60 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]'}`}
+                                    onClick={() => setSelectedImageIndex(-1)}
+                                >
+                                    <div className="absolute inset-0 border-2 border-emerald-500/50 rounded-xl pointer-events-none"></div>
+                                    <img src={item.data.imageUrl} alt="Main" className="w-full aspect-video object-cover" />
+                                    <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg">MAIN</div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                                        <p className="text-white font-bold text-sm">View Main Image</p>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ) : (
+                                <div className="relative rounded-xl overflow-hidden border-3 border-dashed border-gray-700/50 bg-gray-800/20 aspect-video flex items-center justify-center">
+                                    <div className="text-center">
+                                        <ImagePlusIcon className="w-10 h-10 text-gray-600 mx-auto mb-2" />
+                                        <p className="text-xs text-gray-500 font-semibold">No Main Image</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Generated variants with slot labels */}
+                        {imageSlots.slice(1).map((slot, slotIndex) => {
+                            const generation = validGenerations[slotIndex];
+                            const isSelected = selectedImageIndex === slotIndex;
+                            const borderColorClass = slot.color === 'blue' ? 'border-blue-500' : slot.color === 'purple' ? 'border-purple-500' : 'border-pink-500';
+                            const shadowColorClass = slot.color === 'blue' ? 'shadow-[0_0_25px_rgba(59,130,246,0.4)]' : slot.color === 'purple' ? 'shadow-[0_0_25px_rgba(168,85,247,0.4)]' : 'shadow-[0_0_25px_rgba(236,72,153,0.4)]';
+                            const bgColorClass = slot.color === 'blue' ? 'from-blue-500 to-cyan-500' : slot.color === 'purple' ? 'from-purple-500 to-pink-500' : 'from-pink-500 to-rose-500';
+
+                            return (
+                                <div key={slot.id} className="space-y-2">
+                                    <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-${slot.color}-400`}>
+                                        <div className={`w-2 h-2 rounded-full bg-${slot.color}-500 ${generation ? 'animate-pulse' : ''}`}></div>
+                                        {slot.label}
+                                    </h4>
+                                    {generation ? (
+                                        <div
+                                            className={`relative group rounded-xl overflow-hidden cursor-pointer border-3 transition-all ${isSelected ? `${borderColorClass} ${shadowColorClass}` : 'border-gray-700/50 hover:border-teal-500/60 hover:shadow-[0_0_20px_rgba(20,184,166,0.3)]'}`}
+                                            onClick={() => setSelectedImageIndex(slotIndex)}
+                                        >
+                                            <div className={`absolute inset-0 border-2 ${borderColorClass}/50 rounded-xl pointer-events-none`}></div>
+                                            <img src={generation.url!} alt={`${slot.label}`} className="w-full aspect-video object-cover" />
+                                            <div className={`absolute top-2.5 left-2.5 bg-gradient-to-r ${bgColorClass} text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg`}>#{slotIndex + 1}</div>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleSetMainImage(generation.url!);
+                                                        }}
+                                                        className="bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-emerald-400 transition shadow-lg border-2 border-emerald-400"
+                                                    >
+                                                        Set as Main
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditingGeneration(generation);
+                                                        }}
+                                                        className="bg-teal-500 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-teal-400 transition shadow-lg border-2 border-teal-400"
+                                                    >
+                                                        Refine
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="relative rounded-xl overflow-hidden border-3 border-dashed border-gray-700/50 bg-gray-800/20 aspect-video flex items-center justify-center">
+                                            <div className="text-center">
+                                                <ImagePlusIcon className="w-8 h-8 text-gray-600 mx-auto mb-1.5" />
+                                                <p className="text-xs text-gray-500 font-semibold">Empty Slot</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
 
                         {/* Loading generations */}
-                        {allGenerations.filter(g => g.isLoading).map(gen => (
-                            <div key={gen.id} className="rounded-lg overflow-hidden">
-                                <LoadingSkeleton aspectRatio={gen.aspectRatio} progress={gen.progress || 0} />
+                        {allGenerations.filter(g => g.isLoading).map((gen, idx) => (
+                            <div key={gen.id} className="space-y-2">
+                                <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                                    Generating #{validGenerations.length + idx + 1}
+                                </h4>
+                                <div className="rounded-xl overflow-hidden border-3 border-yellow-500/30">
+                                    <LoadingSkeleton aspectRatio={gen.aspectRatio} progress={gen.progress || 0} />
+                                </div>
                             </div>
                         ))}
 
                         {/* Empty state */}
                         {validGenerations.length === 0 && !allGenerations.some(g => g.isLoading) && (
                             <div className="text-center py-12">
-                                <p className="text-gray-500 text-sm">No generations yet</p>
-                                <p className="text-gray-600 text-xs mt-1">Use the form below to create</p>
+                                <ImagePlusIcon className="w-16 h-16 text-gray-700 mx-auto mb-3" />
+                                <p className="text-gray-500 text-sm font-semibold">No generations yet</p>
+                                <p className="text-gray-600 text-xs mt-1.5">Use the form below to create variants</p>
                             </div>
                         )}
                     </div>
                 </aside>
 
-                {/* CENTER: Main Display - with space for Director Widget */}
-                <div className="flex-1 flex items-center justify-center bg-black p-8 pr-[500px] pb-32">
+                {/* CENTER: Main Display - with enhanced borders */}
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-8 pr-[500px] pb-32">
                     {currentImage ? (
                         <div className="relative max-w-full max-h-full">
-                            <img
-                                src={currentImage.url!}
-                                alt="Selected"
-                                className="max-w-full max-h-full object-contain rounded-2xl border-4 border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.2)]"
-                            />
-                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-emerald-500/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
+                            <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/30 via-emerald-500/30 to-teal-500/30 rounded-3xl blur-2xl"></div>
+                            <div className="relative border-4 border-teal-500/40 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(20,184,166,0.3)]">
+                                <div className="absolute inset-0 border-2 border-teal-400/60 rounded-2xl pointer-events-none"></div>
+                                <img
+                                    src={currentImage.url!}
+                                    alt="Selected"
+                                    className="max-w-full max-h-full object-contain"
+                                />
+                            </div>
                         </div>
                     ) : item.data.imageUrl ? (
                         <div className="relative max-w-full max-h-full">
-                            <img
-                                src={item.data.imageUrl}
-                                alt="Main"
-                                className="max-w-full max-h-full object-contain rounded-2xl border-4 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.2)]"
-                            />
-                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/20 rounded-2xl -z-10 blur-xl"></div>
+                            <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/30 via-teal-500/30 to-emerald-500/30 rounded-3xl blur-2xl"></div>
+                            <div className="relative border-4 border-emerald-500/40 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(16,185,129,0.3)]">
+                                <div className="absolute inset-0 border-2 border-emerald-400/60 rounded-2xl pointer-events-none"></div>
+                                <img
+                                    src={item.data.imageUrl}
+                                    alt="Main"
+                                    className="max-w-full max-h-full object-contain"
+                                />
+                            </div>
                         </div>
                     ) : (
                         <div className="text-center">
-                            <p className="text-gray-500 text-lg mb-2">No image selected</p>
+                            <ImagePlusIcon className="w-20 h-20 text-gray-700 mx-auto mb-4" />
+                            <p className="text-gray-500 text-lg font-bold mb-2">No image selected</p>
                             <p className="text-gray-600 text-sm">Generate variants using the form below</p>
                         </div>
                     )}

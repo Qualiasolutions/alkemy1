@@ -422,29 +422,34 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 /**
- * Create character identity with Fal.ai API
+ * Create character identity with Fal.ai LoRA Fast Training API
  *
  * This function:
- * 1. Calls /api/fal-proxy to create a character identity
- * 2. Returns the Fal.ai character ID
+ * 1. Calls /api/fal-proxy to train a LoRA model
+ * 2. Returns the trained LoRA model URL
+ *
+ * Reference: https://fal.ai/models/fal-ai/flux-lora-fast-training
  */
 async function createFalCharacter(
     referenceUrls: string[],
     onProgress?: (progress: number, status: string) => void
 ): Promise<string> {
-    onProgress?.(50, 'Creating character with Fal.ai...');
+    onProgress?.(50, 'Training character with Fal.ai LoRA...');
 
-    // Call Fal.ai Instant Character API via proxy
+    // Call Fal.ai Flux LoRA Fast Training API via proxy
+    // This trains a LoRA model using the reference images
     const response = await fetch('/api/fal-proxy', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            endpoint: '/fal-ai/flux-pro/character/train',
+            endpoint: '/fal-ai/flux-lora-fast-training',
             method: 'POST',
             body: {
                 images_data_url: referenceUrls,
+                steps: 1000, // Training steps (default for fast training)
+                is_input_format_already_preprocessed: false,
             },
         }),
     });
@@ -458,16 +463,15 @@ async function createFalCharacter(
 
     onProgress?.(90, 'Finalizing character identity...');
 
-    // Extract character ID from Fal.ai response
-    // Note: Actual response structure depends on Fal.ai API
-    // Assuming response has { character_id: "..." } or similar field
-    const characterId = data.character_id || data.id || data.embedding_id;
+    // Extract LoRA model URL from Fal.ai response
+    // Response structure: { diffusers_lora_file: { url: "..." }, config_file: { url: "..." } }
+    const loraUrl = data.diffusers_lora_file?.url || data.lora_url || data.url;
 
-    if (!characterId) {
-        throw new Error('Fal.ai API did not return a character ID');
+    if (!loraUrl) {
+        throw new Error('Fal.ai API did not return a LoRA model URL');
     }
 
-    return characterId;
+    return loraUrl;
 }
 
 // ============================================================================
@@ -795,16 +799,19 @@ function generateTestPrompt(testType: CharacterIdentityTestType): string {
 }
 
 /**
- * Generate image using Fal.ai with character identity
+ * Generate image using Fal.ai Flux LoRA with trained character identity
+ *
+ * Reference: https://fal.ai/models/fal-ai/flux-lora
+ * The falCharacterId is actually the LoRA model URL from training
  */
 async function generateWithFalCharacter(
-    falCharacterId: string,
+    falCharacterId: string, // This is the LoRA model URL from createFalCharacter()
     prompt: string,
     onProgress?: (progress: number) => void
 ): Promise<string> {
     onProgress?.(10);
 
-    // Call Fal.ai API with character reference
+    // Call Fal.ai Flux LoRA API with trained LoRA model
     const response = await fetch('/api/fal-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -813,7 +820,12 @@ async function generateWithFalCharacter(
             method: 'POST',
             body: {
                 prompt,
-                character_id: falCharacterId,
+                loras: [
+                    {
+                        path: falCharacterId, // LoRA model URL from training
+                        scale: 1.0, // Full strength
+                    }
+                ],
                 num_images: 1,
                 image_size: { width: 1024, height: 1024 },
                 num_inference_steps: 28,
