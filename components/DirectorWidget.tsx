@@ -3,6 +3,7 @@ import { ScriptAnalysis, Generation } from '../types';
 import { askTheDirector, generateStillVariants, upscaleImage } from '../services/aiService';
 import Button from './Button';
 import PromptModal from './PromptModal';
+import StyleLearningOptIn from './StyleLearningOptIn';
 import { BrainIcon, SendIcon, XIcon } from './icons/Icons';
 import {
     initializeVoiceRecognition,
@@ -27,6 +28,15 @@ import {
     getSavedSpeechRate,
     setSavedSpeechRate,
 } from '../services/voiceService';
+import {
+    isStyleLearningEnabled,
+    setStyleLearningEnabled,
+    hasShownOptInPrompt,
+    setOptInPromptShown,
+    trackPattern,
+    getStyleSuggestion,
+    getStyleLearningSummary,
+} from '../services/styleLearningService';
 
 type Author = 'user' | 'director';
 
@@ -123,6 +133,11 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [speechRate, setSpeechRate] = useState(1.0); // 0.5 - 2.0
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+
+  // Style learning state (Epic 1, Story 1.3)
+  const [showOptInPrompt, setShowOptInPrompt] = useState(false);
+  const [styleLearningActive, setStyleLearningActive] = useState(false);
+  const [styleSummary, setStyleSummary] = useState<{ projectsAnalyzed: number; shotsTracked: number } | null>(null);
 
   const analysisForChat = scriptAnalysis ?? DEFAULT_SCRIPT_ANALYSIS;
   const welcomeMessage = hasProjectContext ? WELCOME_MESSAGE : WELCOME_MESSAGE_NO_CONTEXT;
@@ -257,6 +272,38 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       stopSpeech();
     };
   }, []);
+
+  // Initialize style learning (Epic 1, Story 1.3 - AC6: Privacy Controls)
+  useEffect(() => {
+    // Check if user has enabled style learning
+    const enabled = isStyleLearningEnabled();
+    setStyleLearningActive(enabled);
+
+    // Show opt-in prompt if not shown before (one-time on first launch)
+    if (!hasShownOptInPrompt()) {
+      setShowOptInPrompt(true);
+    }
+
+    // Load style summary if enabled
+    if (enabled) {
+      getStyleLearningSummary().then(summary => {
+        if (summary) {
+          setStyleSummary(summary);
+        }
+      });
+    }
+  }, []);
+
+  // Update style summary when style learning is activated
+  useEffect(() => {
+    if (styleLearningActive) {
+      getStyleLearningSummary().then(summary => {
+        if (summary) {
+          setStyleSummary(summary);
+        }
+      });
+    }
+  }, [styleLearningActive]);
 
   // Waveform animation functions
   const startWaveformAnimation = useCallback(() => {
@@ -399,6 +446,28 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const handleStopSpeech = useCallback(() => {
     stopSpeech();
     setIsSpeakingNow(false);
+  }, []);
+
+  // Handle style learning opt-in (Epic 1, Story 1.3 - AC6: Privacy Controls)
+  const handleEnableStyleLearning = useCallback(() => {
+    setStyleLearningEnabled(true);
+    setStyleLearningActive(true);
+    setOptInPromptShown();
+    setShowOptInPrompt(false);
+
+    // Initialize summary
+    getStyleLearningSummary().then(summary => {
+      if (summary) {
+        setStyleSummary(summary);
+      }
+    });
+  }, []);
+
+  const handleDeclineStyleLearning = useCallback(() => {
+    setStyleLearningEnabled(false);
+    setStyleLearningActive(false);
+    setOptInPromptShown();
+    setShowOptInPrompt(false);
   }, []);
 
   const parseCommand = (input: string) => {
@@ -553,6 +622,22 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                 })
               };
             });
+
+            // Track pattern for style learning (AC1: Creative Pattern Tracking)
+            if (styleLearningActive) {
+              // Extract shot type from character description or prompt if present
+              const description = character.description.toLowerCase();
+              let shotType: string | undefined;
+              if (description.includes('close-up') || description.includes('close up')) shotType = 'close-up';
+              else if (description.includes('medium shot') || description.includes('mid shot')) shotType = 'medium-shot';
+              else if (description.includes('wide shot') || description.includes('establishing')) shotType = 'wide-shot';
+
+              if (shotType) {
+                trackPattern('shotType', shotType).catch(err =>
+                  console.warn('Failed to track shot type pattern:', err)
+                );
+              }
+            }
 
             return {
               success: true,
@@ -741,8 +826,26 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
           handleSpeakResponse(errorMessage);
         }
       } else {
-        const reply = await askTheDirector(analysisForChat, trimmedInput, nextMessages);
+        let reply = await askTheDirector(analysisForChat, trimmedInput, nextMessages);
         if (activeRequestIdRef.current !== requestId) return;
+
+        // Inject style-adapted suggestions (AC3: Style-Adapted Suggestions)
+        if (styleLearningActive) {
+          try {
+            const styleSuggestion = await getStyleSuggestion({
+              sceneEmotion: trimmedInput.toLowerCase().includes('emotion') ? trimmedInput : undefined,
+              shotType: trimmedInput.toLowerCase().includes('shot') ? trimmedInput : undefined,
+              lighting: trimmedInput.toLowerCase().includes('light') ? trimmedInput : undefined,
+            });
+
+            if (styleSuggestion) {
+              reply += `\n\n---\n\n**Your Style Preferences:**\n${styleSuggestion}`;
+            }
+          } catch (err) {
+            console.warn('Failed to get style suggestion:', err);
+          }
+        }
+
         if (promptRequest) {
           const preparedPrompt = reply.trim();
           setPromptModal(preparedPrompt);
@@ -806,6 +909,12 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                     <p className="text-[10px] uppercase tracking-[0.25em] text-white/40 truncate">
                       {isSpeakingNow ? '🔊 Speaking...' : 'Creative Partner'}
                     </p>
+                    {/* Style Learning Badge (AC4: Style Learning Indicator) */}
+                    {styleLearningActive && styleSummary && styleSummary.shotsTracked > 0 && (
+                      <p className="text-[9px] text-[#10A37F] truncate mt-0.5">
+                        💡 Learning your style: {styleSummary.shotsTracked} shots tracked
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1146,6 +1255,14 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       {/* Prompt Modal - Separate from widget, higher z-index */}
       {promptModal && (
         <PromptModal prompt={promptModal} onClose={() => setPromptModal(null)} />
+      )}
+
+      {/* Style Learning Opt-In Modal (AC6: Privacy Controls) */}
+      {showOptInPrompt && (
+        <StyleLearningOptIn
+          onEnable={handleEnableStyleLearning}
+          onDecline={handleDeclineStyleLearning}
+        />
       )}
     </>
   );
