@@ -236,6 +236,16 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   // Use user preferences hook for UI state management
   const userPreferences = useUserPreferences(user?.id || null);
 
+  // Handle user preferences errors
+  const [preferencesError, setPreferencesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userPreferences.error) {
+      setPreferencesError(userPreferences.error);
+      console.error('User preferences error:', userPreferences.error);
+    }
+  }, [userPreferences.error]);
+
   const [activeTab, setActiveTab] = useState<string>(() => {
     // Will be overridden by userPreferences once loaded
     return 'script';
@@ -1107,6 +1117,42 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                 className="w-12 h-12 border-4 border-t-transparent border-emerald-500 rounded-full"
             />
         </div>
+    );
+  }
+
+  // Error boundary for user preferences
+  if (preferencesError) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#0B0B0B]">
+        <div className="text-center p-8 max-w-md">
+          <div className="mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-white text-xl font-semibold mb-2">Configuration Error</h2>
+            <p className="text-gray-400 mb-4">Unable to load user preferences. This might be a temporary issue.</p>
+            <div className="bg-gray-800 rounded-lg p-3 mb-4 text-left">
+              <p className="text-gray-300 text-sm font-mono">{preferencesError}</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+            >
+              Reload Application
+            </button>
+            <button
+              onClick={() => setPreferencesError(null)}
+              className="w-full px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Continue Anyway
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

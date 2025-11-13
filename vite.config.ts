@@ -1,5 +1,6 @@
-import path from 'path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
@@ -176,7 +177,7 @@ export default defineConfig(({ mode }) => {
       },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': dirname(fileURLToPath(import.meta.url)),
         }
       },
       optimizeDeps: {

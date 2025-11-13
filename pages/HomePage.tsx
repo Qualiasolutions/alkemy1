@@ -39,12 +39,31 @@ const HomePage = () => {
   const handleSignIn = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
+    // Input validation to prevent invalid requests
+    if (!email || !password || email.trim() === '' || password.trim() === '') {
+      setAuthError('Email and password are required');
+      return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setAuthError('Please enter a valid email address');
+      return;
+    }
+
+    // Password length validation (Supabase requires minimum 6 characters)
+    if (password.length < 6) {
+      setAuthError('Password must be at least 6 characters long');
+      return;
+    }
+
     setIsSigningIn(true);
     setAuthError(null);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
@@ -62,12 +81,31 @@ const HomePage = () => {
   const handleSignUp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
+    // Input validation to prevent invalid requests
+    if (!email || !password || email.trim() === '' || password.trim() === '') {
+      setAuthError('Email and password are required');
+      return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setAuthError('Please enter a valid email address');
+      return;
+    }
+
+    // Password length validation (Supabase requires minimum 6 characters)
+    if (password.length < 6) {
+      setAuthError('Password must be at least 6 characters long');
+      return;
+    }
+
     setIsSigningUp(true);
     setAuthError(null);
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
@@ -334,6 +372,8 @@ const HomePage = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className='w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-emerald-500'
                     required
+                    minLength={6}
+                    placeholder='Minimum 6 characters'
                   />
                 </div>
 

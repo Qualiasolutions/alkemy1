@@ -544,7 +544,7 @@ const GenerationView: React.FC<{
     };
     
     const LoadingSkeleton: React.FC<{ aspectRatio: string; progress: number }> = ({ aspectRatio, progress }) => (
-        <div className={`relative w-full h-full bg-black/20 flex flex-col items-center justify-center rounded-lg ${aspectRatioClasses[aspectRatio] || 'aspect-square'}`}>
+        <div className="relative w-full h-64 bg-black/20 flex flex-col items-center justify-center rounded-lg">
             <div className="absolute inset-0 bg-gray-800/50 animate-pulse"></div>
             <div className="relative z-10 text-center text-white w-full max-w-[80%]">
                 <AlkemyLoadingIcon className="w-12 h-12 mx-auto mb-3 animate-subtle-pulse" />
@@ -685,14 +685,14 @@ const GenerationView: React.FC<{
                                     onClick={() => setSelectedImageIndex(-1)}
                                 >
                                     <div className="absolute inset-0 border-2 border-emerald-500/50 rounded-xl pointer-events-none"></div>
-                                    <img src={item.data.imageUrl} alt="Main" className="w-full aspect-video object-cover" />
+                                    <img src={item.data.imageUrl} alt="Main" className="w-full h-64 object-contain bg-black/20" />
                                     <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg">MAIN</div>
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
                                         <p className="text-white font-bold text-sm">View Main Image</p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="relative rounded-xl overflow-hidden border-3 border-dashed border-gray-700/50 bg-gray-800/20 aspect-video flex items-center justify-center">
+                                <div className="relative rounded-xl overflow-hidden border-3 border-dashed border-gray-700/50 bg-gray-800/20 h-64 flex items-center justify-center">
                                     <div className="text-center">
                                         <ImagePlusIcon className="w-10 h-10 text-gray-600 mx-auto mb-2" />
                                         <p className="text-xs text-gray-500 font-semibold">No Main Image</p>
@@ -721,7 +721,7 @@ const GenerationView: React.FC<{
                                             onClick={() => setSelectedImageIndex(slotIndex)}
                                         >
                                             <div className={`absolute inset-0 border-2 ${borderColorClass}/50 rounded-xl pointer-events-none`}></div>
-                                            <img src={generation.url!} alt={`${slot.label}`} className="w-full aspect-video object-cover" />
+                                            <img src={generation.url!} alt={`${slot.label}`} className="w-full h-64 object-contain bg-black/20" />
                                             <div className={`absolute top-2.5 left-2.5 bg-gradient-to-r ${bgColorClass} text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-lg`}>#{slotIndex + 1}</div>
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
                                                 <div className="flex gap-2">
@@ -747,7 +747,7 @@ const GenerationView: React.FC<{
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="relative rounded-xl overflow-hidden border-3 border-dashed border-gray-700/50 bg-gray-800/20 aspect-video flex items-center justify-center">
+                                        <div className="relative rounded-xl overflow-hidden border-3 border-dashed border-gray-700/50 bg-gray-800/20 h-64 flex items-center justify-center">
                                             <div className="text-center">
                                                 <ImagePlusIcon className="w-8 h-8 text-gray-600 mx-auto mb-1.5" />
                                                 <p className="text-xs text-gray-500 font-semibold">Empty Slot</p>
@@ -783,7 +783,7 @@ const GenerationView: React.FC<{
                 </aside>
 
                 {/* CENTER: Main Display - with enhanced borders */}
-                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-8 pb-32">
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-8" style={{ paddingBottom: '12rem' }}>
                     {currentImage ? (
                         <div className="relative max-w-full max-h-full">
                             <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/30 via-emerald-500/30 to-teal-500/30 rounded-3xl blur-2xl"></div>
@@ -792,7 +792,7 @@ const GenerationView: React.FC<{
                                 <img
                                     src={currentImage.url!}
                                     alt="Selected"
-                                    className="max-w-full max-h-full object-contain"
+                                    className="max-w-full max-h-full object-contain bg-black/20"
                                 />
                             </div>
                         </div>
@@ -804,7 +804,7 @@ const GenerationView: React.FC<{
                                 <img
                                     src={item.data.imageUrl}
                                     alt="Main"
-                                    className="max-w-full max-h-full object-contain"
+                                    className="max-w-full max-h-full object-contain bg-black/20"
                                 />
                             </div>
                         </div>

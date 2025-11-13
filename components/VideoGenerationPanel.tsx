@@ -179,7 +179,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                             }`}
                         >
                             {/* Video Player or Loading State */}
-                            <div className="aspect-video relative bg-black/50">
+                            <div className="h-64 relative bg-black/50">
                                 {video.status === 'generating' ? (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                                         <div className="w-16 h-16 relative">
@@ -223,7 +223,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                                         <video
                                             ref={(el) => { if (el) videoRefs.current[video.id] = el; }}
                                             src={video.url}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain"
                                             loop
                                             muted
                                             playsInline
