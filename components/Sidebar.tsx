@@ -36,15 +36,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
       <div className="absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none bg-emerald-500/8 opacity-50" />
       <div className="absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none bg-emerald-400/6 opacity-40" />
       <div className={`flex items-center gap-3 border-b border-[var(--color-border-color)] transition-all duration-300 ${isSidebarExpanded ? 'mb-6 pb-4 px-2' : 'mb-4 pb-0 justify-center border-b-0'}`}>
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-          <LogoIcon />
-        </div>
-        {isSidebarExpanded && (
-          <div>
-            <h1 className="text-lg font-bold text-[var(--color-text-primary)]">Alkemy AI</h1>
-            <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">Studio</p>
-          </div>
-        )}
+        <img
+          src="https://i.ibb.co/6cN0VWFp/Untitled-design-8.png"
+          alt="Alkemy AI Studio"
+          className={`object-contain ${isSidebarExpanded ? 'h-12 w-auto' : 'h-10 w-10'}`}
+        />
       </div>
 
       <ul className={`flex-1 overflow-y-auto overflow-x-hidden relative z-10 ${isSidebarExpanded ? 'space-y-6' : 'space-y-3'}`}>
