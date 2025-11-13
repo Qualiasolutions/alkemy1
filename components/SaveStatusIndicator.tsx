@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSaveManager, SaveState } from '../services/saveManager';
+import { useSaveManager, SaveState, saveManager } from '../services/saveManager';
 import Button from './Button';
 import { CheckIcon, SaveIcon, XIcon, AlertTriangleIcon, RefreshCwIcon, ClockIcon } from './icons/Icons';
 
@@ -24,7 +24,6 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
   // Initialize save manager when project/user changes
   useEffect(() => {
     if (projectId && userId) {
-      const { saveManager } = require('../services/saveManager');
       saveManager.initialize(projectId, userId);
     }
   }, [projectId, userId]);
