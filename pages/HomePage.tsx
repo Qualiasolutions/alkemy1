@@ -244,6 +244,56 @@ const HomePage = () => {
   if (mediaError) {
     return (
       <div className='min-h-screen bg-gradient-to-br from-gray-900 via-black to-emerald-950 flex flex-col items-center justify-center px-4'>
+        {/* Auth Buttons - Fixed Position */}
+        <div className='fixed top-6 right-6 z-50 flex gap-3'>
+          {supabaseConfigured ? (
+            isAuthenticated ? (
+              <>
+                <button
+                  onClick={() => navigate('/app')}
+                  className='px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-all backdrop-blur-sm shadow-lg'
+                >
+                  Open Studio
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className='px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all backdrop-blur-sm border border-white/20'
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setAuthMode('signin');
+                    setShowAuthModal(true);
+                  }}
+                  className='px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all backdrop-blur-sm border border-white/20'
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setShowAuthModal(true);
+                  }}
+                  className='px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-all backdrop-blur-sm shadow-lg'
+                >
+                  Sign Up
+                </button>
+              </>
+            )
+          ) : (
+            <button
+              onClick={() => navigate('/app')}
+              className='px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-all backdrop-blur-sm shadow-lg'
+            >
+              Open Studio
+            </button>
+          )}
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -262,6 +312,93 @@ const HomePage = () => {
             Launch Studio
           </button>
         </motion.div>
+
+        {/* Auth Modal - Also include in fallback UI */}
+        {supabaseConfigured && showAuthModal && (
+          <div className='fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm'>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className='bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-800'
+            >
+              <h2 className='text-2xl font-bold text-white mb-6'>
+                {authMode === 'signin' ? 'Sign In' : 'Create Account'}
+              </h2>
+
+              <form onSubmit={authMode === 'signin' ? handleSignIn : handleSignUp}>
+                <div className='space-y-4'>
+                  <div>
+                    <label className='block text-sm font-medium text-gray-300 mb-2'>
+                      Email
+                    </label>
+                    <input
+                      type='email'
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className='w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-emerald-500'
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className='block text-sm font-medium text-gray-300 mb-2'>
+                      Password
+                    </label>
+                    <input
+                      type='password'
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className='w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-emerald-500'
+                      required
+                      minLength={6}
+                      placeholder='Minimum 6 characters'
+                    />
+                  </div>
+
+                  {authError && (
+                    <p className='text-red-400 text-sm'>{authError}</p>
+                  )}
+
+                  <button
+                    type='submit'
+                    disabled={isSigningIn || isSigningUp}
+                    className='w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-all disabled:opacity-50'
+                  >
+                    {authMode === 'signin'
+                      ? (isSigningIn ? 'Signing In...' : 'Sign In')
+                      : (isSigningUp ? 'Creating Account...' : 'Sign Up')
+                    }
+                  </button>
+                </div>
+              </form>
+
+              <div className='mt-6 text-center'>
+                <button
+                  onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
+                  className='text-emerald-400 hover:text-emerald-300 text-sm'
+                >
+                  {authMode === 'signin'
+                    ? "Don't have an account? Sign up"
+                    : 'Already have an account? Sign in'
+                  }
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowAuthModal(false);
+                  setAuthError(null);
+                  setEmail('');
+                  setPassword('');
+                }}
+                className='absolute top-4 right-4 text-gray-400 hover:text-white'
+              >
+                ✕
+              </button>
+            </motion.div>
+          </div>
+        )}
       </div>
     );
   }
