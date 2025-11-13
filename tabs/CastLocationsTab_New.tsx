@@ -11,6 +11,223 @@ import { CharacterIdentityTestPanel } from '../components/CharacterIdentityTestP
 import { getCharacterIdentityStatus } from '../services/characterIdentityService';
 
 // ====================================================================
+// REFINEMENT STUDIO COMPONENT
+// ====================================================================
+
+const RefinementStudio: React.FC<{
+    baseGeneration: Generation;
+    onClose: () => void;
+    onSetMainImage: (imageUrl: string) => void;
+    onUpdate: (updater: (prev: AnalyzedCharacter | AnalyzedLocation) => AnalyzedCharacter | AnalyzedLocation) => void;
+}> = ({ baseGeneration, onClose, onSetMainImage, onUpdate }) => {
+    const [prompt, setPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [currentBaseImage, setCurrentBaseImage] = useState(baseGeneration.url!);
+    const [sessionVariants, setSessionVariants] = useState<string[]>([]);
+    const [attachedImage, setAttachedImage] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [upscalingVariant, setUpscalingVariant] = useState<string | null>(null);
+    const [upscaleProgress, setUpscaleProgress] = useState(0);
+
+    const handleGenerate = async () => {
+        if (!prompt.trim() || !currentBaseImage) return;
+        setIsGenerating(true);
+        try {
+            const newUrl = await refineVariant(prompt, currentBaseImage, baseGeneration.aspectRatio);
+            setSessionVariants(prev => [newUrl, ...prev]);
+
+            onUpdate(prev => ({
+                ...prev,
+                generations: [...(prev.generations || []), { id: `gen-${Date.now()}`, url: newUrl, aspectRatio: baseGeneration.aspectRatio, isLoading: false }],
+                refinedGenerationUrls: [...(prev.refinedGenerationUrls || []), newUrl],
+            }));
+
+            setCurrentBaseImage(newUrl);
+            setPrompt('');
+        } catch (error) {
+            alert(`Error refining variant: ${error instanceof Error ? error.message : 'Unknown Error'}`);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleUpscale = async (imageUrl: string) => {
+        setUpscalingVariant(imageUrl);
+        setUpscaleProgress(0);
+        try {
+            const { image_url } = await upscaleImage(imageUrl, (progress) => {
+                setUpscaleProgress(progress);
+            });
+            onUpdate(prev => ({ ...prev, upscaledImageUrl: image_url }));
+            onSetMainImage(image_url);
+            onClose();
+        } catch (error) {
+            alert(`Error upscaling image: ${error instanceof Error ? error.message : 'Unknown Error'}`);
+        } finally {
+            setUpscalingVariant(null);
+            setUpscaleProgress(0);
+        }
+    };
+
+    const allDisplayableVariants = [baseGeneration.url!, ...sessionVariants];
+
+     const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files?.[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setAttachedImage(event.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+        if (e.target) e.target.value = '';
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gradient-to-br from-[#0B0B0B] via-[#0F0F0F] to-[#0B0B0B] flex flex-col z-50 p-6">
+            <header className="flex-shrink-0 mb-4 flex justify-between items-center">
+                <Button onClick={onClose} variant="secondary" className="!text-sm !gap-2 !px-4 !py-2.5 !rounded-xl !border-gray-700 hover:!border-teal-500/50"><ArrowLeftIcon className="w-4 h-4" /> Back to Studio</Button>
+            </header>
+
+            <div className="flex-1 flex flex-col overflow-hidden gap-6">
+                <div className="flex-1 flex flex-row overflow-hidden gap-6">
+                    <div className="w-2/3 h-full bg-black/60 flex items-center justify-center rounded-2xl overflow-hidden border-2 border-gray-800/50 backdrop-blur-sm">
+                       <img src={currentBaseImage} alt="Base for refinement" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="w-1/3 flex flex-col">
+                         <h3 className="text-lg font-semibold text-gray-300 mb-4 flex-shrink-0">Refined Variants</h3>
+                        <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                           {allDisplayableVariants.map((url, i) => (
+                                <div
+                                    key={`${url}-${i}`}
+                                    className={`relative group aspect-video rounded-lg overflow-hidden cursor-pointer transition-all ${currentBaseImage === url ? 'ring-2 ring-teal-500' : 'ring-2 ring-transparent'}`}
+                                    onClick={() => !upscalingVariant && setCurrentBaseImage(url)}
+                                >
+                                    <img src={url} alt={`Variant`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                     <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                        {upscalingVariant === url ? (
+                                            <div className="text-center text-white">
+                                                <p className="text-xs font-semibold mb-1">Upscaling...</p>
+                                                <div className="w-24 bg-gray-600 rounded-full h-1"><div className="bg-teal-400 h-1 rounded-full" style={{width: `${upscaleProgress}%`}}></div></div>
+                                            </div>
+                                        ) : (
+                                             <>
+                                                <p className="text-white font-bold text-xs">{url === baseGeneration.url ? 'Original Image' : 'Click to refine this version'}</p>
+                                                <div className="flex gap-2">
+                                                    <Button variant="secondary" className="!text-xs !py-1 !px-3 !bg-white/90 !text-black" onClick={(e) => { e.stopPropagation(); onSetMainImage(url); }}>Set as Main</Button>
+                                                    <Button variant="secondary" className="!text-xs !py-1 !px-3 !bg-teal-500/80 !text-white" onClick={(e) => { e.stopPropagation(); handleUpscale(url); }}>Upscale</Button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                              {isGenerating && (
+                                <div className="w-full aspect-video bg-gray-800/50 animate-pulse flex items-center justify-center rounded-lg">
+                                    <AlkemyLoadingIcon className="w-8 h-8 text-teal-400 animate-subtle-pulse" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex-shrink-0 flex justify-center pb-4">
+                     <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="w-full max-w-4xl"
+                    >
+                        <div className="relative group">
+                            {/* Gradient glow */}
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-[28px] opacity-20 group-hover:opacity-40 blur-xl transition-all duration-500" />
+
+                            {/* Main container */}
+                            <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 rounded-3xl border border-gray-700/50 shadow-2xl overflow-hidden">
+                                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-teal-400/50 to-transparent" />
+
+                                <div className="p-5 space-y-4">
+                                    {attachedImage && (
+                                        <motion.div
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="relative self-start p-1.5 bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm rounded-2xl border border-gray-700/50 ml-3"
+                                        >
+                                            <img src={attachedImage} alt="Attached reference" className="w-20 h-20 object-cover rounded-xl"/>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                type="button"
+                                                onClick={() => setAttachedImage(null)}
+                                                className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1.5 hover:bg-red-600 transition-all shadow-lg shadow-red-500/50"
+                                            >
+                                                <XIcon className="w-3.5 h-3.5" />
+                                            </motion.button>
+                                        </motion.div>
+                                    )}
+
+                                    <div className="relative bg-gray-800/40 rounded-2xl border border-gray-700/30 p-4 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
+                                        <div className="flex items-start gap-3">
+                                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="flex-shrink-0 mt-1 p-2.5 text-gray-400 rounded-xl hover:bg-gradient-to-br hover:from-teal-500/20 hover:to-purple-500/20 hover:text-teal-400 transition-all border border-transparent hover:border-teal-500/30"
+                                            >
+                                                <PaperclipIcon className="w-5 h-5"/>
+                                            </motion.button>
+                                            <textarea
+                                                value={prompt}
+                                                onChange={(e) => setPrompt(e.target.value)}
+                                                placeholder="e.g., make the character smile, add cinematic lighting..."
+                                                rows={3}
+                                                className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-40 py-2 text-gray-100 placeholder-gray-500 leading-relaxed"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey && prompt.trim()) {
+                                                        e.preventDefault();
+                                                        handleGenerate();
+                                                    }
+                                                }}
+                                            />
+                                            <div className="flex-shrink-0 bg-gradient-to-br from-gray-700/80 to-gray-800/80 text-white text-xs rounded-xl font-semibold px-4 py-2.5 border border-gray-600/50 shadow-lg">
+                                                Gemini Nano Banana
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                            <Button
+                                                onClick={handleGenerate}
+                                                disabled={isGenerating || !prompt.trim()}
+                                                isLoading={isGenerating}
+                                                className="relative overflow-hidden !bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-3 !px-8 !rounded-xl hover:!shadow-2xl hover:!shadow-teal-500/20 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed group/btn"
+                                            >
+                                                <span className="relative z-10 flex items-center gap-2">
+                                                    Generate
+                                                    <motion.span
+                                                        animate={{ x: [0, 3, 0] }}
+                                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                                        className="text-teal-600"
+                                                    >
+                                                        →
+                                                    </motion.span>
+                                                </span>
+                                                <div className="absolute inset-0 bg-gradient-to-r from-teal-500/0 via-teal-500/20 to-purple-500/0 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                                            </Button>
+                                        </motion.div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ====================================================================
 // REDESIGNED PROFESSIONAL GENERATION VIEW
 // ====================================================================
 
@@ -45,6 +262,7 @@ const GenerationView: React.FC<{
     const [activeTab, setActiveTab] = useState<'main' | 'identity'>('main');
     const [selectedSlot, setSelectedSlot] = useState<string>('main');
     const [numVariants, setNumVariants] = useState(4);
+    const [editingGeneration, setEditingGeneration] = useState<Generation | null>(null);
 
     // Check if this is a character
     const isCharacter = item.type === 'character';
@@ -225,6 +443,21 @@ const GenerationView: React.FC<{
 
     const selectedSlotData = imageSlots.find(s => s.id === selectedSlot);
 
+    // Show RefinementStudio if editing a generation
+    if (editingGeneration) {
+        return (
+            <RefinementStudio
+                baseGeneration={editingGeneration}
+                onClose={() => setEditingGeneration(null)}
+                onSetMainImage={(url) => {
+                    onUpdateBatch(prev => ({ ...prev, imageUrl: url }));
+                    setEditingGeneration(null);
+                }}
+                onUpdate={onUpdateBatch}
+            />
+        );
+    }
+
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-[#0B0B0B] via-[#0F0F0F] to-[#0B0B0B] flex flex-col z-50">
             {/* Professional Header */}
@@ -329,7 +562,33 @@ const GenerationView: React.FC<{
                                             ) : slot.url ? (
                                                 <>
                                                     <img src={slot.url} alt={slot.label} className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    {/* Hover overlay with buttons */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
+                                                        <div className="flex gap-2">
+                                                            {slot.id !== 'main' && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleSetMain(slot.id);
+                                                                    }}
+                                                                    className="bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-400 transition shadow-lg border-2 border-emerald-400"
+                                                                >
+                                                                    Set as Main
+                                                                </button>
+                                                            )}
+                                                            {slot.generation && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setEditingGeneration(slot.generation);
+                                                                    }}
+                                                                    className="bg-teal-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-teal-400 transition shadow-lg border-2 border-teal-400"
+                                                                >
+                                                                    Refine
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </>
                                             ) : (
                                                 <div className="absolute inset-0 flex items-center justify-center">
@@ -349,19 +608,6 @@ const GenerationView: React.FC<{
                                         }`}>
                                             {slot.label}
                                         </div>
-
-                                        {/* Set Main Button */}
-                                        {slot.url && slot.id !== 'main' && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSetMain(slot.id);
-                                                }}
-                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-500 hover:bg-emerald-400 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-lg"
-                                            >
-                                                Set Main
-                                            </button>
-                                        )}
                                     </motion.div>
                                 ))}
                             </div>
