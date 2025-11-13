@@ -148,10 +148,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { error: { message: 'Authentication is not configured' } };
         }
 
+        // Input validation to prevent invalid requests
+        if (!email || !password || email.trim() === '' || password.trim() === '') {
+            return { error: { message: 'Email and password are required' } };
+        }
+
+        // Basic email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+            return { error: { message: 'Please enter a valid email address' } };
+        }
+
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
         try {
-            const { user, session, error } = await auth.signIn(email, password);
+            const { user, session, error } = await auth.signIn(email.trim(), password);
 
             if (error) throw error;
 
