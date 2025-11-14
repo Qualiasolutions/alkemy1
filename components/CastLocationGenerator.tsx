@@ -124,8 +124,8 @@ const RefinementStudio: React.FC<{
     }, [onClose]);
 
     return (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center">
-            <div className="w-full h-full max-w-7xl max-h-screen bg-gray-900 rounded-xl overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-2">
+            <div className="w-[98vw] h-[98vh] bg-gray-900/95 backdrop-blur-sm rounded-xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 bg-gray-800 border-b border-gray-700">
                     <div className="flex items-center gap-3">
