@@ -76,8 +76,8 @@ const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
   moodboardTemplates: [],
 };
 
-const WELCOME_MESSAGE = 'Welcome. I am your Director of Photography. I have reviewed the current project materials.\n\nHow can I assist you with the creative direction?\n\n**Technical Commands Available:**\n• "Generate 3 flux images of [character/location] 16:9"\n• "Upscale the [character/location] image"\n• "Check continuity" - Analyze timeline for continuity issues\n• "Show continuity report" - View detailed continuity report\n• "Recommend lens for [shot type]"\n• "Setup lighting for [mood]"\n• "Calculate DOF for f/2.8 at 3m with 85mm"\n• "Suggest camera movement for [emotion]"\n• "Color grade for [genre/mood]"\n\nAsk me anything about lenses (8-800mm), lighting setups, camera movements, composition rules, or color grading. I provide specific technical parameters for professional cinematography.';
-const WELCOME_MESSAGE_NO_CONTEXT = 'Welcome. I am your Director of Photography. I can help you craft prompts, pick lenses, plan lighting, or solve cinematography questions. Load or analyze a script whenever you have one and I will adapt instantly to that story.';
+const WELCOME_MESSAGE = 'Hi! I\'m your Director of Photography, and I\'ve just reviewed your project. I\'m here to help bring your vision to life.\n\nWhether you need help with camera angles, lighting setups, visual mood, or generating images for your characters and locations - just ask me naturally. I\'m here to collaborate with you.\n\nWhat would you like to discuss?';
+const WELCOME_MESSAGE_NO_CONTEXT = 'Hello! I\'m your Director of Photography. I\'m here to help you with cinematography, camera work, lighting, color grading, and visual storytelling.\n\nOnce you load or analyze a script, I\'ll have full context of your story. But I can already help you explore ideas, plan shots, or generate images.\n\nWhat\'s on your mind?';
 const ACCENT_HEX = '#10A37F';
 const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi' => {
   const normalized = (model ?? '').toLowerCase();
@@ -254,12 +254,16 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
     setVoiceOutputSupported(isVoiceSynthesisSupported());
 
     if (isVoiceSynthesisSupported()) {
-      // Load saved preferences
-      const savedEnabled = isVoiceOutputEnabled();
-      setVoiceOutputActive(savedEnabled);
+      // Load saved preferences asynchronously
+      isVoiceOutputEnabled().then(savedEnabled => {
+        setVoiceOutputActive(savedEnabled);
+      });
 
-      const savedRate = getSavedSpeechRate();
-      setSpeechRate(savedRate);
+      getSavedSpeechRate().then(savedRate => {
+        // Validate speech rate to prevent non-finite values
+        const validRate = isFinite(savedRate) && savedRate >= 0.5 && savedRate <= 2.0 ? savedRate : 1.0;
+        setSpeechRate(validRate);
+      });
 
       // Load available voices
       getAvailableVoices().then(voices => {
@@ -286,23 +290,26 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
 
   // Initialize style learning (Epic 1, Story 1.3 - AC6: Privacy Controls)
   useEffect(() => {
-    // Check if user has enabled style learning
-    const enabled = isStyleLearningEnabled();
-    setStyleLearningActive(enabled);
+    // Check if user has enabled style learning asynchronously
+    isStyleLearningEnabled().then(enabled => {
+      setStyleLearningActive(enabled);
+
+      // Load style summary if enabled
+      if (enabled) {
+        getStyleLearningSummary().then(summary => {
+          if (summary) {
+            setStyleSummary(summary);
+          }
+        });
+      }
+    });
 
     // Show opt-in prompt if not shown before (one-time on first launch)
-    if (!hasShownOptInPrompt()) {
-      setShowOptInPrompt(true);
-    }
-
-    // Load style summary if enabled
-    if (enabled) {
-      getStyleLearningSummary().then(summary => {
-        if (summary) {
-          setStyleSummary(summary);
-        }
-      });
-    }
+    hasShownOptInPrompt().then(shown => {
+      if (!shown) {
+        setShowOptInPrompt(true);
+      }
+    });
   }, []);
 
   // Update style summary when style learning is activated
@@ -440,8 +447,10 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
 
   // Handle speech rate change
   const handleRateChange = useCallback((rate: number) => {
-    setSpeechRate(rate);
-    setSavedSpeechRate(rate);
+    // Validate speech rate to prevent non-finite values
+    const validRate = isFinite(rate) && rate >= 0.5 && rate <= 2.0 ? rate : 1.0;
+    setSpeechRate(validRate);
+    setSavedSpeechRate(validRate);
   }, []);
 
   // Handle pause/resume speech
@@ -1241,7 +1250,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                                     <p className="text-white/80">{issue.description}</p>
                                     <p className="text-white/60 italic">💡 {issue.suggestedFix}</p>
                                     <p className="text-[10px] text-white/40">
-                                      Between: {issue.clip1.sceneHeading || 'Scene ' + issue.clip1.sceneId} → {issue.clip2.sceneHeading || 'Scene ' + issue.clip2.sceneId}
+                                      Between: Scene {issue.clip1.sceneNumber || issue.clip1.shot_number || 'N/A'} → Scene {issue.clip2.sceneNumber || issue.clip2.shot_number || 'N/A'}
                                     </p>
                                   </div>
                                   <button
@@ -1372,11 +1381,11 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   <div className="mt-2.5 space-y-1 text-[10px] text-white/30 leading-relaxed">
                     <div className="flex flex-wrap gap-x-2 items-center">
                       <span className="shrink-0">💡</span>
-                      <span>"Generate 3 flux images of Elena 16:9" • "Upscale the cafe image"</span>
+                      <span>"What lens would work best for an emotional close-up?" • "How should I light this scene?"</span>
                     </div>
                     <div className="flex flex-wrap gap-x-2 items-center">
                       <span className="shrink-0">🎬</span>
-                      <span>"Recommend lens for close-up" • "Calculate DOF for f/2.8 at 3m with 85mm"</span>
+                      <span>"Generate images of Elena" • "Check my timeline for continuity issues"</span>
                     </div>
                   </div>
                 </form>

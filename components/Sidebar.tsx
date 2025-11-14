@@ -35,11 +35,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
       {/* Subtle accent glow effects */}
       <div className="absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none bg-emerald-500/8 opacity-50" />
       <div className="absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none bg-emerald-400/6 opacity-40" />
-      <div className={`flex items-center gap-3 border-b border-[var(--color-border-color)] transition-all duration-300 ${isSidebarExpanded ? 'mb-6 pb-4 px-2' : 'mb-4 pb-0 justify-center border-b-0'}`}>
+      <div className={`flex items-center justify-center border-b border-[var(--color-border-color)] transition-all duration-300 ${isSidebarExpanded ? 'mb-6 pb-4 px-2' : 'mb-4 pb-0 border-b-0'}`}>
         <img
           src="https://i.ibb.co/6cN0VWFp/Untitled-design-8.png"
           alt="Alkemy AI Studio"
-          className={`object-contain ${isSidebarExpanded ? 'h-12 w-auto' : 'h-10 w-10'}`}
+          className={`object-contain ${isSidebarExpanded ? 'h-16 w-auto' : 'h-14 w-14'}`}
         />
       </div>
 

@@ -74,6 +74,9 @@ export interface Frame {
   // Add a new property to store generated video variants for a shot.
   videoGenerations?: Generation[];
   transferredToTimeline?: boolean;
+  // NEW: Character Identity Integration (Epic 2 - Workflow Integration)
+  selectedCharacterIds?: string[]; // IDs of characters in this shot
+  appliedIdentities?: { characterId: string; loraUrl: string; loraWeight?: number }[]; // Which identity LoRAs were applied
 }
 
 export interface TimelineClip {
@@ -125,6 +128,14 @@ export interface AnalyzedLocation {
   generations?: Generation[];
   refinedGenerationUrls?: string[];
   upscaledImageUrl?: string | null;
+  // NEW: 3D World Integration (Epic 3 - Infrastructure Ready)
+  worldId?: string; // ID of linked 3D world from advancedWorldService
+  worldMetadata?: {
+    worldUrl?: string;
+    cameraPresets?: Array<{ name: string; position: any; rotation: any }>;
+    lightingProfile?: string;
+    generatedAt?: string;
+  };
 }
 
 export interface AnalyzedScene {
@@ -189,6 +200,12 @@ export interface ScriptAnalysis {
   sound: string[];
   moodboard?: Moodboard;
   moodboardTemplates?: MoodboardTemplate[];
+  // NEW: Generation Context Cache (Workflow Integration)
+  generationContext?: {
+    lastUpdated: string;
+    cachedCharacters?: any[]; // Cached character data with identities
+    cachedLocations?: any[]; // Cached location data with 3D worlds
+  };
 }
 
 // Authentication Types
