@@ -128,7 +128,7 @@ export async function getStyleProfile(userId?: string): Promise<StyleProfile> {
           .from('user_style_profiles')
           .select('*')
           .eq('user_id', supabaseUserId)
-          .single();
+          .maybeSingle();
 
         if (data && !error) {
           return {
@@ -140,6 +140,8 @@ export async function getStyleProfile(userId?: string): Promise<StyleProfile> {
             createdAt: data.created_at,
           };
         }
+
+        // No profile exists yet - this is fine, we'll create one below
       } catch (err) {
         console.warn('Failed to fetch style profile from Supabase, using cache', err);
       }

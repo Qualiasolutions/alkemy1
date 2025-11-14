@@ -96,7 +96,7 @@ Return ONLY a JSON array of search queries, nothing else:
 
         // Try Pexels first (high-quality curated photos)
         try {
-            const pexelsImages = await searchPexels(searchQueries[0], 8);
+            const pexelsImages = await searchPexels(searchQueries[0], 30);
             images.push(...pexelsImages);
         } catch (error) {
             console.warn('Pexels search failed:', error);
@@ -104,14 +104,14 @@ Return ONLY a JSON array of search queries, nothing else:
 
         // Then try Unsplash (professional photography)
         try {
-            const unsplashImages = await searchUnsplash(searchQueries[0], 8);
+            const unsplashImages = await searchUnsplash(searchQueries[0], 30);
             images.push(...unsplashImages);
         } catch (error) {
             console.warn('Unsplash search failed:', error);
         }
 
         // Finally use Brave for additional diverse results
-        for (let i = 0; i < Math.min(searchQueries.length, 2); i++) { // Limit to 2 queries
+        for (let i = 0; i < Math.min(searchQueries.length, 3); i++) { // Limit to 3 queries
             const query = searchQueries[i];
 
             // Add delay between requests to avoid rate limiting (except for first request)
@@ -120,7 +120,7 @@ Return ONLY a JSON array of search queries, nothing else:
             }
 
             try {
-                const response = await fetchBraveResponse(query, 6, 'strict');
+                const response = await fetchBraveResponse(query, 20, 'strict');
 
                 if (!response || !response.ok) {
                     console.warn(`Brave Search API error for query "${query}": ${response?.status ?? 'network'} ${response?.statusText ?? 'failed request'}`);
@@ -166,7 +166,7 @@ Return ONLY a JSON array of search queries, nothing else:
         // Filter out invalid URLs and limit results
         const validImages = images
             .filter(img => img.url && img.url.startsWith('http'))
-            .slice(0, 12); // Limit to 12 results
+            .slice(0, 100); // Limit to 100 results
 
         onProgress?.({
             stage: 'complete',

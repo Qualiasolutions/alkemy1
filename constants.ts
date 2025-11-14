@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, PaletteIcon, SearchIcon, GlobeIcon, BarChartIcon } from './components/icons/Icons';
+import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, PaletteIcon, SearchIcon, GlobeIcon, BarChartIcon, SparklesIcon } from './components/icons/Icons';
 
 export const THEME_COLORS = {
   background_primary: "#0B0B0B",

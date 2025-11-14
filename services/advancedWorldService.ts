@@ -327,13 +327,14 @@ class AdvancedWorldService {
         this.gltfExporter = new GLTFExporter();
         this.dracoExporter = new DRACOExporter();
 
-        // Initialize stats
+        // Initialize stats (hidden by default)
         this.stats = new Stats();
         this.stats.showPanel(0); // FPS
         document.body.appendChild(this.stats.dom);
         this.stats.dom.style.position = 'fixed';
         this.stats.dom.style.left = '10px';
         this.stats.dom.style.top = '10px';
+        this.stats.dom.style.display = 'none'; // Hidden by default
     }
 
     /**

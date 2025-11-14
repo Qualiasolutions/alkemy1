@@ -41,7 +41,6 @@ import { getUsageService, USAGE_ACTIONS, logAIUsage } from './services/usageServ
 // Import enterprise data management services
 import { saveManager } from './services/saveManager';
 import { userDataService, useUserPreferences } from './services/userDataService';
-import SaveStatusIndicator from './components/SaveStatusIndicator';
 
 // Import the new auth pages
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -1354,9 +1353,6 @@ return (
 
     <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
     <Toast toast={toast} onClose={() => setToast(null)} />
-
-    {/* Save Status Indicator - shows manual save controls */}
-    <SaveStatusIndicator projectId={currentProject?.id || null} userId={user?.id || null} />
 
     {/* Auth Modal - Only render if Supabase is configured */}
     {isSupabaseConfigured() && (

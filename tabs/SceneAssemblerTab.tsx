@@ -9,6 +9,8 @@ import ThreeDWorldViewer from '../components/3DWorldViewer';
 import { generate3DWorld } from '../services/3dWorldService';
 import ImageCarousel from '../components/ImageCarousel';
 import MiniDirectorWidget from '../components/MiniDirectorWidget';
+import GenerationContextPanel from '../components/GenerationContextPanel';
+import { loadGenerationContext, type CharacterWithIdentity } from '../services/generationContext';
 
 type Workspace = 'grid' | 'still-studio' | 'refine-studio' | 'animate-studio' | 'image-upscale-studio' | 'video-upscale-studio';
 
@@ -63,6 +65,9 @@ const FullScreenImagePlayer: React.FC<{
     onSetFrame: (type: 'start' | 'end', imageUrl: string) => void;
     onRefine: () => void;
 }> = ({ generation, onClose, onSetFrame, onRefine }) => {
+    const [prompt, setPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
@@ -71,20 +76,104 @@ const FullScreenImagePlayer: React.FC<{
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
+    const handleRefineWithPrompt = async () => {
+        if (!prompt.trim() || isGenerating) return;
+        setIsGenerating(true);
+        try {
+            // Call the onRefine function which will handle the refinement
+            onRefine();
+            setPrompt('');
+        } catch (error) {
+            console.error('Refinement failed:', error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     if (!generation.url) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-            <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
-                <img src={generation.url} alt="Fullscreen generated shot" className="max-w-full max-h-full object-contain" />
-                <Button onClick={onClose} variant="secondary" className="absolute top-4 left-4 !text-sm !gap-2 !px-3 !py-2">
-                    <ArrowLeftIcon className="w-4 h-4" /> Back
-                </Button>
-                <div className="absolute top-4 right-4 flex gap-2">
-                     <Button onClick={() => onSetFrame('start', generation.url!)} variant="secondary">Set as Hero Frame</Button>
-                     <Button onClick={() => onSetFrame('end', generation.url!)} variant="secondary">Set as End Frame</Button>
-                     <Button onClick={onRefine} variant="primary">Refine</Button>
+        <div className="fixed inset-0 bg-black/90 z-[60] flex p-4" onClick={onClose}>
+            <div className="relative w-full h-full flex flex-col lg:flex-row gap-4" onClick={e => e.stopPropagation()}>
+
+                {/* LEFT SIDEBAR: Prompt Input */}
+                <div className="w-full lg:w-80 lg:flex-shrink-0 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-2xl border border-gray-700/40 shadow-2xl p-4 lg:p-6 flex flex-col">
+                    <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-white mb-2">Refine Image</h3>
+                        <p className="text-sm text-gray-400 hidden lg:block">Describe how to refine this image...</p>
+                        <p className="text-xs text-gray-400 lg:hidden">Describe how to refine this image...</p>
+                    </div>
+
+                    <div className="flex-1 flex flex-col min-h-0">
+                        <div className="relative group flex-1 min-h-0">
+                            {/* Animated gradient glow */}
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 group-hover:opacity-50 blur-xl transition-opacity duration-500"></div>
+
+                            {/* Main content container with glassmorphism */}
+                            <div className="relative backdrop-blur-xl bg-gray-900/60 rounded-2xl p-3 lg:p-4 border border-gray-700/40 shadow-2xl h-full flex flex-col">
+                                {/* Input area with gradient border on focus */}
+                                <div className="relative group/input flex-1 min-h-0">
+                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/30 group-focus-within/input:via-purple-500/30 group-focus-within/input:to-pink-500/30 rounded-xl blur transition-all duration-300"></div>
+                                    <div className="relative h-full bg-gray-800/40 rounded-xl p-3 border border-gray-700/40 focus-within:border-teal-500/60 focus-within:bg-gray-800/60 transition-all flex flex-col">
+                                        <textarea
+                                            value={prompt}
+                                            onChange={(e) => setPrompt(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    if (prompt.trim() && !isGenerating) handleRefineWithPrompt();
+                                                }
+                                            }}
+                                            placeholder="Describe how to refine this image... (Press Enter to refine)"
+                                            rows={window.innerWidth < 1024 ? 3 : undefined}
+                                            className="flex-1 bg-transparent text-base resize-none focus:outline-none text-gray-100 placeholder-gray-400 min-h-[80px] lg:min-h-[120px]"
+                                        />
+                                        <Button
+                                            onClick={handleRefineWithPrompt}
+                                            disabled={isGenerating || !prompt.trim()}
+                                            isLoading={isGenerating}
+                                            className="!bg-gradient-to-r !from-teal-500 !via-purple-500 !to-pink-500 !text-white !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg mt-3"
+                                        >
+                                            <span>Refine</span>
+                                            <motion.span
+                                                animate={{ x: [0, 3, 0] }}
+                                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                                className="text-lg"
+                                            >
+                                                →
+                                            </motion.span>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {promptWasAdjusted && (
+                            <div className="text-xs text-yellow-400/90 px-3 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mt-3">
+                                <span className="font-semibold">Note:</span> Prompt was adjusted for safety.
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {/* MAIN CONTENT: Image Viewer */}
+                <div className="flex-1 flex items-center justify-center min-h-0">
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        <img src={generation.url} alt="Fullscreen generated shot" className="max-w-full max-h-full object-contain" />
+
+                        {/* TOP CONTROLS */}
+                        <Button onClick={onClose} variant="secondary" className="absolute top-4 left-4 !text-sm !gap-2 !px-3 !py-2 z-10">
+                            <ArrowLeftIcon className="w-4 h-4" /> Back
+                        </Button>
+
+                        <div className="absolute top-4 right-4 flex flex-col sm:flex-row gap-2 z-10">
+                            <Button onClick={() => onSetFrame('start', generation.url!)} variant="secondary" className="!text-xs sm:!text-sm">Set as Hero</Button>
+                            <Button onClick={() => onSetFrame('end', generation.url!)} variant="secondary" className="!text-xs sm:!text-sm">Set as End</Button>
+                            <Button onClick={onRefine} variant="primary" className="!text-xs sm:!text-sm">Refine</Button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );
@@ -191,7 +280,7 @@ const RefinementStudio: React.FC<{
                        <img src={currentBaseImage} alt="Base for refinement" className="w-full h-full object-contain" />
                     </div>
                     <div className="w-1/3 flex flex-col">
-                         <h3 className="text-lg font-semibold text-gray-300 mb-4 flex-shrink-0">Refined Variants</h3>
+                         <h3 className="text-lg font-semibold text-gray-300 mb-4 flex-shrink-0">Refinements</h3>
                         <div className="flex-1 overflow-y-auto pr-2 space-y-4">
                            {allDisplayableVariants.map((url, i) => (
                                 <div 
@@ -208,10 +297,25 @@ const RefinementStudio: React.FC<{
                                             </div>
                                         ) : (
                                             <>
-                                                <p className="text-white font-bold text-xs">{url === baseGeneration.url ? 'Original Image' : 'Click to refine this version'}</p>
-                                                <div className="flex gap-2">
-                                                    <Button variant="secondary" className="!text-xs !py-1 !px-3 !bg-white/90 !text-black" onClick={(e) => { e.stopPropagation(); handleSetMainAndClose(url); }}>Set as Main</Button>
-                                                    <Button variant="secondary" className="!text-xs !py-1 !px-3 !bg-teal-500/80 !text-white" onClick={(e) => { e.stopPropagation(); handleUpscale(url); }}>Upscale</Button>
+                                                <div className="flex gap-2 justify-center">
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.2 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={(e) => { e.stopPropagation(); handleSetMainAndClose(url); }}
+                                                        className="p-2 bg-white/90 rounded-full hover:bg-white transition-all"
+                                                        title="Set as Main"
+                                                    >
+                                                        <CheckIcon className="w-4 h-4 text-black" />
+                                                    </motion.button>
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.2 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={(e) => { e.stopPropagation(); handleUpscale(url); }}
+                                                        className="p-2 bg-teal-500/80 rounded-full hover:bg-teal-500 transition-all"
+                                                        title="Upscale"
+                                                    >
+                                                        <FourKIcon className="w-4 h-4 text-white" />
+                                                    </motion.button>
                                                 </div>
                                             </>
                                         )}
@@ -231,46 +335,81 @@ const RefinementStudio: React.FC<{
                      <div className="w-full max-w-4xl">
                         {/* Multi-layered animated gradient glow container */}
                         <div className="relative group">
-                            {/* Animated gradient glow */}
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-[28px] opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500"></div>
+                            {/* Prominent animated gradient glow */}
+                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-3xl opacity-40 group-hover:opacity-60 blur-2xl transition-opacity duration-500 animate-pulse"></div>
 
-                            {/* Main content container with glassmorphism */}
-                            <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 rounded-3xl p-5 border border-gray-700/30 shadow-2xl">
-                                {/* Input area with gradient border on focus */}
+                            {/* Chat bubble style container with glassmorphism */}
+                            <div className="relative backdrop-blur-3xl bg-gradient-to-br from-gray-900/98 via-gray-800/98 to-gray-900/98 rounded-3xl p-6 border border-teal-500/30 shadow-2xl">
+                                {/* Chat bubble tail */}
+                                <div className="absolute -top-3 left-8 w-6 h-6 bg-gradient-to-br from-gray-900/98 to-gray-800/98 transform rotate-45 border-l border-t border-teal-500/30"></div>
+
+                                {/* Header with title */}
+                                <div className="mb-4 flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-gradient-to-r from-teal-500 to-purple-500 rounded-full animate-pulse"></div>
+                                    <h3 className="text-lg font-bold text-white">Refinement Chat</h3>
+                                    <div className="flex-1"></div>
+                                    <span className="text-xs text-gray-400 bg-gray-800/60 px-3 py-1 rounded-full">Press Enter to send</span>
+                                </div>
+
+                                {/* Chat input area with gradient border on focus */}
                                 <div className="relative group/input">
-                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/20 group-focus-within/input:via-purple-500/20 group-focus-within/input:to-pink-500/20 rounded-2xl blur transition-all duration-300"></div>
-                                    <div className="relative flex items-center gap-3 bg-gray-800/40 rounded-2xl p-3 border border-gray-700/30 focus-within:border-teal-500/50 focus-within:bg-gray-800/60 transition-all">
-                                        <textarea
-                                            value={prompt}
-                                            onChange={(e) => setPrompt(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    if (prompt.trim() && !isGenerating) handleGenerate();
-                                                }
-                                            }}
-                                            placeholder="e.g., make the character smile, add cinematic lighting... (Press Enter)"
-                                            rows={1}
-                                            className="flex-1 bg-transparent text-base resize-none focus:outline-none max-h-32 py-1 text-gray-100 placeholder-gray-500"
-                                        />
-                                        <div className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 text-white text-xs rounded-xl font-semibold px-4 py-2.5 whitespace-nowrap border border-gray-600/50 shadow-lg backdrop-blur-sm">
-                                            Gemini Nano Banana
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/30 group-focus-within/input:via-purple-500/30 group-focus-within/input:to-pink-500/30 rounded-2xl blur transition-all duration-300"></div>
+                                    <div className="relative bg-gray-800/60 rounded-2xl p-4 border border-gray-700/40 focus-within:border-teal-500/60 focus-within:bg-gray-800/80 transition-all">
+                                        <div className="flex items-start gap-3">
+                                            {/* Chat bubble indicator */}
+                                            <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-teal-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                                                💬
+                                            </div>
+
+                                            {/* Large textarea */}
+                                            <textarea
+                                                value={prompt}
+                                                onChange={(e) => setPrompt(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        if (prompt.trim() && !isGenerating) handleGenerate();
+                                                    }
+                                                }}
+                                                placeholder="Describe how to refine this image... Make the character smile, add cinematic lighting, change the background, etc."
+                                                rows={3}
+                                                className="flex-1 bg-transparent text-lg resize-none focus:outline-none max-h-40 py-2 text-gray-100 placeholder-gray-400 leading-relaxed"
+                                            />
                                         </div>
-                                        <Button
-                                            onClick={handleGenerate}
-                                            disabled={isGenerating || !prompt.trim()}
-                                            isLoading={isGenerating}
-                                            className="!bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all flex-shrink-0 disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg"
-                                        >
-                                            <span>Refine</span>
-                                            <motion.span
-                                                animate={{ x: [0, 3, 0] }}
-                                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                                className="text-lg"
+
+                                        {/* Bottom controls */}
+                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-700/30">
+                                            <div className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 text-white text-sm rounded-xl font-semibold px-4 py-2.5 whitespace-nowrap border border-gray-600/50 shadow-lg backdrop-blur-sm">
+                                                Gemini Nano Banana
+                                            </div>
+                                            <Button
+                                                onClick={handleGenerate}
+                                                disabled={isGenerating || !prompt.trim()}
+                                                isLoading={isGenerating}
+                                                className="!bg-gradient-to-r !from-teal-500 !via-purple-500 !to-pink-500 !text-white !font-bold !py-3 !px-8 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all flex-shrink-0 disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg text-base"
                                             >
-                                                →
-                                            </motion.span>
-                                        </Button>
+                                                {isGenerating ? (
+                                                    <>
+                                                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        Refining...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>Refine</span>
+                                                        <motion.span
+                                                            animate={{ x: [0, 3, 0] }}
+                                                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                                            className="text-xl"
+                                                        >
+                                                            →
+                                                        </motion.span>
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -415,36 +554,44 @@ const CharacterMultiSelect: React.FC<{
                                 <div className="px-3 py-2 text-xs text-[var(--color-text-secondary)] text-center">
                                     No characters available
                                 </div>
-                            ) : (
-                                characters.map(char => (
-                                    <label
-                                        key={char.id}
-                                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group"
-                                    >
-                                        <div className="relative flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.includes(char.id)}
-                                                onChange={() => toggleCharacter(char.id)}
-                                                className="w-4 h-4 rounded border-2 border-[var(--color-border-color)] bg-transparent checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer appearance-none transition-colors"
-                                            />
-                                            {selectedIds.includes(char.id) && (
-                                                <CheckIcon className="w-3 h-3 text-white absolute top-0.5 left-0.5 pointer-events-none" />
+                            ) :
+                                characters.map(char => {
+                                    const hasIdentity = char.identity?.status === 'ready';
+                                    return (
+                                        <label
+                                            key={char.id}
+                                            className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group"
+                                        >
+                                            <div className="relative flex-shrink-0">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(char.id)}
+                                                    onChange={() => toggleCharacter(char.id)}
+                                                    className="w-4 h-4 rounded border-2 border-[var(--color-border-color)] bg-transparent checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer appearance-none transition-colors"
+                                                />
+                                                {selectedIds.includes(char.id) && (
+                                                    <CheckIcon className="w-3 h-3 text-white absolute top-0.5 left-0.5 pointer-events-none" />
+                                                )}
+                                            </div>
+                                            {char.imageUrl && (
+                                                <img
+                                                    src={char.imageUrl}
+                                                    alt={char.name}
+                                                    className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                                                />
                                             )}
-                                        </div>
-                                        {char.imageUrl && (
-                                            <img
-                                                src={char.imageUrl}
-                                                alt={char.name}
-                                                className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
-                                            />
-                                        )}
-                                        <span className="text-sm text-[var(--color-text-primary)] truncate flex-1">
-                                            {char.name}
-                                        </span>
-                                    </label>
-                                ))
-                            )}
+                                            <span className="text-sm text-[var(--color-text-primary)] truncate flex-1">
+                                                {char.name}
+                                            </span>
+                                            {hasIdentity && (
+                                                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+                                                    ID
+                                                </span>
+                                            )}
+                                        </label>
+                                    );
+                                })
+                            }
                         </div>
                     </motion.div>
                 )}
@@ -1013,7 +1160,7 @@ const StillStudio: React.FC<{
                     {/* Generated Images Grid */}
                     <div className="mb-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generated Variants ({validGenerations.length})</h3>
+                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generations</h3>
                         </div>
 
                         {validGenerations.length > 0 ? (
@@ -1035,45 +1182,43 @@ const StillStudio: React.FC<{
                                             </div>
 
                                             {/* Hover Overlay with Actions */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1.5 p-3">
-                                                <button
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 p-3">
+                                                <motion.button
+                                                    whileHover={{ scale: 1.2 }}
+                                                    whileTap={{ scale: 0.9 }}
                                                     onClick={() => setViewingGeneration(gen)}
-                                                    className="bg-white/90 text-black text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-white hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
+                                                    className="p-2.5 bg-white/90 rounded-full hover:bg-white transition-all shadow-lg backdrop-blur-sm"
+                                                    title="View Fullscreen"
                                                 >
-                                                    View Fullscreen
-                                                </button>
-                                                <div className="grid grid-cols-2 gap-1.5 w-full">
-                                                    <button
-                                                        onClick={() => handleAssignImage('main', gen.url!)}
-                                                        className="bg-emerald-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-emerald-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
-                                                    >
-                                                        Main
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleAssignImage('2nd', gen.url!)}
-                                                        className="bg-blue-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-blue-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
-                                                    >
-                                                        2nd
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleAssignImage('3rd', gen.url!)}
-                                                        className="bg-purple-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-purple-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
-                                                    >
-                                                        3rd
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleAssignImage('4th', gen.url!)}
-                                                        className="bg-orange-500/90 text-white text-[9px] px-2 py-1.5 rounded-lg font-bold hover:bg-orange-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm"
-                                                    >
-                                                        4th
-                                                    </button>
-                                                </div>
-                                                <button
+                                                    <ExpandIcon className="w-5 h-5 text-black" />
+                                                </motion.button>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.2 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                    onClick={() => handleAssignImage('main', gen.url!)}
+                                                    className="p-2.5 bg-emerald-500/90 rounded-full hover:bg-emerald-500 transition-all shadow-lg backdrop-blur-sm"
+                                                    title="Set as Main"
+                                                >
+                                                    <CheckIcon className="w-5 h-5 text-white" />
+                                                </motion.button>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.2 }}
+                                                    whileTap={{ scale: 0.9 }}
                                                     onClick={() => onEnterRefinement(gen)}
-                                                    className="bg-teal-500/90 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-teal-500 hover:scale-105 transition-all shadow-lg backdrop-blur-sm w-full"
+                                                    className="p-2.5 bg-teal-500/90 rounded-full hover:bg-teal-500 transition-all shadow-lg backdrop-blur-sm"
+                                                    title="Refine"
                                                 >
-                                                    Refine
-                                                </button>
+                                                    <ImagePlusIcon className="w-5 h-5 text-white" />
+                                                </motion.button>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.2 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                    onClick={(e) => handleDeleteGeneration(e, gen.id)}
+                                                    className="p-2.5 bg-red-500/90 rounded-full hover:bg-red-500 transition-all shadow-lg backdrop-blur-sm"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2Icon className="w-5 h-5 text-white" />
+                                                </motion.button>
                                             </div>
                                         </div>
 
@@ -1104,8 +1249,8 @@ const StillStudio: React.FC<{
                             </div>
                         ) : (
                             <div className="text-center py-20 border-2 border-dashed border-gray-800 rounded-2xl">
-                                <p className="text-gray-500 text-lg mb-2">No variants generated yet</p>
-                                <p className="text-gray-600 text-sm">Use the controls on the left to create images</p>
+                                <p className="text-gray-500 text-lg mb-2">No images generated</p>
+                                <p className="text-gray-600 text-sm">Use the generation panel to create images</p>
                             </div>
                         )}
                     </div>
@@ -1124,106 +1269,6 @@ const StillStudio: React.FC<{
                         </div>
                     )}
                 </div>
-
-                {/* RIGHT SIDEBAR: Image Assignment Slots */}
-                <aside className="w-[320px] border-l border-gray-800/50 bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 p-4 overflow-y-auto">
-                    <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Image Assignments</h3>
-
-                    <div className="space-y-4">
-                        {/* Main Image Slot */}
-                        <div className="rounded-xl overflow-hidden border-2 border-emerald-500/50 bg-gray-900/50">
-                            <div className="bg-emerald-500/20 px-3 py-2 border-b border-emerald-500/50">
-                                <p className="text-emerald-400 text-xs font-bold uppercase">Main Image</p>
-                            </div>
-                            {frame.media?.start_frame_url ? (
-                                <div className="relative group">
-                                    <img src={frame.media.start_frame_url} alt="Main" className="w-full aspect-video object-contain bg-black" />
-                                    <button
-                                        onClick={() => handleClearSlot('main')}
-                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
-                                    >
-                                        <XIcon className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
-                                    <p className="text-gray-600 text-xs">No main image set</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 2nd Image Slot */}
-                        <div className="rounded-xl overflow-hidden border-2 border-blue-500/50 bg-gray-900/50">
-                            <div className="bg-blue-500/20 px-3 py-2 border-b border-blue-500/50">
-                                <p className="text-blue-400 text-xs font-bold uppercase">2nd Image</p>
-                            </div>
-                            {frame.media?.secondary_image_url ? (
-                                <div className="relative group">
-                                    <img src={frame.media.secondary_image_url} alt="2nd" className="w-full aspect-video object-contain bg-black" />
-                                    <button
-                                        onClick={() => handleClearSlot('2nd')}
-                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
-                                    >
-                                        <XIcon className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
-                                    <p className="text-gray-600 text-xs">No 2nd image set</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 3rd Image Slot */}
-                        <div className="rounded-xl overflow-hidden border-2 border-purple-500/50 bg-gray-900/50">
-                            <div className="bg-purple-500/20 px-3 py-2 border-b border-purple-500/50">
-                                <p className="text-purple-400 text-xs font-bold uppercase">3rd Image</p>
-                            </div>
-                            {frame.media?.tertiary_image_url ? (
-                                <div className="relative group">
-                                    <img src={frame.media.tertiary_image_url} alt="3rd" className="w-full aspect-video object-contain bg-black" />
-                                    <button
-                                        onClick={() => handleClearSlot('3rd')}
-                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
-                                    >
-                                        <XIcon className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
-                                    <p className="text-gray-600 text-xs">No 3rd image set</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 4th Image Slot */}
-                        <div className="rounded-xl overflow-hidden border-2 border-orange-500/50 bg-gray-900/50">
-                            <div className="bg-orange-500/20 px-3 py-2 border-b border-orange-500/50">
-                                <p className="text-orange-400 text-xs font-bold uppercase">4th Image</p>
-                            </div>
-                            {frame.media?.quaternary_image_url ? (
-                                <div className="relative group">
-                                    <img src={frame.media.quaternary_image_url} alt="4th" className="w-full aspect-video object-contain bg-black" />
-                                    <button
-                                        onClick={() => handleClearSlot('4th')}
-                                        className="absolute top-2 right-2 bg-red-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 hover:scale-110"
-                                    >
-                                        <XIcon className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="aspect-video bg-gray-800/50 flex items-center justify-center">
-                                    <p className="text-gray-600 text-xs">No 4th image set</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="mt-6 p-3 rounded-lg bg-teal-500/10 border border-teal-500/30">
-                        <p className="text-teal-400 text-[10px] font-semibold mb-1">💡 Pro Tip</p>
-                        <p className="text-gray-400 text-[10px]">Hover over any generated image and click the assignment buttons to set main, 2nd, 3rd, or 4th images manually.</p>
-                    </div>
-                </aside>
             </main>
         </div>
     );
@@ -1692,12 +1737,17 @@ const ShotCard: React.FC<{
             {/* Media Display */}
             <div className="relative aspect-video bg-[#0B0B0B] rounded-md flex items-center justify-center overflow-hidden">
                 {displayUrl ? (
-                    isVideo 
-                        ? <video ref={videoRef} src={displayUrl} muted loop playsInline className="w-full h-full object-cover" /> 
+                    isVideo
+                        ? <video ref={videoRef} src={displayUrl} muted loop playsInline className="w-full h-full object-cover" />
                         : <img src={displayUrl} alt={`Shot ${frame.shot_number}`} className="w-full h-full object-cover" />
                 ) : (
-                    <button onClick={onCompose} className="text-gray-500 hover:text-white transition-colors">
-                        <FilmIcon className="w-8 h-8"/>
+                    <button onClick={onCompose} className="group relative text-gray-500 hover:text-white transition-all duration-300 flex flex-col items-center justify-center p-4 hover:bg-white/5 rounded-lg">
+                        <div className="relative">
+                            <FilmIcon className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform"/>
+                            <div className="absolute -inset-2 bg-gradient-to-r from-teal-500/20 to-purple-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
+                        </div>
+                        <span className="text-xs font-medium group-hover:text-teal-400 transition-colors">Click to Generate</span>
+                        <span className="text-xs text-gray-600 mt-1 group-hover:text-gray-500 transition-colors">Write prompt</span>
                     </button>
                 )}
                 
@@ -1721,7 +1771,10 @@ const ShotCard: React.FC<{
             </div>
             
             <div className="mt-auto grid grid-cols-3 gap-2 text-center">
-                <Button onClick={onCompose} variant="secondary" className="!text-xs !py-1.5 !px-2">Compose Still</Button>
+                <Button onClick={onCompose} variant="secondary" className="!text-xs !py-1.5 !px-2 !bg-gradient-to-r !from-teal-500/20 !to-purple-500/20 !border-teal-500/40 !hover:!from-teal-500/30 !hover:!to-purple-500/30 !hover:!border-teal-400/60 !hover:!text-teal-400 !transition-all">
+                    <FilmIcon className="w-3 h-3 inline mr-1" />
+                    Compose Still
+                </Button>
                 <Button onClick={onReAnimate} disabled={!isStillReady && !isImageUpscaled && !isAnimationReady && !isVideoUpscaled} variant="secondary" className="!text-xs !py-1.5 !px-2">Animate</Button>
                 {isVideoUpscaled ? (
                     frame.transferredToTimeline 
