@@ -294,7 +294,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     const [detailedPrompt, setDetailedPrompt] = useState('');
     const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi'>('Imagen');
     const [aspectRatio, setAspectRatio] = useState('16:9');
-    const [attachedImage, setAttachedImage] = useState<string | null>(null);
+    const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -326,10 +326,10 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
         try {
             const referenceImages: string[] = [];
 
-            // ✅ Proper attachment handling - Gemini API will use these
-            if (attachedImage) {
-                referenceImages.push(attachedImage);
-                console.log('[CastLocationGenerator] Using attached reference image');
+            // ✅ Proper attachment handling - Support multiple images for Flux Multi
+            if (attachedImages.length > 0) {
+                referenceImages.push(...attachedImages);
+                console.log('[CastLocationGenerator] Using attached reference images:', attachedImages.length);
             }
             if (item.data.imageUrl) {
                 referenceImages.push(item.data.imageUrl);
@@ -424,16 +424,40 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     };
 
     const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setAttachedImage(event.target?.result as string);
-            };
-            reader.readAsDataURL(file);
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            const isFluxMulti = model === 'Flux Kontext Max Multi';
+
+            // For Flux Multi, allow multiple files; for other models, only take the first one
+            const filesToProcess = isFluxMulti ? files : [files[0]];
+
+            filesToProcess.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const result = event.target?.result as string;
+                    if (isFluxMulti) {
+                        // Add to existing images for Flux Multi
+                        setAttachedImages(prev => {
+                            const updated = [...prev, result];
+                            // Limit to 10 images maximum for performance
+                            return updated.slice(-10);
+                        });
+                    } else {
+                        // Replace single image for other models
+                        setAttachedImages([result]);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
         }
         if (e.target) e.target.value = '';
     };
+
+    const handleRemoveAttachedImage = (index: number) => {
+        setAttachedImages(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const isFluxMulti = model === 'Flux Kontext Max Multi';
 
     const handleSetMainImage = (imageUrl: string) => {
         onUpdateItem(prev => ({ ...prev, imageUrl }));
@@ -616,12 +640,19 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                             rows={6}
                         />
                         {/* Compact attachment button in top-right corner */}
-                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach} />
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            multiple={isFluxMulti}
+                            onChange={handleFileAttach}
+                        />
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             className="absolute top-3 right-3 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                            title={attachedImage ? 'Change reference image' : 'Attach reference image'}
+                            title={isFluxMulti ? 'Attach multiple reference images' : 'Attach reference image'}
                         >
                             <PaperclipIcon className="w-4 h-4" />
                         </button>
@@ -647,19 +678,35 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     )}
                 </button>
 
-                {/* Attached Image Preview - Compact */}
-                {attachedImage && (
+                {/* Attached Images Preview - Support Multiple Images */}
+                {attachedImages.length > 0 && (
                     <div className="relative">
-                        <div className="relative group rounded-lg overflow-hidden border border-white/20">
-                            <img src={attachedImage} alt="Reference" className="w-full h-16 object-cover" />
-                            <button
-                                onClick={() => setAttachedImage(null)}
-                                className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <XIcon className="w-3 h-3" />
-                            </button>
+                        <p className="text-xs text-white/60 mb-2">
+                            {attachedImages.length} reference image{attachedImages.length > 1 ? 's' : ''} attached
+                            {isFluxMulti && ' (Max 10)'}
+                        </p>
+                        <div className="space-y-2">
+                            {attachedImages.map((image, index) => (
+                                <div key={index} className="relative group rounded-lg overflow-hidden border border-white/20">
+                                    <img src={image} alt={`Reference ${index + 1}`} className="w-full h-16 object-cover" />
+                                    <button
+                                        onClick={() => handleRemoveAttachedImage(index)}
+                                        className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove image"
+                                    >
+                                        <XIcon className="w-3 h-3" />
+                                    </button>
+                                    <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
+                                        #{index + 1}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <p className="text-xs text-white/60 mt-1">Reference image attached</p>
+                        {isFluxMulti && (
+                            <p className="text-xs text-white/40 mt-1">
+                                💡 {model === 'Flux Kontext Max Multi' ? 'Flux Multi can use multiple reference images' : 'Switch to Flux Kontext Max Multi for multiple images'}
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -787,10 +834,10 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                 <h3 className="text-xl font-semibold text-white mb-2">No images generated yet</h3>
                                 <p className="text-white/60 mb-6">Enter a prompt and click Generate to create images for {item.data.name}</p>
                                 <div className="text-sm text-white/40">
-                                    {attachedImage ? (
-                                        <span>✓ Reference image attached</span>
+                                    {attachedImages.length > 0 ? (
+                                        <span>✓ {attachedImages.length} reference image{attachedImages.length > 1 ? 's' : ''} attached</span>
                                     ) : (
-                                        <span>💡 Tip: Attach a reference image for better results</span>
+                                        <span>💡 Tip: Attach reference images for better results {isFluxMulti ? '(Multiple supported)' : '(Single image)'}</span>
                                     )}
                                 </div>
                             </div>
