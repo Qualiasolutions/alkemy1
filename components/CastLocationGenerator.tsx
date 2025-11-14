@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, AnalyzedLocation, Moodboard, FrameStatus } from '../types';
 import Button from './Button';
@@ -25,7 +25,7 @@ const aspectRatioClasses: { [key: string]: string } = {
     '4:3': 'aspect-[4/3]', '3:4': 'aspect-[3/4]',
 };
 
-// Refinement Studio Component - Full Screen Image with Navigation
+// Refinement Studio Component - Latest Version with Left Sidebar Layout
 const RefinementStudio: React.FC<{
     baseGeneration: Generation;
     onClose: () => void;
@@ -35,188 +35,246 @@ const RefinementStudio: React.FC<{
     currentProject?: any;
     user?: any;
 }> = ({ baseGeneration, onClose, onUpdateItem, aspectRatio, item, currentProject, user }) => {
+    const [prompt, setPrompt] = useState('');
+    const [imageVersions, setImageVersions] = useState<{id: number, prompt: string, image: string, isLoading?: boolean}[]>([
+        { id: 0, prompt: 'Initial', image: baseGeneration.url! }
+    ]);
+    const [currentImageId, setCurrentImageId] = useState(0);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [history, setHistory] = useState<string[]>([baseGeneration.url!]);
-    const [currentIndex, setCurrentIndex] = useState(0);
 
-    const currentImage = history[currentIndex];
+    const currentImage = imageVersions.find(v => v.id === currentImageId);
 
-    const handleGenerate = async (prompt: string) => {
-        if (!prompt.trim() || !currentImage) return;
-        setIsGenerating(true);
-        try {
-            const newUrl = await refineVariant(prompt, currentImage, aspectRatio, {
-                projectId: currentProject?.id || null,
-                userId: user?.id || null,
-                characterId: item.type === 'character' ? item.data.id : undefined,
-                locationId: item.type === 'location' ? item.data.id : undefined
-            });
+    const handleRefine = useCallback(async () => {
+        if (prompt.trim() && currentImage?.image) {
+            // Create a loading state first
+            const loadingVersion = {
+                id: imageVersions.length,
+                prompt: prompt,
+                image: baseGeneration.url!,
+                isLoading: true
+            };
+            setImageVersions(prev => [...prev, loadingVersion]);
+            setCurrentImageId(loadingVersion.id);
+            setIsGenerating(true);
 
-            // Add to history and move to the new image
-            const newHistory = history.slice(0, currentIndex + 1); // Remove any images after current
-            newHistory.push(newUrl);
-            setHistory(newHistory);
-            setCurrentIndex(newHistory.length - 1);
+            try {
+                // Call the AI service for actual image refinement using the existing refineVariant function
+                const refinedImageUrl = await refineVariant(
+                    prompt, // Refinement prompt
+                    currentImage.image, // Base image to refine
+                    aspectRatio, // Aspect ratio
+                    {
+                        projectId: currentProject?.id,
+                        userId: user?.id,
+                        characterId: item.type === 'character' ? item.data.id : undefined,
+                        locationId: item.type === 'location' ? item.data.id : undefined
+                    }
+                );
 
-            onUpdateItem(prevItem => ({
-                ...prevItem,
-                generations: [...(prevItem.generations || []), { id: `gen-${Date.now()}`, url: newUrl, aspectRatio, isLoading: false }],
-                refinedGenerationUrls: [...(prevItem.refinedGenerationUrls || []), newUrl],
-            }));
-        } catch (error) {
-            throw new Error(`Error refining variant: ${error instanceof Error ? error.message : 'Unknown Error'}`);
-        } finally {
-            setIsGenerating(false);
+                if (refinedImageUrl) {
+                    const refinedVersion = {
+                        id: loadingVersion.id,
+                        prompt: prompt,
+                        image: refinedImageUrl
+                    };
+
+                    setImageVersions(prev =>
+                        prev.map(v => v.id === loadingVersion.id ? refinedVersion : v)
+                    );
+
+                    onUpdateItem(prevItem => ({
+                        ...prevItem,
+                        generations: [...(prevItem.generations || []), { id: `gen-${Date.now()}`, url: refinedImageUrl, aspectRatio, isLoading: false }],
+                        refinedGenerationUrls: [...(prevItem.refinedGenerationUrls || []), refinedImageUrl],
+                    }));
+                } else {
+                    throw new Error('No refined image returned from AI service');
+                }
+            } catch (error) {
+                console.error('Refinement failed:', error);
+                // Remove loading version on error
+                setImageVersions(prev => prev.filter(v => v.id !== loadingVersion.id));
+                setCurrentImageId(imageVersions.length - 2); // Go back to previous valid image
+
+                // Show error message
+                alert('Refinement failed: ' + (error instanceof Error ? error.message : 'Unknown error') + '. Please try again with a different prompt.');
+            } finally {
+                setIsGenerating(false);
+                setPrompt('');
+            }
         }
-    };
-
-    const handleGoBack = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex(prev => prev - 1);
-        }
-    };
-
-    const handleGoForward = () => {
-        if (currentIndex < history.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-        }
-    };
+    }, [prompt, currentImage, imageVersions.length, baseGeneration.url!, aspectRatio, item, currentProject, user, onUpdateItem]);
 
     const handleSetMainAndClose = () => {
-        onUpdateItem(prev => ({ ...prev, imageUrl: currentImage }));
-        onClose();
+        if (currentImage?.image) {
+            onUpdateItem(prev => ({ ...prev, imageUrl: currentImage.image }));
+            onClose();
+        }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
             onClose();
-        } else if (e.key === 'ArrowLeft' && !isGenerating && currentIndex > 0) {
-            handleGoBack();
-        } else if (e.key === 'ArrowRight' && !isGenerating && currentIndex < history.length - 1) {
-            handleGoForward();
         }
     };
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentIndex, history.length, isGenerating]);
+    }, [onClose]);
 
     return (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-8">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="w-full h-full max-w-7xl max-h-[95vh] bg-gray-900 rounded-3xl border-2 border-[#c8ff2f] shadow-2xl flex flex-col overflow-hidden"
-            >
-                {/* Top Controls */}
-                <div className="flex-shrink-0 bg-gray-800/80 backdrop-blur-sm p-6 border-b border-[#c8ff2f]/20">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                            <button
-                                onClick={onClose}
-                                className="p-3 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all"
-                            >
-                                <ArrowLeftIcon className="w-6 h-6" />
-                            </button>
-                            <div>
-                                <h2 className="text-xl font-bold text-white">Refine Studio</h2>
-                                <p className="text-white/60 text-sm">
-                                    {item.data.name} • {aspectRatio} • {currentIndex + 1}/{history.length}
-                                </p>
-                            </div>
-                        </div>
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center">
+            <div className="w-full h-full max-w-7xl max-h-screen bg-gray-900 rounded-xl overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 bg-gray-800 border-b border-gray-700">
+                    <div className="flex items-center gap-3">
                         <button
-                            onClick={handleSetMainAndClose}
-                            className="bg-[#c8ff2f] hover:bg-[#b3e617] text-black font-semibold px-6 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-2"
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-white transition-colors"
                         >
-                            <CheckIcon className="w-5 h-5" />
-                            Set as Main & Close
+                            <ArrowLeftIcon className="w-6 h-6" />
                         </button>
-                    </div>
-                </div>
-
-                {/* Main Image Display - Much Larger */}
-                <div className="flex-1 flex items-center justify-center p-8">
-                    <div className="relative w-full h-full flex items-center justify-center">
-                        {/* Navigation Arrows */}
-                        {currentIndex > 0 && (
-                            <button
-                                onClick={handleGoBack}
-                                className="absolute left-4 top-1/2 transform -translate-y-1/2 p-4 bg-[#c8ff2f]/20 hover:bg-[#c8ff2f]/30 backdrop-blur-sm text-white rounded-full transition-all z-10"
-                            >
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                        )}
-                        {currentIndex < history.length - 1 && (
-                            <button
-                                onClick={handleGoForward}
-                                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-4 bg-[#c8ff2f]/20 hover:bg-[#c8ff2f]/30 backdrop-blur-sm text-white rounded-full transition-all z-10"
-                            >
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        )}
-
-                        {/* Image Container - Much Larger */}
-                        <div className={`relative ${aspectRatioClasses[aspectRatio] || 'aspect-video'} w-full max-w-6xl max-h-[75vh]`}>
-                            {isGenerating ? (
-                                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center border border-[#c8ff2f]/30">
-                                    <AlkemyLoadingIcon className="w-20 h-20 text-[#c8ff2f] mb-6 animate-spin" />
-                                    <p className="text-white/60 text-xl font-medium">Refining your image...</p>
-                                </div>
-                            ) : (
-                                <img
-                                    src={currentImage}
-                                    alt="Refinement preview"
-                                    className="w-full h-full object-contain rounded-2xl shadow-2xl"
-                                />
-                            )}
-
-                            {/* Refinement Indicator */}
-                            {currentIndex > 0 && (
-                                <div className="absolute top-6 left-6 bg-[#c8ff2f] text-black text-sm px-5 py-3 rounded-full font-bold shadow-lg">
-                                    Refinement #{currentIndex}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bottom Chat Bubble - Enhanced Refinement Interface */}
-                <div className="flex-shrink-0 bg-gray-800/80 backdrop-blur-sm p-6 border-t border-[#c8ff2f]/20">
-                    <div className="max-w-4xl mx-auto">
-                        <PromptChatBubble
-                            onSendPrompt={handleGenerate}
-                            isGenerating={isGenerating}
-                            placeholder="Describe what you want to refine in detail... (e.g., add cinematic lighting with golden hour effect, make the character smile warmly, enhance colors to be more vibrant and saturated)"
-                            suggestedPrompts={[
-                                "Add cinematic lighting with golden hour effect",
-                                "Make the colors more vibrant and saturated",
-                                "Enhance facial details and expressions",
-                                "Add subtle film grain for cinematic feel",
-                                "Improve composition with rule of thirds",
-                                "Softer lighting with more dramatic shadows",
-                                "Make the character smile warmly",
-                                "Enhance eye contact and expression"
-                            ]}
-                            className="w-full"
-                        />
-
-                        {/* Instructions */}
-                        <div className="mt-4 text-center">
-                            <p className="text-white/50 text-sm">
-                                Use ← → arrow keys to navigate history • Click Set as Main & Close when finished
+                        <div>
+                            <h1 className="text-white font-semibold">Refine Studio</h1>
+                            <p className="text-gray-400 text-sm">
+                                {item.data.name} • {aspectRatio} • {imageVersions.length} versions
                             </p>
                         </div>
                     </div>
+                    <button
+                        onClick={handleSetMainAndClose}
+                        className="bg-emerald-400 hover:bg-emerald-500 text-black font-semibold rounded-full px-6 py-2.5 transition-all flex items-center gap-2"
+                    >
+                        <CheckIcon className="w-5 h-5" />
+                        Set as Main & Close
+                    </button>
                 </div>
-            </motion.div>
+
+                {/* Main Container */}
+                <div className="h-[calc(100vh-80px)] flex flex-col overflow-hidden">
+                    <div className="m-4 border-2 border-emerald-400 rounded-2xl bg-gray-800 overflow-hidden flex flex-col flex-1">
+
+                        {/* Top Section: Left Prompt + Right Image */}
+                        <div className="flex flex-1 overflow-hidden min-h-0">
+                            {/* Left Side - Prompt Refinement Window */}
+                            <div className="w-72 bg-gray-900 border-r border-gray-700 flex flex-col p-6 overflow-y-auto">
+                                <h2 className="text-white font-semibold mb-4">Refine Prompt</h2>
+
+                                {/* Prompt Input */}
+                                <div className="mb-6 flex-shrink-0">
+                                    <textarea
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                        placeholder="Enter refinement prompt..."
+                                        className="w-full h-24 bg-gray-800 text-white placeholder-gray-500 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 border border-gray-600"
+                                    />
+                                    <button
+                                        onClick={handleRefine}
+                                        className="w-full mt-3 bg-emerald-400 hover:bg-emerald-500 text-black font-semibold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={!prompt.trim() || isGenerating}
+                                    >
+                                        {isGenerating ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                                Refining...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Apply Refinement
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Applied Refinements List */}
+                                {imageVersions.length > 1 && (
+                                    <div>
+                                        <h3 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Applied Refinements</h3>
+                                        <div className="space-y-2">
+                                            {imageVersions.slice(1).map((version) => (
+                                                <button
+                                                    key={version.id}
+                                                    onClick={() => setCurrentImageId(version.id)}
+                                                    className={`w-full text-left p-2 rounded-lg text-xs transition ${
+                                                        currentImageId === version.id
+                                                            ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/40'
+                                                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                                                    }`}
+                                                >
+                                                    {version.isLoading ? (
+                                                        <div className="flex items-center">
+                                                            <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mr-2" />
+                                                            Processing...
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            {version.prompt.substring(0, 40)}
+                                                            {version.prompt.length > 40 ? '...' : ''}
+                                                        </>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right Side - Current Image Display */}
+                            <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800 p-4 overflow-hidden">
+                                <div className="w-full h-full flex items-center justify-center">
+                                    {currentImage && (
+                                        <div className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
+                                            {currentImage.isLoading ? (
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <AlkemyLoadingIcon className="w-12 h-12 text-emerald-400 mb-4 animate-spin" />
+                                                    <p className="text-gray-400">Refining image...</p>
+                                                </div>
+                                            ) : (
+                                                <img
+                                                    src={currentImage.image}
+                                                    alt="Current version"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bottom Section - Version History Blocks */}
+                        {imageVersions.length > 1 && (
+                            <div className="border-t border-gray-700 bg-gray-800 p-4 flex gap-3 overflow-x-auto">
+                                <h3 className="text-gray-400 text-xs uppercase tracking-wide whitespace-nowrap self-center mr-2">Versions:</h3>
+                                {imageVersions.map((version) => (
+                                    <button
+                                        key={version.id}
+                                        onClick={() => setCurrentImageId(version.id)}
+                                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
+                                            currentImageId === version.id
+                                                ? 'border-emerald-400'
+                                                : 'border-gray-600 hover:border-gray-500'
+                                        }`}
+                                    >
+                                        {version.isLoading ? (
+                                            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                                <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                                            </div>
+                                        ) : (
+                                            <img
+                                                src={version.image}
+                                                alt={`Version ${version.id}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
