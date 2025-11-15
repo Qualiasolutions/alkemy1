@@ -12,6 +12,7 @@ interface CastLocationGeneratorProps {
     item: { type: 'character' | 'location'; data: AnalyzedCharacter | AnalyzedLocation };
     onBack: () => void;
     onUpdateItem: (updater: (prev: AnalyzedCharacter | AnalyzedLocation) => AnalyzedCharacter | AnalyzedLocation) => void;
+    onPrepareIdentity?: () => void;
     moodboard?: Moodboard;
     moodboardTemplates?: any[];
     characters?: AnalyzedCharacter[];
@@ -247,6 +248,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     item,
     onBack,
     onUpdateItem,
+    onPrepareIdentity,
     moodboard,
     moodboardTemplates = [],
     characters = [],
@@ -721,9 +723,9 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         )}
 
                         {/* Action Button */}
-                        {getCharacterIdentityStatus(character.identity) === 'none' || getCharacterIdentityStatus(character.identity) === 'error' ? (
+                        {(getCharacterIdentityStatus(character.identity) === 'none' || getCharacterIdentityStatus(character.identity) === 'error') && onPrepareIdentity && (
                             <button
-                                onClick={() => alert('Character Identity training feature: Return to Cast & Locations tab and click "Train Character" button on the character card.')}
+                                onClick={onPrepareIdentity}
                                 className="w-full py-2 px-3 rounded-lg font-semibold text-xs transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border border-purple-500/30"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -731,7 +733,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                 </svg>
                                 {getCharacterIdentityStatus(character.identity) === 'error' ? 'Retry Training' : 'Train Character Identity'}
                             </button>
-                        ) : null}
+                        )}
                     </div>
                 )}
             </div>
