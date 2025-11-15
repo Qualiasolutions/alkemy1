@@ -290,6 +290,7 @@ const Card: React.FC<{
                                 whileTap={{ scale: 0.9 }}
                                 onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
                                 aria-label={`Prepare identity for ${item.name}`}
+                                title={identityStatus === 'ready' ? 'Manage Character Identity' : identityStatus === 'error' ? 'Retry Identity Training' : 'Train Character Identity'}
                                 className={`p-2.5 rounded-xl backdrop-blur-md transition-all ${
                                     isDark
                                         ? 'bg-black/70 text-gray-300 hover:bg-purple-500/90 hover:text-white'
@@ -316,47 +317,87 @@ const Card: React.FC<{
                     </p>
 
                     {/* Footer with Stats */}
-                    <div className={`flex items-center justify-between pt-3 border-t ${
+                    <div className={`pt-3 border-t ${
                         isDark ? 'border-gray-800' : 'border-gray-200'
                     }`}>
-                        <div className="flex items-center gap-2">
-                            <motion.div
-                                animate={hasImage ? { scale: [1, 1.2, 1] } : {}}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className={`w-2 h-2 rounded-full ${hasImage ? 'bg-green-500' : 'bg-gray-500'}`}
-                            />
-                            <span className={`text-xs font-medium ${
-                                hasImage
-                                    ? 'text-green-400'
-                                    : isDark ? 'text-gray-500' : 'text-gray-400'
-                            }`}>
-                                {hasImage ? 'Image Set' : 'No Image'}
-                            </span>
-                        </div>
-                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
-                            variantCount > 0
-                                ? isDark
-                                    ? 'bg-teal-500/10 border border-teal-500/20'
-                                    : 'bg-teal-50 border border-teal-200'
-                                : isDark
-                                    ? 'bg-gray-800/50 border border-gray-700'
-                                    : 'bg-gray-100 border border-gray-200'
-                        }`}>
-                            <span className={`text-[10px] font-bold ${
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <motion.div
+                                    animate={hasImage ? { scale: [1, 1.2, 1] } : {}}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className={`w-2 h-2 rounded-full ${hasImage ? 'bg-green-500' : 'bg-gray-500'}`}
+                                />
+                                <span className={`text-xs font-medium ${
+                                    hasImage
+                                        ? 'text-green-400'
+                                        : isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`}>
+                                    {hasImage ? 'Image Set' : 'No Image'}
+                                </span>
+                            </div>
+                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
                                 variantCount > 0
-                                    ? 'text-teal-400'
-                                    : isDark ? 'text-gray-500' : 'text-gray-400'
+                                    ? isDark
+                                        ? 'bg-teal-500/10 border border-teal-500/20'
+                                        : 'bg-teal-50 border border-teal-200'
+                                    : isDark
+                                        ? 'bg-gray-800/50 border border-gray-700'
+                                        : 'bg-gray-100 border border-gray-200'
                             }`}>
-                                {variantCount}
-                            </span>
-                            <span className={`text-[10px] font-medium ${
-                                variantCount > 0
-                                    ? isDark ? 'text-teal-300' : 'text-teal-600'
-                                    : isDark ? 'text-gray-500' : 'text-gray-400'
-                            }`}>
-                                {variantCount === 1 ? 'variant' : 'variants'}
-                            </span>
+                                <span className={`text-[10px] font-bold ${
+                                    variantCount > 0
+                                        ? 'text-teal-400'
+                                        : isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`}>
+                                    {variantCount}
+                                </span>
+                                <span className={`text-[10px] font-medium ${
+                                    variantCount > 0
+                                        ? isDark ? 'text-teal-300' : 'text-teal-600'
+                                        : isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`}>
+                                    {variantCount === 1 ? 'variant' : 'variants'}
+                                </span>
+                            </div>
                         </div>
+
+                        {/* Train Character Button (for characters without identity) */}
+                        {character && (identityStatus === 'none' || identityStatus === 'error') && onPrepareIdentity && (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
+                                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                                    identityStatus === 'error'
+                                        ? isDark
+                                            ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
+                                            : 'bg-red-50 hover:bg-red-100 text-red-600 border border-red-200'
+                                        : isDark
+                                            ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border border-purple-500/30'
+                                            : 'bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 text-purple-600 border border-purple-200'
+                                }`}
+                            >
+                                <UploadIcon className="w-4 h-4" />
+                                {identityStatus === 'error' ? 'Retry Training' : 'Train Character'}
+                            </motion.button>
+                        )}
+
+                        {/* View Tests Button (for characters with ready identity) */}
+                        {character && identityStatus === 'ready' && onPrepareIdentity && (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
+                                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                                    isDark
+                                        ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30'
+                                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200'
+                                }`}
+                            >
+                                <CheckCircleIcon className="w-4 h-4" />
+                                Manage Identity
+                            </motion.button>
+                        )}
                     </div>
                 </div>
             </div>
