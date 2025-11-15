@@ -516,6 +516,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                   item={selectedItem}
                   onBack={() => setSelectedItem(null)}
                   onUpdateItem={handleItemUpdateBatch}
+                  onPrepareIdentity={selectedItem.type === 'character' ? () => setIdentityModalCharacter(selectedItem.data as AnalyzedCharacter) : undefined}
                   moodboard={moodboard}
                   moodboardTemplates={moodboardTemplates}
                   characters={characters}
