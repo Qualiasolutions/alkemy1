@@ -1,7 +1,4 @@
 
-import React from 'react';
-import { ScriptIcon, UsersIcon, MapPinIcon, ImageIcon, ShirtIcon, PresentationIcon, ClapperboardIcon, FilmIcon, ShuffleIcon, ScissorsIcon, SendIcon, PaletteIcon, SearchIcon, GlobeIcon, BarChartIcon, SparklesIcon } from './components/icons/Icons';
-
 export const THEME_COLORS = {
   background_primary: "#0B0B0B",
   background_secondary: "#121212",
@@ -23,22 +20,22 @@ export const TABS_CONFIG = [
   {
     name: 'Development',
     tabs: [
-      { id: 'script', name: 'Script', icon: React.createElement(ScriptIcon) },
-      { id: 'moodboard', name: 'Moodboard', icon: React.createElement(PaletteIcon) },
-      { id: 'cast_locations', name: 'Cast & Locations', icon: React.createElement(UsersIcon) },
-      { id: '3d_worlds', name: '3D Worlds', icon: React.createElement(GlobeIcon) },
-      { id: 'compositing', name: 'Compositing', icon: React.createElement(ClapperboardIcon) },
-      { id: 'presentation', name: 'Presentation', icon: React.createElement(PresentationIcon) },
+      { id: 'script', name: 'Script', icon: '/script.svg' },
+      { id: 'moodboard', name: 'Moodboard', icon: '/moodboard.svg' },
+      { id: 'cast_locations', name: 'Cast & Locations', icon: '/cast_locations.svg' },
+      { id: '3d_worlds', name: '3D Worlds', icon: '/worlds_3d.svg' },
+      { id: 'compositing', name: 'Compositing', icon: '/compositing.svg' },
+      { id: 'presentation', name: 'Presentation', icon: '/presentation.svg' },
     ],
   },
   {
     name: 'Production',
     tabs: [
-      { id: 'timeline', name: 'Timeline', icon: React.createElement(FilmIcon) },
-      { id: 'wan_transfer', name: 'Wan Transfer', icon: React.createElement(ShuffleIcon) },
-      { id: 'post_production', name: 'Post-Production', icon: React.createElement(ScissorsIcon) },
-      { id: 'exports', name: 'Exports', icon: React.createElement(SendIcon) },
-      { id: 'analytics', name: 'Analytics', icon: React.createElement(BarChartIcon) },
+      { id: 'timeline', name: 'Timeline', icon: '/timeline.svg' },
+      { id: 'wan_transfer', name: 'Wan Transfer', icon: '/wan_transfer.svg' },
+      { id: 'post_production', name: 'Post-Production', icon: '/post_production.svg' },
+      { id: 'exports', name: 'Exports', icon: '/exports.svg' },
+      { id: 'analytics', name: 'Analytics', icon: '/analytics.svg' },
     ],
   },
 ];

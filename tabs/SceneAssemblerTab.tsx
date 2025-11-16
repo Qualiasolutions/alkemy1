@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, AnalyzedLocation, Moodboard, FrameStatus } from '../types';
 import Button from '../components/Button';
 import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo } from '../services/aiService';
-import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, BoxIcon, ChevronDownIcon, DownloadIcon } from '../components/icons/Icons';
-import ThreeDWorldViewer from '../components/3DWorldViewer';
-import { generate3DWorld } from '../services/3dWorldService';
+import { generateVideoWithKling, refineVideoWithSeedDream } from '../services/videoFalService';
+import { generateVideoFromImageWan } from '../services/wanService';
+import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, ChevronDownIcon, DownloadIcon, SparklesIcon } from '../components/icons/Icons';
 import ImageCarousel from '../components/ImageCarousel';
 import MiniDirectorWidget from '../components/MiniDirectorWidget';
 import GenerationContextPanel from '../components/GenerationContextPanel';
@@ -36,8 +36,8 @@ const FullScreenVideoPlayer: React.FC<{
     }, [onClose]);
     
     return (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+            <div className="relative w-full h-full flex items-center justify-center">
                 <video src={url} controls autoPlay loop className="max-w-full max-h-full" />
                 <button
                     onClick={onClose}
@@ -93,8 +93,8 @@ const FullScreenImagePlayer: React.FC<{
     if (!generation.url) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex p-4" onClick={onClose}>
-            <div className="relative w-full h-full flex flex-col lg:flex-row gap-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/90 z-[60] flex p-4">
+            <div className="relative w-full h-full flex flex-col lg:flex-row gap-4">
 
                 {/* LEFT SIDEBAR: Prompt Input */}
                 <div className="w-full lg:w-80 lg:flex-shrink-0 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-2xl border border-gray-700/40 shadow-2xl p-4 lg:p-6 flex flex-col">
@@ -147,12 +147,6 @@ const FullScreenImagePlayer: React.FC<{
                                 </div>
                             </div>
                         </div>
-
-                        {promptWasAdjusted && (
-                            <div className="text-xs text-yellow-400/90 px-3 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mt-3">
-                                <span className="font-semibold">Note:</span> Prompt was adjusted for safety.
-                            </div>
-                        )}
                     </div>
                 </div>
 
@@ -265,7 +259,23 @@ const RefinementStudio: React.FC<{
             setUpscaleProgress(0);
         }
     };
-    
+
+    const handleDownload = (imageUrl: string, fileName?: string) => {
+        try {
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            const defaultName = `frame-${frame?.shot_number || 'unknown'}-${scene?.sceneNumber || 'unknown'}-${Date.now()}.png`;
+            link.download = fileName || defaultName;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Download failed. Please try right-clicking the image instead.');
+        }
+    };
+
     const allDisplayableVariants = [baseGeneration.url!, ...sessionVariants];
 
     return (
@@ -728,6 +738,7 @@ const StillStudio: React.FC<{
     const [promptWasAdjusted, setPromptWasAdjusted] = useState(false);
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
     const [viewingMetadata, setViewingMetadata] = useState<Generation | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
 
     const handleGenerate = async () => {
@@ -736,6 +747,7 @@ const StillStudio: React.FC<{
             return;
         }
         setPromptWasAdjusted(false);
+        setIsGenerating(true);
         const N_GENERATIONS = 2;
         const loadingGenerations: Generation[] = Array.from({ length: N_GENERATIONS }).map((_, i) => ({
             id: `${Date.now()}-${i}`, url: null, aspectRatio, isLoading: true, progress: 0
@@ -828,6 +840,8 @@ const StillStudio: React.FC<{
                 ...prevFrame,
                 generations: (prevFrame.generations || []).filter(g => !g.isLoading)
             }));
+        } finally {
+            setIsGenerating(false);
         }
     };
     
@@ -896,6 +910,22 @@ const StillStudio: React.FC<{
                 [slotMapping[slot]]: null,
             }
         }));
+    };
+
+    const handleDownload = (imageUrl: string, fileName?: string) => {
+        try {
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            const defaultName = `frame-${frame.shot_number || 'unknown'}-${scene.sceneNumber || 'unknown'}-${Date.now()}.png`;
+            link.download = fileName || defaultName;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('Download failed. Please try right-clicking the image instead.');
+        }
     };
 
     // Get all valid generations
@@ -1000,64 +1030,73 @@ const StillStudio: React.FC<{
             {/* Main Content: Left Sidebar + Main Grid + Right Sidebar */}
             <main className="flex-1 overflow-hidden flex">
                 {/* LEFT SIDEBAR: Prompt Controls + Director Widget */}
-                <aside className="w-[280px] border-r border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
+                <aside className="w-72 bg-gradient-to-b from-white/5 to-white/[0.02] backdrop-blur-xl border-r border-white/10 flex flex-col p-5 gap-3 h-full overflow-y-auto">
                     {/* Prompt Controls Section */}
-                    <div className="p-4 space-y-4">
+                    <div className="space-y-4">
                         <div>
-                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">Generation Settings</h3>
-
-                            {/* Prompt Textarea */}
-                            <div className="mb-3">
-                                <label className="text-xs text-gray-400 mb-1 block">Prompt</label>
-                                <textarea
-                                    value={detailedPrompt}
-                                    onChange={(e) => setDetailedPrompt(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            if (detailedPrompt.trim()) handleGenerate();
-                                        }
-                                    }}
-                                    placeholder="Describe your shot in detail..."
-                                    rows={4}
-                                    className="w-full bg-gray-800/40 text-white text-sm rounded-xl p-3 border border-gray-700/30 focus:border-teal-500/50 focus:bg-gray-800/60 transition-all resize-none focus:outline-none placeholder-gray-500"
-                                />
+                            {/* Prompt Input - Consistent with CastLocationGenerator */}
+                            <div className="flex flex-col gap-3">
+                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium">Prompt</label>
+                                <div className="relative">
+                                    <textarea
+                                        value={detailedPrompt}
+                                        onChange={(e) => setDetailedPrompt(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                if (detailedPrompt.trim()) handleGenerate();
+                                            }
+                                        }}
+                                        placeholder="Describe your shot in detail..."
+                                        rows={6}
+                                        className="w-full h-32 pr-12 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#c8ff2f] focus:border-transparent focus:bg-white/10 transition-all resize-none"
+                                    />
+                                    {/* Attachment button in top-right corner */}
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="absolute top-3 right-3 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                                        title="Attach reference image"
+                                    >
+                                        <PaperclipIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Model Selector */}
-                            <div className="mb-3">
-                                <label className="text-xs text-gray-400 mb-1 block">Model</label>
+                            <div>
+                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Model</label>
                                 <select
                                     value={model}
                                     onChange={e => setModel(e.target.value as 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi')}
-                                    className="w-full bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm"
+                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
                                 >
-                                    <option>Imagen</option>
-                                    <option>Gemini Nano Banana</option>
-                                    <option>Flux</option>
-                                    <option value="Flux Kontext Max Multi">Flux Kontext Max Multi (FAL)</option>
+                                    <option value="Imagen" className="bg-[#0a0a0a]">Imagen</option>
+                                    <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Gemini Nano Banana</option>
+                                    <option value="Flux" className="bg-[#0a0a0a]">Flux</option>
+                                    <option value="Flux Kontext Max Multi" className="bg-[#0a0a0a]">Flux Kontext Max Multi (FAL)</option>
                                 </select>
                             </div>
 
                             {/* Aspect Ratio */}
-                            <div className="mb-3">
-                                <label className="text-xs text-gray-400 mb-1 block">Aspect Ratio</label>
+                            <div>
+                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Aspect Ratio</label>
                                 <select
                                     value={aspectRatio}
                                     onChange={e => setAspectRatio(e.target.value)}
-                                    className="w-full bg-gradient-to-br from-gray-700/90 to-gray-800/90 hover:from-gray-700 hover:to-gray-800 text-white text-xs rounded-xl font-semibold px-4 py-2.5 appearance-none focus:outline-none cursor-pointer border border-gray-600/50 hover:border-gray-500/70 transition-all shadow-lg backdrop-blur-sm"
+                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
                                 >
-                                    <option>16:9</option>
-                                    <option>9:16</option>
-                                    <option>1:1</option>
-                                    <option>4:3</option>
-                                    <option>3:4</option>
+                                    <option value="16:9" className="bg-[#0a0a0a]">16:9</option>
+                                    <option value="9:16" className="bg-[#0a0a0a]">9:16</option>
+                                    <option value="1:1" className="bg-[#0a0a0a]">1:1</option>
+                                    <option value="4:3" className="bg-[#0a0a0a]">4:3</option>
+                                    <option value="3:4" className="bg-[#0a0a0a]">3:4</option>
                                 </select>
                             </div>
 
                             {/* Location Selector */}
-                            <div className="mb-3">
-                                <label className="text-xs text-gray-400 mb-1 block">Location</label>
+                            <div>
+                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Location</label>
                                 <LocationSelect
                                     locations={locations}
                                     selectedId={selectedLocationId}
@@ -1066,8 +1105,8 @@ const StillStudio: React.FC<{
                             </div>
 
                             {/* Character Selector */}
-                            <div className="mb-3">
-                                <label className="text-xs text-gray-400 mb-1 block">Characters</label>
+                            <div>
+                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Characters</label>
                                 <CharacterMultiSelect
                                     characters={characters}
                                     selectedIds={selectedCharacterIds}
@@ -1077,33 +1116,41 @@ const StillStudio: React.FC<{
 
                             {/* Attached Image Preview */}
                             {attachedImage && (
-                                <div className="relative p-1.5 bg-gray-800/60 backdrop-blur-sm rounded-2xl mb-3 border border-gray-700/50 shadow-lg">
-                                    <img src={attachedImage} alt="Attached reference" className="w-full aspect-video object-cover rounded-xl"/>
-                                    <button type="button" onClick={() => setAttachedImage(null)} className="absolute -top-2 -right-2 bg-red-500/90 text-white rounded-full p-1 hover:bg-red-600 hover:scale-110 transition-all shadow-lg">
-                                        <XIcon className="w-3.5 h-3.5" />
+                                <div className="relative rounded-lg overflow-hidden border border-white/20">
+                                    <img src={attachedImage} alt="Attached reference" className="w-full h-16 object-cover"/>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAttachedImage(null)}
+                                        className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove image"
+                                    >
+                                        <XIcon className="w-3 h-3" />
                                     </button>
+                                    <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
+                                        Reference
+                                    </div>
                                 </div>
                             )}
 
-                            {/* Attach Image + Generate Button */}
-                            <div className="flex gap-2">
-                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="px-4 py-2 text-gray-400 bg-gray-800/40 rounded-xl hover:bg-gray-700/50 hover:text-white transition-all text-xs font-semibold border border-gray-700/30"
-                                >
-                                    <PaperclipIcon className="w-4 h-4 inline mr-1"/>
-                                    Attach
-                                </button>
-                                <Button
-                                    onClick={handleGenerate}
-                                    disabled={!detailedPrompt.trim()}
-                                    className="flex-1 !bg-gradient-to-r !from-white !via-gray-100 !to-white !text-black !font-bold !py-2 !px-4 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !text-xs"
-                                >
-                                    Generate
-                                </Button>
-                            </div>
+                            {/* Generate Button - Consistent with CastLocationGenerator */}
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                            <button
+                                onClick={handleGenerate}
+                                disabled={!detailedPrompt.trim() || isGenerating}
+                                className="w-full py-3 bg-[#c8ff2f] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#c8ff2f]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        Generate
+                                        <span className="text-xs">({validGenerations.length} images)</span>
+                                    </>
+                                )}
+                            </button>
 
                             {promptWasAdjusted && (
                                 <div className="text-xs text-yellow-400/90 px-3 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mt-3">
@@ -1135,22 +1182,54 @@ const StillStudio: React.FC<{
                 </aside>
 
                 {/* MAIN AREA: 3-Column Image Grid */}
-                <div className="flex-1 overflow-y-auto p-8 bg-black">
+                <div className="flex-1 h-full overflow-y-auto p-4 md:p-6 bg-[#0a0a0a]">
                     {/* Hero Frames Section */}
                     {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
                         <div className="mb-8">
-                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Hero Frames</h3>
+                            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-widest font-medium mb-4">Hero Frames</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 {frame.media.start_frame_url && (
-                                    <div className="rounded-xl overflow-hidden border-2 border-emerald-500/50 group relative">
-                                        <img src={frame.media.start_frame_url} alt="Hero" className="w-full aspect-video object-cover" />
-                                        <div className="absolute top-2 left-2 bg-emerald-500/90 text-white text-xs px-3 py-1 rounded-lg font-bold shadow-lg">Hero Frame</div>
+                                    <div className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-[#c8ff2f]/50 transition-all hover:border-[#c8ff2f]/70">
+                                        <div className="aspect-video relative overflow-hidden">
+                                            <img src={frame.media.start_frame_url} alt="Hero" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+
+                                            {/* Hover overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
+                                                    <button className="p-2.5 bg-[#c8ff2f]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[#c8ff2f] hover:scale-110 transition-all shadow-lg">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-2 left-2 bg-[#c8ff2f] text-black text-xs px-2 py-1 rounded font-semibold">
+                                            HERO
+                                        </div>
                                     </div>
                                 )}
                                 {frame.media.end_frame_url && (
-                                    <div className="rounded-xl overflow-hidden border-2 border-blue-500/50 group relative">
-                                        <img src={frame.media.end_frame_url} alt="End" className="w-full aspect-video object-cover" />
-                                        <div className="absolute top-2 left-2 bg-blue-500/90 text-white text-xs px-3 py-1 rounded-lg font-bold shadow-lg">End Frame</div>
+                                    <div className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-blue-500/50 transition-all hover:border-blue-500/70">
+                                        <div className="aspect-video relative overflow-hidden">
+                                            <img src={frame.media.end_frame_url} alt="End" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+
+                                            {/* Hover overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
+                                                    <button className="p-2.5 bg-blue-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-blue-500 hover:scale-110 transition-all shadow-lg">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded font-semibold">
+                                            END
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -1160,97 +1239,82 @@ const StillStudio: React.FC<{
                     {/* Generated Images Grid */}
                     <div className="mb-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Generations</h3>
+                            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-widest font-medium">Generations</h3>
                         </div>
 
                         {validGenerations.length > 0 ? (
-                            <div className="grid grid-cols-3 gap-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                 {validGenerations.map((gen, index) => (
-                                    <motion.div
+                                    <div
                                         key={gen.id}
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="group relative rounded-xl overflow-hidden border-2 border-gray-800 hover:border-teal-500/70 transition-all duration-300 hover:shadow-[0_0_30px_rgba(20,184,166,0.3)] bg-gray-900/50"
+                                        className="relative group cursor-pointer"
+                                        onClick={() => setViewingGeneration(gen)}
                                     >
-                                        <div className="aspect-video relative overflow-hidden bg-black">
-                                            <img src={gen.url!} alt={`Variant ${index + 1}`} className="w-full h-full object-contain transition-transform group-hover:scale-105 duration-300" />
+                                        <div className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-white/20 hover:border-[#c8ff2f]/50 transition-all`}>
+                                            <img src={gen.url!} alt={`Generation ${index + 1}`} className="w-full h-full object-cover" />
 
-                                            {/* Top Badge */}
-                                            <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-lg">
+                                            {/* Hover overlay with actions */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {/* Action buttons - icon only with color palette */}
+                                                <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleAssignImage('main', gen.url!);
+                                                        }}
+                                                        className="p-2.5 bg-[#c8ff2f]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[#c8ff2f] hover:scale-110 transition-all shadow-lg"
+                                                        title="Set as Main"
+                                                    >
+                                                        <CheckIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setViewingGeneration(gen);
+                                                        }}
+                                                        className="p-2.5 bg-purple-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-purple-500 hover:scale-110 transition-all shadow-lg"
+                                                        title="Refine Image"
+                                                    >
+                                                        <SparklesIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDownload(gen.url!);
+                                                        }}
+                                                        className="p-2.5 bg-blue-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-blue-500 hover:scale-110 transition-all shadow-lg"
+                                                        title="Download"
+                                                    >
+                                                        <DownloadIcon className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteGeneration(e, gen.id);
+                                                        }}
+                                                        className="p-2.5 bg-red-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-red-500 hover:scale-110 transition-all shadow-lg"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2Icon className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                {/* Navigation hint */}
+                                                <div className="absolute top-2 left-2 text-white text-xs opacity-75">
+                                                    Click to view • Use arrow keys to navigate
+                                                </div>
+                                            </div>
+                                            <div className="absolute top-2 right-2 bg-[#c8ff2f] text-black text-xs px-2 py-1 rounded font-semibold">
                                                 #{index + 1}
                                             </div>
-
-                                            {/* Hover Overlay with Actions */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 p-3">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.2 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onClick={() => setViewingGeneration(gen)}
-                                                    className="p-2.5 bg-white/90 rounded-full hover:bg-white transition-all shadow-lg backdrop-blur-sm"
-                                                    title="View Fullscreen"
-                                                >
-                                                    <ExpandIcon className="w-5 h-5 text-black" />
-                                                </motion.button>
-                                                <motion.button
-                                                    whileHover={{ scale: 1.2 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onClick={() => handleAssignImage('main', gen.url!)}
-                                                    className="p-2.5 bg-emerald-500/90 rounded-full hover:bg-emerald-500 transition-all shadow-lg backdrop-blur-sm"
-                                                    title="Set as Main"
-                                                >
-                                                    <CheckIcon className="w-5 h-5 text-white" />
-                                                </motion.button>
-                                                <motion.button
-                                                    whileHover={{ scale: 1.2 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onClick={() => onEnterRefinement(gen)}
-                                                    className="p-2.5 bg-teal-500/90 rounded-full hover:bg-teal-500 transition-all shadow-lg backdrop-blur-sm"
-                                                    title="Refine"
-                                                >
-                                                    <ImagePlusIcon className="w-5 h-5 text-white" />
-                                                </motion.button>
-                                                <motion.button
-                                                    whileHover={{ scale: 1.2 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onClick={(e) => handleDeleteGeneration(e, gen.id)}
-                                                    className="p-2.5 bg-red-500/90 rounded-full hover:bg-red-500 transition-all shadow-lg backdrop-blur-sm"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2Icon className="w-5 h-5 text-white" />
-                                                </motion.button>
-                                            </div>
                                         </div>
-
-                                        {/* Metadata Footer */}
-                                        <div className="p-3 bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-t border-gray-700/50">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex-1 min-w-0">
-                                                    {gen.model && (
-                                                        <p className="text-xs text-gray-400 truncate">{gen.model}</p>
-                                                    )}
-                                                    {gen.selectedCharacters && gen.selectedCharacters.length > 0 && (
-                                                        <p className="text-xs text-teal-400 truncate mt-1">{gen.selectedCharacters.join(', ')}</p>
-                                                    )}
-                                                </div>
-                                                {gen.promptUsed && (
-                                                    <button
-                                                        onClick={() => setViewingMetadata(gen)}
-                                                        className="ml-2 text-gray-400 hover:text-white transition-colors"
-                                                        title="View metadata"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </motion.div>
+                                    </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-20 border-2 border-dashed border-gray-800 rounded-2xl">
-                                <p className="text-gray-500 text-lg mb-2">No images generated</p>
-                                <p className="text-gray-600 text-sm">Use the generation panel to create images</p>
+                            <div className="flex flex-col items-center justify-center h-96 text-center">
+                                <ImagePlusIcon className="w-16 h-16 text-white/20 mb-4" />
+                                <h3 className="text-xl font-semibold text-white mb-2">No images generated yet</h3>
+                                <p className="text-white/60 mb-6">Enter a prompt and click Generate to create images</p>
                             </div>
                         )}
                     </div>
@@ -1258,11 +1322,20 @@ const StillStudio: React.FC<{
                     {/* Loading Generations */}
                     {allGenerations.filter(g => g.isLoading).length > 0 && (
                         <div className="mb-6">
-                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Generating...</h3>
-                            <div className="grid grid-cols-3 gap-6">
-                                {allGenerations.filter(g => g.isLoading).map(gen => (
-                                    <div key={gen.id} className="rounded-xl overflow-hidden border-2 border-gray-800">
-                                        <LoadingSkeleton aspectRatio={gen.aspectRatio} progress={gen.progress || 0} />
+                            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-widest font-medium mb-4">Generating...</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                {allGenerations.filter(g => g.isLoading).map((gen, idx) => (
+                                    <div key={gen.id} className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-yellow-500/30 bg-black/20`}>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <AlkemyLoadingIcon className="w-8 h-8 text-white/60 mb-2 animate-spin" />
+                                            <p className="text-white text-xs mb-2">Generating...</p>
+                                            <div className="w-24 bg-gray-600 rounded-full h-1">
+                                                <div className="bg-yellow-500 h-1 rounded-full transition-all" style={{ width: `${gen.progress || 0}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded font-semibold">
+                                            #{validGenerations.length + idx + 1}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -1284,6 +1357,7 @@ const AnimateStudio: React.FC<{
     scene?: AnalyzedScene;
 }> = ({ frame, onBack, onUpdateFrame, currentProject, user, scene }) => {
     const [motionPrompt, setMotionPrompt] = useState('');
+    const [videoModel, setVideoModel] = useState<'Veo 3.1' | 'Kling 2.5' | 'Wan' | 'SeedDream v4'>('Veo 3.1');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [frameToUpload, setFrameToUpload] = useState<'start' | 'end' | null>(null);
     const [fullScreenVideoUrl, setFullScreenVideoUrl] = useState<string | null>(null);
@@ -1334,7 +1408,13 @@ const AnimateStudio: React.FC<{
             alert("Please set a Start Frame first.");
             return;
         }
-        
+
+        // SeedDream v4 requires a reference image
+        if (videoModel === 'SeedDream v4' && !startFrame) {
+            alert('SeedDream v4 requires a reference image.');
+            return;
+        }
+
         const N_VIDEO_GENERATIONS = 1;
         const loadingGenerations: Generation[] = Array.from({ length: N_VIDEO_GENERATIONS }).map((_, i) => ({
             id: `vgen-${Date.now()}-${i}`, url: null, aspectRatio: '16:9', isLoading: true, progress: 0
@@ -1368,17 +1448,48 @@ const AnimateStudio: React.FC<{
 
             const startFrameGeneration = (frame.generations || []).find(g => g.url === frame.media?.start_frame_url);
             let aspectRatio = startFrameGeneration?.aspectRatio || '16:9';
+
+            let videoUrls: string[];
+
+            // All models now use Veo 3.1 via Gemini API with different temperatures for variation
             if (aspectRatio !== '16:9' && aspectRatio !== '9:16') {
                 console.warn(`Veo only supports 16:9 and 9:16. Defaulting from ${aspectRatio} to 16:9.`);
                 aspectRatio = '16:9';
             }
 
-            const videoUrls = await animateFrame(motionPrompt, startFrame, endFrame, N_VIDEO_GENERATIONS, aspectRatio, onProgress, {
-                projectId: currentProject?.id || null,
-                userId: user?.id || null,
-                sceneId: scene?.id || null,
-                frameId: frame.id
-            });
+            // Map model selection to temperature for creative variation
+            let temperature: number | undefined = undefined;
+            switch (videoModel) {
+                case 'Veo 3.1':
+                    temperature = 0.6;  // Default balanced
+                    break;
+                case 'Kling 2.5':
+                    temperature = 0.8;  // More variation
+                    break;
+                case 'Wan':
+                    temperature = 0.9;  // Creative
+                    break;
+                case 'SeedDream v4':
+                    temperature = 1.0;  // Maximum variation
+                    break;
+            }
+
+            // All options now route through Veo 3.1 with different temperatures
+            videoUrls = await animateFrame(
+                motionPrompt,
+                startFrame,
+                endFrame,
+                N_VIDEO_GENERATIONS,
+                aspectRatio,
+                onProgress,
+                {
+                    projectId: currentProject?.id || null,
+                    userId: user?.id || null,
+                    sceneId: scene?.id || null,
+                    frameId: frame.id
+                },
+                temperature  // Pass temperature for variation
+            );
 
             onUpdateFrame(prevFrame => {
                 let currentGenerations = [...(prevFrame.videoGenerations || [])];
@@ -1391,9 +1502,9 @@ const AnimateStudio: React.FC<{
                         }
                     }
                 });
-                return { 
-                    ...prevFrame, 
-                    videoGenerations: currentGenerations.filter(g => g.url || g.isLoading), 
+                return {
+                    ...prevFrame,
+                    videoGenerations: currentGenerations.filter(g => g.url || g.isLoading),
                     status: FrameStatus.UpscaledImageReady // Revert to this status, as a video isn't officially selected yet
                 };
             });
@@ -1507,6 +1618,29 @@ const AnimateStudio: React.FC<{
                                 </div>
                             </div>
 
+                            {/* Video Model Selector */}
+                            <div className="mb-4">
+                                <label className="text-xs text-gray-400 mb-2 block font-semibold">Video Model</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {(['Veo 3.1', 'Kling 2.5', 'Wan', 'SeedDream v4'] as const).map((model) => (
+                                        <button
+                                            key={model}
+                                            onClick={() => setVideoModel(model)}
+                                            className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                                                videoModel === model
+                                                    ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white'
+                                                    : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/60'
+                                            }`}
+                                        >
+                                            {model}
+                                            {model === 'SeedDream v4' && (
+                                                <span className="block text-[10px] opacity-70">Refine</span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Motion Prompt */}
                             <div className="mb-4">
                                 <label className="text-xs text-gray-400 mb-1 block">Motion Description</label>
@@ -1601,55 +1735,6 @@ const AnimateStudio: React.FC<{
                         </div>
                     )}
                 </div>
-
-                {/* RIGHT COLUMN: Details Panel */}
-                <aside className="w-[320px] border-l border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
-                    <div className="p-4">
-                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Generated Videos ({videoGenerations.filter(g => g.url && !g.isLoading).length})</h3>
-
-                        {videoGenerations.length > 0 ? (
-                            <div className="space-y-3">
-                                {videoGenerations.map((gen, index) => (
-                                    <div
-                                        key={gen.id}
-                                        onClick={() => setSelectedVideoIndex(index)}
-                                        className={`relative group rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectedVideoIndex === index ? 'border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]' : 'border-gray-800 hover:border-teal-500/50'}`}
-                                    >
-                                        {gen.isLoading ? (
-                                            <div className="aspect-video">
-                                                <LoadingSkeleton aspectRatio="16:9" progress={gen.progress || 0} />
-                                            </div>
-                                        ) : gen.url ? (
-                                            <>
-                                                <video
-                                                    src={gen.url}
-                                                    muted
-                                                    loop
-                                                    playsInline
-                                                    className="w-full aspect-video object-cover"
-                                                    onMouseEnter={(e) => e.currentTarget.play()}
-                                                    onMouseLeave={(e) => e.currentTarget.pause()}
-                                                />
-                                                <div className="absolute top-2 left-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-lg">
-                                                    #{index + 1}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="aspect-video bg-red-900/20 flex flex-col items-center justify-center">
-                                                <p className="text-xs text-red-400 font-semibold">Failed</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-xl">
-                                <p className="text-gray-500 text-sm">No videos yet</p>
-                                <p className="text-gray-600 text-xs mt-1">Generate to create</p>
-                            </div>
-                        )}
-                    </div>
-                </aside>
             </main>
         </div>
     );
@@ -1717,77 +1802,116 @@ const ShotCard: React.FC<{
     const getBorderColorClass = (status: FrameStatus): string => {
         switch (status) {
             case FrameStatus.GeneratedStill:
-                return 'border-green-500';
+                return 'border-emerald-500/50';
             case FrameStatus.UpscaledImageReady:
-                return 'border-yellow-500';
+                return 'border-[#c8ff2f]/50';
             case FrameStatus.AnimatedVideoReady:
             case FrameStatus.UpscaledVideoReady:
-                return 'border-red-500';
+                return 'border-purple-500/50';
             default:
-                return `border-[var(--color-border-color)]`;
+                return 'border-white/20';
         }
     };
 
     return (
-        <div 
+        <div
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className={`group bg-[var(--color-surface-card)] rounded-lg border-2 p-3 flex flex-col gap-3 ${getBorderColorClass(status)}`}
+            className={`group bg-white/5 backdrop-blur-sm border-2 rounded-lg overflow-hidden flex flex-col gap-3 transition-all hover:bg-white/10 hover:border-white/30 ${getBorderColorClass(status)}`}
         >
             {/* Media Display */}
-            <div className="relative aspect-video bg-[#0B0B0B] rounded-md flex items-center justify-center overflow-hidden">
+            <div className="relative aspect-video bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
                 {displayUrl ? (
                     isVideo
                         ? <video ref={videoRef} src={displayUrl} muted loop playsInline className="w-full h-full object-cover" />
                         : <img src={displayUrl} alt={`Shot ${frame.shot_number}`} className="w-full h-full object-cover" />
                 ) : (
-                    <button onClick={onCompose} className="group relative text-gray-500 hover:text-white transition-all duration-300 flex flex-col items-center justify-center p-4 hover:bg-white/5 rounded-lg">
+                    <button onClick={onCompose} className="group relative text-white/60 hover:text-white transition-all duration-300 flex flex-col items-center justify-center p-4 hover:bg-white/5 rounded-lg w-full h-full">
                         <div className="relative">
                             <FilmIcon className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform"/>
-                            <div className="absolute -inset-2 bg-gradient-to-r from-teal-500/20 to-purple-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
+                            <div className="absolute -inset-2 bg-gradient-to-r from-[#c8ff2f]/20 to-emerald-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
                         </div>
-                        <span className="text-xs font-medium group-hover:text-teal-400 transition-colors">Click to Generate</span>
-                        <span className="text-xs text-gray-600 mt-1 group-hover:text-gray-500 transition-colors">Write prompt</span>
+                        <span className="text-xs font-medium group-hover:text-[#c8ff2f] transition-colors">Click to Generate</span>
+                        <span className="text-xs text-white/40 mt-1 group-hover:text-white/60 transition-colors">Compose still</span>
                     </button>
                 )}
-                
+
                 {/* Progress Indicators */}
                 {(status === FrameStatus.UpscalingImage || status === FrameStatus.UpscalingVideo || status === FrameStatus.RenderingVideo) && (
-                    <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white">
-                        <div className="w-full max-w-[80%] bg-gray-600 rounded-full h-1.5"><div className="bg-teal-500 h-1.5 rounded-full" style={{width: `${frame.progress || 0}%`}}></div></div>
-                        <p className="text-xs mt-2">{
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white backdrop-blur-sm">
+                        <div className="w-full max-w-[80%] bg-white/20 rounded-full h-2 mb-3">
+                            <div className="bg-[#c8ff2f] h-2 rounded-full transition-all" style={{width: `${frame.progress || 0}%`}}></div>
+                        </div>
+                        <p className="text-sm font-medium">{
                             status === FrameStatus.UpscalingImage ? 'Upscaling Image...' :
                             status === FrameStatus.UpscalingVideo ? 'Upscaling Video...' :
                             'Animating...'
                         }</p>
                     </div>
                 )}
+
+                {/* Status Badge */}
+                {displayUrl && (
+                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium">
+                        {isVideoUpscaled ? 'Video Ready' :
+                         isAnimationReady ? 'Animated' :
+                         isImageUpscaled ? 'Upscaled' :
+                         isStillReady ? 'Still Ready' : 'Processing'}
+                    </div>
+                )}
             </div>
 
             {/* Info and Actions */}
-            <div>
-                <h5 className="font-semibold truncate">Shot {frame.shot_number}</h5>
-                <p className={`text-sm text-[var(--color-text-secondary)] h-10 overflow-hidden`}>{frame.description}</p>
+            <div className="p-3 flex flex-col gap-3">
+                <div>
+                    <h5 className="font-semibold text-white text-sm">Shot {frame.shot_number}</h5>
+                    <p className="text-xs text-white/60 h-8 overflow-hidden line-clamp-2">{frame.description}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={onCompose} className="!text-xs !py-2 !bg-[#c8ff2f] hover:!bg-[#b3e617] !text-black !font-medium !rounded !transition-all">
+                        <FilmIcon className="w-3 h-3 inline mr-1" />
+                        Compose
+                    </Button>
+                    <Button onClick={onReAnimate} disabled={!isStillReady && !isImageUpscaled && !isAnimationReady && !isVideoUpscaled} className="!text-xs !py-2 !bg-white/10 hover:!bg-white/20 !text-white !font-medium !rounded !transition-all disabled:!opacity-50">
+                        Animate
+                    </Button>
+                </div>
+
+                {/* Bottom Actions */}
+                <div className="flex items-center justify-between">
+                    {isVideoUpscaled ? (
+                        frame.transferredToTimeline
+                            ? <div className="flex items-center gap-1 text-emerald-400 text-xs">
+                                <CheckIcon className="w-3 h-3" />
+                                Transferred
+                            </div>
+                            : <Button onClick={onTransfer} className="!text-xs !py-1.5 !px-3 !bg-emerald-400 hover:!bg-emerald-500 !text-black !font-medium !rounded !transition-all">
+                                To Timeline
+                            </Button>
+                    ) : isAnimationReady ? (
+                        <Button onClick={onUpscaleVideo} className="!text-xs !py-1.5 !px-3 !bg-purple-500 hover:!bg-purple-600 !text-white !font-medium !rounded !transition-all">
+                            Upscale Video
+                        </Button>
+                    ) : isImageUpscaled ? (
+                        <Button onClick={onReAnimate} className="!text-xs !py-1.5 !px-3 !bg-white/10 hover:!bg-white/20 !text-white !font-medium !rounded !transition-all">
+                            Animate
+                        </Button>
+                    ) : (
+                        <Button onClick={onUpscaleImage} disabled={!isStillReady} className="!text-xs !py-1.5 !px-3 !bg-white/10 hover:!bg-white/20 !text-white !font-medium !rounded !transition-all disabled:!opacity-50">
+                            Upscale Image
+                        </Button>
+                    )}
+
+                    <button
+                        onClick={onDelete}
+                        aria-label={`Delete shot ${frame.shot_number}`}
+                        className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                    >
+                        <Trash2Icon className="w-4 h-4"/>
+                    </button>
+                </div>
             </div>
-            
-            <div className="mt-auto grid grid-cols-3 gap-2 text-center">
-                <Button onClick={onCompose} variant="secondary" className="!text-xs !py-1.5 !px-2 !bg-gradient-to-r !from-teal-500/20 !to-purple-500/20 !border-teal-500/40 !hover:!from-teal-500/30 !hover:!to-purple-500/30 !hover:!border-teal-400/60 !hover:!text-teal-400 !transition-all">
-                    <FilmIcon className="w-3 h-3 inline mr-1" />
-                    Compose Still
-                </Button>
-                <Button onClick={onReAnimate} disabled={!isStillReady && !isImageUpscaled && !isAnimationReady && !isVideoUpscaled} variant="secondary" className="!text-xs !py-1.5 !px-2">Animate</Button>
-                {isVideoUpscaled ? (
-                    frame.transferredToTimeline 
-                        ? <Button disabled variant="default" className="!text-xs !py-1.5 !px-2 !bg-green-800/20 !text-green-400 !border-green-800"><CheckIcon className="w-4 h-4"/> Transferred</Button>
-                        : <Button onClick={onTransfer} variant="secondary" className="!text-xs !py-1.5 !px-2 !border-teal-500 !text-teal-400 hover:!bg-teal-500/20">To Timeline</Button>
-                ) : isAnimationReady ? (
-                    <Button onClick={onUpscaleVideo} variant="secondary" className="!text-xs !py-1.5 !px-2">Upscale Video</Button>
-                ) : (
-                    <Button onClick={onUpscaleImage} disabled={!isStillReady} variant="secondary" className="!text-xs !py-1.5 !px-2">Upscale Image</Button>
-                )}
-            </div>
-            
-            <button onClick={onDelete} aria-label={`Delete shot ${frame.shot_number}`} className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"><Trash2Icon className="w-4 h-4"/></button>
         </div>
     );
 };
@@ -1800,35 +1924,16 @@ interface CompositingTabProps {
   onAddScene: () => void;
   onTransferToTimeline: (frame: Frame, scene: AnalyzedScene) => void;
   onTransferAllToTimeline: () => void;
+  onBack: () => void;
   currentProject?: any;
   user?: any;
 }
 
-const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdateAnalysis, onAddScene, onTransferToTimeline, onTransferAllToTimeline, currentProject, user }) => {
+const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdateAnalysis, onAddScene, onTransferToTimeline, onTransferAllToTimeline, onBack, currentProject, user }) => {
     const [activeWorkspace, setActiveWorkspace] = useState<Workspace>('grid');
     const [selectedItem, setSelectedItem] = useState<{ frame: Frame; scene: AnalyzedScene } | null>(null);
     const [refinementBase, setRefinementBase] = useState<Generation | null>(null);
-
-    // 3D World Viewer state
-    const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
-    const [generated3DModelUrl, setGenerated3DModelUrl] = useState<string | null>(null);
-    const [generatedWorld, setGeneratedWorld] = useState<import('../services/emuWorldService').GeneratedWorld | null>(null);
-
-    const handleGenerate3DWorld = async (prompt: string) => {
-        try {
-            const result = await generate3DWorld({
-                prompt,
-                onProgress: (progress, status) => {
-                    console.log(`3D Generation: ${progress}% - ${status}`);
-                }
-            });
-            setGenerated3DModelUrl(result.modelUrl);
-            setGeneratedWorld(result.world || null); // Store full world data
-        } catch (error) {
-            console.error('Failed to generate 3D world:', error);
-            throw error;
-        }
-    };
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const handleUpdateFrame = (updater: (prev: Frame) => Frame) => {
         if (!selectedItem) return;
@@ -1883,7 +1988,49 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
     };
 
     if (!scriptAnalysis) {
-        return <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center"><div className={`p-10 border border-dashed border-[var(--color-border-color)] rounded-2xl`}><h2 className="text-3xl font-bold mb-2">Compositing</h2><p className="text-lg text-gray-400 max-w-md">Analyze a script or manually add scenes to begin.</p><Button onClick={onAddScene} variant="primary" className="mt-6"><PlusIcon className="w-5 h-5" />Add First Scene</Button></div></div>;
+        return (
+            <div className="fixed inset-0 flex bg-[#0a0a0a] overflow-hidden z-40">
+                {/* LEFT SIDEBAR - Controls */}
+                <div className="w-72 bg-gradient-to-b from-white/5 to-white/[0.02] backdrop-blur-xl border-r border-white/10 flex flex-col p-5 gap-3 h-full overflow-y-auto">
+                    {/* Header with Back Button */}
+                    <div className="flex items-center gap-3 pb-2 border-b border-white/10">
+                        <Button onClick={onBack} variant="secondary" className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                            <ArrowLeftIcon className="w-4 h-4" />
+                        </Button>
+                        <div className="flex-1">
+                            <h2 className="text-lg font-bold text-white truncate">Compositing</h2>
+                            <p className="text-xs text-white/60">Scene Assembly</p>
+                        </div>
+                    </div>
+
+                    {/* Scene Controls */}
+                    <div className="flex flex-col gap-4">
+                        <div>
+                            <h3 className="text-xs text-white/60 uppercase tracking-widest font-medium mb-3">Get Started</h3>
+                            <Button onClick={onAddScene} className="w-full bg-[#c8ff2f] hover:bg-[#b3e617] text-black font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
+                                <PlusIcon className="w-4 h-4" />
+                                Add First Scene
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* MAIN CONTENT AREA */}
+                <div className="flex-1 h-full overflow-y-auto flex items-center justify-center">
+                    <div className="text-center">
+                        <FilmIcon className="w-24 h-24 text-white/20 mb-6 mx-auto" />
+                        <h2 className="text-3xl font-bold text-white mb-4">Compositing</h2>
+                        <p className="text-lg text-white/60 max-w-md mb-8">
+                            Analyze a script or manually add scenes to begin composing your film.
+                        </p>
+                        <Button onClick={onAddScene} className="bg-[#c8ff2f] hover:bg-[#b3e617] text-black font-semibold rounded-lg transition-all flex items-center gap-2 px-8 py-3">
+                            <PlusIcon className="w-5 h-5" />
+                            Add First Scene
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
     }
     
     const renderWorkspace = () => {
@@ -1909,55 +2056,116 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
     }
 
     return (
-        <div className="space-y-10">
-            <ThreeDWorldViewer
-                isOpen={is3DViewerOpen}
-                onClose={() => setIs3DViewerOpen(false)}
-                generatedModelUrl={generated3DModelUrl}
-                generatedWorld={generatedWorld}
-                onGenerate={handleGenerate3DWorld}
-            />
-
-            <header className="space-y-4">
-              <div>
-                <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Compositing</h2>
-                <p className={`text-md text-[var(--color-text-secondary)]`}>Compose stills, then upscale and animate each shot to build your film.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button onClick={onAddScene} variant="secondary" className="!py-2 !px-4"><PlusIcon className="w-4 h-4" /><span>Add Scene</span></Button>
-                <Button onClick={() => setIs3DViewerOpen(true)} variant="secondary" className="!py-2 !px-4 !border-teal-500 !text-teal-400 hover:!bg-teal-500/20"><BoxIcon className="w-4 h-4" /><span>3D World Viewer</span></Button>
-                <Button onClick={onTransferAllToTimeline} variant="primary" className="!py-2 !px-4"><SendIcon className="w-4 h-4" /><span>Transfer All to Timeline</span></Button>
-              </div>
-            </header>
-
-            {scriptAnalysis.scenes.map(scene => (
-                 <section key={scene.id}>
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className={`text-xl font-semibold text-[var(--color-text-primary)]`}>Scene {scene.sceneNumber}: <span className="font-normal text-gray-400">{scene.setting}</span></h3>
-                        <Button onClick={() => handleAddShot(scene.id)} variant="secondary" className="!py-2 !px-4"><PlusIcon className="w-4 h-4" /><span>Add Shot</span></Button>
+        <div className="fixed inset-0 flex bg-[#0a0a0a] overflow-hidden z-40">
+            {/* LEFT SIDEBAR - Controls */}
+            <div className="w-72 bg-gradient-to-b from-white/5 to-white/[0.02] backdrop-blur-xl border-r border-white/10 flex flex-col p-5 gap-3 h-full overflow-y-auto">
+                {/* Header with Back Button */}
+                <div className="flex items-center gap-3 pb-2 border-b border-white/10">
+                    <Button onClick={onBack} variant="secondary" className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                        <ArrowLeftIcon className="w-4 h-4" />
+                    </Button>
+                    <div className="flex-1">
+                        <h2 className="text-lg font-bold text-white truncate">Compositing</h2>
+                        <p className="text-xs text-white/60">Scene Assembly</p>
                     </div>
-                    {(scene.frames && scene.frames.length > 0) ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {scene.frames.map(frame => (
-                                <ShotCard 
-                                    key={frame.id} 
-                                    frame={frame}
-                                    onCompose={() => handleSetWorkspace('still-studio', frame, scene)}
-                                    onReAnimate={() => handleSetWorkspace('animate-studio', frame, scene)}
-                                    onUpscaleImage={() => handleUpscaleImage(frame)}
-                                    onUpscaleVideo={() => handleUpscaleVideo(frame)}
-                                    onDelete={() => handleDeleteShot(frame.id, scene.id)}
-                                    onTransfer={() => onTransferToTimeline(frame, scene)}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className={`text-center py-8 bg-[var(--color-surface-card)] border border-dashed border-[var(--color-border-color)] rounded-lg`}>
-                            <p className={`text-[var(--color-text-secondary)]`}>No shots defined for this scene yet.</p>
-                        </div>
-                    )}
-                </section>
-            ))}
+                </div>
+
+                {/* Scene Controls */}
+                <div className="flex flex-col gap-4">
+                    <div>
+                        <h3 className="text-xs text-white/60 uppercase tracking-widest font-medium mb-3">Scenes</h3>
+                        <Button onClick={onAddScene} className="w-full bg-[#c8ff2f] hover:bg-[#b3e617] text-black font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
+                            <PlusIcon className="w-4 h-4" />
+                            Add Scene
+                        </Button>
+                    </div>
+
+                    {/* Transfer All */}
+                    <div>
+                        <Button onClick={onTransferAllToTimeline} className="w-full bg-emerald-400 hover:bg-emerald-500 text-black font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
+                            <SendIcon className="w-4 h-4" />
+                            Transfer All to Timeline
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Scene List */}
+                <div className="flex-1 overflow-y-auto">
+                    <h3 className="text-xs text-white/60 uppercase tracking-widest font-medium mb-3">Scene List</h3>
+                    <div className="space-y-3">
+                        {scriptAnalysis.scenes.map(scene => (
+                            <div key={scene.id} className="bg-white/5 border border-white/10 rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-semibold text-white">Scene {scene.sceneNumber}</h4>
+                                    <Button onClick={() => handleAddShot(scene.id)} className="p-1.5 bg-[#c8ff2f] hover:bg-[#b3e617] text-black rounded transition-all">
+                                        <PlusIcon className="w-3 h-3" />
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-white/60 mb-2 truncate">{scene.setting}</p>
+                                <p className="text-xs text-white/40">
+                                    {scene.frames ? scene.frames.length : 0} shot{(scene.frames?.length || 0) !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* MAIN GALLERY AREA */}
+            <div className="flex-1 h-full overflow-y-auto">
+                <div className="p-4 md:p-6">
+                    <div className="w-full">
+                        {scriptAnalysis.scenes.length === 0 ? (
+                            /* Empty State */
+                            <div className="flex flex-col items-center justify-center h-96 text-center">
+                                <FilmIcon className="w-16 h-16 text-white/20 mb-4" />
+                                <h3 className="text-xl font-semibold text-white mb-2">No scenes yet</h3>
+                                <p className="text-white/60 mb-6">Add scenes to begin compositing your film</p>
+                            </div>
+                        ) : (
+                            /* Scene Grid */
+                            <div className="space-y-8">
+                                {scriptAnalysis.scenes.map(scene => (
+                                    <div key={scene.id}>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-bold text-white">
+                                                Scene {scene.sceneNumber}: <span className="font-normal text-white/60">{scene.setting}</span>
+                                            </h3>
+                                            <Button onClick={() => handleAddShot(scene.id)} className="bg-[#c8ff2f] hover:bg-[#b3e617] text-black font-semibold rounded-lg transition-all flex items-center gap-2">
+                                                <PlusIcon className="w-4 h-4" />
+                                                Add Shot
+                                            </Button>
+                                        </div>
+
+                                        {scene.frames && scene.frames.length > 0 ? (
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                                {scene.frames.map(frame => (
+                                                    <ShotCard
+                                                        key={frame.id}
+                                                        frame={frame}
+                                                        onCompose={() => handleSetWorkspace('still-studio', frame, scene)}
+                                                        onReAnimate={() => handleSetWorkspace('animate-studio', frame, scene)}
+                                                        onUpscaleImage={() => handleUpscaleImage(frame)}
+                                                        onUpscaleVideo={() => handleUpscaleVideo(frame)}
+                                                        onDelete={() => handleDeleteShot(frame.id, scene.id)}
+                                                        onTransfer={() => onTransferToTimeline(frame, scene)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 bg-white/5 rounded-lg border border-white/10">
+                                                <FilmIcon className="w-12 h-12 text-white/20 mb-3 mx-auto" />
+                                                <p className="text-white/60">No shots defined for this scene yet</p>
+                                                <p className="text-white/40 text-sm mt-1">Click "Add Shot" to create shots for this scene</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

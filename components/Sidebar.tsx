@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TABS_CONFIG, TABS } from '../constants';
-import { LogoIcon, ChevronDownIcon, ChevronsLeftIcon, ChevronsRightIcon, PlusIcon } from './icons/Icons';
+import { ChevronDownIcon, ChevronsLeftIcon, ChevronsRightIcon, PlusIcon } from './icons/Icons';
 import Button from './Button';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
       <div className="absolute bottom-40 right-0 w-20 h-20 rounded-full blur-3xl pointer-events-none bg-emerald-400/6 opacity-40" />
       <div className={`flex items-center justify-center border-b border-[var(--color-border-color)] transition-all duration-300 ${isSidebarExpanded ? 'mb-6 pb-4 px-2' : 'mb-4 pb-0 border-b-0'}`}>
         <img
-          src="https://i.ibb.co/6cN0VWFp/Untitled-design-8.png"
+          src="/logo.jpeg"
           alt="Alkemy AI Studio"
           className={`object-contain ${isSidebarExpanded ? 'h-16 w-auto' : 'h-14 w-14'}`}
         />
@@ -96,7 +96,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                                     transition={{ type: 'spring', stiffness: 420, damping: 38 }}
                                   />
                                 )}
-                                <span className={`w-5 h-5 flex-shrink-0 relative z-10 ${isActive ? 'text-emerald-400' : ''}`}>{tab.icon}</span>
+                                <span className={`w-5 h-5 flex-shrink-0 relative z-10 ${isActive ? 'text-emerald-400' : ''}`}>
+                                  <img src={tab.icon} alt={tab.name} className="w-full h-full" />
+                                </span>
                                 <span className="whitespace-nowrap relative z-10">{tab.name}</span>
                               </motion.button>
                             </li>
@@ -143,7 +145,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                           transition={{ type: 'spring', stiffness: 420, damping: 38 }}
                         />
                       )}
-                      <span className="w-5 h-5 relative z-10">{tab.icon}</span>
+                      <span className="w-5 h-5 relative z-10">
+                        <img src={tab.icon} alt={tab.name} className="w-full h-full" />
+                      </span>
                     </motion.button>
 
                     {/* Enhanced Tooltip */}

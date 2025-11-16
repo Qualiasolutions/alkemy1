@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Alkemy AI Studio V2.0 Alpha is a production-ready AI-powered film generation platform that transforms scripts into complete visual productions. The application uses React 19, TypeScript, and integrates with Google Gemini AI, Fal.ai Flux models, and Supabase for authentication and data persistence.
 
-**Production URL**: https://alkemy1-i4q9n2e8r-qualiasolutionscy.vercel.app
+**Production URL**: https://alkemy1-eg7kssml0-qualiasolutionscy.vercel.app (latest deployment)
 
 ## Development Commands
 
@@ -86,12 +86,16 @@ The application follows a **tab-based workflow** architecture with distinct prod
 - Achieves 90-98% visual similarity across generations
 - Stores LoRA weights URLs in character identity metadata
 - Integrates with `generateStillVariants()` for automatic character injection
+- Full UI integration with Train Character button, status badges, and visual feedback
 
 **Critical flow**:
-1. Upload 6-12 reference images
-2. Train Flux LoRA model (5-10 minutes)
+1. Upload 6-12 reference images via CharacterIdentityModal
+2. Train Flux LoRA model (5-10 minutes) with progress tracking
 3. Store `loraUrl` in `character.identity.technologyData.falCharacterId`
 4. Pass LoRA parameters to all subsequent image generations
+5. Visual status indicators: "Identity" (ready), "Training" (preparing), "Error" (failed), "No ID" (none)
+
+**Important callback**: `onPrepareIdentity` callback must be wired from CastLocationsTab → CastLocationGenerator to sync identity state during generation (fixed in commit 5d23fca)
 
 #### Supabase Integration (`services/supabase.ts`)
 **Purpose**: Authentication, project persistence, media storage
@@ -333,6 +337,12 @@ npm test -t "LoRA training"                      # Pattern matching
 **Issue**: Slow auth.uid() re-evaluation in RLS policies
 **Workaround**: Optimized policies to O(1) auth checks (see SECURITY_FIXES.md)
 
+### Character Identity Callback Wiring
+**Issue**: Character identity state not syncing during generation in CastLocationGenerator
+**Root Cause**: Missing `onPrepareIdentity` callback prop from CastLocationsTab to CastLocationGenerator
+**Fix**: Wire the callback through component hierarchy (commit 5d23fca)
+**Symptom**: Characters show "No ID" status during generation despite having trained LoRA
+
 ## Project Status
 
 **Current Epic Status** (as of 2025-11-12):
@@ -343,8 +353,8 @@ npm test -t "LoRA training"                      # Pattern matching
 - ⚪ Epic 4: Voice Acting (Awaiting prioritization)
 - ⚪ Epic 5: Audio Production (Service stubs exist)
 
-**Bundle Size**: 426KB gzipped
-**Build Time**: ~25 seconds
+**Bundle Size**: 164KB gzipped (optimized with code splitting)
+**Build Time**: ~18 seconds
 **TypeScript Errors**: 0
 
 ## Documentation References
@@ -353,6 +363,8 @@ npm test -t "LoRA training"                      # Pattern matching
 - **Epic Status**: `/docs/EPIC_STATUS_UPDATE.md`
 - **Quality Checklist**: `/docs/qa/QUALITY_CHECKPOINT_2025-11-12.md`
 - **Character Identity Guide**: `/docs/EPIC2_STORY_2.1_FIX_COMPLETE.md`
+- **LoRA Implementation Summary**: `/LORA_IMPLEMENTATION_SUMMARY.md` (comprehensive UI integration guide)
+- **LoRA Integration Test Report**: `/LORA_INTEGRATION_TEST_REPORT.md` (detailed testing results)
 - **Supabase Setup**: `/SUPABASE_SETUP.md`
 - **Security Fixes**: `/supabase/SECURITY_FIXES.md`
 
@@ -369,12 +381,13 @@ npm test -t "LoRA training"                      # Pattern matching
 
 ### Build Performance & Optimization
 
-#### Bundle Optimization (426KB gzipped)
+#### Bundle Optimization (164KB gzipped)
 - **Code Splitting**: Intelligent vendor chunks (React, Three.js, Supabase, Recharts, FFmpeg)
 - **Service Chunks**: AI services, data services, generation services separated
 - **Lazy Loading**: Heavy components (3D viewers, video panels) loaded on demand
 - **WASM Support**: FFmpeg.wasm and 3D processing libraries properly configured
 - **Terser Minification**: Debug info removal, class name preservation for compatibility
+- **Aggressive Optimization**: 62% reduction from 426KB to 164KB through improved chunking strategy
 
 #### API Cost Management
 - **Debounced Saves**: 5-second debounce prevents redundant Supabase writes
@@ -398,9 +411,10 @@ npm test -t "LoRA training"                      # Pattern matching
 
 ---
 
-**Last Updated**: 2025-11-14
+**Last Updated**: 2025-11-15
 **Codebase Version**: V2.0 Alpha
 **Maintained By**: Qualia Solutions
+**Recent Major Updates**: LoRA character identity training UI complete with full integration (Epic 2)
 
 ## Quick Start for New Developers
 

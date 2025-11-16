@@ -20,6 +20,7 @@ interface CharacterIdentityModalProps {
     isOpen: boolean;
     characterId: string;
     characterName: string;
+    initialImages?: string[];
     onClose: () => void;
     onSuccess: (identity: CharacterIdentity) => void;
 }
@@ -37,6 +38,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
     isOpen,
     characterId,
     characterName,
+    initialImages = [],
     onClose,
     onSuccess,
 }) => {
@@ -49,16 +51,57 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Reset state when modal opens
+    // Convert initial images from URLs to UploadedImage objects
     useEffect(() => {
-        if (isOpen) {
+        const loadInitialImages = async () => {
+            if (initialImages.length === 0) return;
+
+            const loadedImages: UploadedImage[] = [];
+
+            for (let i = 0; i < initialImages.length; i++) {
+                const url = initialImages[i];
+                try {
+                    // Convert data URL to blob then to file
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], `lora-image-${i + 1}.png`, { type: blob.type || 'image/png' });
+
+                    // Get image dimensions
+                    const img = new Image();
+                    img.src = url;
+                    await new Promise((resolve) => { img.onload = resolve; });
+
+                    loadedImages.push({
+                        id: `initial-${i}`,
+                        file,
+                        preview: url,
+                        resolution: { width: img.width, height: img.height },
+                        isValid: img.width >= 512 && img.height >= 512,
+                        error: img.width < 512 || img.height < 512 ? 'Low resolution' : undefined
+                    });
+                } catch (error) {
+                    console.error('Failed to load initial image:', error);
+                }
+            }
+
+            setImages(loadedImages);
+        };
+
+        if (isOpen && initialImages.length > 0) {
+            loadInitialImages();
+        }
+    }, [isOpen, initialImages]);
+
+    // Reset state when modal opens (without initial images)
+    useEffect(() => {
+        if (isOpen && initialImages.length === 0) {
             setImages([]);
             setIsProcessing(false);
             setProgress(0);
             setStatusMessage('');
             setError(null);
         }
-    }, [isOpen]);
+    }, [isOpen, initialImages.length]);
 
     const validateImageFile = async (file: File): Promise<{ isValid: boolean; error?: string; resolution?: { width: number; height: number } }> => {
         // Check file type
@@ -104,9 +147,9 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
     const handleFilesAdded = useCallback(async (files: FileList | File[]) => {
         const fileArray = Array.from(files);
 
-        // Check if adding these files would exceed the 5-image limit
-        if (images.length + fileArray.length > 5) {
-            setError(`Maximum 5 images allowed. You can add ${5 - images.length} more image(s).`);
+        // Check if adding these files would exceed the 12-image limit
+        if (images.length + fileArray.length > 12) {
+            setError(`Maximum 12 images allowed. You can add ${12 - images.length} more image(s).`);
             return;
         }
 
@@ -175,8 +218,8 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
 
     const handlePrepareIdentity = async () => {
         // Validation
-        if (images.length < 3) {
-            setError('At least 3 reference images are required');
+        if (images.length < 6) {
+            setError(`At least 6 reference images are required for optimal training. You have ${images.length}. Upload ${6 - images.length} more.`);
             return;
         }
 
@@ -235,7 +278,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
     if (!isOpen) return null;
 
     const validImageCount = images.filter(img => img.isValid).length;
-    const canProceed = validImageCount >= 3 && validImageCount <= 5 && !isProcessing;
+    const canProceed = validImageCount >= 6 && validImageCount <= 12 && !isProcessing;
 
     return (
         <motion.div
@@ -273,7 +316,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                         <p className={`text-sm mt-1 ${
                             isDark ? 'text-gray-500' : 'text-gray-600'
                         }`}>
-                            {characterName} • Upload 3-5 reference images
+                            {characterName} • Upload 6-12 reference images
                         </p>
                     </div>
                     <button
@@ -299,11 +342,11 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                         <label className={`block text-sm font-semibold mb-3 ${
                             isDark ? 'text-gray-300' : 'text-gray-700'
                         }`}>
-                            Reference Images ({images.length}/5)
+                            Reference Images ({images.length}/12)
                         </label>
 
                         {/* Drag-Drop Zone */}
-                        {images.length < 5 && (
+                        {images.length < 12 && (
                             <div
                                 onDragOver={handleDragOver}
                                 onDragLeave={handleDragLeave}
@@ -475,10 +518,12 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                     isDark ? 'border-gray-800 bg-gray-900/30' : 'border-gray-200 bg-gray-50'
                 }`}>
                     <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                        {validImageCount >= 3 && validImageCount <= 5 ? (
+                        {validImageCount >= 6 && validImageCount <= 12 ? (
                             <span className="text-green-500 font-semibold">✓ Ready to proceed</span>
+                        ) : validImageCount > 12 ? (
+                            <span className="text-red-500">Remove {validImageCount - 12} image(s)</span>
                         ) : (
-                            `Need ${Math.max(0, 3 - validImageCount)} more valid image(s)`
+                            `Need ${Math.max(0, 6 - validImageCount)} more valid image(s)`
                         )}
                     </p>
                     <div className="flex gap-3">
