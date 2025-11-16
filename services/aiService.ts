@@ -1639,16 +1639,32 @@ export const generateMoodboardDescription = async (section: MoodboardSection): P
     try {
         const ai = requireGeminiClient();
 
-        const textPart = { text: `Analyze the following moodboard section and generate a concise, evocative description of its overall aesthetic, tone, and visual direction.
-        
-        Notes from the user: "${section.notes || 'No notes provided.'}"
-        
-        Based on these inputs (notes and attached images), describe the intended feeling and style. For example: "A gritty, rain-slicked neo-noir aesthetic with high-contrast lighting and a desaturated color palette, evoking a sense of urban decay and mystery."`};
+        const textPart = { text: `You are a professional cinematographer analyzing a moodboard for a film production. Analyze the provided images and extract detailed visual characteristics that will guide image generation.
+
+User notes: "${section.notes || 'No notes provided.'}"
+
+Analyze and extract the following aspects:
+
+1. COLOR PALETTE: Identify dominant colors, color temperature (warm/cool), saturation levels, and color relationships (complementary, analogous, monochromatic)
+
+2. LIGHTING: Describe lighting direction (front/side/back), quality (soft/hard shadows), color temperature (golden hour/blue hour/neutral), contrast ratio, and mood created by lighting
+
+3. COMPOSITION: Note framing techniques (rule of thirds, symmetry, leading lines), depth of field, perspective (eye-level/high/low angle), and spatial relationships
+
+4. TEXTURE & MATERIALS: Identify surface qualities (smooth/rough/glossy/matte), material properties (metal/fabric/organic), and tactile atmosphere
+
+5. MOOD & ATMOSPHERE: Capture emotional tone, energy level (calm/dynamic), time period feel, and psychological impact
+
+6. VISUAL STYLE: Identify artistic influences, era/period aesthetic, cultural references, and genre conventions
+
+Synthesize these observations into a rich, descriptive paragraph (3-5 sentences) that captures the overall visual language. Focus on concrete details that image generation models can interpret. Be specific about colors, lighting qualities, and compositional elements.
+
+Example output: "A gritty, rain-slicked neo-noir aesthetic featuring high-contrast chiaroscuro lighting with deep blacks and cool cyan highlights. The desaturated color palette emphasizes slate blues and amber streetlight warmth, creating urban decay atmosphere. Compositions favor Dutch angles and asymmetric framing with shallow depth of field, pulling focus to weathered textures and reflective surfaces. The overall mood evokes mystery and isolation through dimly lit, claustrophobic spaces with sharp rim lighting defining silhouettes."`};
         
         const imageParts = await Promise.all(
             section.items
                 .filter(item => item.type === 'image')
-                .slice(0, 5) // Limit to 5 images to avoid large payload
+                .slice(0, 8) // Increased to 8 images for comprehensive analysis
                 .map(async (item) => {
                     const { mimeType, data } = await image_url_to_base64(item.url);
                     return { inlineData: { mimeType, data } };
