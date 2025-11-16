@@ -505,19 +505,32 @@ export const generateStillVariants = async (
         moodboardImages = [styleImg, colorImg, cineImg, otherImg].filter((url): url is string => !!url);
     }
 
-    const MAX_REFERENCE_IMAGES = 5;
+    const MAX_REFERENCE_IMAGES = 8; // Increased from 5 to support professional moodboards
     const templateImages = moodboardTemplates.flatMap(board => board.items.map(item => item.url));
-    const combinedImages = [...new Set([...prioritizedImages, ...templateImages, ...moodboardImages])];
+    // Prioritize user-curated template images over legacy moodboard images
+    const combinedImages = [...new Set([...prioritizedImages, ...templateImages.slice(0, 6), ...moodboardImages.slice(0, 2)])];
     const allReferenceImages = combinedImages.slice(0, MAX_REFERENCE_IMAGES);
-    
+
     const hasVisualReferences = allReferenceImages.length > 0;
-    
+
     let contextualPrompt = prompt;
     if (characterNames && characterNames.length > 0) {
         contextualPrompt += ` featuring ${characterNames.join(' and ')}`;
     }
     if (locationName) {
         contextualPrompt += ` in the ${locationName}`;
+    }
+
+    // Inject moodboard AI summaries for visual style guidance
+    if (moodboardTemplates.length > 0) {
+        const summaries = moodboardTemplates
+            .filter(board => board.aiSummary && board.aiSummary.trim().length > 0)
+            .map(board => `${board.title}: ${board.aiSummary}`)
+            .join('. ');
+
+        if (summaries) {
+            contextualPrompt += `\n\nVisual Style Reference: ${summaries}`;
+        }
     }
 
     const { finalPrompt, wasAdjusted } = buildSafePrompt(contextualPrompt, hasVisualReferences);
@@ -1749,10 +1762,15 @@ Locations: ${analysis.locations.map(l => `${l.name}: ${l.description}`).join('\n
 Scenes Summary:
 ${analysis.scenes.map(s => `Scene ${s.sceneNumber} (${s.setting}): ${s.summary} | Mood: ${s.mood || 'Not specified'} | Time: ${s.time_of_day || 'Not specified'}`).join('\n')}
 
-MOODBOARD NOTES:
-Cinematography: ${analysis.moodboard?.cinematography.aiDescription || analysis.moodboard?.cinematography.notes || 'Not defined.'}
-Color: ${analysis.moodboard?.color.aiDescription || analysis.moodboard?.color.notes || 'Not defined.'}
-Style: ${analysis.moodboard?.style.aiDescription || analysis.moodboard?.style.notes || 'Not defined.'}
+MOODBOARD VISUAL LANGUAGE:
+${analysis.moodboardTemplates && analysis.moodboardTemplates.length > 0
+    ? analysis.moodboardTemplates
+        .filter(board => board.aiSummary || board.description)
+        .map(board => `${board.title}: ${board.aiSummary || board.description || 'Visual references collected'}`)
+        .join('\n')
+    : analysis.moodboard
+        ? `Cinematography: ${analysis.moodboard.cinematography.aiDescription || analysis.moodboard.cinematography.notes || 'Not defined.'}\nColor: ${analysis.moodboard.color.aiDescription || analysis.moodboard.color.notes || 'Not defined.'}\nStyle: ${analysis.moodboard.style.aiDescription || analysis.moodboard.style.notes || 'Not defined.'}`
+        : 'No moodboard defined yet.'}
 
 TECHNICAL KNOWLEDGE AVAILABLE:${technicalContext || '\nFull cinematography database including lenses, lighting, movement, composition, and color grading.'}`;
 
