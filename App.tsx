@@ -1067,6 +1067,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                   onAddScene={handleAddScene}
                   onTransferToTimeline={handleTransferToTimeline}
                   onTransferAllToTimeline={handleTransferAllToTimeline}
+                  onBack={() => setActiveTab('script')}
                   currentProject={currentProject}
                   user={user}
                 />;

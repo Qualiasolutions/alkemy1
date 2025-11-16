@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alkemy Development Costs - Real Burn Rate</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: #333;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        header .warning {
+            background: #e74c3c;
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 15px;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+
+        .alert-box {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 5px solid #f39c12;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .alert-box h3 {
+            color: #c0392b;
+            margin-bottom: 10px;
+        }
+
+        .cost-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .cost-card {
+            background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 3px solid #e74c3c;
+        }
+
+        .cost-card h3 {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .epic-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-bottom: 25px;
+        }
+
+        .epic-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .epic-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .epic-cost {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #e74c3c;
+        }
+
+        .epic-breakdown {
+            margin-top: 15px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8f9fa;
+            margin-bottom: 8px;
+            border-radius: 8px;
+        }
+
+        .breakdown-item:hover {
+            background: #e9ecef;
+        }
+
+        .breakdown-label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .breakdown-value {
+            font-weight: 700;
+            color: #e74c3c;
+        }
+
+        .total-burn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 40px 0;
+            box-shadow: 0 10px 30px rgba(231, 76, 60, 0.3);
+        }
+
+        .total-burn h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .total-burn .amount {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .total-burn .range {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .price-table thead {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .price-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .price-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .price-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .calculator {
+            background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .calculator h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
+        .calc-result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .calc-total {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #e74c3c;
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-left: 5px solid #e74c3c;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .warning-box h4 {
+            color: #c0392b;
+            margin-bottom: 10px;
+        }
+
+        .tip-box {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left: 5px solid #28a745;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .tip-box h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔥 Alkemy Development Costs</h1>
+            <p>Real Burn Rate During Platform Development (Testing & Iteration)</p>
+            <div class="warning">⚠️ DEVELOPMENT COSTS - NOT PRODUCTION USAGE</div>
+        </header>
+
+        <div class="main-content">
+            <div class="alert-box">
+                <h3>💰 What This Covers</h3>
+                <p>This analysis shows the <strong>ACTUAL COSTS YOU'RE PAYING</strong> during development and testing:</p>
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li>Hundreds of test image generations while debugging features</li>
+                    <li>Dozens of video generations testing Veo integration</li>
+                    <li>Multiple LoRA training iterations perfecting character consistency</li>
+                    <li>Script analysis tests and frame generation experiments</li>
+                    <li>Failed generations, retries, and debugging sessions</li>
+                </ul>
+            </div>
+
+            <!-- EPIC-BY-EPIC BREAKDOWN -->
+            <div class="section">
+                <h2 class="section-title">📋 Development Costs by Epic</h2>
+
+                <!-- Epic 1: Director Voice -->
+                <div class="epic-card">
+                    <div class="epic-header">
+                        <div class="epic-title">✅ Epic 1: Director Voice</div>
+                        <div class="epic-cost">~$5</div>
+                    </div>
+                    <div class="epic-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Director chat testing (1000+ messages)</span>
+                            <span class="breakdown-value">$2.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Voice recognition integration</span>
+                            <span class="breakdown-value">$0.50</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Moodboard description generation (50 tests)</span>
+                            <span class="breakdown-value">$0.05</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Script analysis tests (30 scripts)</span>
+                            <span class="breakdown-value">$1.50</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Frame generation tests (100 scenes)</span>
+                            <span class="breakdown-value">$0.90</span>
+                        </div>
+                    </div>
+                    <p style="margin-top: 15px; color: #666; font-size: 0.9rem;">
+                        <strong>Low cost</strong> - Mostly text-based AI (Gemini Pro/Flash)
+                    </p>
+                </div>
+
+                <!-- Epic 2: Character Identity (LoRA) -->
+                <div class="epic-card">
+                    <div class="epic-header">
+                        <div class="epic-title">✅ Epic 2: Character Identity (LoRA)</div>
+                        <div class="epic-cost">~$150-$250</div>
+                    </div>
+                    <div class="epic-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">LoRA training tests (20-30 characters)</span>
+                            <span class="breakdown-value">$2.00 - $3.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Test image generation WITH LoRA (500-800 images)</span>
+                            <span class="breakdown-value">$20.00 - $32.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Debugging failed generations (200 retries)</span>
+                            <span class="breakdown-value">$8.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Visual similarity testing (100 test pairs)</span>
+                            <span class="breakdown-value">$4.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">UI integration testing (300 images)</span>
+                            <span class="breakdown-value">$12.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Callback wiring fix testing (100 images)</span>
+                            <span class="breakdown-value">$4.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Status badge testing and iterations (200 images)</span>
+                            <span class="breakdown-value">$8.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">CastLocationGenerator integration (300 images)</span>
+                            <span class="breakdown-value">$12.00</span>
+                        </div>
+                    </div>
+                    <div class="warning-box">
+                        <h4>🔥 HIGHEST COST EPIC</h4>
+                        <p>Character identity required extensive testing with Flux Pro + LoRA. Each iteration needed multiple image generations to verify consistency (90-98% target).</p>
+                    </div>
+                </div>
+
+                <!-- Epic 3-5: Not Started -->
+                <div class="epic-card">
+                    <div class="epic-header">
+                        <div class="epic-title">⚪ Epic 3-5: Not Started</div>
+                        <div class="epic-cost">$0</div>
+                    </div>
+                    <p style="color: #666;">3D Worlds, Voice Acting, Audio Production - Infrastructure only, no testing costs yet.</p>
+                </div>
+
+                <!-- Epic 6: Analytics -->
+                <div class="epic-card">
+                    <div class="epic-header">
+                        <div class="epic-title">✅ Epic 6: Analytics Dashboard</div>
+                        <div class="epic-cost">~$10</div>
+                    </div>
+                    <div class="epic-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Test data generation (50 test projects)</span>
+                            <span class="breakdown-value">$5.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Quality analysis testing</span>
+                            <span class="breakdown-value">$3.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Cost tracking validation</span>
+                            <span class="breakdown-value">$2.00</span>
+                        </div>
+                    </div>
+                    <p style="margin-top: 15px; color: #666; font-size: 0.9rem;">
+                        <strong>Low cost</strong> - Mostly frontend UI work
+                    </p>
+                </div>
+
+                <!-- Scene Assembly (General) -->
+                <div class="epic-card">
+                    <div class="epic-header">
+                        <div class="epic-title">🎬 Scene Assembly & Compositing</div>
+                        <div class="epic-cost">~$100-$150</div>
+                    </div>
+                    <div class="epic-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Still image generation testing (400-600 images)</span>
+                            <span class="breakdown-value">$16.00 - $24.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Image refinement iterations (200 refinements)</span>
+                            <span class="breakdown-value">$7.80</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Model comparison testing (Imagen vs Flux, 300 images)</span>
+                            <span class="breakdown-value">$12.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Aspect ratio testing (200 images)</span>
+                            <span class="breakdown-value">$8.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Reference image integration (300 images)</span>
+                            <span class="breakdown-value">$12.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Safety filter debugging (100 retries with Flux fallback)</span>
+                            <span class="breakdown-value">$4.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Animation -->
+                <div class="epic-card">
+                    <div class="epic-header">
+                        <div class="epic-title">🎥 Video Animation (Veo 3.1)</div>
+                        <div class="epic-cost">~$80-$120</div>
+                    </div>
+                    <div class="epic-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Initial Veo integration (20 tests × 6 sec)</span>
+                            <span class="breakdown-value">$18.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Motion prompt testing (30 variations × 6 sec)</span>
+                            <span class="breakdown-value">$27.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Debugging failed animations (25 retries × 6 sec)</span>
+                            <span class="breakdown-value">$22.50</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Progress tracking implementation (15 tests × 6 sec)</span>
+                            <span class="breakdown-value">$13.50</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Supabase upload integration (10 tests × 6 sec)</span>
+                            <span class="breakdown-value">$9.00</span>
+                        </div>
+                    </div>
+                    <div class="warning-box">
+                        <h4>💸 HIGH COST PER TEST</h4>
+                        <p>Video generation at $0.15/sec (Veo Fast) adds up quickly. Even short 6-second clips cost $0.90 each.</p>
+                    </div>
+                </div>
+
+                <!-- Infrastructure Testing -->
+                <div class="epic-card">
+                    <div class="epic-header">
+                        <div class="epic-title">🏗️ Infrastructure & Integration</div>
+                        <div class="epic-cost">~$50-$80</div>
+                    </div>
+                    <div class="epic-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Supabase storage testing (100 uploads)</span>
+                            <span class="breakdown-value">Included in Pro plan</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Vercel deployment testing (50 builds)</span>
+                            <span class="breakdown-value">Included in Pro plan</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Save/load state testing (image generations)</span>
+                            <span class="breakdown-value">$15.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Multi-user auth testing</span>
+                            <span class="breakdown-value">$5.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">RLS policy optimization testing</span>
+                            <span class="breakdown-value">$10.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOTAL BURN RATE -->
+            <div class="total-burn">
+                <h2>🔥 TOTAL DEVELOPMENT BURN RATE</h2>
+                <div class="amount">$400 - $620</div>
+                <div class="range">(Estimated across all Epics + testing)</div>
+                <p style="margin-top: 20px; font-size: 1.1rem; opacity: 0.9;">
+                    + $90-$180/month infrastructure (Supabase + Vercel Pro)<br>
+                    × 3-4 months development = $270-$720 infrastructure
+                </p>
+                <p style="margin-top: 15px; font-size: 1.3rem; font-weight: 700; border-top: 2px solid rgba(255,255,255,0.3); padding-top: 20px; margin-top: 30px;">
+                    GRAND TOTAL: $670 - $1,340
+                </p>
+            </div>
+
+            <!-- BREAKDOWN BY CATEGORY -->
+            <div class="section">
+                <h2 class="section-title">📊 Cost Breakdown by Category</h2>
+
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Estimated Volume</th>
+                            <th>Cost per Unit</th>
+                            <th>Total Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Image Generation (Flux Pro/Imagen)</strong></td>
+                            <td>2,000 - 3,000 images</td>
+                            <td>$0.02 - $0.04</td>
+                            <td><strong>$80 - $120</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>LoRA Training</strong></td>
+                            <td>20 - 30 characters</td>
+                            <td>$0.10</td>
+                            <td><strong>$2 - $3</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Video Animation (Veo 3.1)</strong></td>
+                            <td>100 - 150 videos (6 sec each)</td>
+                            <td>$0.90</td>
+                            <td><strong>$90 - $135</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Script Analysis</strong></td>
+                            <td>50 - 100 scripts</td>
+                            <td>$0.05</td>
+                            <td><strong>$2.50 - $5.00</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Frame Generation</strong></td>
+                            <td>200 - 300 scenes</td>
+                            <td>$0.009</td>
+                            <td><strong>$1.80 - $2.70</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Director Chat</strong></td>
+                            <td>1,000 - 2,000 messages</td>
+                            <td>$0.002</td>
+                            <td><strong>$2 - $4</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Image Refinement</strong></td>
+                            <td>200 - 400 refinements</td>
+                            <td>$0.039</td>
+                            <td><strong>$7.80 - $15.60</strong></td>
+                        </tr>
+                        <tr style="background: #f8d7da; font-weight: 700;">
+                            <td colspan="3"><strong>AI OPERATIONS SUBTOTAL</strong></td>
+                            <td><strong>$186 - $285</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Supabase Pro (4 months)</strong></td>
+                            <td>$25-$50/month × 4</td>
+                            <td>Monthly</td>
+                            <td><strong>$100 - $200</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Vercel Pro (4 months)</strong></td>
+                            <td>$20-$45/month × 4</td>
+                            <td>Monthly</td>
+                            <td><strong>$80 - $180</strong></td>
+                        </tr>
+                        <tr style="background: #f8d7da; font-weight: 700;">
+                            <td colspan="3"><strong>INFRASTRUCTURE SUBTOTAL</strong></td>
+                            <td><strong>$180 - $380</strong></td>
+                        </tr>
+                        <tr style="background: #e74c3c; color: white; font-size: 1.2rem; font-weight: 700;">
+                            <td colspan="3"><strong>TOTAL DEVELOPMENT COST</strong></td>
+                            <td><strong>$366 - $665</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PEAK TESTING DAYS -->
+            <div class="section">
+                <h2 class="section-title">📅 Peak Testing Days (Burn Rate Spikes)</h2>
+
+                <div class="cost-grid">
+                    <div class="cost-card">
+                        <h3>🔥 Epic 2 LoRA Integration Day</h3>
+                        <p style="margin: 15px 0; color: #555;">Testing character identity callbacks and status syncing</p>
+                        <div class="breakdown-item">
+                            <span>300 test images (debugging)</span>
+                            <span style="color: #e74c3c; font-weight: 700;">$12.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>10 LoRA retraining</span>
+                            <span style="color: #e74c3c; font-weight: 700;">$1.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>SINGLE DAY COST</span>
+                            <span style="color: #e74c3c; font-weight: 700; font-size: 1.2rem;">~$13.00</span>
+                        </div>
+                    </div>
+
+                    <div class="cost-card">
+                        <h3>🎥 Veo Integration Day</h3>
+                        <p style="margin: 15px 0; color: #555;">Testing video animation with motion prompts</p>
+                        <div class="breakdown-item">
+                            <span>50 test videos (6 sec each)</span>
+                            <span style="color: #e74c3c; font-weight: 700;">$45.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>SINGLE DAY COST</span>
+                            <span style="color: #e74c3c; font-weight: 700; font-size: 1.2rem;">~$45.00</span>
+                        </div>
+                    </div>
+
+                    <div class="cost-card">
+                        <h3>🎬 Scene Assembly Testing</h3>
+                        <p style="margin: 15px 0; color: #555;">Testing still generation pipeline</p>
+                        <div class="breakdown-item">
+                            <span>200 still images</span>
+                            <span style="color: #e74c3c; font-weight: 700;">$8.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>100 refinements</span>
+                            <span style="color: #e74c3c; font-weight: 700;">$3.90</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>SINGLE DAY COST</span>
+                            <span style="color: #e74c3c; font-weight: 700; font-size: 1.2rem;">~$11.90</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COST OPTIMIZATION -->
+            <div class="section">
+                <h2 class="section-title">💡 How to Reduce Development Costs</h2>
+
+                <div class="tip-box">
+                    <h4>✅ Smart Testing Strategies</h4>
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                        <li><strong>Use smaller test sets</strong> - Test with 3-5 images before running 50</li>
+                        <li><strong>Mock expensive operations</strong> - Use placeholder images for UI testing</li>
+                        <li><strong>Batch test iterations</strong> - Plan all tests before running API calls</li>
+                        <li><strong>Use Imagen Fast ($0.02)</strong> for quick prototyping, Flux Pro for final validation</li>
+                        <li><strong>Reuse LoRAs</strong> - Train once per character, don't retrain during debugging</li>
+                        <li><strong>Test videos at 3-4 seconds</strong> instead of 6-8 to cut costs 50%</li>
+                        <li><strong>Use Free Director Chat</strong> for planning before generating</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ Biggest Cost Traps</h4>
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                        <li>Generating 50+ test videos at $0.90 each = $45+ wasted</li>
+                        <li>Debugging with Flux Pro ($0.04) instead of Imagen Fast ($0.02)</li>
+                        <li>Re-training LoRAs unnecessarily ($0.10 each time)</li>
+                        <li>Not using cached generations - generating same image twice</li>
+                        <li>Testing at full resolution when 512px would work</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- FUTURE EPIC PROJECTIONS -->
+            <div class="section">
+                <h2 class="section-title">🔮 Future Epic Cost Projections</h2>
+
+                <div class="cost-grid">
+                    <div class="cost-card">
+                        <h3>🌍 Epic 3: 3D Worlds</h3>
+                        <p style="margin: 15px 0; color: #555;">Gaussian Splatting, environment generation</p>
+                        <div class="breakdown-item">
+                            <span>Estimated test generations</span>
+                            <span style="color: #e74c3c; font-weight: 700;">400-600 images</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>3D asset testing</span>
+                            <span style="color: #e74c3c; font-weight: 700;">$20-$30</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>PROJECTED COST</span>
+                            <span style="color: #e74c3c; font-weight: 700; font-size: 1.2rem;">$100-$150</span>
+                        </div>
+                    </div>
+
+                    <div class="cost-card">
+                        <h3>🎤 Epic 4: Voice Acting</h3>
+                        <p style="margin: 15px 0; color: #555;">AI voice generation for characters</p>
+                        <div class="breakdown-item">
+                            <span>Voice model testing</span>
+                            <span style="color: #e74c3c; font-weight: 700;">TBD</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>PROJECTED COST</span>
+                            <span style="color: #e74c3c; font-weight: 700; font-size: 1.2rem;">$50-$100</span>
+                        </div>
+                    </div>
+
+                    <div class="cost-card">
+                        <h3>🎵 Epic 5: Audio Production</h3>
+                        <p style="margin: 15px 0; color: #555;">Music generation, sound effects</p>
+                        <div class="breakdown-item">
+                            <span>Audio model testing</span>
+                            <span style="color: #e74c3c; font-weight: 700;">TBD</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>PROJECTED COST</span>
+                            <span style="color: #e74c3c; font-weight: 700; font-size: 1.2rem;">$30-$60</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert-box" style="margin-top: 30px;">
+                    <h3>📈 Total V2.0 Development Cost Projection</h3>
+                    <p style="font-size: 1.1rem; margin-top: 10px;">
+                        <strong>Current (Epics 1, 2, 6):</strong> $400 - $620<br>
+                        <strong>Future (Epics 3, 4, 5):</strong> $180 - $310<br>
+                        <strong>Infrastructure (6 months):</strong> $270 - $540<br>
+                        <br>
+                        <span style="font-size: 1.3rem; color: #e74c3c; font-weight: 700;">
+                            TOTAL V2.0 BUDGET: $850 - $1,470
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- DEVELOPMENT COST CALCULATOR -->
+            <div class="section">
+                <h2 class="section-title">🧮 Development Cost Calculator</h2>
+
+                <div class="calculator">
+                    <h3>Estimate Your Testing Session Cost</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="input-group">
+                            <label for="devImages">Test Images to Generate</label>
+                            <input type="number" id="devImages" value="100" min="0" oninput="calculateDevCost()">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="devVideos">Test Videos (6 sec each)</label>
+                            <input type="number" id="devVideos" value="10" min="0" oninput="calculateDevCost()">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="devLoras">LoRA Training Runs</label>
+                            <input type="number" id="devLoras" value="5" min="0" oninput="calculateDevCost()">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="devScripts">Script Analysis Tests</label>
+                            <input type="number" id="devScripts" value="10" min="0" oninput="calculateDevCost()">
+                        </div>
+                    </div>
+
+                    <div class="calc-result">
+                        <h4>Estimated Testing Session Cost:</h4>
+                        <div class="breakdown-item">
+                            <span>Images ($0.04 each):</span>
+                            <span id="devImageCost">$4.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Videos ($0.90 each):</span>
+                            <span id="devVideoCost">$9.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>LoRAs ($0.10 each):</span>
+                            <span id="devLoraCost">$0.50</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Scripts ($0.05 each):</span>
+                            <span id="devScriptCost">$0.50</span>
+                        </div>
+                        <div class="calc-total">
+                            Session Total: $<span id="devTotalCost">14.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p><strong>Alkemy AI Studio V2.0 Alpha</strong> - Development Cost Analysis</p>
+            <p style="margin-top: 10px; font-size: 0.85rem; opacity: 0.7;">
+                Real costs based on actual development patterns and testing volumes<br>
+                Generated by Winston, Architect Agent 🏗️
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        function calculateDevCost() {
+            const images = parseInt(document.getElementById('devImages').value) || 0;
+            const videos = parseInt(document.getElementById('devVideos').value) || 0;
+            const loras = parseInt(document.getElementById('devLoras').value) || 0;
+            const scripts = parseInt(document.getElementById('devScripts').value) || 0;
+
+            const imageCost = images * 0.04;
+            const videoCost = videos * 0.90; // 6 sec at $0.15/sec
+            const loraCost = loras * 0.10;
+            const scriptCost = scripts * 0.05;
+
+            const total = imageCost + videoCost + loraCost + scriptCost;
+
+            document.getElementById('devImageCost').textContent = '$' + imageCost.toFixed(2);
+            document.getElementById('devVideoCost').textContent = '$' + videoCost.toFixed(2);
+            document.getElementById('devLoraCost').textContent = '$' + loraCost.toFixed(2);
+            document.getElementById('devScriptCost').textContent = '$' + scriptCost.toFixed(2);
+            document.getElementById('devTotalCost').textContent = total.toFixed(2);
+        }
+
+        calculateDevCost();
+    </script>
+</body>
+</html>

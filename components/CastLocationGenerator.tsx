@@ -12,7 +12,7 @@ interface CastLocationGeneratorProps {
     item: { type: 'character' | 'location'; data: AnalyzedCharacter | AnalyzedLocation };
     onBack: () => void;
     onUpdateItem: (updater: (prev: AnalyzedCharacter | AnalyzedLocation) => AnalyzedCharacter | AnalyzedLocation) => void;
-    onPrepareIdentity?: () => void;
+    onPrepareIdentity?: (loraImages?: string[]) => void;
     moodboard?: Moodboard;
     moodboardTemplates?: any[];
     characters?: AnalyzedCharacter[];
@@ -267,6 +267,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [generationCount, setGenerationCount] = useState(4);
     const [refinementBase, setRefinementBase] = useState<Generation | null>(null);
+    const [loraImages, setLoraImages] = useState<string[]>([]);
 
     // Check if this is a character (not a location)
     const isCharacter = item.type === 'character';
@@ -427,6 +428,20 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 
     const handleSetMainImage = (imageUrl: string) => {
         onUpdateItem(prev => ({ ...prev, imageUrl }));
+    };
+
+    const handleAddToLora = (imageUrl: string) => {
+        if (loraImages.length >= 25) {
+            alert('Maximum 25 images allowed for LoRA training');
+            return;
+        }
+        if (!loraImages.includes(imageUrl)) {
+            setLoraImages(prev => [...prev, imageUrl]);
+        }
+    };
+
+    const handleRemoveFromLora = (imageUrl: string) => {
+        setLoraImages(prev => prev.filter(img => img !== imageUrl));
     };
 
     // Get all valid generations - moved here to avoid initialization errors
@@ -722,16 +737,59 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                             </p>
                         )}
 
-                        {/* Action Button */}
-                        {(getCharacterIdentityStatus(character.identity) === 'none' || getCharacterIdentityStatus(character.identity) === 'error') && onPrepareIdentity && (
+                        {/* LoRA Training Images Section */}
+                        {loraImages.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-white/10">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs text-white/60 font-medium">LoRA Training Images</p>
+                                    <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                        loraImages.length >= 6 && loraImages.length <= 12
+                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                            : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                    }`}>
+                                        {loraImages.length}/12
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                                    {loraImages.map((imgUrl, idx) => (
+                                        <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-purple-500/30">
+                                            <img src={imgUrl} alt={`LoRA ${idx + 1}`} className="w-full h-full object-cover" />
+                                            <button
+                                                onClick={() => handleRemoveFromLora(imgUrl)}
+                                                className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Remove"
+                                            >
+                                                <XIcon className="w-3 h-3" />
+                                            </button>
+                                            <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-1 rounded">
+                                                #{idx + 1}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                {loraImages.length < 6 && (
+                                    <p className="text-[10px] text-yellow-400 mt-2">
+                                        ⚠️ Minimum 6 images required ({6 - loraImages.length} more needed)
+                                    </p>
+                                )}
+                                {loraImages.length > 12 && (
+                                    <p className="text-[10px] text-red-400 mt-2">
+                                        ⚠️ Maximum 12 images allowed (remove {loraImages.length - 12})
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Train Button */}
+                        {loraImages.length >= 6 && loraImages.length <= 12 && onPrepareIdentity && (
                             <button
-                                onClick={onPrepareIdentity}
-                                className="w-full py-2 px-3 rounded-lg font-semibold text-xs transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border border-purple-500/30"
+                                onClick={() => onPrepareIdentity(loraImages)}
+                                className="w-full mt-3 py-2.5 px-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/30"
                             >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
-                                {getCharacterIdentityStatus(character.identity) === 'error' ? 'Retry Training' : 'Train Character Identity'}
+                                Train Character Identity ({loraImages.length} images)
                             </button>
                         )}
                     </div>
@@ -768,16 +826,43 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                                                 {/* Action buttons - icon only with color palette */}
                                                 <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleSetMainImage(gen.url!);
-                                                        }}
-                                                        className="p-2.5 bg-[#c8ff2f]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[#c8ff2f] hover:scale-110 transition-all shadow-lg"
-                                                        title="Set as Main"
-                                                    >
-                                                        <CheckIcon className="w-4 h-4" />
-                                                    </button>
+                                                    {isCharacter ? (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (loraImages.includes(gen.url!)) {
+                                                                    handleRemoveFromLora(gen.url!);
+                                                                } else {
+                                                                    handleAddToLora(gen.url!);
+                                                                }
+                                                            }}
+                                                            className={`p-2.5 backdrop-blur-sm rounded-lg hover:scale-110 transition-all shadow-lg ${
+                                                                loraImages.includes(gen.url!)
+                                                                    ? 'bg-purple-500/90 text-white hover:bg-purple-600'
+                                                                    : 'bg-[#c8ff2f]/90 text-black hover:bg-[#c8ff2f]'
+                                                            }`}
+                                                            title={loraImages.includes(gen.url!) ? 'Remove from LoRA' : 'Add to LoRA'}
+                                                        >
+                                                            {loraImages.includes(gen.url!) ? (
+                                                                <XIcon className="w-4 h-4" />
+                                                            ) : (
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleSetMainImage(gen.url!);
+                                                            }}
+                                                            className="p-2.5 bg-[#c8ff2f]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[#c8ff2f] hover:scale-110 transition-all shadow-lg"
+                                                            title="Set as Main"
+                                                        >
+                                                            <CheckIcon className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -816,8 +901,18 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                     Click to view • Use arrow keys to navigate
                                                 </div>
                                             </div>
-                                            <div className="absolute top-2 right-2 bg-[#c8ff2f] text-black text-xs px-2 py-1 rounded font-semibold">
-                                                #{idx + 1}
+                                            <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                                                <div className="bg-[#c8ff2f] text-black text-xs px-2 py-1 rounded font-semibold">
+                                                    #{idx + 1}
+                                                </div>
+                                                {isCharacter && loraImages.includes(gen.url!) && (
+                                                    <div className="bg-purple-500 text-white text-xs px-2 py-1 rounded font-semibold flex items-center gap-1">
+                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                                                        </svg>
+                                                        LoRA
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -940,15 +1035,49 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                             <SparklesIcon className="w-4 h-4" />
                                             Refine
                                         </button>
-                                        <button
-                                            onClick={() => {
-                                                if (viewingGeneration.url) handleSetMainImage(viewingGeneration.url);
-                                                setViewingGeneration(null);
-                                            }}
-                                            className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
-                                        >
-                                            Set as Main
-                                        </button>
+                                        {isCharacter ? (
+                                            <button
+                                                onClick={() => {
+                                                    if (viewingGeneration.url) {
+                                                        if (loraImages.includes(viewingGeneration.url)) {
+                                                            handleRemoveFromLora(viewingGeneration.url);
+                                                        } else {
+                                                            handleAddToLora(viewingGeneration.url);
+                                                        }
+                                                    }
+                                                    setViewingGeneration(null);
+                                                }}
+                                                className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
+                                                    viewingGeneration.url && loraImages.includes(viewingGeneration.url)
+                                                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                                                        : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                                }`}
+                                            >
+                                                {viewingGeneration.url && loraImages.includes(viewingGeneration.url) ? (
+                                                    <>
+                                                        <XIcon className="w-4 h-4" />
+                                                        Remove from LoRA
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                        Add to LoRA
+                                                    </>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    if (viewingGeneration.url) handleSetMainImage(viewingGeneration.url);
+                                                    setViewingGeneration(null);
+                                                }}
+                                                className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
+                                            >
+                                                Set as Main
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => {
                                                 if (viewingGeneration.id !== 'main') {

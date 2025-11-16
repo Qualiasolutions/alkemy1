@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MoodboardTemplate, MoodboardItem, MoodboardSection } from '../types';
 import Button from '../components/Button';
 import { useTheme } from '../theme/ThemeContext';
-import { PlusIcon, UploadCloudIcon, Trash2Icon, SparklesIcon, ImageIcon, XIcon, SearchIcon, DownloadIcon } from '../components/icons/Icons';
+import { PlusIcon, UploadCloudIcon, Trash2Icon, SparklesIcon, ImageIcon, XIcon, SearchIcon, DownloadIcon, RefreshCwIcon } from '../components/icons/Icons';
 import { generateMoodboardDescription } from '../services/aiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchImages, SearchedImage } from '../services/imageSearchService';
@@ -17,6 +17,126 @@ const createTemplate = (count: number): MoodboardTemplate => ({
   items: [],
   createdAt: new Date().toISOString(),
 });
+
+// Enhanced Moodboard AI Summary Component
+interface MoodboardAISummaryProps {
+  summary: string | undefined;
+  isGenerating: boolean;
+  onRegenerate: () => void;
+  disabled?: boolean;
+}
+
+const MoodboardAISummary: React.FC<MoodboardAISummaryProps> = ({
+  summary,
+  isGenerating,
+  onRegenerate,
+  disabled = false
+}) => {
+  const { isDark } = useTheme();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-2xl overflow-hidden ${
+        isDark
+          ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
+          : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
+      }`}
+    >
+      {/* Header with action button */}
+      <div className={`px-6 py-4 border-b ${
+        isDark ? 'border-gray-800/50' : 'border-gray-200'
+      } bg-gradient-to-r from-purple-500/10 via-teal-500/10 to-pink-500/10 flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={isGenerating ? {
+              rotate: 360,
+              scale: [1, 1.2, 1]
+            } : {}}
+            transition={{ duration: 2, repeat: isGenerating ? Infinity : 0 }}
+          >
+            <SparklesIcon className="w-5 h-5 text-purple-400" />
+          </motion.div>
+          <h4 className={`text-lg font-bold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            AI Visual Language
+          </h4>
+        </div>
+
+        <Button
+          variant="secondary"
+          onClick={onRegenerate}
+          disabled={isGenerating || disabled}
+          className="!text-xs !py-2 !px-3"
+        >
+          <RefreshCwIcon className={`w-3 h-3 mr-1 ${
+            isGenerating ? 'animate-spin' : ''
+          }`} />
+          {isGenerating ? 'Generating...' : 'Generate'}
+        </Button>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        {isGenerating ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, width: 0 }}
+                animate={{
+                  opacity: [0.3, 0.6, 0.3],
+                  width: `${85 - i * 5}%`
+                }}
+                transition={{
+                  opacity: { duration: 1.5, repeat: Infinity, delay: i * 0.15 },
+                  width: { duration: 0.5, delay: i * 0.1 }
+                }}
+                className={`h-3 rounded ${
+                  isDark ? 'bg-gray-800' : 'bg-gray-200'
+                }`}
+              />
+            ))}
+          </div>
+        ) : summary ? (
+          <div className="space-y-4">
+            {/* Parse summary into paragraphs */}
+            {summary.split('\n\n').filter(p => p.trim()).map((paragraph, i) => (
+              <motion.p
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={`text-sm leading-relaxed ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
+                {paragraph}
+              </motion.p>
+            ))}
+          </div>
+        ) : (
+          <div className={`text-center py-8 ${
+            isDark ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            <SparklesIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">
+              {disabled ? 'Add images to generate AI summary' : 'No AI summary generated yet'}
+            </p>
+            <p className="text-xs mt-2 opacity-70">
+              Generate a visual language description to align your team
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom accent */}
+      <div className="h-1 bg-gradient-to-r from-purple-500/50 via-teal-500/50 to-pink-500/50" />
+    </motion.div>
+  );
+};
 
 type MoodboardTabProps = {
   moodboardTemplates: MoodboardTemplate[];
@@ -271,96 +391,62 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
         </div>
       </aside>
 
-      <section className={`flex h-full flex-col rounded-3xl border ${isDark ? 'border-white/10 bg-[#0C101A]' : 'border-slate-200 bg-white'} shadow-lg`}> 
+      <section className={`flex h-full flex-col rounded-3xl border ${isDark ? 'border-white/10 bg-[#0C101A]' : 'border-slate-200 bg-white'} shadow-lg`}>
         {activeBoard ? (
           <div className="flex h-full flex-col">
-            <header className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 p-6">
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <input
-                    value={activeBoard.title}
-                    onChange={(event) => updateBoard(activeBoard.id, board => ({ ...board, title: event.target.value }))}
-                    className={`flex-1 text-2xl font-semibold outline-none transition ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-slate-900'}`}
-                    placeholder="Moodboard title"
-                  />
-                  <Button
-                    variant="primary"
-                    onClick={() => setShowWebSearch(true)}
-                    className="!px-4 !py-2 !text-sm flex items-center gap-2"
-                  >
-                    <SearchIcon className="h-4 w-4" />
-                    Web Search
-                  </Button>
-                </div>
-                <textarea
-                  value={activeBoard.description ?? ''}
-                  onChange={(event) => updateBoard(activeBoard.id, board => ({ ...board, description: event.target.value }))}
-                  className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
-                    isDark
-                      ? 'border-white/10 bg-white/5 text-white/80 focus:border-emerald-400/40'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-emerald-400/40'
-                  }`}
-                  rows={3}
-                  placeholder="Describe the emotion, lighting, composition, or references you're targeting."
-                />
-              </div>
-              <div className={`flex w-full max-w-[260px] flex-col gap-2 rounded-2xl border p-4 text-xs ${
-                isDark
-                  ? 'border-white/10 bg-white/5 text-white/70'
-                  : 'border-slate-200 bg-slate-50 text-slate-600'
-              }`}>
-                <div className={`flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  <SparklesIcon className="h-4 w-4" />
-                  AI Summary
-                </div>
-                {activeBoard.aiSummary ? (
-                  <p className={`leading-relaxed ${isDark ? 'text-white/80' : 'text-slate-700'}`}>{activeBoard.aiSummary}</p>
-                ) : (
-                  <p className={`leading-relaxed ${isDark ? 'text-white/60' : 'text-slate-500'}`}>Generate a quick synopsis to align collaborators on tone.</p>
-                )}
-                <Button
-                  variant="secondary"
-                  onClick={handleGenerateSummary}
-                  disabled={isGeneratingSummary || activeBoard.items.length === 0}
-                  className="!mt-2 !py-2 text-xs"
-                >
-                  {isGeneratingSummary ? 'Summarizing…' : 'Generate AI Summary'}
-                </Button>
-              </div>
+            {/* Compact Header */}
+            <header className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
+              <input
+                value={activeBoard.title}
+                onChange={(event) => updateBoard(activeBoard.id, board => ({ ...board, title: event.target.value }))}
+                className={`text-xl font-bold outline-none transition ${isDark ? 'bg-transparent text-white' : 'bg-transparent text-slate-900'}`}
+                placeholder="Moodboard title"
+              />
+              <Button
+                variant="primary"
+                onClick={() => setShowWebSearch(true)}
+                className="!px-4 !py-2 !text-sm flex items-center gap-2"
+              >
+                <SearchIcon className="h-4 w-4" />
+                Web Search
+              </Button>
             </header>
 
-            <div
-              className={`relative m-6 flex-1 overflow-y-auto rounded-3xl border-2 border-dashed transition ${
-                dragActive
-                  ? 'border-emerald-400 bg-emerald-500/10'
-                  : isDark
-                    ? 'border-white/10 bg-white/5'
-                    : 'border-slate-200 bg-slate-50'
-              }`}
-              onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setDragActive(true); }}
-              onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }}
-              onDragLeave={(event) => { event.preventDefault(); event.stopPropagation(); setDragActive(false); }}
-              onDrop={handleDrop}
-            >
-              <input
-                id="moodboard-file-input"
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                className="hidden"
-                onChange={(event) => {
-                  const files = event.target.files;
-                  if (files?.length) {
-                    handleFiles(files);
-                    event.target.value = '';
-                  }
-                }}
-              />
-              <div className="flex h-full flex-col">
+            {/* Main Content Area - Two Columns */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 p-6 overflow-hidden">
+              {/* Left Column - Image Display */}
+              <div
+                className={`relative flex flex-col gap-4 rounded-2xl border-2 border-dashed transition ${
+                  dragActive
+                    ? 'border-emerald-400 bg-emerald-500/10'
+                    : isDark
+                      ? 'border-white/10 bg-white/5'
+                      : 'border-slate-200 bg-slate-50'
+                }`}
+                onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setDragActive(true); }}
+                onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }}
+                onDragLeave={(event) => { event.preventDefault(); event.stopPropagation(); setDragActive(false); }}
+                onDrop={handleDrop}
+              >
+                <input
+                  id="moodboard-file-input"
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  className="hidden"
+                  onChange={(event) => {
+                    const files = event.target.files;
+                    if (files?.length) {
+                      handleFiles(files);
+                      event.target.value = '';
+                    }
+                  }}
+                />
+
                 {activeBoard.items.length === 0 ? (
                   <label
                     htmlFor="moodboard-file-input"
-                    className={`flex h-full flex-col items-center justify-center gap-3 text-center text-sm cursor-pointer px-8 py-8 ${
+                    className={`flex h-full flex-col items-center justify-center gap-3 text-center text-sm cursor-pointer px-8 py-12 ${
                       isDark ? 'text-white/60' : 'text-slate-500'
                     }`}
                   >
@@ -369,9 +455,9 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     <p className="text-xs opacity-70 max-w-md leading-relaxed">High-quality stills, lighting references, frames, palette swatches. Up to {MAX_ITEMS} items.</p>
                   </label>
                 ) : (
-                  <div className="flex h-full flex-col p-4 gap-4">
+                  <div className="flex flex-col p-4 gap-4 h-full">
                     {/* Main Carousel View */}
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative min-h-0">
                       <ImageCarousel
                         images={activeBoard.items.map(item => ({
                           url: item.url,
@@ -436,6 +522,41 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Right Column - Description & AI Summary */}
+              <div className="flex flex-col gap-4 overflow-y-auto">
+                {/* Compact Description */}
+                <div className={`rounded-2xl border p-4 ${
+                  isDark
+                    ? 'border-white/10 bg-white/5'
+                    : 'border-slate-200 bg-white'
+                }`}>
+                  <label className={`block text-xs font-semibold mb-2 ${
+                    isDark ? 'text-white/70' : 'text-slate-600'
+                  }`}>
+                    Description
+                  </label>
+                  <textarea
+                    value={activeBoard.description}
+                    onChange={(event) => updateBoard(activeBoard.id, board => ({ ...board, description: event.target.value }))}
+                    placeholder="Brief notes about this moodboard..."
+                    className={`w-full px-3 py-2 rounded-lg border outline-none transition resize-none ${
+                      isDark
+                        ? 'border-white/10 bg-white/5 text-white/80 placeholder:text-white/30 focus:border-emerald-400/40'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 focus:border-emerald-400/40'
+                    }`}
+                    rows={2}
+                  />
+                </div>
+
+                {/* AI Summary Component */}
+                <MoodboardAISummary
+                  summary={activeBoard.aiSummary}
+                  isGenerating={isGeneratingSummary}
+                  onRegenerate={handleGenerateSummary}
+                  disabled={activeBoard.items.length === 0}
+                />
               </div>
             </div>
           </div>

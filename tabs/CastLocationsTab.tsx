@@ -283,23 +283,6 @@ const Card: React.FC<{
                         >
                             <ImagePlusIcon className="w-4 h-4" />
                         </motion.button>
-                        {/* Prepare Identity Button (only for characters) */}
-                        {character && onPrepareIdentity && (
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
-                                aria-label={`Prepare identity for ${item.name}`}
-                                title={identityStatus === 'ready' ? 'Manage Character Identity' : identityStatus === 'error' ? 'Retry Identity Training' : 'Train Character Identity'}
-                                className={`p-2.5 rounded-xl backdrop-blur-md transition-all ${
-                                    isDark
-                                        ? 'bg-black/70 text-gray-300 hover:bg-purple-500/90 hover:text-white'
-                                        : 'bg-white/90 text-gray-600 hover:bg-purple-500 hover:text-white'
-                                }`}
-                            >
-                                <UploadIcon className="w-4 h-4" />
-                            </motion.button>
-                        )}
                     </div>
                 </div>
 
@@ -361,43 +344,6 @@ const Card: React.FC<{
                             </div>
                         </div>
 
-                        {/* Train Character Button (for characters without identity) */}
-                        {character && (identityStatus === 'none' || identityStatus === 'error') && onPrepareIdentity && (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
-                                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                                    identityStatus === 'error'
-                                        ? isDark
-                                            ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
-                                            : 'bg-red-50 hover:bg-red-100 text-red-600 border border-red-200'
-                                        : isDark
-                                            ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border border-purple-500/30'
-                                            : 'bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 text-purple-600 border border-purple-200'
-                                }`}
-                            >
-                                <UploadIcon className="w-4 h-4" />
-                                {identityStatus === 'error' ? 'Retry Training' : 'Train Character'}
-                            </motion.button>
-                        )}
-
-                        {/* View Tests Button (for characters with ready identity) */}
-                        {character && identityStatus === 'ready' && onPrepareIdentity && (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
-                                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                                    isDark
-                                        ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30'
-                                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200'
-                                }`}
-                            >
-                                <CheckCircleIcon className="w-4 h-4" />
-                                Manage Identity
-                            </motion.button>
-                        )}
                     </div>
                 </div>
             </div>
@@ -420,6 +366,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     const attachImageInputRef = useRef<HTMLInputElement>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState<'character' | 'location' | null>(null);
     const [identityModalCharacter, setIdentityModalCharacter] = useState<AnalyzedCharacter | null>(null);
+    const [identityModalLoraImages, setIdentityModalLoraImages] = useState<string[]>([]);
     
     const handleItemUpdateBatch = (updater: (prev: AnalyzedCharacter | AnalyzedLocation) => AnalyzedCharacter | AnalyzedLocation) => {
          if (selectedItem?.type === 'character') {
@@ -508,22 +455,43 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     const handleIdentitySuccess = (characterId: string, identity: CharacterIdentity) => {
         setCharacters(prev => prev.map(c => c.id === characterId ? { ...c, identity } : c));
         setIdentityModalCharacter(null);
+        setIdentityModalLoraImages([]);
     };
 
+    // Render modal BEFORE early return to ensure it shows when needed
+    const identityModal = identityModalCharacter && (
+        <CharacterIdentityModal
+            isOpen={true}
+            characterId={identityModalCharacter.id}
+            characterName={identityModalCharacter.name}
+            initialImages={identityModalLoraImages}
+            onClose={() => {
+                setIdentityModalCharacter(null);
+                setIdentityModalLoraImages([]);
+            }}
+            onSuccess={(identity) => handleIdentitySuccess(identityModalCharacter.id, identity)}
+        />
+    );
 
     if (selectedItem) {
-        return <CastLocationGenerator
-                  item={selectedItem}
-                  onBack={() => setSelectedItem(null)}
-                  onUpdateItem={handleItemUpdateBatch}
-                  onPrepareIdentity={selectedItem.type === 'character' ? () => setIdentityModalCharacter(selectedItem.data as AnalyzedCharacter) : undefined}
-                  moodboard={moodboard}
-                  moodboardTemplates={moodboardTemplates}
-                  characters={characters}
-                  locations={locations}
-                  currentProject={null}
-                  user={null}
-                />;
+        return <>
+            {identityModal}
+            <CastLocationGenerator
+                item={selectedItem}
+                onBack={() => setSelectedItem(null)}
+                onUpdateItem={handleItemUpdateBatch}
+                onPrepareIdentity={selectedItem.type === 'character' ? (loraImages?: string[]) => {
+                    setIdentityModalCharacter(selectedItem.data as AnalyzedCharacter);
+                    setIdentityModalLoraImages(loraImages || []);
+                } : undefined}
+                moodboard={moodboard}
+                moodboardTemplates={moodboardTemplates}
+                characters={characters}
+                locations={locations}
+                currentProject={null}
+                user={null}
+            />
+        </>;
     }
 
     const { isDark } = useTheme();
@@ -537,15 +505,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                     onClose={() => setIsAddModalOpen(null)}
                     onSubmit={handleAddNewItem}
                 />
-                {identityModalCharacter && (
-                    <CharacterIdentityModal
-                        isOpen={true}
-                        characterId={identityModalCharacter.id}
-                        characterName={identityModalCharacter.name}
-                        onClose={() => setIdentityModalCharacter(null)}
-                        onSuccess={(identity) => handleIdentitySuccess(identityModalCharacter.id, identity)}
-                    />
-                )}
+                {identityModal}
                 <input type="file" ref={attachImageInputRef} onChange={handleFileAttached} className="hidden" accept="image/*" />
 
                 {/* Hero Header */}

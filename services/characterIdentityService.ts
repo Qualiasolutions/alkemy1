@@ -251,26 +251,26 @@ export function hasCharacterIdentity(identity?: CharacterIdentity): boolean {
  * Validate reference images (Story 2.1, AC1, AC4)
  *
  * Validation rules:
- * - Minimum 3 images required
- * - Maximum 5 images allowed
+ * - Minimum 6 images required (Fal.ai recommendation for optimal results)
+ * - Maximum 12 images allowed
  * - Each image must be >512x512px resolution
  * - Each image must be <10MB file size
  * - Supported formats: JPEG, PNG, WebP
  */
 function validateReferenceImages(images: File[]): CharacterIdentityError | null {
     // Check minimum count
-    if (images.length < 3) {
+    if (images.length < 6) {
         return {
             type: 'insufficient-references',
-            message: 'At least 3 reference images are required for character identity. Upload more images.',
+            message: `At least 6 reference images are required for optimal character identity training. You have ${images.length}. Upload ${6 - images.length} more image(s).`,
         };
     }
 
     // Check maximum count
-    if (images.length > 5) {
+    if (images.length > 12) {
         return {
             type: 'api-error',
-            message: 'Maximum 5 reference images allowed. Please remove some images.',
+            message: `Maximum 12 reference images allowed. You have ${images.length}. Please remove ${images.length - 12} image(s).`,
         };
     }
 
@@ -454,7 +454,8 @@ async function createFalCharacter(
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(`Fal.ai API error: ${error.error || response.statusText}`);
+        const errorMsg = error.error || response.statusText;
+        throw new Error(`Fal.ai service temporarily unavailable due to Egress Excess overloading the backend. Please try again in a few minutes. Technical details: ${errorMsg}`);
     }
 
     const data = await response.json();
@@ -833,7 +834,8 @@ async function generateWithFalCharacter(
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(`Fal.ai API error: ${error.error || response.statusText}`);
+        const errorMsg = error.error || response.statusText;
+        throw new Error(`Fal.ai service temporarily unavailable due to Egress Excess overloading the backend. Please try again in a few minutes. Technical details: ${errorMsg}`);
     }
 
     onProgress?.(80);

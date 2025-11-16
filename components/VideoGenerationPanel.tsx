@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate } from '../types';
 import Button from './Button';
 import { FileVideoIcon, SparklesIcon, XIcon, PaperclipIcon, PlayIcon, PauseIcon, DownloadIcon, RefreshCwIcon } from './icons/Icons';
-import { transferMotionWan } from '../services/wanService';
+import { generateVideoFromImageWan, generateVideoFromTextWan } from '../services/wanService';
+import { generateVideoWithKling, refineVideoWithSeedDream, isVideoFalApiAvailable } from '../services/videoFalService';
 
 interface VideoGenerationPanelProps {
     item: {
@@ -26,18 +27,30 @@ interface VideoGeneration {
     duration?: number;
 }
 
+type VideoModel = 'Kling 2.5' | 'Wan' | 'SeedDream v4';
+
 const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodboard, moodboardTemplates, onUpdateItem }) => {
     const [videoPrompt, setVideoPrompt] = useState('');
     const [videoGenerations, setVideoGenerations] = useState<VideoGeneration[]>([]);
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const [selectedVideo, setSelectedVideo] = useState<VideoGeneration | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [selectedModel, setSelectedModel] = useState<VideoModel>('Kling 2.5');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
 
     // Auto-generate videos when user enters a prompt and presses enter
     const handleGenerateVideo = async () => {
         if (!videoPrompt.trim() || isGenerating) return;
+
+        // SeedDream v4 requires a reference image
+        if (selectedModel === 'SeedDream v4') {
+            const referenceImage = attachedImage || item.data.imageUrl;
+            if (!referenceImage) {
+                alert('SeedDream v4 requires a reference image. Please attach an image or ensure the item has one.');
+                return;
+            }
+        }
 
         const newVideoId = `video-${Date.now()}`;
         const newVideo: VideoGeneration = {
@@ -51,32 +64,80 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
         setIsGenerating(true);
 
         try {
-            // Simulate progress updates
-            const progressInterval = setInterval(() => {
-                setVideoGenerations(prev => prev.map(v =>
-                    v.id === newVideoId
-                        ? { ...v, progress: Math.min(v.progress + 10, 90) }
-                        : v
-                ));
-            }, 500);
-
-            // Use the main image as reference if available
+            let videoUrl: string;
             const referenceImage = attachedImage || item.data.imageUrl;
 
-            if (!referenceImage) {
-                throw new Error('Reference image is required for video generation');
+            // Progress callback
+            const onProgress = (progress: number) => {
+                setVideoGenerations(prev => prev.map(v =>
+                    v.id === newVideoId ? { ...v, progress } : v
+                ));
+            };
+
+            // Route to the appropriate service based on selected model
+            switch (selectedModel) {
+                case 'Kling 2.5':
+                    if (referenceImage) {
+                        // Image-to-video
+                        videoUrl = await generateVideoWithKling(
+                            videoPrompt,
+                            referenceImage,
+                            5, // duration
+                            '16:9',
+                            onProgress
+                        );
+                    } else {
+                        // Text-to-video (Kling supports both)
+                        videoUrl = await generateVideoWithKling(
+                            videoPrompt,
+                            undefined,
+                            5, // duration
+                            '16:9',
+                            onProgress
+                        );
+                    }
+                    break;
+
+                case 'Wan':
+                    if (referenceImage) {
+                        // Image-to-video
+                        videoUrl = await generateVideoFromImageWan(
+                            referenceImage,
+                            videoPrompt,
+                            4, // duration
+                            undefined, // seed
+                            1.5, // cfgScale
+                            onProgress
+                        );
+                    } else {
+                        // Text-to-video
+                        videoUrl = await generateVideoFromTextWan(
+                            videoPrompt,
+                            4, // duration
+                            undefined, // seed
+                            1.5, // cfgScale
+                            onProgress
+                        );
+                    }
+                    break;
+
+                case 'SeedDream v4':
+                    // SeedDream requires reference image (checked above)
+                    if (!referenceImage) {
+                        throw new Error('SeedDream v4 requires a reference image.');
+                    }
+                    videoUrl = await refineVideoWithSeedDream(
+                        videoPrompt,
+                        referenceImage,
+                        4, // duration
+                        '16:9',
+                        onProgress
+                    );
+                    break;
+
+                default:
+                    throw new Error(`Unsupported model: ${selectedModel}`);
             }
-
-            // Generate the video using WAN service
-            const videoUrl = await transferMotionWan(
-                referenceImage, // sourceUrl
-                videoPrompt,    // prompt
-                4,             // videoDuration (4 seconds)
-                undefined,     // seed (optional)
-                1.5           // cfgScale (optional)
-            );
-
-            clearInterval(progressInterval);
 
             // Update the video with the generated URL
             setVideoGenerations(prev => prev.map(v =>
@@ -86,7 +147,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                         url: videoUrl,
                         status: 'ready',
                         progress: 100,
-                        duration: 4 // Default 4 second video
+                        duration: selectedModel === 'Kling 2.5' ? 5 : 4
                     }
                     : v
             ));
@@ -281,6 +342,29 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
             {/* Generation Form */}
             <div className="flex-shrink-0 p-5 border-t-2 border-purple-500/20 bg-gradient-to-t from-[#0a0a0a] to-transparent">
                 <div className="space-y-3">
+                    {/* Model Selector */}
+                    <div>
+                        <label className="block text-xs text-gray-400 mb-2 font-semibold">Video Model</label>
+                        <div className="flex gap-2">
+                            {(['Kling 2.5', 'Wan', 'SeedDream v4'] as VideoModel[]).map((model) => (
+                                <button
+                                    key={model}
+                                    onClick={() => setSelectedModel(model)}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                                        selectedModel === model
+                                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                            : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/60'
+                                    }`}
+                                >
+                                    {model}
+                                    {model === 'SeedDream v4' && (
+                                        <span className="block text-[10px] opacity-70">Refine only</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Attached Image Preview */}
                     {attachedImage && (
                         <motion.div

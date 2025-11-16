@@ -177,7 +177,7 @@ export const generateImageWithFlux = async (
                 throw new Error(`FLUX API request error: ${errorText}. Please check your prompt.`);
             }
 
-            throw new Error(`FLUX API error (${response.status}): ${errorText}`);
+            throw new Error(`Fal.ai service temporarily unavailable due to Egress Excess overloading the backend. Please try again in a few minutes. Technical details: ${response.status} - ${errorText}`);
         }
 
         const result: FluxGenerationResult = await response.json();

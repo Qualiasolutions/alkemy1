@@ -8,6 +8,7 @@
 import { supabase } from './supabase';
 import { Project, ScriptAnalysis, TimelineClip } from '../types';
 import { projectService } from './projectService';
+import { networkDetection } from './networkDetection';
 
 export interface SaveState {
   hasUnsavedChanges: boolean;
@@ -102,6 +103,20 @@ class SaveManager {
     if (this.pendingChanges.size === 0 && !options.forceSave) {
       console.log('[SaveManager] No changes to save');
       return true;
+    }
+
+    // Check network status before attempting save
+    if (!networkDetection.getStatus()) {
+      const offlineError = new Error('Cannot save - you appear to be offline. Changes will be saved automatically when your connection is restored.');
+      this.saveError = offlineError;
+      console.warn('[SaveManager] Save skipped due to offline status');
+
+      if (options.showNotification) {
+        this.showNotification('Cannot save while offline', 'warning');
+      }
+
+      this.notifyListeners();
+      return false;
     }
 
     // Clear any pending auto-save
@@ -269,14 +284,9 @@ class SaveManager {
       throw error;
     }
 
-    // Update project metadata
-    await supabase
-      .from('projects')
-      .update({
-        has_unsaved_changes: false,
-        last_manual_save: new Date().toISOString()
-      })
-      .eq('id', this.currentProjectId);
+    // Update project metadata - note: has_unsaved_changes and last_manual_save columns don't exist in current schema
+    // TODO: Add these columns to schema if needed in future
+    console.log('[SaveManager] Project metadata update skipped - columns not in database');
   }
 
   private collectChanges(): Record<string, any> {
@@ -294,7 +304,7 @@ class SaveManager {
       // Get latest version from database
       const { data: remoteProject } = await supabase
         .from('projects')
-        .select('updated_at, version')
+        .select('updated_at')
         .eq('id', this.currentProjectId)
         .single();
 
@@ -333,34 +343,9 @@ class SaveManager {
       const { project } = await projectService.getProject(this.currentProjectId);
       if (!project) return;
 
-      // Create version entry
-      const version = {
-        version: (project.version || 1) + 1,
-        timestamp: new Date().toISOString(),
-        changes: Object.keys(changes),
-        snapshot: {
-          script_content: project.script_content,
-          script_analysis: project.script_analysis,
-          timeline_clips: project.timeline_clips,
-          moodboard_data: project.moodboard_data
-        }
-      };
-
-      // Update version history
-      const versionHistory = [...(project.version_history || []), version];
-
-      // Keep only last 10 versions
-      if (versionHistory.length > 10) {
-        versionHistory.shift();
-      }
-
-      await supabase
-        .from('projects')
-        .update({
-          version: version.version,
-          version_history: versionHistory
-        })
-        .eq('id', this.currentProjectId);
+      // Version functionality disabled - database doesn't have version column
+      // TODO: Implement version tracking if needed in future
+      console.log('[SaveManager] Version snapshot creation skipped - no version column in database');
 
     } catch (error) {
       console.error('[SaveManager] Failed to create version snapshot:', error);
@@ -368,6 +353,13 @@ class SaveManager {
   }
 
   private async handleSaveError(error: Error): Promise<boolean> {
+    // Check for network errors using network detection service
+    if (networkDetection.isNetworkError(error)) {
+      console.warn('[SaveManager] Network error detected, will retry when connection is restored');
+      // Don't retry immediately - wait for network to come back
+      return false;
+    }
+
     // Check for specific error types
     if (error.message?.includes('network')) {
       // Network error - retry

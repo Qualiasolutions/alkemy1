@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../theme/ThemeContext';
 import Button from '../components/Button';
 import { ScriptAnalysis } from '../types';
-import { UploadCloudIcon, XIcon, UsersIcon, MapPinIcon, ClapperboardIcon } from '../components/icons/Icons';
+import { UploadCloudIcon, XIcon, UsersIcon, MapPinIcon, ClapperboardIcon, SparklesIcon, CheckCircleIcon } from '../components/icons/Icons';
 import { SkeletonAnalysis } from '../components/SkeletonLoader';
 
 
@@ -13,30 +13,252 @@ interface AnalysisInfoCardProps {
     value: string | number;
 }
 
-const AnalysisInfoCard: React.FC<AnalysisInfoCardProps> = ({ icon, label, value }) => (
-    <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-lg p-4 flex items-center gap-4`}>
-        <div className={`w-10 h-10 flex-shrink-0 bg-[var(--color-background-primary)] rounded-md flex items-center justify-center text-[var(--color-accent-primary)]`}>
-            {icon}
-        </div>
-        <div>
-            <div className="text-2xl font-bold">{value}</div>
-            <div className={`text-sm text-[var(--color-text-secondary)] uppercase tracking-wider`}>{label}</div>
-        </div>
-    </div>
-);
+const AnalysisInfoCard: React.FC<AnalysisInfoCardProps> = ({ icon, label, value }) => {
+    const { isDark } = useTheme();
+
+    return (
+        <motion.div
+            whileHover={{ y: -8, scale: 1.02 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className={`group relative rounded-2xl overflow-hidden ${
+                isDark
+                    ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
+                    : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
+            } hover:border-teal-500/50 transition-all hover:shadow-2xl ${
+                isDark ? 'hover:shadow-teal-500/20' : 'hover:shadow-teal-500/30'
+            }`}
+        >
+            {/* Gradient glow overlay on hover */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${
+                isDark ? 'from-teal-500/10 to-purple-500/10' : 'from-teal-400/20 to-purple-400/20'
+            } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+
+            <div className="relative p-6 flex items-center gap-4">
+                <div className={`w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center ${
+                    isDark
+                        ? 'bg-gradient-to-br from-teal-500/20 to-emerald-500/20'
+                        : 'bg-gradient-to-br from-teal-400/30 to-emerald-400/30'
+                }`}>
+                    <div className="text-teal-400">{icon}</div>
+                </div>
+                <div>
+                    <div className={`text-3xl font-bold ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                        {value}
+                    </div>
+                    <div className={`text-sm uppercase tracking-wider font-semibold ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                        {label}
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
 
 interface AnalysisSectionProps {
     title: string;
     children: React.ReactNode;
 }
 
-const AnalysisSection: React.FC<AnalysisSectionProps> = ({ title, children }) => (
-    <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-lg p-6`}>
-        <h4 className={`text-lg font-semibold mb-4 text-[var(--color-text-primary)]`}>{title}</h4>
-        {children}
-    </div>
-);
+const AnalysisSection: React.FC<AnalysisSectionProps> = ({ title, children }) => {
+    const { isDark } = useTheme();
 
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className={`rounded-2xl overflow-hidden ${
+                isDark
+                    ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
+                    : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
+            }`}
+        >
+            {/* Header with accent gradient */}
+            <div className={`px-6 py-4 border-b ${
+                isDark ? 'border-gray-800/50' : 'border-gray-200'
+            } bg-gradient-to-r from-teal-500/10 to-emerald-500/10`}>
+                <h4 className={`text-lg font-bold ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                    {title}
+                </h4>
+            </div>
+
+            {/* Content area */}
+            <div className="p-6">
+                {children}
+            </div>
+        </motion.div>
+    );
+};
+
+// Enhanced AI Summary Component
+interface AIGeneratedSummaryProps {
+    summary: string;
+    isGenerating?: boolean;
+}
+
+const AIGeneratedSummary: React.FC<AIGeneratedSummaryProps> = ({ summary, isGenerating = false }) => {
+    const { isDark } = useTheme();
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className={`rounded-2xl overflow-hidden ${
+                isDark
+                    ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
+                    : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
+            }`}
+        >
+            {/* AI Badge Header */}
+            <div className={`px-6 py-4 border-b ${
+                isDark ? 'border-gray-800/50' : 'border-gray-200'
+            } bg-gradient-to-r from-purple-500/10 via-teal-500/10 to-emerald-500/10`}>
+                <div className="flex items-center gap-3">
+                    <motion.div
+                        animate={isGenerating ? { rotate: 360 } : {}}
+                        transition={{ duration: 2, repeat: isGenerating ? Infinity : 0, ease: "linear" }}
+                    >
+                        <SparklesIcon className="w-5 h-5 text-teal-400" />
+                    </motion.div>
+                    <h4 className={`text-lg font-bold ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                        AI-Generated Summary
+                    </h4>
+                    <div className={`ml-auto px-3 py-1 rounded-full text-xs font-bold ${
+                        isDark
+                            ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
+                            : 'bg-teal-400/20 text-teal-600 border border-teal-400/30'
+                    }`}>
+                        Gemini 2.5 Pro
+                    </div>
+                </div>
+            </div>
+
+            {/* Summary Content */}
+            <div className="p-6">
+                {isGenerating ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                                className={`h-4 rounded ${
+                                    isDark ? 'bg-gray-800' : 'bg-gray-200'
+                                }`}
+                                style={{ width: `${90 - i * 10}%` }}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <p className={`text-base leading-relaxed ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                        {summary}
+                    </p>
+                )}
+            </div>
+
+            {/* Subtle gradient footer accent */}
+            <div className="h-1 bg-gradient-to-r from-purple-500/50 via-teal-500/50 to-emerald-500/50" />
+        </motion.div>
+    );
+};
+
+// Enhanced List Display Component
+interface EnhancedListDisplayProps {
+    title: string;
+    items: string[];
+    icon?: React.ReactNode;
+    accentColor?: 'teal' | 'purple' | 'blue';
+}
+
+const EnhancedListDisplay: React.FC<EnhancedListDisplayProps> = ({
+    title,
+    items,
+    icon = <CheckCircleIcon className="w-4 h-4" />,
+    accentColor = 'teal'
+}) => {
+    const { isDark } = useTheme();
+
+    const colorClasses = {
+        teal: 'from-teal-500/10 to-emerald-500/10',
+        purple: 'from-purple-500/10 to-pink-500/10',
+        blue: 'from-blue-500/10 to-cyan-500/10',
+    };
+
+    const iconColorClasses = {
+        teal: 'text-teal-400',
+        purple: 'text-purple-400',
+        blue: 'text-blue-400',
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.3 }}
+            className={`rounded-2xl overflow-hidden ${
+                isDark
+                    ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
+                    : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
+            } hover:border-${accentColor}-500/30 transition-all`}
+        >
+            {/* Header */}
+            <div className={`px-4 py-3 border-b ${
+                isDark ? 'border-gray-800/50' : 'border-gray-200'
+            } bg-gradient-to-r ${colorClasses[accentColor]}`}>
+                <h5 className={`text-sm font-bold uppercase tracking-wider ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                    {title}
+                </h5>
+            </div>
+
+            {/* Items */}
+            <div className="p-4 max-h-40 overflow-y-auto">
+                {items.length > 0 ? (
+                    <div className="space-y-2">
+                        {items.map((item, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                className="flex items-start gap-2"
+                            >
+                                <div className={`mt-0.5 ${iconColorClasses[accentColor]} flex-shrink-0`}>
+                                    {icon}
+                                </div>
+                                <span className={`text-sm ${
+                                    isDark ? 'text-gray-300' : 'text-gray-700'
+                                }`}>
+                                    {item}
+                                </span>
+                            </motion.div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className={`text-sm italic ${
+                        isDark ? 'text-gray-500' : 'text-gray-400'
+                    }`}>
+                        None specified
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+};
 
 interface ScriptTabProps {
     scriptContent: string | null;
@@ -224,35 +446,37 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                     <AnalysisInfoCard icon={<MapPinIcon />} label="Locations" value={analysis.locations.length} />
                     <AnalysisInfoCard icon={<ClapperboardIcon />} label="Scenes" value={analysis.scenes.length} />
                 </div>
-                 <AnalysisSection title="Summary">
-                    <p className={`text-[var(--color-text-secondary)]`}>{analysis.summary}</p>
-                </AnalysisSection>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <AnalysisSection title="Key Props">
-                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
-                            {analysis.props?.length > 0 ? analysis.props.map((prop, i) => <li key={i}>{prop}</li>) : <li className="list-none">None specified.</li>}
-                        </ul>
-                    </AnalysisSection>
-                    <AnalysisSection title="Styling & Wardrobe">
-                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
-                             {analysis.styling?.length > 0 ? analysis.styling.map((style, i) => <li key={i}>{style}</li>) : <li className="list-none">None specified.</li>}
-                        </ul>
-                    </AnalysisSection>
-                     <AnalysisSection title="Set Dressing">
-                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
-                             {analysis.setDressing?.length > 0 ? analysis.setDressing.map((item, i) => <li key={i}>{item}</li>) : <li className="list-none">None specified.</li>}
-                        </ul>
-                    </AnalysisSection>
-                    <AnalysisSection title="Makeup & Hair">
-                        <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
-                             {analysis.makeupAndHair?.length > 0 ? analysis.makeupAndHair.map((item, i) => <li key={i}>{item}</li>) : <li className="list-none">None specified.</li>}
-                        </ul>
-                    </AnalysisSection>
-                    <AnalysisSection title="Sound Cues">
-                         <ul className={`list-disc list-inside text-[var(--color-text-secondary)] space-y-1 h-32 overflow-y-auto`}>
-                             {analysis.sound?.length > 0 ? analysis.sound.map((item, i) => <li key={i}>{item}</li>) : <li className="list-none">None specified.</li>}
-                        </ul>
-                    </AnalysisSection>
+
+                {/* Enhanced AI Summary Component */}
+                <AIGeneratedSummary summary={analysis.summary} />
+
+                {/* Enhanced List Displays with Accent Colors */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <EnhancedListDisplay
+                        title="Key Props"
+                        items={analysis.props || []}
+                        accentColor="teal"
+                    />
+                    <EnhancedListDisplay
+                        title="Styling & Wardrobe"
+                        items={analysis.styling || []}
+                        accentColor="purple"
+                    />
+                    <EnhancedListDisplay
+                        title="Set Dressing"
+                        items={analysis.setDressing || []}
+                        accentColor="blue"
+                    />
+                    <EnhancedListDisplay
+                        title="Makeup & Hair"
+                        items={analysis.makeupAndHair || []}
+                        accentColor="teal"
+                    />
+                    <EnhancedListDisplay
+                        title="Sound Cues"
+                        items={analysis.sound || []}
+                        accentColor="purple"
+                    />
                 </div>
              </div>
         );
