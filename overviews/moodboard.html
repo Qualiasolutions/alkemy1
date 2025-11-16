@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moodboard System Overview - Alkemy AI Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #0B0B0B;
+            color: #FFFFFF;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding-bottom: 40px;
+            border-bottom: 1px solid #2A2A2A;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border: 1px solid #2A2A2A;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #FFFFFF;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #A0A0A0;
+            font-weight: 400;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #10A37F;
+            margin: 40px 0 16px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2A2A2A;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1AD8B1;
+            margin: 24px 0 12px 0;
+        }
+
+        p {
+            color: #A0A0A0;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: #161616;
+            border: 1px solid #2A2A2A;
+            padding: 20px;
+        }
+
+        .card h4 {
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            color: #A0A0A0;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .workflow {
+            background: #1C1C1C;
+            border-left: 3px solid #10A37F;
+            padding: 16px 20px;
+            margin: 20px 0;
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .workflow-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-number {
+            background: #10A37F;
+            color: #0B0B0B;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            color: #A0A0A0;
+            font-size: 13px;
+        }
+
+        .highlight-box {
+            background: #161616;
+            border: 1px solid #10A37F;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            color: #10A37F;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        ul {
+            list-style: none;
+            margin: 12px 0;
+        }
+
+        ul li {
+            color: #A0A0A0;
+            font-size: 14px;
+            padding: 8px 0 8px 20px;
+            position: relative;
+        }
+
+        ul li:before {
+            content: "▪";
+            color: #10A37F;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .comparison-item {
+            background: #161616;
+            border: 1px solid #2A2A2A;
+            padding: 16px;
+        }
+
+        .comparison-label {
+            color: #707070;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .comparison-value {
+            color: #FFFFFF;
+            font-size: 14px;
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 24px;
+            border-top: 1px solid #2A2A2A;
+            text-align: center;
+            color: #707070;
+            font-size: 13px;
+        }
+
+        code {
+            background: #1C1C1C;
+            color: #1AD8B1;
+            padding: 2px 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../public/logo.jpeg" alt="Alkemy AI Studio" class="logo">
+            <h1>Moodboard System</h1>
+            <p class="subtitle">Visual Language Framework for AI-Powered Film Production</p>
+        </div>
+
+        <div class="section">
+            <h2>What is a Moodboard?</h2>
+            <p>A moodboard is your visual inspiration library for the film project. It collects reference images that define the look and feel you want to achieve, similar to how an interior designer gathers paint swatches and fabric samples before decorating.</p>
+        </div>
+
+        <div class="section">
+            <h2>How It Works</h2>
+
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Upload Visual References</div>
+                        <div class="step-desc">Collect up to 20 images that capture your desired aesthetic. Film stills, photographs, artwork - anything that inspires your vision.</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">AI Analysis</div>
+                        <div class="step-desc">Professional cinematography framework analyzes color palette, lighting direction, composition techniques, textures, mood, and visual style across 6 distinct aspects.</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Generate Description</div>
+                        <div class="step-desc">AI synthesizes observations into detailed visual language description that image generators can interpret accurately.</div>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Automatic Application</div>
+                        <div class="step-desc">Every image and video generation automatically includes moodboard context and up to 8 reference images for consistent visual style.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Analysis Framework</h2>
+            <p>The AI examines your moodboard using a professional 6-aspect cinematography framework:</p>
+
+            <div class="grid">
+                <div class="card">
+                    <h4>Color Palette</h4>
+                    <p>Dominant colors, temperature (warm/cool), saturation levels, and color relationships</p>
+                </div>
+
+                <div class="card">
+                    <h4>Lighting</h4>
+                    <p>Direction, quality (soft/hard), color temperature, contrast ratio, and mood</p>
+                </div>
+
+                <div class="card">
+                    <h4>Composition</h4>
+                    <p>Framing techniques, depth of field, perspective, and spatial relationships</p>
+                </div>
+
+                <div class="card">
+                    <h4>Texture & Materials</h4>
+                    <p>Surface qualities, material properties, and tactile atmosphere</p>
+                </div>
+
+                <div class="card">
+                    <h4>Mood & Atmosphere</h4>
+                    <p>Emotional tone, energy level, time period feel, and psychological impact</p>
+                </div>
+
+                <div class="card">
+                    <h4>Visual Style</h4>
+                    <p>Artistic influences, era aesthetic, cultural references, genre conventions</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Recent Enhancements</h2>
+
+            <h3>Enhanced Thumbnail Navigation</h3>
+            <p>Professional scrolling interface with arrow controls prevents layout overflow when managing large moodboards. Navigate through unlimited reference images with clean, structured presentation.</p>
+
+            <h3>Professional AI Analysis</h3>
+            <p>Upgraded from basic descriptions to cinematographer-grade analysis. The AI now extracts precise technical details like "high-contrast chiaroscuro lighting with rim lighting" instead of generic "dramatic lighting".</p>
+
+            <h3>Increased Reference Coverage</h3>
+            <div class="comparison">
+                <div class="comparison-item">
+                    <div class="comparison-label">Previous System</div>
+                    <div class="comparison-value">5 images analyzed</div>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-label">Current System</div>
+                    <div class="comparison-value">8 images analyzed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Business Value</h2>
+
+            <div class="highlight-box">
+                <h4>Production Quality</h4>
+                <ul>
+                    <li>Consistent visual language across all scenes</li>
+                    <li>Professional-grade results matching reference quality</li>
+                    <li>Faster iterations with accurate first results</li>
+                    <li>Clear creative direction for entire team</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Budget Efficiency</h4>
+                <ul>
+                    <li>No additional API costs for enhanced analysis</li>
+                    <li>Fewer re-generations due to better targeting</li>
+                    <li>Reduced trial-and-error experimentation</li>
+                    <li>Streamlined workflow saves production time</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Example Output</h2>
+            <p>AI-generated moodboard description:</p>
+            <div class="workflow" style="border-left-color: #1AD8B1;">
+                <p style="color: #FFFFFF; font-style: italic; margin: 0;">
+                    "A gritty, rain-slicked neo-noir aesthetic featuring high-contrast chiaroscuro lighting with deep blacks and cool cyan highlights. The desaturated color palette emphasizes slate blues and amber streetlight warmth, creating urban decay atmosphere. Compositions favor Dutch angles and asymmetric framing with shallow depth of field, pulling focus to weathered textures and reflective surfaces. The overall mood evokes mystery and isolation through dimly lit, claustrophobic spaces with sharp rim lighting defining silhouettes."
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Usage Guide</h2>
+            <ol style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li>Navigate to <code>Moodboard</code> tab in application</li>
+                <li>Upload 8-15 reference images showing desired visual style</li>
+                <li>Add optional description notes for context</li>
+                <li>Click <code>Generate</code> in AI Visual Language panel</li>
+                <li>Review generated description for accuracy</li>
+                <li>System automatically applies moodboard to all generations</li>
+            </ol>
+        </div>
+
+        <div class="footer">
+            <p>Alkemy AI Studio V2.0 Alpha - Professional Film Production Platform</p>
+            <p style="margin-top: 8px;">Last Updated: November 2025</p>
+        </div>
+    </div>
+</body>
+</html>
