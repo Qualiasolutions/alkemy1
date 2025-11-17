@@ -284,9 +284,10 @@ class SaveManager {
       throw error;
     }
 
-    // Update project metadata - note: has_unsaved_changes and last_manual_save columns don't exist in current schema
-    // TODO: Add these columns to schema if needed in future
-    console.log('[SaveManager] Project metadata update skipped - columns not in database');
+    // Update project metadata - note: has_unsaved_changes and last_manual_save columns may not exist
+    // If you see this warning, run the migration script: supabase/APPLY_MISSING_MIGRATIONS.sql
+    // This is expected for databases that haven't applied migration 005 yet
+    console.log('[SaveManager] Project metadata update skipped - columns not in database. Run supabase/APPLY_MISSING_MIGRATIONS.sql to add them.');
   }
 
   private collectChanges(): Record<string, any> {
