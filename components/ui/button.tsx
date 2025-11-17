@@ -10,16 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-lime-500 text-white shadow-lg shadow-lime-500/20 hover:bg-lime-600 hover:shadow-xl hover:shadow-lime-500/30 focus-visible:ring-lime-500/30 active:scale-[0.98] before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
+          "bg-#dfec2d text-white shadow-lg shadow-#dfec2d/20 hover:bg-#b3e617 hover:shadow-xl hover:shadow-#dfec2d/30 focus-visible:ring-#dfec2d/30 active:scale-[0.98] before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
         destructive:
           "bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600 hover:shadow-xl hover:shadow-red-500/30 focus-visible:ring-red-500/30 active:scale-[0.98]",
         outline:
-          "border-2 border-lime-500/30 bg-transparent text-[var(--color-text-primary)] hover:bg-lime-500/10 hover:border-lime-500 hover:shadow-lg hover:shadow-lime-500/10 focus-visible:ring-lime-500/20 active:scale-[0.98]",
+          "border-2 border-#dfec2d/30 bg-transparent text-[var(--color-text-primary)] hover:bg-#dfec2d/10 hover:border-#dfec2d hover:shadow-lg hover:shadow-#dfec2d/10 focus-visible:ring-#dfec2d/20 active:scale-[0.98]",
         secondary:
           "bg-[var(--color-surface-card)] text-[var(--color-text-primary)] shadow-md hover:bg-[var(--color-surface-elevated)] hover:shadow-lg focus-visible:ring-[var(--color-accent-primary)]/20 active:scale-[0.98]",
         ghost:
           "text-[var(--color-text-secondary)] hover:bg-[var(--color-hover-background)] hover:text-[var(--color-text-primary)] focus-visible:ring-[var(--color-accent-primary)]/20",
-        link: "text-lime-400 underline-offset-4 hover:underline hover:text-lime-300",
+        link: "text-#dfec2d underline-offset-4 hover:underline hover:text-lime-300",
       },
       size: {
         default: "h-10 px-5 py-2.5 has-[>svg]:px-4",

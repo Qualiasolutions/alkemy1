@@ -41,7 +41,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
                 className="absolute inset-0 -translate-x-full"
                 style={{
                     background: isDark
-                        ? 'linear-gradient(90deg, transparent, rgba(16,185,129,0.08), transparent)'
+                        ? 'linear-gradient(90deg, transparent, rgba(223,236,45,0.08), transparent)'
                         : 'linear-gradient(90deg, transparent, rgba(5,150,105,0.12), transparent)',
                     animation: 'shimmer 1.5s infinite'
                 }}

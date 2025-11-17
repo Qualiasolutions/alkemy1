@@ -1233,7 +1233,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                                   issue.severity === 'critical'
                                     ? 'border-red-500/30 bg-red-500/10 text-red-300'
                                     : issue.severity === 'warning'
-                                      ? 'border-lime-500/30 bg-lime-500/10 text-lime-300'
+                                      ? 'border-#dfec2d/30 bg-#dfec2d/10 text-lime-300'
                                       : 'border-blue-500/30 bg-blue-500/10 text-blue-300'
                                 }`}
                               >

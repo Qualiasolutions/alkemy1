@@ -50,20 +50,20 @@ const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary: isDark
-      ? `bg-gradient-to-r from-lime-500 via-lime-600 to-teal-600 text-white hover:from-lime-400 hover:via-lime-500 hover:to-teal-500 shadow-lg shadow-lime-500/25 hover:shadow-xl hover:shadow-lime-500/40 active:scale-[0.98] transition-all duration-200`
-      : `bg-gradient-to-r from-lime-600 via-lime-700 to-teal-700 text-white hover:from-lime-500 hover:via-lime-600 hover:to-teal-600 shadow-lg shadow-lime-600/30 hover:shadow-xl hover:shadow-lime-600/50 active:scale-[0.98] transition-all duration-200`,
+      ? `bg-gradient-to-r from-#dfec2d via-#b3e617 to-teal-600 text-white hover:from-#dfec2d hover:via-#dfec2d hover:to-teal-500 shadow-lg shadow-#dfec2d/25 hover:shadow-xl hover:shadow-#dfec2d/40 active:scale-[0.98] transition-all duration-200`
+      : `bg-gradient-to-r from-#b3e617 via-lime-700 to-teal-700 text-white hover:from-#dfec2d hover:via-#b3e617 hover:to-teal-600 shadow-lg shadow-#b3e617/30 hover:shadow-xl hover:shadow-#b3e617/50 active:scale-[0.98] transition-all duration-200`,
     secondary: isDark
-      ? `bg-transparent text-white border-2 border-gray-700/80 hover:bg-gray-800/60 hover:border-lime-500/60 backdrop-blur-sm transition-all duration-200`
-      : `bg-transparent text-gray-900 border-2 border-gray-300 hover:bg-gray-50 hover:border-lime-500/60 transition-all duration-200`,
+      ? `bg-transparent text-white border-2 border-gray-700/80 hover:bg-gray-800/60 hover:border-#dfec2d/60 backdrop-blur-sm transition-all duration-200`
+      : `bg-transparent text-gray-900 border-2 border-gray-300 hover:bg-gray-50 hover:border-#dfec2d/60 transition-all duration-200`,
     default: isDark
       ? `bg-gray-800/80 text-white border border-gray-700 hover:bg-gray-700/90 hover:border-gray-600 shadow-sm transition-all duration-200`
       : `bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 shadow-sm transition-all duration-200`,
     glass: isDark
-      ? `bg-gray-900/30 backdrop-blur-xl border border-gray-700/50 text-white hover:bg-gray-800/40 hover:border-lime-500/30 shadow-lg transition-all duration-200`
-      : `bg-white/60 backdrop-blur-xl border border-gray-300/60 text-gray-900 hover:bg-white/80 hover:border-lime-500/40 shadow-lg transition-all duration-200`,
+      ? `bg-gray-900/30 backdrop-blur-xl border border-gray-700/50 text-white hover:bg-gray-800/40 hover:border-#dfec2d/30 shadow-lg transition-all duration-200`
+      : `bg-white/60 backdrop-blur-xl border border-gray-300/60 text-gray-900 hover:bg-white/80 hover:border-#dfec2d/40 shadow-lg transition-all duration-200`,
     icon: isDark
-      ? `p-2 rounded-full bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 hover:border-lime-500/50 backdrop-blur-sm transition-all duration-200`
-      : `p-2 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300 hover:border-lime-500/50 transition-all duration-200`,
+      ? `p-2 rounded-full bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 hover:border-#dfec2d/50 backdrop-blur-sm transition-all duration-200`
+      : `p-2 rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300 hover:border-#dfec2d/50 transition-all duration-200`,
     danger: isDark
       ? `bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600 shadow-lg shadow-red-600/30 hover:shadow-xl hover:shadow-red-600/50 active:scale-[0.98] transition-all duration-200`
       : `bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-400 hover:to-red-500 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/50 active:scale-[0.98] transition-all duration-200`,

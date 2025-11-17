@@ -345,8 +345,8 @@ export default function TTMGenerationPanel({
       </div>
 
       {!isTTMAvailable && (
-        <div className="mb-4 p-3 bg-lime-600/20 border border-lime-600/30 rounded-lg">
-          <p className="text-sm text-lime-400">
+        <div className="mb-4 p-3 bg-#b3e617/20 border border-#b3e617/30 rounded-lg">
+          <p className="text-sm text-#dfec2d">
             TTM service is not available. Please ensure the TTM API server is running at the configured URL.
           </p>
         </div>
