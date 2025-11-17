@@ -580,8 +580,8 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                         <h1 className={`text-6xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>
                             <span className={`bg-gradient-to-r ${
                                 isDark
-                                    ? 'from-teal-400 via-cyan-400 to-teal-500'
-                                    : 'from-teal-600 via-cyan-600 to-teal-700'
+                                    ? 'from-[#dfec2d] via-[#e8f03f] to-[#dfec2d]'
+                                    : 'from-[#c4d319] via-[#dfec2d] to-[#c4d319]'
                             } bg-clip-text text-transparent inline-block`}>
                                 Script Analysis
                             </span>
