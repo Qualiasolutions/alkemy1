@@ -346,7 +346,7 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                 className={`w-64 p-4 rounded-xl border-2 shadow-lg transition-all select-none ${
                                     draggingBlock === block.id ? 'cursor-grabbing shadow-2xl' : 'cursor-grab'
                                 } ${
-                                    selectedBlock === block.id ? 'ring-2 ring-emerald-400 shadow-2xl' : ''
+                                    selectedBlock === block.id ? 'ring-2 ring-lime-400 shadow-2xl' : ''
                                 } ${
                                     connectMode && connectionStart === block.id ? 'ring-2 ring-blue-400 animate-pulse' : ''
                                 } ${
@@ -389,8 +389,8 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                 animate={{ opacity: 1, y: 0 }}
                                 className={`px-6 py-3 rounded-xl shadow-2xl border-2 ${
                                     isDark
-                                        ? 'bg-blue-900/90 border-blue-400 text-white'
-                                        : 'bg-blue-100/90 border-blue-500 text-gray-900'
+                                        ? 'bg-[var(--color-accent-secondary)]/90 border-[var(--color-accent-secondary)] text-white'
+                                        : 'bg-[var(--color-accent-secondary)]/90 border-[var(--color-accent-secondary)] text-gray-900'
                                 } backdrop-blur-sm`}
                             >
                                 <p className="font-medium">
@@ -548,8 +548,8 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                     onClick={() => handleAddBlock(type.id as any)}
                                     className={`w-full text-left p-3 rounded-lg border transition ${
                                         isDark
-                                            ? 'bg-[#0B0B0B] border-[#2A2A2A] hover:border-emerald-500/50'
-                                            : 'bg-white border-gray-300 hover:border-emerald-500/50'
+                                            ? 'bg-[#0B0B0B] border-[#2A2A2A] hover:border-lime-500/50'
+                                            : 'bg-white border-gray-300 hover:border-lime-500/50'
                                     }`}
                                 >
                                     <span className="text-xl mr-3">{type.icon}</span>

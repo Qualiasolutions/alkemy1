@@ -111,7 +111,7 @@ const RefineStudio: React.FC<RefineStudioProps> = ({
 
         {/* Main Container */}
         <div className="h-[calc(100vh-80px)] flex flex-col overflow-hidden">
-          <div className="m-4 border-2 border-emerald-400 rounded-2xl bg-[var(--color-surface-card)] overflow-hidden flex flex-col flex-1">
+          <div className="m-4 border-2 border-lime-400 rounded-2xl bg-[var(--color-surface-card)] overflow-hidden flex flex-col flex-1">
 
             {/* Top Section: Left Prompt + Right Image */}
             <div className="flex flex-1 overflow-hidden min-h-0">
@@ -125,7 +125,7 @@ const RefineStudio: React.FC<RefineStudioProps> = ({
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Enter refinement prompt..."
-                    className="w-full h-24 bg-[var(--color-surface-card)] text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400 border border-[var(--color-border-color)]"
+                    className="w-full h-24 bg-[var(--color-surface-card)] text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-lime-400 border border-[var(--color-border-color)]"
                   />
                   <Button
                     onClick={handleRefine}
@@ -148,13 +148,13 @@ const RefineStudio: React.FC<RefineStudioProps> = ({
                           onClick={() => setCurrentImageId(version.id)}
                           className={`w-full text-left p-2 rounded-lg text-xs transition ${
                             currentImageId === version.id
-                              ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/40'
+                              ? 'bg-lime-400/20 text-lime-400 border border-lime-400/40'
                               : 'bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:bg-[var(--color-hover-background)] border border-[var(--color-border-color)]'
                           }`}
                         >
                           {version.isLoading ? (
                             <div className="flex items-center">
-                              <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mr-2" />
+                              <div className="w-4 h-4 border-2 border-lime-400 border-t-transparent rounded-full animate-spin mr-2" />
                               Processing...
                             </div>
                           ) : (
@@ -177,7 +177,7 @@ const RefineStudio: React.FC<RefineStudioProps> = ({
                     <div className="relative w-full h-full bg-[var(--color-surface-card)] rounded-lg overflow-hidden flex items-center justify-center">
                       {currentImage.isLoading ? (
                         <div className="flex flex-col items-center justify-center">
-                          <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mb-4" />
+                          <div className="w-12 h-12 border-4 border-lime-400 border-t-transparent rounded-full animate-spin mb-4" />
                           <p className="text-[var(--color-text-secondary)]">Refining image...</p>
                         </div>
                       ) : (
@@ -203,13 +203,13 @@ const RefineStudio: React.FC<RefineStudioProps> = ({
                     onClick={() => setCurrentImageId(version.id)}
                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
                       currentImageId === version.id
-                        ? 'border-emerald-400'
+                        ? 'border-lime-400'
                         : 'border-[var(--color-border-color)] hover:border-[var(--color-hover-background)]'
                     }`}
                   >
                     {version.isLoading ? (
                       <div className="w-full h-full bg-[var(--color-surface-card)] flex items-center justify-center">
-                        <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : (
                       <img

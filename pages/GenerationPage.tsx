@@ -16,8 +16,8 @@ const GenerationPage: React.FC = () => {
     return (
         <div className="min-h-screen" style={{ background: colors.background_primary }}>
             {/* Decorative Gradients */}
-            <div className="pointer-events-none fixed -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
-            <div className="pointer-events-none fixed bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
+            <div className="pointer-events-none fixed -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-lime-500/10 blur-3xl" />
+            <div className="pointer-events-none fixed bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-lime-400/10 blur-3xl" />
 
             {/* Header */}
             <header

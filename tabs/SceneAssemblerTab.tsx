@@ -577,7 +577,7 @@ const CharacterMultiSelect: React.FC<{
                                                     type="checkbox"
                                                     checked={selectedIds.includes(char.id)}
                                                     onChange={() => toggleCharacter(char.id)}
-                                                    className="w-4 h-4 rounded border-2 border-[var(--color-border-color)] bg-transparent checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer appearance-none transition-colors"
+                                                    className="w-4 h-4 rounded border-2 border-[var(--color-border-color)] bg-transparent checked:bg-lime-500 checked:border-lime-500 cursor-pointer appearance-none transition-colors"
                                                 />
                                                 {selectedIds.includes(char.id) && (
                                                     <CheckIcon className="w-3 h-3 text-white absolute top-0.5 left-0.5 pointer-events-none" />
@@ -594,7 +594,7 @@ const CharacterMultiSelect: React.FC<{
                                                 {char.name}
                                             </span>
                                             {hasIdentity && (
-                                                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+                                                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-lime-500/20 text-lime-400 border border-lime-500/30 flex-shrink-0">
                                                     ID
                                                 </span>
                                             )}
@@ -669,7 +669,7 @@ const LocationSelect: React.FC<{
                                     onChange('');
                                     setIsOpen(false);
                                 }}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group ${selectedId === '' ? 'bg-emerald-500/10' : ''}`}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group ${selectedId === '' ? 'bg-lime-500/10' : ''}`}
                             >
                                 <span className="text-sm text-[var(--color-text-secondary)] truncate flex-1">
                                     No location
@@ -688,7 +688,7 @@ const LocationSelect: React.FC<{
                                             onChange(location.id);
                                             setIsOpen(false);
                                         }}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group ${selectedId === location.id ? 'bg-emerald-500/10' : ''}`}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-hover-background)] cursor-pointer transition-colors group ${selectedId === location.id ? 'bg-lime-500/10' : ''}`}
                                     >
                                         {location.imageUrl && (
                                             <img
@@ -701,7 +701,7 @@ const LocationSelect: React.FC<{
                                             {location.name}
                                         </span>
                                         {selectedId === location.id && (
-                                            <CheckIcon className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                                            <CheckIcon className="w-4 h-4 text-lime-500 flex-shrink-0" />
                                         )}
                                     </div>
                                 ))
@@ -1153,7 +1153,7 @@ const StillStudio: React.FC<{
                             </button>
 
                             {promptWasAdjusted && (
-                                <div className="text-xs text-yellow-400/90 px-3 py-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mt-3">
+                                <div className="text-xs text-lime-900/90 px-3 py-2 bg-lime-500/10 rounded-xl border border-lime-500/20 mt-3">
                                     <span className="font-semibold">Note:</span> Prompt was adjusted for safety.
                                 </div>
                             )}
@@ -1211,7 +1211,7 @@ const StillStudio: React.FC<{
                                     </div>
                                 )}
                                 {frame.media.end_frame_url && (
-                                    <div className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-blue-500/50 transition-all hover:border-blue-500/70">
+                                    <div className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-[var(--color-accent-secondary)]/50 transition-all hover:border-[var(--color-accent-secondary)]/70">
                                         <div className="aspect-video relative overflow-hidden">
                                             <img src={frame.media.end_frame_url} alt="End" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
 
@@ -1325,15 +1325,15 @@ const StillStudio: React.FC<{
                             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-widest font-medium mb-4">Generating...</h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                 {allGenerations.filter(g => g.isLoading).map((gen, idx) => (
-                                    <div key={gen.id} className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-yellow-500/30 bg-black/20`}>
+                                    <div key={gen.id} className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-lime-500/30 bg-black/20`}>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                                             <AlkemyLoadingIcon className="w-8 h-8 text-white/60 mb-2 animate-spin" />
                                             <p className="text-white text-xs mb-2">Generating...</p>
                                             <div className="w-24 bg-gray-600 rounded-full h-1">
-                                                <div className="bg-yellow-500 h-1 rounded-full transition-all" style={{ width: `${gen.progress || 0}%` }}></div>
+                                                <div className="bg-lime-500 h-1 rounded-full transition-all" style={{ width: `${gen.progress || 0}%` }}></div>
                                             </div>
                                         </div>
-                                        <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded font-semibold">
+                                        <div className="absolute top-2 right-2 bg-lime-500 text-black text-xs px-2 py-1 rounded font-semibold">
                                             #{validGenerations.length + idx + 1}
                                         </div>
                                     </div>
@@ -1684,7 +1684,7 @@ const AnimateStudio: React.FC<{
                                         playsInline
                                         className="w-full aspect-video rounded-2xl border-4 border-teal-500/30 shadow-[0_0_40px_rgba(20,184,166,0.2)] object-cover"
                                     />
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-emerald-500/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-lime-500/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
 
                                     {/* Overlay Controls */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end justify-center pb-8 gap-3">
@@ -1727,7 +1727,7 @@ const AnimateStudio: React.FC<{
                         </div>
                     ) : (
                         <div className="text-center py-20">
-                            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center">
+                            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-teal-500/20 to-lime-500/20 flex items-center justify-center">
                                 <PlayIcon className="w-12 h-12 text-teal-400" />
                             </div>
                             <p className="text-gray-500 text-lg mb-2">No videos generated yet</p>
@@ -1802,7 +1802,7 @@ const ShotCard: React.FC<{
     const getBorderColorClass = (status: FrameStatus): string => {
         switch (status) {
             case FrameStatus.GeneratedStill:
-                return 'border-emerald-500/50';
+                return 'border-lime-500/50';
             case FrameStatus.UpscaledImageReady:
                 return 'border-[#c8ff2f]/50';
             case FrameStatus.AnimatedVideoReady:
@@ -1829,7 +1829,7 @@ const ShotCard: React.FC<{
                     <button onClick={onCompose} className="group relative text-white/60 hover:text-white transition-all duration-300 flex flex-col items-center justify-center p-4 hover:bg-white/5 rounded-lg w-full h-full">
                         <div className="relative">
                             <FilmIcon className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform"/>
-                            <div className="absolute -inset-2 bg-gradient-to-r from-[#c8ff2f]/20 to-emerald-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
+                            <div className="absolute -inset-2 bg-gradient-to-r from-[#c8ff2f]/20 to-lime-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
                         </div>
                         <span className="text-xs font-medium group-hover:text-[#c8ff2f] transition-colors">Click to Generate</span>
                         <span className="text-xs text-white/40 mt-1 group-hover:text-white/60 transition-colors">Compose still</span>
@@ -1882,11 +1882,11 @@ const ShotCard: React.FC<{
                 <div className="flex items-center justify-between">
                     {isVideoUpscaled ? (
                         frame.transferredToTimeline
-                            ? <div className="flex items-center gap-1 text-emerald-400 text-xs">
+                            ? <div className="flex items-center gap-1 text-lime-400 text-xs">
                                 <CheckIcon className="w-3 h-3" />
                                 Transferred
                             </div>
-                            : <Button onClick={onTransfer} className="!text-xs !py-1.5 !px-3 !bg-emerald-400 hover:!bg-emerald-500 !text-black !font-medium !rounded !transition-all">
+                            : <Button onClick={onTransfer} className="!text-xs !py-1.5 !px-3 !bg-lime-400 hover:!bg-lime-500 !text-black !font-medium !rounded !transition-all">
                                 To Timeline
                             </Button>
                     ) : isAnimationReady ? (
@@ -2082,7 +2082,7 @@ const CompositingTab: React.FC<CompositingTabProps> = ({ scriptAnalysis, onUpdat
 
                     {/* Transfer All */}
                     <div>
-                        <Button onClick={onTransferAllToTimeline} className="w-full bg-emerald-400 hover:bg-emerald-500 text-black font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
+                        <Button onClick={onTransferAllToTimeline} className="w-full bg-lime-400 hover:bg-lime-500 text-black font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
                             <SendIcon className="w-4 h-4" />
                             Transfer All to Timeline
                         </Button>

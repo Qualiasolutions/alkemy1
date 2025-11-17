@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  ttm-api:
+    build: .
+    ports:
+      - "8100:8100"
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_SERVICE_ROLE_KEY=${VITE_SUPABASE_SERVICE_ROLE_KEY}
+    volumes:
+      - ./outputs:/tmp/ttm_outputs
+      - ./workspace:/tmp/ttm_workspace
+      - huggingface_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  huggingface_cache:

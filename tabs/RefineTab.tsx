@@ -142,8 +142,8 @@ const RefineTab: React.FC<RefineTabProps> = ({
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-lime-500/10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
             </svg>
           </div>
@@ -217,9 +217,9 @@ const RefineTab: React.FC<RefineTabProps> = ({
                     {frame.status && (
                       <div className="absolute top-2 right-2">
                         <span className={`px-2 py-1 text-xs rounded-full ${
-                          frame.status === 'UpscaledVideoReady' ? 'bg-emerald-500/20 text-emerald-400' :
-                          frame.status === 'VideoReady' ? 'bg-blue-500/20 text-blue-400' :
-                          frame.status === 'GeneratingStill' ? 'bg-yellow-500/20 text-yellow-400' :
+                          frame.status === 'UpscaledVideoReady' ? 'bg-lime-500/20 text-lime-400' :
+                          frame.status === 'VideoReady' ? 'bg-[var(--color-accent-secondary)]/20 text-[var(--color-accent-secondary)]' :
+                          frame.status === 'GeneratingStill' ? 'bg-lime-500/20 text-lime-400' :
                           'bg-gray-500/20 text-gray-400'
                         }`}>
                           {frame.status}
@@ -265,7 +265,7 @@ const RefineTab: React.FC<RefineTabProps> = ({
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-900 rounded-lg p-6 flex items-center gap-3">
-            <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-6 h-6 border-2 border-lime-400 border-t-transparent rounded-full animate-spin"></div>
             <span className="text-white">Saving refined image...</span>
           </div>
         </div>
