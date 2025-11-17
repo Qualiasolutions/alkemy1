@@ -36,7 +36,7 @@ export const TABS_CONFIG = [
       { id: 'post_production', name: 'Post-Production', icon: '/post_production.svg' },
       { id: 'exports', name: 'Exports', icon: '/exports.svg' },
       { id: 'analytics', name: 'Analytics', icon: '/analytics.svg' },
-      { id: 'bmad_status', name: 'BMAD Status', icon: '/analytics.svg' }, // Added BMAD Status tab
+      { id: 'project_roadmap', name: 'Project Roadmap', icon: '/analytics.svg' }, // Renamed from BMAD Status
     ],
   },
 ];

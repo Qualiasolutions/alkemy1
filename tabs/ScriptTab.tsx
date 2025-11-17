@@ -651,8 +651,8 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                                     </p>
                                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
                                         isDark
-                                            ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-                                            : 'bg-teal-100 text-teal-700 border border-teal-200'
+                                            ? 'bg-[#dfec2d]/10 text-[#dfec2d] border border-[#dfec2d]/20'
+                                            : 'bg-[#dfec2d]/20 text-gray-900 border border-[#dfec2d]/30'
                                     }`}>
                                         <span>Supports:</span>
                                         <span className="font-mono">.pdf</span>
@@ -672,7 +672,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                                 <button
                                     onClick={() => setInputMode('paste')}
                                     className={`font-semibold ${
-                                        isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'
+                                        isDark ? 'text-[#dfec2d] hover:text-[#e8f03f]' : 'text-[#c4d319] hover:text-[#b3c216]'
                                     } hover:underline focus:outline-none transition-colors`}
                                 >
                                     Paste your script directly →

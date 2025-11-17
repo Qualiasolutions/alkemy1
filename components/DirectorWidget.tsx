@@ -78,7 +78,7 @@ const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
 
 const WELCOME_MESSAGE = 'Hi! I\'m your Director of Photography, and I\'ve just reviewed your project. I\'m here to help bring your vision to life.\n\nWhether you need help with camera angles, lighting setups, visual mood, or generating images for your characters and locations - just ask me naturally. I\'m here to collaborate with you.\n\nWhat would you like to discuss?';
 const WELCOME_MESSAGE_NO_CONTEXT = 'Hello! I\'m your Director of Photography. I\'m here to help you with cinematography, camera work, lighting, color grading, and visual storytelling.\n\nOnce you load or analyze a script, I\'ll have full context of your story. But I can already help you explore ideas, plan shots, or generate images.\n\nWhat\'s on your mind?';
-const ACCENT_HEX = '#10A37F';
+const ACCENT_HEX = '#dfec2d';
 const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi' => {
   const normalized = (model ?? '').toLowerCase();
   if (normalized.includes('imagen')) return 'Imagen';
@@ -994,12 +994,12 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       <div className="fixed bottom-6 right-6 z-[60] pointer-events-none">
         <div className="pointer-events-auto">
           {isOpen ? (
-            <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_50px_100px_rgba(3,7,18,0.9),0_0_80px_rgba(16,163,127,0.15)] backdrop-blur-2xl before:absolute before:inset-0 before:rounded-3xl before:p-[1px] before:bg-gradient-to-b before:from-[rgba(16,163,127,0.2)] before:via-transparent before:to-transparent before:-z-10">
+            <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_50px_100px_rgba(3,7,18,0.9),0_0_80px_rgba(223,236,45,0.15)] backdrop-blur-2xl before:absolute before:inset-0 before:rounded-3xl before:p-[1px] before:bg-gradient-to-b before:from-[rgba(223,236,45,0.2)] before:via-transparent before:to-transparent before:-z-10">
               {/* Header */}
-              <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.08)] to-transparent px-6 py-4">
+              <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(223,236,45,0.08)] to-transparent px-6 py-4">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.25)] to-[rgba(16,163,127,0.1)] shadow-[0_0_20px_rgba(16,163,127,0.3)] ${isSpeakingNow ? 'animate-pulse' : ''}`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(223,236,45,0.25)] to-[rgba(223,236,45,0.1)] shadow-[0_0_20px_rgba(223,236,45,0.3)] ${isSpeakingNow ? 'animate-pulse' : ''}`}
                     style={{ color: ACCENT_HEX }}
                   >
                     <BrainIcon className="h-5 w-5" />
@@ -1011,7 +1011,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                     </p>
                     {/* Style Learning Badge (AC4: Style Learning Indicator) */}
                     {styleLearningActive && styleSummary && styleSummary.shotsTracked > 0 && (
-                      <p className="text-[9px] text-[#10A37F] truncate mt-0.5">
+                      <p className="text-[9px] text-[#dfec2d] truncate mt-0.5">
                         💡 Learning your style: {styleSummary.shotsTracked} shots tracked
                       </p>
                     )}
@@ -1023,7 +1023,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                     <button
                       type="button"
                       onClick={handleToggleVoiceOutput}
-                      className={`rounded-full border ${voiceOutputActive ? 'border-[rgba(16,163,127,0.5)] bg-[rgba(16,163,127,0.15)]' : 'border-white/10 bg-white/5'} p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105`}
+                      className={`rounded-full border ${voiceOutputActive ? 'border-[rgba(223,236,45,0.5)] bg-[rgba(223,236,45,0.15)]' : 'border-white/10 bg-white/5'} p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white hover:scale-105`}
                       title={voiceOutputActive ? 'Voice output enabled' : 'Voice output disabled'}
                     >
                       <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -1066,7 +1066,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
 
               {/* Voice Settings Panel */}
               {showVoiceSettings && voiceOutputSupported && (
-                <div className="border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.05)] to-transparent px-6 py-4 space-y-4">
+                <div className="border-b border-white/10 bg-gradient-to-r from-[rgba(223,236,45,0.05)] to-transparent px-6 py-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-semibold text-white/90 uppercase tracking-wider">Voice Output Settings</h4>
                     <button
@@ -1085,7 +1085,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                     <select
                       value={selectedVoice?.name || ''}
                       onChange={(e) => handleVoiceChange(e.target.value)}
-                      className="w-full rounded-lg border border-white/10 bg-[#13161d] px-3 py-2 text-sm text-white/90 outline-none focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)]"
+                      className="w-full rounded-lg border border-white/10 bg-[#13161d] px-3 py-2 text-sm text-white/90 outline-none focus:border-[rgba(223,236,45,0.5)] focus:ring-2 focus:ring-[rgba(223,236,45,0.2)]"
                     >
                       {availableVoices.map(voice => (
                         <option key={voice.name} value={voice.name}>
@@ -1099,7 +1099,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   <div className="space-y-2">
                     <label className="text-xs text-white/70 flex items-center justify-between">
                       <span>Speech Rate</span>
-                      <span className="text-[rgba(16,163,127,0.9)]">{speechRate.toFixed(1)}x</span>
+                      <span className="text-[rgba(223,236,45,0.9)]">{speechRate.toFixed(1)}x</span>
                     </label>
                     <input
                       type="range"
@@ -1108,7 +1108,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                       step="0.1"
                       value={speechRate}
                       onChange={(e) => handleRateChange(parseFloat(e.target.value))}
-                      className="w-full accent-[#10A37F]"
+                      className="w-full accent-[#dfec2d]"
                     />
                     <div className="flex justify-between text-[10px] text-white/40">
                       <span>0.5x (Slow)</span>
@@ -1121,7 +1121,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   <button
                     type="button"
                     onClick={() => speakText('This is a preview of the voice output settings.', { voice: selectedVoice, rate: speechRate, pitch: 1.0, volume: 1.0 }, { onStart: () => setIsSpeakingNow(true), onEnd: () => setIsSpeakingNow(false) })}
-                    className="w-full rounded-lg border border-[rgba(16,163,127,0.3)] bg-[rgba(16,163,127,0.1)] px-4 py-2 text-sm font-medium text-[#10A37F] transition-all hover:bg-[rgba(16,163,127,0.2)] hover:shadow-[0_0_15px_rgba(16,163,127,0.2)]"
+                    className="w-full rounded-lg border border-[rgba(223,236,45,0.3)] bg-[rgba(223,236,45,0.1)] px-4 py-2 text-sm font-medium text-gray-900 transition-all hover:bg-[rgba(223,236,45,0.2)] hover:shadow-[0_0_15px_rgba(223,236,45,0.2)]"
                   >
                     Preview Voice
                   </button>
@@ -1130,9 +1130,9 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
 
               {/* Playback Controls (when speaking) */}
               {isSpeakingNow && (
-                <div className="border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.1)] to-transparent px-6 py-3 flex items-center justify-between">
+                <div className="border-b border-white/10 bg-gradient-to-r from-[rgba(223,236,45,0.1)] to-transparent px-6 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-[#10A37F] animate-pulse" />
+                    <div className="h-2 w-2 rounded-full bg-[#dfec2d] animate-pulse" />
                     <span className="text-xs text-white/70">Director is speaking...</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1182,7 +1182,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                     >
                       {message.author === 'director' && (
                         <span
-                          className="mt-1 shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)] shadow-inner"
+                          className="mt-1 shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(223,236,45,0.2)] to-[rgba(223,236,45,0.05)] shadow-inner"
                           style={{ color: ACCENT_HEX }}
                         >
                           <BrainIcon className="h-3.5 w-3.5" />
@@ -1193,7 +1193,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                           message.author === 'user'
                             ? 'rounded-br-sm bg-gradient-to-r from-[#1ad8b1] to-[#0ea887] text-white shadow-[0_4px_20px_rgba(26,216,177,0.3)]'
                             : message.isCommand
-                              ? 'rounded-bl-sm bg-gradient-to-r from-[#1f2530] to-[#191e28] text-white/90 border border-[rgba(16,163,127,0.2)]'
+                              ? 'rounded-bl-sm bg-gradient-to-r from-[#1f2530] to-[#191e28] text-white/90 border border-[rgba(223,236,45,0.2)]'
                               : 'rounded-bl-sm bg-[#1a1f29] text-white/85'
                         }`}
                       >
@@ -1272,7 +1272,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   {isLoading && (
                     <div className="flex items-center gap-3 text-sm text-white/70">
                       <span
-                        className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.2)] to-[rgba(16,163,127,0.05)]"
+                        className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(223,236,45,0.2)] to-[rgba(223,236,45,0.05)]"
                         style={{ color: ACCENT_HEX }}
                       >
                         <BrainIcon className="h-3.5 w-3.5 animate-pulse" />
@@ -1291,7 +1291,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                 <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-gradient-to-b from-[#0f1117] to-[#0a0d12] px-6 py-4 shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
                   {/* Voice listening indicator */}
                   {isListening && (
-                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-[rgba(16,163,127,0.3)] bg-[rgba(16,163,127,0.1)] px-4 py-2.5">
+                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-[rgba(223,236,45,0.3)] bg-[rgba(223,236,45,0.1)] px-4 py-2.5">
                       <div className="relative flex items-center justify-center">
                         <canvas
                           ref={canvasRef}
@@ -1299,10 +1299,10 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                           height="40"
                           className="absolute"
                         />
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.3)] to-[rgba(16,163,127,0.1)] animate-pulse" />
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[rgba(223,236,45,0.3)] to-[rgba(223,236,45,0.1)] animate-pulse" />
                       </div>
                       <div className="flex-1">
-                        <div className="text-xs font-semibold text-[#10A37F]">Listening...</div>
+                        <div className="text-xs font-semibold text-[#dfec2d]">Listening...</div>
                         <div className="text-[10px] text-white/50">
                           {voiceTranscript || 'Speak now...'}
                         </div>
@@ -1338,7 +1338,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                         }}
                         rows={1}
                         placeholder="Ask the director or type a command..."
-                        className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-4 py-3 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(16,163,127,0.5)] focus:ring-2 focus:ring-[rgba(16,163,127,0.2)] focus:shadow-[0_0_20px_rgba(16,163,127,0.15)]"
+                        className="w-full resize-none rounded-2xl border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] px-4 py-3 text-sm text-white/90 outline-none transition-all placeholder:text-white/30 focus:border-[rgba(223,236,45,0.5)] focus:ring-2 focus:ring-[rgba(223,236,45,0.2)] focus:shadow-[0_0_20px_rgba(223,236,45,0.15)]"
                         disabled={isLoading}
                       />
                     </div>
@@ -1352,7 +1352,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                         className={`shrink-0 rounded-xl p-3 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
                           isListening
                             ? 'bg-gradient-to-r from-red-500 to-red-600 shadow-[0_4px_15px_rgba(239,68,68,0.4)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.5)]'
-                            : 'border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] hover:border-[rgba(16,163,127,0.3)] hover:bg-[rgba(16,163,127,0.05)]'
+                            : 'border border-white/10 bg-gradient-to-b from-[#13161d] to-[#0e1015] hover:border-[rgba(223,236,45,0.3)] hover:bg-[rgba(223,236,45,0.05)]'
                         }`}
                         title={isListening ? 'Stop listening' : 'Start voice input'}
                       >
@@ -1371,7 +1371,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                       type="submit"
                       variant="primary"
                       disabled={isLoading || !userInput.trim()}
-                      className="shrink-0 !rounded-xl !px-4 !py-3 !bg-gradient-to-r !from-[#10A37F] !to-[#0d8a68] hover:!from-[#12b88d] hover:!to-[#0f9673] shadow-[0_4px_15px_rgba(16,163,127,0.3)] hover:shadow-[0_6px_20px_rgba(16,163,127,0.4)] transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      className="shrink-0 !rounded-xl !px-4 !py-3 !bg-gradient-to-r !from-[#dfec2d] !to-[#c4d319] !text-black hover:!from-[#e8f03f] hover:!to-[#dfec2d] shadow-[0_4px_15px_rgba(223,236,45,0.3)] hover:shadow-[0_6px_20px_rgba(223,236,45,0.4)] transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       <SendIcon className="h-4 w-4" />
                     </Button>
@@ -1395,7 +1395,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
             <Button
               onClick={() => setIsOpen(true)}
               variant="primary"
-              className="group !rounded-full !px-6 !py-3.5 shadow-[0_20px_40px_rgba(16,163,127,0.35)] hover:shadow-[0_25px_50px_rgba(16,163,127,0.4)] transition-all hover:scale-105"
+              className="group !rounded-full !px-6 !py-3.5 !text-black shadow-[0_20px_40px_rgba(223,236,45,0.35)] hover:shadow-[0_25px_50px_rgba(223,236,45,0.4)] transition-all hover:scale-105"
             >
               <BrainIcon className="h-5 w-5 transition group-hover:scale-110 group-hover:rotate-12" />
               <span className="font-semibold text-base">{widgetLabel}</span>

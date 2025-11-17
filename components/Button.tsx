@@ -50,8 +50,8 @@ const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary: isDark
-      ? `bg-gradient-to-r from-lime-500 via-lime-600 to-teal-600 text-white hover:from-lime-400 hover:via-lime-500 hover:to-teal-500 shadow-lg shadow-lime-500/25 hover:shadow-xl hover:shadow-lime-500/40 active:scale-[0.98] transition-all duration-200`
-      : `bg-gradient-to-r from-lime-600 via-lime-700 to-teal-700 text-white hover:from-lime-500 hover:via-lime-600 hover:to-teal-600 shadow-lg shadow-lime-600/30 hover:shadow-xl hover:shadow-lime-600/50 active:scale-[0.98] transition-all duration-200`,
+      ? `bg-gradient-to-r from-[#dfec2d] to-[#c4d319] text-black hover:from-[#e8f03f] hover:to-[#dfec2d] shadow-lg shadow-[#dfec2d]/25 hover:shadow-xl hover:shadow-[#dfec2d]/40 active:scale-[0.98] transition-all duration-200`
+      : `bg-gradient-to-r from-[#dfec2d] to-[#c4d319] text-black hover:from-[#e8f03f] hover:to-[#dfec2d] shadow-lg shadow-[#dfec2d]/30 hover:shadow-xl hover:shadow-[#dfec2d]/50 active:scale-[0.98] transition-all duration-200`,
     secondary: isDark
       ? `bg-transparent text-white border-2 border-gray-700/80 hover:bg-gray-800/60 hover:border-lime-500/60 backdrop-blur-sm transition-all duration-200`
       : `bg-transparent text-gray-900 border-2 border-gray-300 hover:bg-gray-50 hover:border-lime-500/60 transition-all duration-200`,
