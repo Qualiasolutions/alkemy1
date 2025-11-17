@@ -7,6 +7,7 @@ import { generateMoodboardDescription } from '../services/aiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchImages, SearchedImage } from '../services/imageSearchService';
 import ImageCarousel from '../components/ImageCarousel';
+import { fetchImageWithCORS } from '../utils/corsImageFetcher';
 
 const MAX_ITEMS = 20;
 
@@ -281,13 +282,12 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
     }
 
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
+      const dataUrl = await fetchImageWithCORS(imageUrl);
+
+      if (!dataUrl) {
+        console.error('Failed to fetch image due to CORS or network issues:', imageUrl);
+        return false;
+      }
 
       const newItem: MoodboardItem = {
         id: `item-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -332,23 +332,22 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
 
       for (const imageUrl of imagesToAdd) {
         try {
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const dataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
+          const dataUrl = await fetchImageWithCORS(imageUrl);
 
-          const newItem: MoodboardItem = {
-            id: `item-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            url: dataUrl,
-            type: 'image',
-            metadata: { title: 'Web search result' },
-          };
+          if (dataUrl) {
+            const newItem: MoodboardItem = {
+              id: `item-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              url: dataUrl,
+              type: 'image',
+              metadata: { title: 'Web search result' },
+            };
 
-          newItems.push(newItem);
-          successCount++;
+            newItems.push(newItem);
+            successCount++;
+          } else {
+            console.error('Failed to fetch image due to CORS:', imageUrl);
+            failedCount++;
+          }
         } catch (error) {
           console.error('Failed to add image:', error);
           failedCount++;
