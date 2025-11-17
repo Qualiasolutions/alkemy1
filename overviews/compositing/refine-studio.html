@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refine Studio - Scene Compositing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: #0B0B0B; color: #FFFFFF; line-height: 1.6; padding: 40px 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; padding-bottom: 40px; border-bottom: 1px solid #2A2A2A; margin-bottom: 40px; }
+        .logo { width: 80px; height: 80px; margin: 0 auto 20px; border: 1px solid #2A2A2A; }
+        h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; color: #FFFFFF; }
+        .subtitle { font-size: 15px; color: #A0A0A0; font-weight: 400; }
+        .breadcrumb { font-size: 13px; color: #10A37F; margin-bottom: 24px; }
+        .breadcrumb a { color: #10A37F; text-decoration: none; }
+        h2 { font-size: 22px; font-weight: 600; color: #10A37F; margin: 32px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid #2A2A2A; }
+        h3 { font-size: 17px; font-weight: 600; color: #1AD8B1; margin: 20px 0 10px 0; }
+        p { color: #A0A0A0; margin-bottom: 16px; font-size: 15px; }
+        .section { margin-bottom: 28px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 20px 0; }
+        .card { background: #161616; border: 1px solid #2A2A2A; padding: 20px; }
+        .card h4 { color: #FFFFFF; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card p { color: #A0A0A0; font-size: 14px; margin: 0; }
+        .workflow { background: #1C1C1C; border-left: 3px solid #10A37F; padding: 16px 20px; margin: 20px 0; }
+        .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .workflow-step:last-child { margin-bottom: 0; }
+        .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+        .step-content { flex: 1; }
+        .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .step-desc { color: #A0A0A0; font-size: 13px; }
+        .highlight-box { background: #161616; border: 1px solid #10A37F; padding: 20px; margin: 20px 0; }
+        .highlight-box h4 { color: #10A37F; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        ul { list-style: none; margin: 12px 0; }
+        ul li { color: #A0A0A0; font-size: 14px; padding: 8px 0 8px 20px; position: relative; }
+        ul li:before { content: "▪"; color: #10A37F; position: absolute; left: 0; font-weight: bold; }
+        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .nav-links { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #2A2A2A; }
+        .nav-links a { display: inline-block; margin: 0 12px; color: #10A37F; text-decoration: none; font-size: 14px; }
+        .nav-links a:hover { text-decoration: underline; }
+        .footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid #2A2A2A; text-align: center; color: #707070; font-size: 13px; }
+        code { background: #1C1C1C; color: #1AD8B1; padding: 2px 6px; font-family: 'Courier New', monospace; font-size: 13px; }
+        .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
+        .shortcut-key { background: #2A2A2A; color: #10A37F; padding: 4px 8px; font-family: 'Courier New', monospace; font-size: 12px; border-radius: 2px; display: inline-block; min-width: 80px; text-align: center; }
+        .shortcut-desc { color: #A0A0A0; font-size: 13px; }
+        @media (max-width: 768px) { .grid, .feature-grid, .shortcut-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../../../public/logo.jpeg" alt="Alkemy AI Studio" class="logo">
+            <h1>Refine Studio</h1>
+            <p class="subtitle">Iterative AI Image Refinement with Professional Controls</p>
+        </div>
+
+        <div class="breadcrumb">
+            <a href="../scene-assembler.html">Scene Assembler</a> → Refine Studio
+        </div>
+
+        <div class="section">
+            <h2>What is Refine Studio?</h2>
+            <p>Refine Studio is an advanced image refinement interface that allows you to perfect AI-generated images through iterative prompt-based editing. Adjust lighting, modify composition, add atmospheric effects, and fine-tune every visual element until your shot is perfect.</p>
+        </div>
+
+        <div class="section">
+            <h2>Refinement Workflow</h2>
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Select Image for Refinement</div>
+                        <div class="step-desc">Choose any generated image from Scene Assembler, Moodboard, or Character Generator to enter Refine Studio.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Analyze Current Image</div>
+                        <div class="step-desc">Review the image and identify areas for improvement: lighting, composition, atmosphere, details, or character expression.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Craft Refinement Prompt</div>
+                        <div class="step-desc">Write specific instructions: "Make lighting warmer," "Add cinematic fog," "Enhance facial expression," "Adjust composition rule of thirds."</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Generate Refinement</div>
+                        <div class="step-desc">AI applies changes while preserving character identity and core composition. Preview results in real-time.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Compare & Select</div>
+                        <div class="step-desc">Side-by-side comparison of original vs refined image. Accept, retry with different prompt, or continue iterating.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">Save & Apply</div>
+                        <div class="step-desc">Save refined version as main image or additional variant. Automatically updates Scene Assembler and Presentation.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Refinement Categories</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Lighting & Atmosphere</h4>
+                    <p>Adjust light temperature, intensity, direction. Add atmospheric effects: fog, haze, volumetric lighting, god rays.</p>
+                </div>
+                <div class="card">
+                    <h4>Color & Tone</h4>
+                    <p>Modify color palette, saturation, contrast. Apply cinematic looks, adjust white balance, create mood variations.</p>
+                </div>
+                <div class="card">
+                    <h4>Composition & Framing</h4>
+                    <p>Reposition elements, adjust camera angles, apply rule of thirds, modify depth of field, change perspective.</p>
+                </div>
+                <div class="card">
+                    <h4>Character & Expression</h4>
+                    <p>Fine-tune facial expressions, posture, emotions. Maintain identity while adjusting mood and performance.</p>
+                </div>
+                <div class="card">
+                    <h4>Environment & Details</h4>
+                    <p>Add or modify background elements, enhance textures, improve details, add props, adjust weather conditions.</p>
+                </div>
+                <div class="card">
+                    <h4>Style & Art Direction</h4>
+                    <p>Apply artistic styles, adjust realism level, add painterly effects, change genre, match reference styles.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Professional Controls</h2>
+            <div class="feature-grid">
+                <div class="highlight-box">
+                    <h4>Precision Prompting</h4>
+                    <ul>
+                        <li>Natural language instructions for specific changes</li>
+                        <li>Strength control for subtle vs dramatic refinements</li>
+                        <li>Preserve mode to maintain specific elements</li>
+                        <li>Style reference matching for consistency</li>
+                    </ul>
+                </div>
+
+                <div class="highlight-box">
+                    <h4>Iterative Workflow</h4>
+                    <ul>
+                        <li>Unlimited refinement attempts</li>
+                        <li>History tracking of all changes</li>
+                        <li>Branching exploration of multiple variations</li>
+                        <li>One-click revert to any previous version</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="highlight-box">
+                    <h4>Character Identity Preservation</h4>
+                    <ul>
+                        <li>LoRA models maintain character consistency</li>
+                        <li>Face lock prevents identity changes</li>
+                        <li>Smart recognition of key features</li>
+                        <li>Automatic identity validation</li>
+                    </ul>
+                </div>
+
+                <div class="highlight-box">
+                    <h4>Professional Preview</h4>
+                    <ul>
+                        <li>Side-by-side before/after comparison</li>
+                        <li>Zoom and pan for detailed inspection</li>
+                        <li>Full-screen preview mode</li>
+                        <li>Export options for review</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Keyboard Shortcuts</h2>
+            <p>Professional workflow shortcuts for efficient refinement:</p>
+            <div class="shortcut-grid">
+                <div><span class="shortcut-key">Enter</span> <span class="shortcut-desc">Generate refinement</span></div>
+                <div><span class="shortcut-key">Escape</span> <span class="shortcut-desc">Cancel current refinement</span></div>
+                <div><span class="shortcut-key">R</span> <span class="shortcut-desc">Reset to original image</span></div>
+                <div><span class="shortcut-key">S</span> <span class="shortcut-desc">Save current refinement</span></div>
+                <div><span class="shortcut-key">C</span> <span class="shortcut-desc">Toggle comparison view</span></div>
+                <div><span class="shortcut-key">F</span> <span class="shortcut-desc">Toggle fullscreen preview</span></div>
+                <div><span class="shortcut-key">Tab</span> <span class="shortcut-desc">Switch between variants</span></div>
+                <div><span class="shortcut-key">Space</span> <span class="shortcut-desc">Quick preview overlay</span></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Advanced Techniques</h2>
+            <div class="highlight-box">
+                <h4>Progressive Refinement Strategy</h4>
+                <ul>
+                    <li><strong>Coarse to Fine:</strong> Start with major adjustments, then progressively fine-tune details</li>
+                    <li><strong>Layered Approach:</strong> Refine lighting first, then atmosphere, then details, finally characters</li>
+                    <li><strong>Branching Exploration:</strong> Create multiple variations at key decision points</li>
+                    <li><strong>Reference Matching:</strong> Use moodboard images as style guides for consistent aesthetic</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Professional Prompting Examples</h4>
+                <ul>
+                    <li><strong>Lighting:</strong> "Add warm golden hour lighting from the left, soft shadows, subtle lens flare"</li>
+                    <li><strong>Atmosphere:</strong> "Add light cinematic fog in the background, volumetric rays through windows"</li>
+                    <li><strong>Composition:</strong> "Reposition subject using rule of thirds, increase depth of field"</li>
+                    <li><strong>Character:</strong> "Enhance facial expression to show determination, maintain identity"</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Business Value</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Creative Perfection</h4>
+                    <p>Achieve exact creative vision without compromise. Unlimited iterations until shot is perfect.</p>
+                </div>
+                <div class="card">
+                    <h4>Time Efficiency</h4>
+                    <p>Refine images in minutes vs hours/days of manual photoshopping. Instant professional results.</p>
+                </div>
+                <div class="card">
+                    <h4>Consistency Control</h4>
+                    <p>Maintain character identity and visual style across entire production. Essential for series work.</p>
+                </div>
+                <div class="card">
+                    <h4>Cost Reduction</h4>
+                    <p>Eliminate expensive retouching and VFX work. AI-powered refinements at fraction of traditional cost.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Integration Points</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><code>Scene Assembler</code> - Seamless integration with shot generation workflow, refined images automatically update</li>
+                <li><code>Character Identity</code> - Preserves LoRA-trained character consistency during all refinements</li>
+                <li><code>Video Animation</code> - Refined images maintain quality when animated with Veo 3.1 or Kling AI</li>
+                <li><code>Presentation</code> - Refined shots automatically appear in storyboards and pitch decks</li>
+            </ul>
+        </div>
+
+        <div class="nav-links">
+            <a href="../scene-assembler.html">← Scene Assembler</a>
+            <a href="still-generation.html">Still Generation →</a>
+        </div>
+
+        <div class="footer">
+            <p>Alkemy AI Studio V2.0 Alpha - Professional Film Production Platform</p>
+            <p style="margin-top: 8px;">Last Updated: November 2025</p>
+        </div>
+    </div>
+</body>
+</html>

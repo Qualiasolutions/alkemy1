@@ -86,7 +86,16 @@ export default function TTMGenerationPanel({
 
   // Check TTM availability on mount
   useEffect(() => {
-    checkTTMStatus().then(setIsTTMAvailable);
+    const checkStatus = async () => {
+      try {
+        const available = await checkTTMStatus();
+        setIsTTMAvailable(available);
+      } catch (error) {
+        console.error('[TTMGenerationPanel] Failed to check TTM status:', error);
+        setIsTTMAvailable(false);
+      }
+    };
+    checkStatus();
   }, []);
 
   // Motion presets
@@ -166,10 +175,15 @@ export default function TTMGenerationPanel({
       setTrajectory([]);
     }
 
-    // Generate default prompt if empty
-    if (!prompt) {
-      setPrompt(preset.getPrompt('the scene'));
-    }
+    // Set prompt from preset
+    setPrompt(preset.getPrompt('the scene'));
+  };
+
+  // Helper function for number validation
+  const validateNumberInput = (value: string, min: number, max: number, defaultValue: number): number => {
+    const parsed = parseFloat(value);
+    if (isNaN(parsed)) return defaultValue;
+    return Math.max(min, Math.min(max, parsed));
   };
 
   const handleGenerate = async () => {
@@ -178,15 +192,59 @@ export default function TTMGenerationPanel({
       return;
     }
 
-    if (motionType === MotionType.OBJECT && trajectory.length === 0) {
-      setError('Please draw a motion trajectory or select a preset.');
+    // Validate image URL
+    if (!imageUrl || !imageUrl.startsWith('http')) {
+      setError('Invalid image URL provided.');
       return;
     }
 
-    if (motionType === MotionType.CAMERA && !cameraMovement && !trajectory) {
-      setError('Please specify camera movement parameters.');
+    // Validate prompt
+    if (!prompt.trim()) {
+      setError('Please provide a motion description.');
       return;
     }
+
+    // Validate motion parameters
+    if (motionType === MotionType.OBJECT) {
+      if (!trajectory || trajectory.length < 2) {
+        setError('Please draw a motion trajectory with at least 2 points or select a preset.');
+        return;
+      }
+      // Validate trajectory points are within [0,1] range
+      if (trajectory.some(p => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1)) {
+        setError('Invalid trajectory points. All points must be within the image bounds.');
+        return;
+      }
+    }
+
+    if (motionType === MotionType.CAMERA) {
+      if (!cameraMovement) {
+        setError('Please specify camera movement parameters.');
+        return;
+      }
+    }
+
+    // Validate advanced parameters
+    if (isAdvancedMode) {
+      if (tweakIndex < 0 || tweakIndex > 50) {
+        setError('Tweak Index must be between 0 and 50.');
+        return;
+      }
+      if (tstrongIndex < 0 || tstrongIndex > 50) {
+        setError('TStrong Index must be between 0 and 50.');
+        return;
+      }
+      if (numFrames < 16 || numFrames > 161 || numFrames % 16 !== 0) {
+        setError('Number of frames must be between 16 and 161 in increments of 16.');
+        return;
+      }
+      if (guidanceScale < 1 || guidanceScale > 10) {
+        setError('Guidance Scale must be between 1 and 10.');
+        return;
+      }
+    }
+
+    const abortController = new AbortController();
 
     setIsGenerating(true);
     setError(null);
@@ -198,7 +256,7 @@ export default function TTMGenerationPanel({
         imageUrl,
         {
           motionType,
-          prompt,
+          prompt: prompt.trim(),
           trajectory: motionType === MotionType.OBJECT ? trajectory : undefined,
           cameraMovement: motionType === MotionType.CAMERA ? cameraMovement : undefined,
           tweakIndex: isAdvancedMode ? tweakIndex : undefined,
@@ -208,19 +266,50 @@ export default function TTMGenerationPanel({
           seed,
           projectId
         },
-        setGenerationProgress
+        (progress) => {
+          if (!abortController.signal.aborted) {
+            setGenerationProgress(progress);
+          }
+        }
       );
 
-      setGenerationResult(response);
+      if (!abortController.signal.aborted) {
+        setGenerationResult(response);
 
-      if (response.status === 'completed' && response.videoUrl) {
-        onVideoGenerated?.(response.videoUrl, response.thumbnailUrl || imageUrl);
+        if (response.status === 'completed' && response.videoUrl) {
+          onVideoGenerated?.(response.videoUrl, response.thumbnailUrl || imageUrl);
+        } else if (response.status === 'failed' && response.error) {
+          setError(response.error);
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed');
+      if (!abortController.signal.aborted) {
+        const errorMessage = err instanceof Error ? err.message : 'Generation failed';
+        console.error('[TTMGenerationPanel] Generation failed:', err);
+
+        // Handle specific error types
+        if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          setError('Network error. Please check your connection and try again.');
+        } else if (errorMessage.includes('timeout')) {
+          setError('Generation timed out. Please try again with simpler parameters.');
+        } else if (errorMessage.includes('invalid') || errorMessage.includes('validation')) {
+          setError('Invalid parameters. Please check your motion settings.');
+        } else if (errorMessage.includes('trajectory')) {
+          setError('Invalid trajectory. Please draw a valid motion path.');
+        } else {
+          setError(errorMessage);
+        }
+      }
     } finally {
-      setIsGenerating(false);
+      if (!abortController.signal.aborted) {
+        setIsGenerating(false);
+      }
     }
+
+    // Cleanup function
+    return () => {
+      abortController.abort();
+    };
   };
 
   return (
@@ -386,7 +475,7 @@ export default function TTMGenerationPanel({
                     <input
                       type="number"
                       value={tweakIndex}
-                      onChange={(e) => setTweakIndex(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setTweakIndex(validateNumberInput(e.target.value, 0, 50, 3))}
                       min="0"
                       max="50"
                       className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white"
@@ -397,7 +486,7 @@ export default function TTMGenerationPanel({
                     <input
                       type="number"
                       value={tstrongIndex}
-                      onChange={(e) => setTstrongIndex(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setTstrongIndex(validateNumberInput(e.target.value, 0, 50, 7))}
                       min="0"
                       max="50"
                       className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white"
@@ -408,7 +497,11 @@ export default function TTMGenerationPanel({
                     <input
                       type="number"
                       value={numFrames}
-                      onChange={(e) => setNumFrames(parseInt(e.target.value) || 81)}
+                      onChange={(e) => {
+                        const val = validateNumberInput(e.target.value, 16, 161, 81);
+                        // Ensure it's a multiple of 16
+                        setNumFrames(Math.round(val / 16) * 16);
+                      }}
                       min="16"
                       max="161"
                       step="16"
@@ -420,7 +513,7 @@ export default function TTMGenerationPanel({
                     <input
                       type="number"
                       value={guidanceScale}
-                      onChange={(e) => setGuidanceScale(parseFloat(e.target.value) || 3.5)}
+                      onChange={(e) => setGuidanceScale(validateNumberInput(e.target.value, 1, 10, 3.5))}
                       min="1"
                       max="10"
                       step="0.5"
@@ -515,8 +608,20 @@ export default function TTMGenerationPanel({
               )}
               {generationResult.thumbnailUrl && (
                 <button
-                  onClick={() => navigator.clipboard.writeText(generationResult.thumbnailUrl!)}
+                  onClick={() => {
+                    if (generationResult.thumbnailUrl) {
+                      navigator.clipboard.writeText(generationResult.thumbnailUrl)
+                        .then(() => {
+                          // Show success feedback
+                          console.log('Thumbnail URL copied to clipboard');
+                        })
+                        .catch(err => {
+                          console.error('Failed to copy URL:', err);
+                        });
+                    }
+                  }}
                   className="flex items-center space-x-1 px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
+                  aria-label="Copy thumbnail URL"
                 >
                   <Share2 className="w-3 h-3" />
                   <span>Copy URL</span>
@@ -531,24 +636,29 @@ export default function TTMGenerationPanel({
       <button
         onClick={handleGenerate}
         disabled={isGenerating || !isTTMAvailable}
-        className={`mt-6 w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
+        className={`mt-6 w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
           isGenerating || !isTTMAvailable
             ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
             : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
         }`}
+        aria-describedby="generate-button-description"
+        aria-busy={isGenerating}
       >
         {isGenerating ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
             <span>Generating...</span>
           </>
         ) : (
           <>
-            <Play className="w-5 h-5" />
+            <Play className="w-5 h-5" aria-hidden="true" />
             <span>Generate Motion Video</span>
           </>
         )}
       </button>
+      <div id="generate-button-description" className="sr-only">
+        Generates a motion-controlled video from the still image using the TTM service. Requires TTM service to be available.
+      </div>
     </div>
   );
 }

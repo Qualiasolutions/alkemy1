@@ -385,6 +385,22 @@ export interface CharacterIdentity {
   // Reference images (URLs or base64 data URLs)
   referenceImages: string[];
 
+  // Voice identity (Epic 4 - Voice Acting Integration)
+  voiceIdentity?: {
+    voiceId: string;
+    provider: 'openvoice' | 'elevenlabs' | 'coqui_tts' | 'huggingface';
+    referenceAudio?: string; // Supabase URL to voice sample
+    cloneMetadata?: {
+      quality: number; // 0-100
+      confidence: number; // 0-100
+      processingTime: number; // ms
+    };
+    emotions: {
+      [emotion: string]: string; // emotion -> voiceId mapping
+    };
+    lastUsed?: string; // ISO timestamp
+  };
+
   // Testing and approval (Story 2.2)
   tests?: CharacterIdentityTest[];
   approvalStatus?: 'pending' | 'approved' | 'rejected';

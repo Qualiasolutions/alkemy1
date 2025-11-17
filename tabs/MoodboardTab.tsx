@@ -157,10 +157,6 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
   const [isSearching, setIsSearching] = useState(false);
   const [searchProgress, setSearchProgress] = useState<{ message: string; progress: number }>({ message: '', progress: 0 });
 
-  // Thumbnail strip navigation
-  const thumbnailStripRef = React.useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
 
   useEffect(() => {
     if (!scriptAnalyzed) return;
@@ -321,44 +317,6 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
     setCurrentSlideIndex(index);
     setFullscreenView(true);
   };
-
-  // Thumbnail strip scroll functions
-  const checkScrollPosition = useCallback(() => {
-    const container = thumbnailStripRef.current;
-    if (!container) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    setShowLeftArrow(scrollLeft > 10);
-    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
-  }, []);
-
-  const scrollThumbnails = (direction: 'left' | 'right') => {
-    const container = thumbnailStripRef.current;
-    if (!container) return;
-
-    const scrollAmount = 300; // Approximately 3 thumbnails (24px * 3 + gaps)
-    const newScrollLeft = direction === 'left'
-      ? container.scrollLeft - scrollAmount
-      : container.scrollLeft + scrollAmount;
-
-    container.scrollTo({
-      left: newScrollLeft,
-      behavior: 'smooth'
-    });
-
-    // Update arrow visibility after scroll
-    setTimeout(checkScrollPosition, 300);
-  };
-
-  // Check scroll position when items change
-  useEffect(() => {
-    checkScrollPosition();
-    const container = thumbnailStripRef.current;
-    if (container) {
-      container.addEventListener('scroll', checkScrollPosition);
-      return () => container.removeEventListener('scroll', checkScrollPosition);
-    }
-  }, [activeBoard?.items, checkScrollPosition]);
 
   if (!scriptAnalyzed) {
     return (
@@ -531,52 +489,20 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                       </button>
                     </div>
 
-                    {/* Thumbnail Strip with Arrow Navigation */}
-                    <div className="relative">
-                      {/* Left Arrow */}
-                      {showLeftArrow && (
-                        <button
-                          onClick={() => scrollThumbnails('left')}
-                          className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full transition ${
-                            isDark
-                              ? 'bg-black/60 hover:bg-black/80 text-white'
-                              : 'bg-white/90 hover:bg-white text-slate-900 shadow-lg'
-                          }`}
-                          aria-label="Scroll thumbnails left"
-                        >
-                          <ChevronLeftIcon className="h-5 w-5" />
-                        </button>
-                      )}
-
-                      {/* Right Arrow */}
-                      {showRightArrow && (
-                        <button
-                          onClick={() => scrollThumbnails('right')}
-                          className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full transition ${
-                            isDark
-                              ? 'bg-black/60 hover:bg-black/80 text-white'
-                              : 'bg-white/90 hover:bg-white text-slate-900 shadow-lg'
-                          }`}
-                          aria-label="Scroll thumbnails right"
-                        >
-                          <ChevronRightIcon className="h-5 w-5" />
-                        </button>
-                      )}
-
-                      {/* Thumbnail Container */}
+                    {/* Thumbnail Grid - Max 6 per row */}
+                    <div className="relative max-h-40 overflow-y-auto">
+                      {/* Thumbnail Container - Grid Layout */}
                       <div
-                        ref={thumbnailStripRef}
-                        className="flex gap-2 overflow-x-auto pb-2 scroll-smooth scrollbar-hide"
+                        className="grid grid-cols-6 gap-2 pb-2"
                         style={{
-                          scrollbarWidth: 'none',
-                          msOverflowStyle: 'none',
+                          gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
                         }}
                       >
                         {activeBoard.items.map((item, index) => (
                           <button
                             key={item.id}
                             onClick={() => setCurrentSlideIndex(index)}
-                            className={`flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden border-2 transition ${
+                            className={`aspect-video rounded-lg overflow-hidden border-2 transition ${
                               index === currentSlideIndex
                                 ? 'border-lime-500 ring-2 ring-lime-500/50'
                                 : 'border-white/10 hover:border-white/30'
@@ -592,7 +518,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                         {activeBoard.items.length < MAX_ITEMS && (
                           <label
                             htmlFor="moodboard-file-input"
-                            className={`flex-shrink-0 w-24 h-16 cursor-pointer flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs transition ${
+                            className={`aspect-video cursor-pointer flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs transition ${
                               isDark
                                 ? 'border-white/20 text-white/60 hover:border-lime-400/40 hover:text-lime-200'
                                 : 'border-slate-300 text-slate-500 hover:border-lime-400 hover:text-lime-600'
@@ -602,18 +528,6 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                           </label>
                         )}
                       </div>
-
-                      {/* Fade Indicators */}
-                      {showLeftArrow && (
-                        <div className={`absolute left-0 top-0 bottom-2 w-12 pointer-events-none bg-gradient-to-r ${
-                          isDark ? 'from-[#1A1A1A]' : 'from-slate-50'
-                        } to-transparent`} />
-                      )}
-                      {showRightArrow && (
-                        <div className={`absolute right-0 top-0 bottom-2 w-12 pointer-events-none bg-gradient-to-l ${
-                          isDark ? 'from-[#1A1A1A]' : 'from-slate-50'
-                        } to-transparent`} />
-                      )}
                     </div>
                   </div>
                 )}

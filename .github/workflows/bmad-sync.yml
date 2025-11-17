@@ -1,0 +1,202 @@
+name: BMAD Status Sync
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'docs/stories/**'
+      - 'docs/epics/**'
+      - 'docs/sprints/**'
+  pull_request:
+    paths:
+      - 'docs/stories/**'
+      - 'docs/epics/**'
+      - 'docs/sprints/**'
+  schedule:
+    # Daily sync at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-status:
+    name: Sync BMAD Status
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need history for commit comparison
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate BMAD documentation format
+        run: |
+          echo "🔍 Validating BMAD documentation..."
+          npm run bmad:validate || echo "⚠️  Validation warnings found"
+
+      - name: Sync BMAD status
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "📊 Syncing BMAD status to database..."
+          npm run bmad:sync
+
+      - name: Generate status report
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "📄 Generating BMAD status report..."
+          npm run bmad:sync  # This also generates BMAD_STATUS.md
+
+      - name: Check for documentation drift
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 Checking for documentation drift..."
+          npm run bmad:validate
+
+          if [ $? -ne 0 ]; then
+            echo "❌ Documentation drift detected!"
+            echo "Please run 'npm run bmad:sync' locally and commit changes"
+            exit 1
+          fi
+
+      - name: Commit updated status (push events only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "BMAD Bot"
+          git config user.email "bmad-bot@alkemy.ai"
+
+          # Check if BMAD_STATUS.md changed
+          if git diff --quiet docs/BMAD_STATUS.md; then
+            echo "✨ No status changes to commit"
+          else
+            git add docs/BMAD_STATUS.md
+            git add docs/epics/INDEX.md 2>/dev/null || true
+            git commit -m "chore: auto-update BMAD status [skip ci]" || echo "No changes to commit"
+            git push
+            echo "✅ Status document updated"
+          fi
+
+      - name: Post PR comment with status
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read the generated status report
+            let statusReport = '';
+            try {
+              statusReport = fs.readFileSync('docs/BMAD_STATUS.md', 'utf8');
+              // Extract summary section
+              const lines = statusReport.split('\n');
+              const summaryStart = lines.findIndex(line => line.includes('## Quick Stats'));
+              const summaryEnd = lines.findIndex((line, i) => i > summaryStart && line.startsWith('##'));
+
+              if (summaryStart > -1) {
+                const summary = lines.slice(summaryStart, summaryEnd > -1 ? summaryEnd : summaryStart + 10).join('\n');
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: `## 📊 BMAD Status Update\n\n${summary}\n\n[View Full Report](./docs/BMAD_STATUS.md)`
+                });
+              }
+            } catch (error) {
+              console.log('Could not read status report:', error);
+            }
+
+  test-coverage:
+    name: Update Test Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Update acceptance criteria from test results
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "🧪 Updating acceptance criteria from test results..."
+          npm run test:update-status 2>/dev/null || echo "Test status update not configured"
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  weekly-report:
+    name: Generate Weekly Report
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 9 * * 1'  # Mondays at 9 AM UTC
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate weekly report
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "📈 Generating weekly BMAD report..."
+          npm run bmad:report weekly
+
+      - name: Create report issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const date = new Date().toISOString().slice(0, 10);
+
+            try {
+              const report = fs.readFileSync(`docs/reports/weekly-${date}.md`, 'utf8');
+
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `📊 Weekly BMAD Report - ${date}`,
+                body: report,
+                labels: ['bmad', 'report', 'automated']
+              });
+
+              console.log('✅ Weekly report issue created');
+            } catch (error) {
+              console.error('Failed to create report issue:', error);
+            }

@@ -4,10 +4,25 @@
  */
 
 import { supabase } from './supabase';
+import { Frame } from '../types';
 
 // Configuration
 const TTM_API_URL = import.meta.env.VITE_TTM_API_URL || 'http://localhost:8100';
 const TTM_API_PREFIX = '/api/ttm';
+
+// Environment validation
+function validateEnvironment(): void {
+  if (!TTM_API_URL) {
+    throw new Error('VITE_TTM_API_URL environment variable is required');
+  }
+
+  // In development, warn if using localhost
+  if (import.meta.env.DEV && TTM_API_URL.includes('localhost')) {
+    console.warn('[TTM Service] Using localhost API in development');
+  }
+}
+
+validateEnvironment();
 
 // Types
 export enum MotionType {
@@ -82,6 +97,50 @@ const DEFAULTS = {
   fps: 16
 };
 
+// URL validation helper
+function validateImageUrl(url: string): void {
+  try {
+    const parsedUrl = new URL(url);
+
+    // Only allow http(s) and blob URLs
+    if (!['http:', 'https:', 'blob:'].includes(parsedUrl.protocol)) {
+      throw new Error('Invalid URL protocol');
+    }
+
+    // Prevent localhost access in production
+    if (import.meta.env.PROD && (parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1')) {
+      throw new Error('Localhost access not allowed in production');
+    }
+  } catch {
+    throw new Error('Invalid URL format');
+  }
+}
+
+// Input validation
+function validateTTMRequest(imageUrl: string, request: TTMRequest): void {
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    throw new Error('Invalid image URL');
+  }
+
+  if (!request.prompt || request.prompt.trim().length === 0) {
+    throw new Error('Prompt is required');
+  }
+
+  if (request.prompt.length > 1000) {
+    throw new Error('Prompt too long (max 1000 characters)');
+  }
+
+  // Validate trajectory points
+  if (request.trajectory) {
+    for (const point of request.trajectory) {
+      if (typeof point.x !== 'number' || typeof point.y !== 'number' ||
+          point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
+        throw new Error('Invalid trajectory coordinates (must be 0-1)');
+      }
+    }
+  }
+}
+
 /**
  * Generate motion-controlled video from a still image
  *
@@ -95,15 +154,27 @@ export async function generateTTMVideo(
   request: TTMRequest,
   onProgress?: (progress: number) => void
 ): Promise<TTMResponse> {
+  // Generate unique request ID for tracking
+  const requestId = `ttm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
   try {
-    console.log('[TTM Service] Starting generation:', {
+    // Validate inputs
+    validateImageUrl(imageUrl);
+    validateTTMRequest(imageUrl, request);
+
+    // Validate progress callback
+    if (onProgress && typeof onProgress !== 'function') {
+      throw new Error('onProgress must be a function');
+    }
+
+    console.log(`[TTM Service] [${requestId}] Starting generation:`, {
       motionType: request.motionType,
-      prompt: request.prompt,
+      prompt: request.prompt.substring(0, 100), // Truncate for logs
       hasTrajectory: !!request.trajectory,
       hasCameraMovement: !!request.cameraMovement
     });
 
-    // Validate request
+    // Additional validation
     if (request.motionType === MotionType.OBJECT && !request.trajectory) {
       throw new Error('Object motion requires a trajectory');
     }
@@ -310,7 +381,7 @@ export function createOrbitMovement(
  * @returns Updated frame with TTM video
  */
 export async function animateFrameWithTTM(
-  frame: any, // Import Frame type from types.ts
+  frame: Frame,
   motionType: MotionType,
   motionParams: {
     trajectory?: Point2D[];
