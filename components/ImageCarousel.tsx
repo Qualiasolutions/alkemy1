@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from './icons/Icons';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 interface ImageCarouselProps {
   images: Array<{
@@ -81,33 +82,48 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   if (images.length === 1) {
     // Single image - no carousel needed
     return (
-      <div className={`relative bg-black/20 rounded-lg overflow-hidden ${className}`} style={{ aspectRatio }}>
-        <img
-          src={images[0].url}
-          alt={images[0].title || 'Image'}
-          className="w-full h-full object-cover"
-        />
-      </div>
+      <GlowCard
+        glowColor="blue"
+        customSize={true}
+        className={`!p-0 ${className}`}
+        width="100%"
+        height="auto"
+      >
+        <div className="relative rounded-lg overflow-hidden" style={{ aspectRatio }}>
+          <img
+            src={images[0].url}
+            alt={images[0].title || 'Image'}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </GlowCard>
     );
   }
 
   const currentImage = images[currentIndex] || images[0];
 
   return (
-    <div className={`relative bg-black/20 rounded-lg overflow-hidden group ${className}`} style={{ aspectRatio }}>
-      {/* Main Image */}
-      <AnimatePresence mode="wait">
-        <motion.img
-          key={currentIndex}
-          src={currentImage.url}
-          alt={currentImage.title || `Image ${currentIndex + 1}`}
-          className="w-full h-full object-cover"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.05 }}
-          transition={{ duration: 0.3 }}
-        />
-      </AnimatePresence>
+    <GlowCard
+      glowColor="blue"
+      customSize={true}
+      className={`!p-0 ${className}`}
+      width="100%"
+      height="auto"
+    >
+      <div className="relative rounded-lg overflow-hidden group" style={{ aspectRatio }}>
+        {/* Main Image */}
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={currentIndex}
+            src={currentImage.url}
+            alt={currentImage.title || `Image ${currentIndex + 1}`}
+            className="w-full h-full object-cover"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.3 }}
+          />
+        </AnimatePresence>
 
       {/* Arrow Navigation */}
       {showArrows && (
@@ -158,7 +174,8 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
           <p className="text-white text-sm font-medium">{currentImage.title}</p>
         </div>
       )}
-    </div>
+      </div>
+    </GlowCard>
   );
 };
 
