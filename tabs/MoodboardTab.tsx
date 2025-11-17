@@ -156,6 +156,8 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
   const [searchResults, setSearchResults] = useState<SearchedImage[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchProgress, setSearchProgress] = useState<{ message: string; progress: number }>({ message: '', progress: 0 });
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+  const [isAddingBulkImages, setIsAddingBulkImages] = useState(false);
 
 
   useEffect(() => {
@@ -249,6 +251,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
 
     setIsSearching(true);
     setSearchResults([]);
+    setSelectedImages(new Set()); // Clear previous selections
     setSearchProgress({ message: 'Starting search...', progress: 0 });
 
     try {
@@ -300,6 +303,92 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
       alert('Failed to add image to moodboard. Please try another.');
       return false;
     }
+  };
+
+  const handleAddSelectedImagesToMoodboard = async () => {
+    if (!activeBoard) {
+      alert('No active moodboard. Please create or select a moodboard first.');
+      return;
+    }
+
+    const remainingSlots = MAX_ITEMS - activeBoard.items.length;
+    const imagesToAdd = Array.from(selectedImages).slice(0, remainingSlots);
+
+    if (imagesToAdd.length === 0) {
+      alert('No images selected.');
+      return;
+    }
+
+    if (imagesToAdd.length < selectedImages.size) {
+      alert(`Only ${imagesToAdd.length} images will be added due to moodboard limit.`);
+    }
+
+    setIsAddingBulkImages(true);
+    let successCount = 0;
+    let failedCount = 0;
+
+    try {
+      const newItems: MoodboardItem[] = [];
+
+      for (const imageUrl of imagesToAdd) {
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const dataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+
+          const newItem: MoodboardItem = {
+            id: `item-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            url: dataUrl,
+            type: 'image',
+            metadata: { title: 'Web search result' },
+          };
+
+          newItems.push(newItem);
+          successCount++;
+        } catch (error) {
+          console.error('Failed to add image:', error);
+          failedCount++;
+        }
+      }
+
+      if (newItems.length > 0) {
+        updateBoard(activeBoard.id, board => ({
+          ...board,
+          items: [...board.items, ...newItems]
+        }));
+      }
+
+      // Clear selection and close modal
+      setSelectedImages(new Set());
+      setShowWebSearch(false);
+
+      if (successCount > 0) {
+        alert(`Successfully added ${successCount} image${successCount > 1 ? 's' : ''} to moodboard${failedCount > 0 ? `. ${failedCount} failed.` : '.'}`);
+      } else {
+        alert('Failed to add images to moodboard.');
+      }
+    } catch (error) {
+      console.error('Failed to add images:', error);
+      alert('An error occurred while adding images.');
+    } finally {
+      setIsAddingBulkImages(false);
+    }
+  };
+
+  const toggleImageSelection = (imageUrl: string) => {
+    setSelectedImages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(imageUrl)) {
+        newSet.delete(imageUrl);
+      } else {
+        newSet.add(imageUrl);
+      }
+      return newSet;
+    });
   };
 
   // Auto-advance slideshow every 4 seconds
@@ -596,9 +685,31 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
             >
               <div className="p-6 border-b border-white/10">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Web Image Search</h3>
+                  <div className="flex items-center gap-4">
+                    <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Web Image Search</h3>
+                    {selectedImages.size > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          isDark ? 'bg-#dfec2d/20 text-#dfec2d' : 'bg-#dfec2d/30 text-#8A9B1A'
+                        }`}>
+                          {selectedImages.size} selected
+                        </span>
+                        <Button
+                          variant="primary"
+                          onClick={handleAddSelectedImagesToMoodboard}
+                          disabled={isAddingBulkImages}
+                          className="!px-4 !py-2 !text-sm"
+                        >
+                          {isAddingBulkImages ? 'Adding...' : `Add ${selectedImages.size} to Moodboard`}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <button
-                    onClick={() => setShowWebSearch(false)}
+                    onClick={() => {
+                      setShowWebSearch(false);
+                      setSelectedImages(new Set()); // Clear selections on close
+                    }}
                     className={`p-2 rounded-full transition ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100 text-slate-900'}`}
                   >
                     <XIcon className="h-6 w-6" />
@@ -656,27 +767,44 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                       Search Results ({searchResults.length})
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {searchResults.map((result, index) => (
-                        <div key={index} className="relative group rounded-lg overflow-hidden aspect-video bg-black/10 cursor-pointer">
-                          <img src={result.url} alt={result.title} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <p className="text-xs font-semibold text-white mb-1 line-clamp-2">{result.title}</p>
-                              <p className="text-[10px] text-gray-300">{result.source}</p>
+                      {searchResults.map((result, index) => {
+                        const isSelected = selectedImages.has(result.url);
+                        return (
+                          <div
+                            key={index}
+                            className={`relative group rounded-lg overflow-hidden aspect-video bg-black/10 cursor-pointer border-2 transition-all ${
+                              isSelected
+                                ? 'border-#dfec2d ring-2 ring-#dfec2d/50 scale-95'
+                                : 'border-transparent hover:border-white/20'
+                            }`}
+                            onClick={() => toggleImageSelection(result.url)}
+                          >
+                            <img src={result.url} alt={result.title} className="w-full h-full object-cover" />
+
+                            {/* Selection indicator overlay */}
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-#dfec2d/30 flex items-center justify-center">
+                                <div className="bg-#dfec2d rounded-full p-2">
+                                  <svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Hover overlay with info */}
+                            <div className={`absolute inset-0 bg-gradient-to-t from-black/80 to-transparent transition-opacity ${
+                              isSelected ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+                            }`}>
+                              <div className="absolute bottom-0 left-0 right-0 p-3">
+                                <p className="text-xs font-semibold text-white mb-1 line-clamp-2">{result.title}</p>
+                                <p className="text-[10px] text-gray-300">{result.source}</p>
+                                <p className="text-[10px] text-#dfec2d mt-1">Click to select</p>
+                              </div>
                             </div>
-                            <button
-                              onClick={() => {
-                                handleAddImageToMoodboard(result.url);
-                                alert('Image added to moodboard!');
-                              }}
-                              className="absolute top-2 right-2 p-2 bg-#dfec2d rounded-full text-white hover:bg-#b3e617 transition-colors"
-                              aria-label="Add to moodboard"
-                            >
-                              <DownloadIcon className="w-4 h-4" />
-                            </button>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 )}
