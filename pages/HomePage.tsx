@@ -98,7 +98,7 @@ const HomePage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6">
+      <section className="relative pt-48 pb-20 px-6">
         {/* Animated background gradient */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#dfec2d]/20 rounded-full blur-3xl animate-pulse" />
@@ -106,7 +106,7 @@ const HomePage = () => {
         </div>
 
         <div className="container mx-auto max-w-6xl relative z-10">
-          <div className="text-center space-y-6">
+          <div className="text-center space-y-6 mt-12">
             {/* Badge */}
             <div className="flex justify-center">
               <Badge variant="outline" className="border-[#dfec2d]/30 text-[#dfec2d] px-4 py-1">
