@@ -80,8 +80,9 @@ export default defineConfig(({ mode }) => {
     const braveProxyUrl = process.env.BRAVE_PROXY_URL || env.BRAVE_PROXY_URL || '/api/brave-proxy';
 
     // Supabase configuration
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '';
-    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '';
+    // Trim all keys to remove any accidental whitespace or newlines that break WebSocket connections
+    const supabaseUrl = (process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '').trim();
+    const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '').trim();
 
     // Explicitly set demo mode to false (only enable via env var if needed)
     const forceDemoMode = process.env.FORCE_DEMO_MODE || env.FORCE_DEMO_MODE || 'false';
