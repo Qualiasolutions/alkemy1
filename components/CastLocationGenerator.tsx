@@ -132,14 +132,14 @@ const RefineStudio: React.FC<{
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 placeholder="Describe what you want to change..."
-                                className="w-full h-32 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#c8ff2f] focus:border-transparent focus:bg-white/10 transition-all resize-none"
+                                className="w-full h-32 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#dfec2d] focus:border-transparent focus:bg-white/10 transition-all resize-none"
                                 disabled={isGenerating}
                             />
 
                             <button
                                 onClick={handleRefine}
                                 disabled={!prompt.trim() || isGenerating}
-                                className="w-full py-3 bg-[#c8ff2f] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#c8ff2f]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                                className="w-full py-3 bg-[#dfec2d] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#dfec2d]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                             >
                                 {isGenerating ? (
                                     <>
@@ -165,13 +165,13 @@ const RefineStudio: React.FC<{
                                             onClick={() => handleSelectVersion(version)}
                                             className={`w-full text-left p-3 rounded-lg border transition-all ${
                                                 currentImage === version.url
-                                                    ? 'bg-[#c8ff2f]/20 border-[#c8ff2f]/50 text-white'
+                                                    ? 'bg-[#dfec2d]/20 border-[#dfec2d]/50 text-white'
                                                     : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                                    currentImage === version.url ? 'bg-[#c8ff2f]' : 'bg-white/40'
+                                                    currentImage === version.url ? 'bg-[#dfec2d]' : 'bg-white/40'
                                                 }`}></div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium truncate">
@@ -202,7 +202,7 @@ const RefineStudio: React.FC<{
                     {isGenerating && (
                         <div className="absolute inset-0 bg-black/70 z-10 flex items-center justify-center">
                             <div className="flex flex-col items-center text-center">
-                                <AlkemyLoadingIcon className="w-16 h-16 text-[#c8ff2f] mb-4 animate-spin" />
+                                <AlkemyLoadingIcon className="w-16 h-16 text-[#dfec2d] mb-4 animate-spin" />
                                 <h3 className="text-xl font-semibold text-white mb-2">Refining image...</h3>
                                 <p className="text-white/60">Applying: "{prompt}"</p>
                             </div>
@@ -227,7 +227,7 @@ const RefineStudio: React.FC<{
 
                     <button
                         onClick={handleSetMainAndClose}
-                        className="absolute top-6 right-6 bg-lime-400/90 hover:bg-lime-400 text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm z-20"
+                        className="absolute top-6 right-6 bg-[#dfec2d]/90 hover:bg-[#dfec2d] text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm z-20"
                     >
                         <CheckIcon className="w-5 h-5" />
                         Set as Main & Close
@@ -259,7 +259,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 }) => {
     const { isDark } = useTheme();
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi'>('Imagen');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion'>('Gemini Nano Banana');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -394,7 +394,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const files = Array.from(e.target.files);
-            const isFluxMulti = model === 'Flux Kontext Max Multi';
+            const isFluxMulti = false; // Removed Flux Multi - use Flux or Flux Schnell instead
 
             // For Flux Multi, allow multiple files; for other models, only take the first one
             const filesToProcess = isFluxMulti ? files : [files[0]];
@@ -425,7 +425,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
         setAttachedImages(prev => prev.filter((_, i) => i !== index));
     };
 
-    const isFluxMulti = model === 'Flux Kontext Max Multi';
+    const isFluxMulti = false; // Removed Flux Multi
 
     const handleSetMainImage = (imageUrl: string) => {
         onUpdateItem(prev => ({ ...prev, imageUrl }));
@@ -549,12 +549,12 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     <select
                         value={model}
                         onChange={e => setModel(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                     >
-                        <option value="Imagen" className="bg-[#0a0a0a]">Imagen</option>
-                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Gemini Nano Banana</option>
-                        <option value="Flux" className="bg-[#0a0a0a]">Flux</option>
-                        <option value="Flux Kontext Max Multi" className="bg-[#0a0a0a]">Flux Kontext Max Multi (FAL)</option>
+                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana</option>
+                        <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell</option>
+                        <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism</option>
+                        <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion</option>
                     </select>
                 </div>
 
@@ -564,7 +564,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     <select
                         value={aspectRatio}
                         onChange={e => setAspectRatio(e.target.value)}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                     >
                         <option value="16:9" className="bg-[#0a0a0a]">16:9</option>
                         <option value="9:16" className="bg-[#0a0a0a]">9:16</option>
@@ -580,7 +580,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     <select
                         value={generationCount}
                         onChange={e => setGenerationCount(Number(e.target.value))}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                         disabled={isGenerating}
                     >
                         <option value={1} className="bg-[#0a0a0a]">1 Image</option>
@@ -597,7 +597,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         <GlowCard
                             glowColor="orange"
                             customSize={true}
-                            className="w-full !p-0 overflow-hidden border-2 border-lime-500/50"
+                            className="w-full !p-0 overflow-hidden border-2 border-[#dfec2d]/50"
                         >
                             <div className={`${aspectRatioClasses[aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg`}>
                                 <img src={item.data.imageUrl} alt="Main" className="w-full h-full object-cover" />
@@ -607,7 +607,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                     <p className="text-white text-xs font-semibold">Main Image ({aspectRatio})</p>
                                 </div>
                             </div>
-                            <div className="absolute top-2 left-2 bg-lime-500 text-black text-xs px-2 py-1 rounded font-semibold">
+                            <div className="absolute top-2 left-2 bg-[#dfec2d] text-black text-xs px-2 py-1 rounded font-semibold">
                                 MAIN
                             </div>
                         </GlowCard>
@@ -622,7 +622,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                             value={detailedPrompt}
                             onChange={(e) => setDetailedPrompt(e.target.value)}
                             placeholder={`Describe ${item.data.name}...`}
-                            className="w-full h-32 pr-12 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#c8ff2f] focus:border-transparent focus:bg-white/10 transition-all resize-none"
+                            className="w-full h-32 pr-12 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#dfec2d] focus:border-transparent focus:bg-white/10 transition-all resize-none"
                             rows={6}
                         />
                         {/* Compact attachment button in top-right corner */}
@@ -649,7 +649,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                 <button
                     onClick={handleGenerate}
                     disabled={isGenerating || !detailedPrompt.trim()}
-                    className="w-full py-3 bg-[#c8ff2f] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#c8ff2f]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                    className="w-full py-3 bg-[#dfec2d] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#dfec2d]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                 >
                     {isGenerating ? (
                         <>
@@ -690,7 +690,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         </div>
                         {isFluxMulti && (
                             <p className="text-xs text-white/40 mt-1">
-                                💡 {model === 'Flux Kontext Max Multi' ? 'Flux Multi can use multiple reference images' : 'Switch to Flux Kontext Max Multi for multiple images'}
+                                💡 All models support reference images for better results
                             </p>
                         )}
                     </div>
@@ -713,16 +713,16 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                 </div>
                             </div>
                             {getCharacterIdentityStatus(character.identity) === 'ready' && (
-                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-lime-500/20 border border-lime-500/30">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-semibold text-lime-400 uppercase tracking-wider">LoRA Active</span>
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#dfec2d]/20 border border-[#dfec2d]/30">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#dfec2d] animate-pulse"></div>
+                                    <span className="text-[10px] font-semibold text-[#dfec2d] uppercase tracking-wider">LoRA Active</span>
                                 </div>
                             )}
                         </div>
                         <div className="flex items-center gap-2 mb-3">
                             <div className={`w-2 h-2 rounded-full ${
                                 getCharacterIdentityStatus(character.identity) === 'ready' ? 'bg-green-500' :
-                                getCharacterIdentityStatus(character.identity) === 'preparing' ? 'bg-lime-500 animate-pulse' :
+                                getCharacterIdentityStatus(character.identity) === 'preparing' ? 'bg-[#dfec2d] animate-pulse' :
                                 getCharacterIdentityStatus(character.identity) === 'error' ? 'bg-red-500' : 'bg-gray-500'
                             }`}></div>
                             <p className="text-xs text-white/80 capitalize">
@@ -750,7 +750,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                     <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                                         loraImages.length >= 6 && loraImages.length <= 12
                                             ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                            : 'bg-lime-500/20 text-lime-900 border border-lime-500/30'
+                                            : 'bg-[#dfec2d]/20 text-lime-900 border border-[#dfec2d]/30'
                                     }`}>
                                         {loraImages.length}/12
                                     </div>
@@ -773,7 +773,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                     ))}
                                 </div>
                                 {loraImages.length < 6 && (
-                                    <p className="text-[10px] text-lime-400 mt-2">
+                                    <p className="text-[10px] text-[#dfec2d] mt-2">
                                         ⚠️ Minimum 6 images required ({6 - loraImages.length} more needed)
                                     </p>
                                 )}
@@ -808,7 +808,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         {/* Initial Loading State - Show when first starting generation */}
                         {isGenerating && validGenerations.length === 0 && allGenerations.filter(g => g.isLoading).length === generationCount && (
                             <div className="flex flex-col items-center justify-center h-96 text-center">
-                                <AlkemyLoadingIcon className="w-16 h-16 text-[#c8ff2f] mb-4 animate-spin" />
+                                <AlkemyLoadingIcon className="w-16 h-16 text-[#dfec2d] mb-4 animate-spin" />
                                 <h3 className="text-xl font-semibold text-white mb-2">Initializing generation...</h3>
                                 <p className="text-white/60">Preparing to generate {generationCount} {generationCount === 1 ? 'image' : 'images'}</p>
                             </div>
@@ -849,7 +849,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                             className={`p-2.5 backdrop-blur-sm rounded-lg hover:scale-110 transition-all shadow-lg ${
                                                                 loraImages.includes(gen.url!)
                                                                     ? 'bg-purple-500/90 text-white hover:bg-purple-600'
-                                                                    : 'bg-[#c8ff2f]/90 text-black hover:bg-[#c8ff2f]'
+                                                                    : 'bg-[#dfec2d]/90 text-black hover:bg-[#dfec2d]'
                                                             }`}
                                                             title={loraImages.includes(gen.url!) ? 'Remove from LoRA' : 'Add to LoRA'}
                                                         >
@@ -867,7 +867,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                                 e.stopPropagation();
                                                                 handleSetMainImage(gen.url!);
                                                             }}
-                                                            className="p-2.5 bg-lime-500/90 backdrop-blur-sm text-black rounded-lg hover:bg-lime-500 hover:scale-110 transition-all shadow-lg"
+                                                            className="p-2.5 bg-[#dfec2d]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[#dfec2d] hover:scale-110 transition-all shadow-lg"
                                                             title="Set as Main"
                                                         >
                                                             <CheckIcon className="w-4 h-4" />
@@ -912,7 +912,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                 </div>
                                             </div>
                                             <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                                                <div className="bg-[#c8ff2f] text-black text-xs px-2 py-1 rounded font-semibold">
+                                                <div className="bg-[#dfec2d] text-black text-xs px-2 py-1 rounded font-semibold">
                                                     #{idx + 1}
                                                 </div>
                                                 {isCharacter && loraImages.includes(gen.url!) && (
@@ -931,15 +931,15 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 
                                 {/* Loading States */}
                                 {allGenerations.filter(g => g.isLoading).map((gen, idx) => (
-                                    <div key={gen.id} className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-lime-500/30 bg-black/20`}>
+                                    <div key={gen.id} className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-[#dfec2d]/30 bg-black/20`}>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                                             <AlkemyLoadingIcon className="w-8 h-8 text-white/60 mb-2 animate-spin" />
                                             <p className="text-white text-xs mb-2">Generating...</p>
                                             <div className="w-24 bg-gray-600 rounded-full h-1">
-                                                <div className="bg-lime-500 h-1 rounded-full transition-all" style={{ width: `${gen.progress || 0}%` }}></div>
+                                                <div className="bg-[#dfec2d] h-1 rounded-full transition-all" style={{ width: `${gen.progress || 0}%` }}></div>
                                             </div>
                                         </div>
-                                        <div className="absolute top-2 right-2 bg-lime-500 text-black text-xs px-2 py-1 rounded font-semibold">
+                                        <div className="absolute top-2 right-2 bg-[#dfec2d] text-black text-xs px-2 py-1 rounded font-semibold">
                                             #{validGenerations.length + idx + 1}
                                         </div>
                                     </div>
@@ -1061,7 +1061,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                 className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
                                                     viewingGeneration.url && loraImages.includes(viewingGeneration.url)
                                                         ? 'bg-red-500 hover:bg-red-600 text-white'
-                                                        : 'bg-lime-500 hover:bg-lime-600 text-white'
+                                                        : 'bg-[#dfec2d] hover:bg-[#b3e617] text-white'
                                                 }`}
                                             >
                                                 {viewingGeneration.url && loraImages.includes(viewingGeneration.url) ? (
@@ -1084,7 +1084,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                     if (viewingGeneration.url) handleSetMainImage(viewingGeneration.url);
                                                     setViewingGeneration(null);
                                                 }}
-                                                className="px-4 py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 transition"
+                                                className="px-4 py-2 bg-[#dfec2d] text-white rounded-lg hover:bg-[#b3e617] transition"
                                             >
                                                 Set as Main
                                             </button>

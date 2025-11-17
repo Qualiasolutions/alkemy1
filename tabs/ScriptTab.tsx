@@ -24,22 +24,22 @@ const AnalysisInfoCard: React.FC<AnalysisInfoCardProps> = ({ icon, label, value 
                 isDark
                     ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
                     : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
-            } hover:border-teal-500/50 transition-all hover:shadow-2xl ${
-                isDark ? 'hover:shadow-teal-500/20' : 'hover:shadow-teal-500/30'
+            } hover:border-[#dfec2d]/50 transition-all hover:shadow-2xl ${
+                isDark ? 'hover:shadow-[#dfec2d]/20' : 'hover:shadow-[#dfec2d]/30'
             }`}
         >
             {/* Gradient glow overlay on hover */}
             <div className={`absolute inset-0 bg-gradient-to-br ${
-                isDark ? 'from-teal-500/10 to-purple-500/10' : 'from-teal-400/20 to-purple-400/20'
+                isDark ? 'from-[#dfec2d]/10 to-[#dfec2d]/10' : 'from-[#dfec2d]/20 to-[#dfec2d]/20'
             } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
 
             <div className="relative p-6 flex items-center gap-4">
                 <div className={`w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center ${
                     isDark
-                        ? 'bg-gradient-to-br from-teal-500/20 to-lime-500/20'
-                        : 'bg-gradient-to-br from-teal-400/30 to-lime-400/30'
+                        ? 'bg-gradient-to-br from-[#dfec2d]/20 to-[#dfec2d]/20'
+                        : 'bg-gradient-to-br from-[#dfec2d]/30 to-[#dfec2d]/30'
                 }`}>
-                    <div className="text-teal-400">{icon}</div>
+                    <div className="text-[#dfec2d]">{icon}</div>
                 </div>
                 <div>
                     <div className={`text-3xl font-bold ${
@@ -80,7 +80,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({ title, children }) =>
             {/* Header with accent gradient */}
             <div className={`px-6 py-4 border-b ${
                 isDark ? 'border-gray-800/50' : 'border-gray-200'
-            } bg-gradient-to-r from-teal-500/10 to-lime-500/10`}>
+            } bg-gradient-to-r from-[#dfec2d]/10 to-[#dfec2d]/10`}>
                 <h4 className={`text-lg font-bold ${
                     isDark ? 'text-white' : 'text-gray-900'
                 }`}>
@@ -119,13 +119,13 @@ const AIGeneratedSummary: React.FC<AIGeneratedSummaryProps> = ({ summary, isGene
             {/* AI Badge Header */}
             <div className={`px-6 py-4 border-b ${
                 isDark ? 'border-gray-800/50' : 'border-gray-200'
-            } bg-gradient-to-r from-purple-500/10 via-teal-500/10 to-lime-500/10`}>
+            } bg-gradient-to-r from-[#dfec2d]/10 via-[#dfec2d]/10 to-[#dfec2d]/10`}>
                 <div className="flex items-center gap-3">
                     <motion.div
                         animate={isGenerating ? { rotate: 360 } : {}}
                         transition={{ duration: 2, repeat: isGenerating ? Infinity : 0, ease: "linear" }}
                     >
-                        <SparklesIcon className="w-5 h-5 text-teal-400" />
+                        <SparklesIcon className="w-5 h-5 text-[#dfec2d]" />
                     </motion.div>
                     <h4 className={`text-lg font-bold ${
                         isDark ? 'text-white' : 'text-gray-900'
@@ -134,8 +134,8 @@ const AIGeneratedSummary: React.FC<AIGeneratedSummaryProps> = ({ summary, isGene
                     </h4>
                     <div className={`ml-auto px-3 py-1 rounded-full text-xs font-bold ${
                         isDark
-                            ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                            : 'bg-teal-400/20 text-teal-600 border border-teal-400/30'
+                            ? 'bg-[#dfec2d]/20 text-[#dfec2d] border border-[#dfec2d]/30'
+                            : 'bg-[#dfec2d]/20 text-[#b3e617] border border-[#dfec2d]/30'
                     }`}>
                         Gemini 2.5 Pro
                     </div>
@@ -169,7 +169,7 @@ const AIGeneratedSummary: React.FC<AIGeneratedSummaryProps> = ({ summary, isGene
             </div>
 
             {/* Subtle gradient footer accent */}
-            <div className="h-1 bg-gradient-to-r from-purple-500/50 via-teal-500/50 to-lime-500/50" />
+            <div className="h-1 bg-gradient-to-r from-[#dfec2d]/50 via-[#dfec2d]/50 to-[#dfec2d]/50" />
         </motion.div>
     );
 };
@@ -191,14 +191,14 @@ const EnhancedListDisplay: React.FC<EnhancedListDisplayProps> = ({
     const { isDark } = useTheme();
 
     const colorClasses = {
-        teal: 'from-teal-500/10 to-[var(--color-accent-secondary)]/10',
-        purple: 'from-purple-500/10 to-pink-500/10',
-        blue: 'from-[var(--color-accent-secondary)]/10 to-cyan-500/10',
+        teal: 'from-[#dfec2d]/10 to-[var(--color-accent-secondary)]/10',
+        purple: 'from-[#dfec2d]/10 to-[#b3e617]/10',
+        blue: 'from-[var(--color-accent-secondary)]/10 to-[#dfec2d]/10',
     };
 
     const iconColorClasses = {
-        teal: 'text-teal-400',
-        purple: 'text-purple-400',
+        teal: 'text-[#dfec2d]',
+        purple: 'text-[#dfec2d]',
         blue: 'text-[var(--color-accent-secondary)]',
     };
 
@@ -501,7 +501,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                             ease: "easeInOut"
                         }}
                         className={`absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-3xl ${
-                            isDark ? 'bg-gradient-to-br from-teal-500/20 to-cyan-500/10' : 'bg-gradient-to-br from-teal-400/25 to-cyan-400/15'
+                            isDark ? 'bg-gradient-to-br from-[#dfec2d]/20 to-[#dfec2d]/10' : 'bg-gradient-to-br from-[#dfec2d]/25 to-[#dfec2d]/15'
                         }`}
                     />
                     <motion.div
@@ -518,7 +518,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                             delay: 1
                         }}
                         className={`absolute bottom-1/4 right-1/3 w-[450px] h-[450px] rounded-full blur-3xl ${
-                            isDark ? 'bg-gradient-to-tl from-purple-500/15 to-pink-500/8' : 'bg-gradient-to-tl from-purple-400/20 to-pink-400/12'
+                            isDark ? 'bg-gradient-to-tl from-[#dfec2d]/15 to-[#b3e617]/8' : 'bg-gradient-to-tl from-[#dfec2d]/20 to-[#b3e617]/12'
                         }`}
                     />
                     <motion.div
@@ -542,7 +542,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                         <motion.div
                             key={i}
                             className={`absolute w-1 h-1 rounded-full ${
-                                isDark ? 'bg-teal-400/30' : 'bg-teal-500/40'
+                                isDark ? 'bg-[#dfec2d]/30' : 'bg-[#dfec2d]/40'
                             }`}
                             style={{
                                 left: `${Math.random() * 100}%`,
@@ -606,11 +606,11 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                                 className={`relative p-16 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 backdrop-blur-sm ${
                                     isDragging
                                         ? isDark
-                                            ? 'border-teal-400 bg-teal-500/10 shadow-lg shadow-teal-500/20'
-                                            : 'border-teal-600 bg-teal-500/15 shadow-lg shadow-teal-500/30'
+                                            ? 'border-[#dfec2d] bg-[#dfec2d]/10 shadow-lg shadow-[#dfec2d]/20'
+                                            : 'border-[#b3e617] bg-[#dfec2d]/15 shadow-lg shadow-[#dfec2d]/30'
                                         : isDark
-                                            ? 'border-gray-700 bg-gray-900/30 hover:border-teal-500/50 hover:bg-gray-900/50'
-                                            : 'border-gray-300 bg-white/40 hover:border-teal-500/50 hover:bg-white/60'
+                                            ? 'border-gray-700 bg-gray-900/30 hover:border-[#dfec2d]/50 hover:bg-gray-900/50'
+                                            : 'border-gray-300 bg-white/40 hover:border-[#dfec2d]/50 hover:bg-white/60'
                                 }`}
                                 aria-label="Script upload dropzone"
                                 role="button"
@@ -634,7 +634,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                                             ease: "easeInOut"
                                         }}
                                         className={`w-20 h-20 mb-6 ${
-                                            isDark ? 'text-teal-400' : 'text-teal-600'
+                                            isDark ? 'text-[#dfec2d]' : 'text-[#b3e617]'
                                         }`}
                                     >
                                         <UploadCloudIcon />
@@ -705,8 +705,8 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                                     placeholder="INT. COFFEE SHOP - DAY&#10;&#10;A cozy neighborhood coffee shop buzzes with morning energy..."
                                     className={`w-full h-80 rounded-2xl p-6 text-base font-mono focus:outline-none focus:ring-2 transition-all backdrop-blur-sm ${
                                         isDark
-                                            ? 'bg-gray-900/50 border-2 border-gray-700 text-gray-300 placeholder-gray-600 focus:ring-teal-500 focus:border-teal-500'
-                                            : 'bg-white/60 border-2 border-gray-300 text-gray-800 placeholder-gray-500 focus:ring-teal-500 focus:border-teal-500'
+                                            ? 'bg-gray-900/50 border-2 border-gray-700 text-gray-300 placeholder-gray-600 focus:ring-[#dfec2d] focus:border-[#dfec2d]'
+                                            : 'bg-white/60 border-2 border-gray-300 text-gray-800 placeholder-gray-500 focus:ring-[#dfec2d] focus:border-[#dfec2d]'
                                     }`}
                                     aria-label="Paste script content"
                                 />
@@ -724,8 +724,8 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                                         onClick={() => setInputMode('upload')}
                                         className={`text-base font-semibold transition-colors ${
                                             isDark
-                                                ? 'text-gray-400 hover:text-teal-400'
-                                                : 'text-gray-600 hover:text-teal-600'
+                                                ? 'text-gray-400 hover:text-[#dfec2d]'
+                                                : 'text-gray-600 hover:text-[#b3e617]'
                                         }`}
                                     >
                                         ← or upload a file instead

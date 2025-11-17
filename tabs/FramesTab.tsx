@@ -231,7 +231,7 @@ const FramesTab: React.FC<{
         </div>
         <div className="flex items-center gap-2 text-xs">
           <div className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">{timecode(playhead)} / {timecode(totalDuration)}</div>
-          <TimelineButton onClick={onSave} className="bg-lime-700 hover:bg-lime-600 shadow-lg !py-1 !px-2">💾 Save Project</TimelineButton>
+          <TimelineButton onClick={onSave} className="bg-lime-700 hover:bg-#b3e617 shadow-lg !py-1 !px-2">💾 Save Project</TimelineButton>
         </div>
       </div>
 
@@ -287,7 +287,7 @@ const FramesTab: React.FC<{
             <div className="flex items-center justify-center gap-2 py-3 border-t border-zinc-800 bg-zinc-900/60">
               <TimelineButton onClick={() => setPlayhead(0)}>■ Stop</TimelineButton>
               <TimelineButton onClick={() => setPlayhead(playhead - 1)}>⏮ -1s</TimelineButton>
-              <TimelineButton onClick={() => setIsPlaying(p => !p)} className="bg-lime-700 hover:bg-lime-600">{isPlaying ? '⏸' : '▶'}</TimelineButton>
+              <TimelineButton onClick={() => setIsPlaying(p => !p)} className="bg-lime-700 hover:bg-#b3e617">{isPlaying ? '⏸' : '▶'}</TimelineButton>
               <TimelineButton onClick={() => setPlayhead(playhead + 1)}>+1s ⏭</TimelineButton>
               <div className="flex items-center gap-2 ml-4 text-sm"><span className="text-zinc-400">🔊</span><input type="range" min="0" max="100" defaultValue="80" className="w-32"/></div>
               <div className="flex items-center gap-2 ml-6 text-sm">
@@ -317,7 +317,7 @@ const FramesTab: React.FC<{
                     {/* Tracks */}
                     <div className="relative h-[calc(100%-2rem)]">
                         {/* Playhead line */}
-                        <div className="absolute top-0 bottom-0 w-0.5 bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.7)] z-20" style={{ left: `${playhead * 80 * zoom}px` }} />
+                        <div className="absolute top-0 bottom-0 w-0.5 bg-#dfec2d shadow-[0_0_8px_rgba(163,230,53,0.7)] z-20" style={{ left: `${playhead * 80 * zoom}px` }} />
                         {/* Video Track */}
                          <div className="h-1/2 border-b border-zinc-800 relative p-1">
                             {clips.map((clip) => {

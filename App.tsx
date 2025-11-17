@@ -165,7 +165,7 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void; isDark?: boolean }> = 
                             if (error) setError(null);
                         }}
                         placeholder="AIza..."
-                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-lime-500/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-lime-500/40'}`}
+                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-[#dfec2d]/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-[#dfec2d]/40'}`}
                         autoComplete="off"
                         spellCheck={false}
                     />
@@ -178,7 +178,7 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void; isDark?: boolean }> = 
 
                 <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                     By using this service, you agree to the Gemini API's terms and pricing. Learn more at{' '}
-                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-lime-400' : 'text-lime-600'} hover:underline`}>
+                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-[#dfec2d]' : 'text-[#dfec2d]'} hover:underline`}>
                         ai.google.dev/gemini-api/docs/billing
                     </a>.
                 </p>
@@ -252,7 +252,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   });
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
     // Will be overridden by userPreferences once loaded
-    return true;
+    return false; // Collapsed by default for full-screen elegance
   });
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
@@ -1117,7 +1117,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
             <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 border-4 border-t-transparent border-lime-500 rounded-full"
+                className="w-12 h-12 border-4 border-t-transparent border-[#dfec2d] rounded-full"
             />
         </div>
     );
@@ -1143,7 +1143,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           <div className="space-y-3">
             <button
               onClick={() => window.location.reload()}
-              className="w-full px-4 py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 transition-colors"
+              className="w-full px-4 py-2 bg-[#dfec2d] text-white rounded-lg hover:bg-[#b3e617] transition-colors"
             >
               Reload Application
             </button>
@@ -1165,7 +1165,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
             <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 border-4 border-t-transparent border-lime-500 rounded-full"
+                className="w-12 h-12 border-4 border-t-transparent border-[#dfec2d] rounded-full"
             />
         </div>
     );
@@ -1248,8 +1248,8 @@ const activePhase = TABS_CONFIG.find(section => section.tabs.some(tab => tab.id 
 
 return (
   <div className="relative flex min-h-screen overflow-hidden bg-[var(--color-background-primary)]">
-    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-lime-500/10 blur-3xl" />
-    <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-lime-400/10 blur-3xl" />
+    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[#dfec2d]/10 blur-3xl" />
+    <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-[#dfec2d]/10 blur-3xl" />
 
     <Sidebar
       activeTab={activeTab}
@@ -1264,7 +1264,7 @@ return (
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="sticky top-0 z-30 border-b border-[var(--color-border-color)] bg-[var(--color-background-primary)]/95 backdrop-blur-xl text-[var(--color-text-primary)]"
+        className="sticky top-0 z-30 border-b border-[var(--color-border-color)] bg-[var(--color-background-primary)]/95 backdrop-blur-xl text-[var(--color-text-primary)] shadow-lg shadow-black/10"
       >
         <div className="flex items-center justify-between gap-6 px-8 py-5">
           <div className="flex flex-col gap-2">
@@ -1284,7 +1284,7 @@ return (
               <motion.span
                 animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                className="inline-flex h-2 w-2 rounded-full bg-lime-400 shadow-[0_0_12px_rgba(163,230,53,0.8)]"
+                className="inline-flex h-2 w-2 rounded-full bg-[#dfec2d] shadow-[0_0_12px_rgba(223,236,45,0.8)]"
               />
               <span className="text-xs font-medium uppercase tracking-[0.3em]">Live Sync</span>
             </div>
@@ -1293,7 +1293,7 @@ return (
               onClick={() => setActiveTab('roadmap')}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-lime-400/40 hover:text-[var(--color-text-primary)]"
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-[#dfec2d]/40 hover:text-[var(--color-text-primary)] hover:shadow-lg hover:shadow-[#dfec2d]/20"
               title="Roadmap"
             >
               <RoadmapIcon className="h-5 w-5" />
@@ -1303,7 +1303,7 @@ return (
               onClick={toggleTheme}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-lime-400/40 hover:text-[var(--color-text-primary)]"
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-[#dfec2d]/40 hover:text-[var(--color-text-primary)] hover:shadow-lg hover:shadow-[#dfec2d]/20"
             >
               {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
               <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
@@ -1335,7 +1335,7 @@ return (
       </motion.header>
 
       <main className="relative flex-1 overflow-hidden bg-[var(--color-background-secondary)]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.06),_transparent_55%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(223,236,45,0.06),_transparent_55%)]" />
         <div className="relative h-full w-full overflow-y-auto">
           <div className="mx-auto w-full max-w-[1920px] px-8 py-10 min-h-full">
             <AnimatePresence mode="wait">

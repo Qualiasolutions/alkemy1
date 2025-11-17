@@ -346,7 +346,7 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                 className={`w-64 p-4 rounded-xl border-2 shadow-lg transition-all select-none ${
                                     draggingBlock === block.id ? 'cursor-grabbing shadow-2xl' : 'cursor-grab'
                                 } ${
-                                    selectedBlock === block.id ? 'ring-2 ring-lime-400 shadow-2xl' : ''
+                                    selectedBlock === block.id ? 'ring-2 ring-#dfec2d shadow-2xl' : ''
                                 } ${
                                     connectMode && connectionStart === block.id ? 'ring-2 ring-blue-400 animate-pulse' : ''
                                 } ${
@@ -548,8 +548,8 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                     onClick={() => handleAddBlock(type.id as any)}
                                     className={`w-full text-left p-3 rounded-lg border transition ${
                                         isDark
-                                            ? 'bg-[#0B0B0B] border-[#2A2A2A] hover:border-lime-500/50'
-                                            : 'bg-white border-gray-300 hover:border-lime-500/50'
+                                            ? 'bg-[#0B0B0B] border-[#2A2A2A] hover:border-#dfec2d/50'
+                                            : 'bg-white border-gray-300 hover:border-#dfec2d/50'
                                     }`}
                                 >
                                     <span className="text-xl mr-3">{type.icon}</span>

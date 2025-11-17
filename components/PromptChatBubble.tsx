@@ -110,11 +110,11 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
 
   return (
     <div className={`prompt-chat-bubble ${className}`}>
-      <div className="relative bg-gray-900/90 backdrop-blur-sm rounded-2xl border border-[#c8ff2f]/20 overflow-hidden">
+      <div className="relative bg-gray-900/90 backdrop-blur-sm rounded-2xl border border-[#dfec2d]/20 overflow-hidden">
         {/* Chat Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#c8ff2f]/10">
+        <div className="flex items-center justify-between p-4 border-b border-[#dfec2d]/10">
           <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-[#c8ff2f] rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-[#dfec2d] rounded-full animate-pulse"></div>
             <h3 className="text-white font-semibold text-sm">AI Refinement Assistant</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -158,7 +158,7 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.1 }}
                           onClick={() => handleSuggestedPrompt(suggestion)}
-                          className="text-left p-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#c8ff2f]/30 rounded-lg text-white/80 text-xs transition-all hover:scale-[1.02]"
+                          className="text-left p-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#dfec2d]/30 rounded-lg text-white/80 text-xs transition-all hover:scale-[1.02]"
                         >
                           {suggestion}
                         </motion.button>
@@ -177,7 +177,7 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
                     <div
                       className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
                         message.type === 'user'
-                          ? 'bg-gradient-to-r from-[#c8ff2f] to-[#b3e617] text-black font-medium'
+                          ? 'bg-gradient-to-r from-[#dfec2d] to-[#b3e617] text-black font-medium'
                           : message.text.includes('✨')
                           ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                           : 'bg-red-500/20 text-red-300 border border-red-500/30'
@@ -194,9 +194,9 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
         </AnimatePresence>
 
         {/* Input Area */}
-        <div className="p-4 border-t border-[#c8ff2f]/10">
+        <div className="p-4 border-t border-[#dfec2d]/10">
           <div className="relative group">
-            <div className="relative bg-gray-800/50 rounded-xl border border-[#c8ff2f]/20 focus-within:border-[#c8ff2f]/50 transition-all">
+            <div className="relative bg-gray-800/50 rounded-xl border border-[#dfec2d]/20 focus-within:border-[#dfec2d]/50 transition-all">
               <textarea
                 ref={textareaRef}
                 value={prompt}
@@ -217,7 +217,7 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
                 className={`absolute bottom-2 right-2 p-2 rounded-lg transition-all ${
                   isGenerating || !prompt.trim() || disabled
                     ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-[#c8ff2f] to-[#b3e617] text-black hover:shadow-lg hover:shadow-[#c8ff2f]/30'
+                    : 'bg-gradient-to-r from-[#dfec2d] to-[#b3e617] text-black hover:shadow-lg hover:shadow-[#dfec2d]/30'
                 }`}
               >
                 {isGenerating ? (
@@ -254,7 +254,7 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
             animate={{ opacity: 1, y: 0 }}
             className="absolute bottom-full left-0 right-0 mb-2 flex justify-center"
           >
-            <div className="bg-[#c8ff2f] text-black px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2">
+            <div className="bg-[#dfec2d] text-black px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2">
               <div className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin"></div>
               Refining your image...
             </div>

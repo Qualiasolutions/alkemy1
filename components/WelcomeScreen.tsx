@@ -39,7 +39,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       ></canvas>
 
       {/* Gradient Orbs for Depth */}
-      <div className="pointer-events-none absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-lime-500/20 blur-[128px] animate-pulse-soft" />
+      <div className="pointer-events-none absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-#dfec2d/20 blur-[128px] animate-pulse-soft" />
       <div className="pointer-events-none absolute bottom-0 right-1/4 h-96 w-96 rounded-full bg-teal-500/20 blur-[128px] animate-pulse-soft" style={{ animationDelay: '1s' }} />
 
       {/* Hero Content */}
@@ -52,12 +52,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-lime-500/20 bg-lime-500/5 px-4 py-2 text-sm backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-#dfec2d/20 bg-#dfec2d/5 px-4 py-2 text-sm backdrop-blur-sm">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lime-500 opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-lime-500"></span>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-#dfec2d opacity-75"></span>
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-#dfec2d"></span>
             </span>
-            <span className="text-lime-400 font-medium">Powered by Gemini 2.5 Pro, Imagen 3 & Veo 3.1</span>
+            <span className="text-#dfec2d font-medium">Powered by Gemini 2.5 Pro, Imagen 3 & Veo 3.1</span>
           </div>
         </motion.div>
 
@@ -69,7 +69,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           className="mb-6"
         >
           <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight">
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-lime-400 via-lime-500 to-teal-400 animate-pulse-soft">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-#dfec2d via-#dfec2d to-teal-400 animate-pulse-soft">
               Alkemy
             </span>
             <span className="block text-[var(--color-text-primary)] mt-2">
@@ -195,7 +195,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           {[
             {
               icon: (
-                <svg className="w-7 h-7 text-lime-400" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-7 h-7 text-#dfec2d" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
               ),
@@ -205,7 +205,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             },
             {
               icon: (
-                <svg className="w-7 h-7 text-lime-400" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-7 h-7 text-#dfec2d" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
               ),
@@ -215,7 +215,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             },
             {
               icon: (
-                <svg className="w-7 h-7 text-lime-400" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-7 h-7 text-#dfec2d" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                 </svg>
               ),
@@ -232,19 +232,19 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               whileHover={{ y: -8, scale: 1.02 }}
               className="group"
             >
-              <div className="glass rounded-2xl p-8 border border-[var(--color-border-color)] hover:border-lime-500/40 transition-all duration-300 h-full relative overflow-hidden">
+              <div className="glass rounded-2xl p-8 border border-[var(--color-border-color)] hover:border-#dfec2d/40 transition-all duration-300 h-full relative overflow-hidden">
                 {/* Gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-lime-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-br from-#dfec2d/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 <div className="relative">
                   <motion.div
-                    className="w-14 h-14 rounded-xl bg-lime-500/10 flex items-center justify-center mb-5 group-hover:bg-lime-500/20 transition-colors duration-300 shadow-lg shadow-lime-500/10"
+                    className="w-14 h-14 rounded-xl bg-#dfec2d/10 flex items-center justify-center mb-5 group-hover:bg-#dfec2d/20 transition-colors duration-300 shadow-lg shadow-#dfec2d/10"
                     whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
                     transition={{ duration: 0.5 }}
                   >
                     {feature.icon}
                   </motion.div>
-                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-3 group-hover:text-lime-400 transition-colors duration-300">
+                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-3 group-hover:text-#dfec2d transition-colors duration-300">
                     {feature.title}
                   </h3>
                   <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
