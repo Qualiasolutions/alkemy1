@@ -9,7 +9,17 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:update-status": "npm test && tsx scripts/update-status-from-tests.ts",
+    "bmad:sync": "tsx scripts/sync-bmad-status.ts",
+    "bmad:status": "tsx scripts/show-bmad-status.ts",
+    "bmad:validate": "tsx scripts/validate-bmad-drift.ts",
+    "bmad:report": "tsx scripts/generate-bmad-reports.ts",
+    "bmad:init": "tsx scripts/init-bmad-database.ts",
+    "prepare": "husky install",
+    "postinstall": "husky install",
+    "supabase:db-push": "npx supabase db push",
+    "supabase:migrate": "npx supabase migration up"
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.15.0",
@@ -33,6 +43,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "leva": "^0.9.35",
+    "lucide-react": "^0.553.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.5",

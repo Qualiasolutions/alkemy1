@@ -410,28 +410,28 @@ async def generate_ttm_video(
                 # Upload video
                 with open(output_path, 'rb') as f:
                     video_response = supabase_client.storage.from_(
-                        f"projects/{request.project_id}/ttm"
+                        "ttm-videos"
                     ).upload(
-                        f"{job_id}.mp4",
+                        f"{request.project_id}/{job_id}.mp4",
                         f.read(),
                         {"content-type": "video/mp4"}
                     )
                     video_url = supabase_client.storage.from_(
-                        f"projects/{request.project_id}/ttm"
-                    ).get_public_url(f"{job_id}.mp4")
+                        "ttm-videos"
+                    ).get_public_url(f"{request.project_id}/{job_id}.mp4")
 
                 # Upload thumbnail
                 with open(thumbnail_path, 'rb') as f:
                     thumb_response = supabase_client.storage.from_(
-                        f"projects/{request.project_id}/ttm"
+                        "ttm-videos"
                     ).upload(
-                        f"{job_id}_thumb.jpg",
+                        f"{request.project_id}/{job_id}_thumb.jpg",
                         f.read(),
                         {"content-type": "image/jpeg"}
                     )
                     thumbnail_url = supabase_client.storage.from_(
-                        f"projects/{request.project_id}/ttm"
-                    ).get_public_url(f"{job_id}_thumb.jpg")
+                        "ttm-videos"
+                    ).get_public_url(f"{request.project_id}/{job_id}_thumb.jpg")
             except Exception as e:
                 print(f"Supabase upload error: {e}")
 

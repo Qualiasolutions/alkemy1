@@ -23,6 +23,7 @@ import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
 import AnalyticsTab from './tabs/AnalyticsTab';
+import { BMADStatusTab } from './tabs/BMADStatusTab';
 import { ThreeDWorldsTab } from './tabs/3DWorldsTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
 import { analyzeScript } from './services/aiService';
@@ -1088,6 +1089,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
         return <ExportsTab timelineClips={timelineClips} />;
       case 'analytics':
         return <AnalyticsTab scriptAnalysis={scriptAnalysis} projectId={currentProject?.id || 'temp'} />;
+      case 'bmad_status':
+        return <BMADStatusTab />;
       case 'roadmap':
         return <RoadmapTab blocks={roadmapBlocks || []} onUpdateBlocks={setRoadmapBlocks} />;
       default:
