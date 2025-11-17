@@ -8,6 +8,7 @@ import { logAIUsage, USAGE_ACTIONS } from './usageService';
 import { isFluxApiAvailable, generateImageWithFlux, isFluxModelVariant, getFluxModelDisplayName, type FluxModelVariant } from './fluxService';
 import { trackGenerationMetrics, API_COST_ESTIMATES } from './analyticsService';
 import { networkDetection } from './networkDetection';
+import { generateImageWithTogether, generateVideoFromImageTogether, isTogetherApiAvailable, type TogetherImageModel, type TogetherVideoModel } from './togetherAIService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
@@ -561,7 +562,9 @@ export const generateStillVariants = async (
             const duration = Date.now() - startTime;
             const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
                                   model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                                  API_COST_ESTIMATES.image.imagen;
+                                  model === 'Flux Schnell' || model === 'Flux' ? API_COST_ESTIMATES.image.fluxSchnell :
+                                  model === 'Seedream 4.0' ? API_COST_ESTIMATES.image.seedream :
+                                  API_COST_ESTIMATES.image.nanoBanana;
 
             trackGenerationMetrics(
                 context?.projectId || 'temp',
@@ -579,7 +582,9 @@ export const generateStillVariants = async (
             const duration = Date.now() - startTime;
             const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
                                   model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                                  API_COST_ESTIMATES.image.imagen;
+                                  model === 'Flux Schnell' || model === 'Flux' ? API_COST_ESTIMATES.image.fluxSchnell :
+                                  model === 'Seedream 4.0' ? API_COST_ESTIMATES.image.seedream :
+                                  API_COST_ESTIMATES.image.nanoBanana;
 
             trackGenerationMetrics(
                 context?.projectId || 'temp',
@@ -832,6 +837,7 @@ export const refineVariant = async (
         throw new Error('Base image URL is required for refinement.');
     }
 
+        // Use Gemini Nano Banana for refinement
     const refinementModel = 'Gemini Nano Banana';
     const hasVisualReferences = true;
 
@@ -1143,32 +1149,101 @@ export const generateVisual = async (
     }
 
     const canUseGemini = prefersLiveGemini();
+    const canUseTogether = isTogetherApiAvailable();
 
-    // Normalize model labels - all models now route through Gemini API with different temperatures
-    // Flux and Flux Multi now use Gemini Flash Image (like Nano Banana)
-    const normalizedModel =
-        model === 'Gemini Nano Banana' || model === 'Flux' || model === 'Flux Kontext Max Multi'
-            ? 'Gemini Flash Image'
-            : model;
+    // Check if this is a Together.AI model
+    const isTogetherModel = model === 'Flux Schnell' || model === 'Flux' || model === 'Seedream 4.0';
+
+    if (isTogetherModel) {
+        // Route to Together.AI service
+        if (!canUseTogether) {
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+
+        console.log("[generateVisual] Using Together.AI for model:", model);
+
+        try {
+            const togetherModel: TogetherImageModel = model === 'Seedream 4.0' ? 'Seedream 4.0' : 'Flux Schnell';
+            const imageUrls = await generateImageWithTogether(
+                prompt,
+                togetherModel,
+                aspect_ratio,
+                onProgress,
+                1
+            );
+
+            if (imageUrls.length === 0) {
+                throw new Error('Together.AI returned no images');
+            }
+
+            const imageUrl = imageUrls[0];
+
+            // Upload to Supabase if context is available
+            if (context?.projectId && context?.userId && !imageUrl.startsWith('data:')) {
+                // For external URLs from Together.AI, convert to base64 first
+                try {
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const base64 = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const dataUrl = reader.result as string;
+                            const base64Data = dataUrl.split(',')[1];
+                            resolve(base64Data);
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+
+                    const fileName = `${model.replace(/\s+/g, '_')}_${aspect_ratio}_${seed}`;
+                    const { url: uploadedUrl, error } = await uploadImageToSupabase(
+                        base64,
+                        fileName,
+                        context.projectId,
+                        context.userId,
+                        {
+                            model: model,
+                            prompt: prompt.substring(0, 200),
+                            aspectRatio: aspect_ratio,
+                            generationType: 'image_generation_together',
+                            sceneId: context.sceneId,
+                            frameId: context.frameId,
+                            provider: 'Together.AI'
+                        }
+                    );
+
+                    if (!error) {
+                        return { url: uploadedUrl, fromFallback: false };
+                    }
+                } catch (uploadError) {
+                    console.warn('Failed to upload Together.AI image to Supabase:', uploadError);
+                }
+            }
+
+            return { url: imageUrl, fromFallback: false };
+        } catch (error) {
+            console.error('[generateVisual] Together.AI generation failed:', error);
+            if (shouldUseFallbackForError(error)) {
+                return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+            }
+            throw error;
+        }
+    }
+
+    // Normalize model labels for Gemini models
+    const normalizedModel = model === 'Gemini Nano Banana' ? 'Gemini Flash Image' : model;
 
     // Determine temperature based on model for creative variation
     let temperature: number | undefined = undefined;
     if (model === 'Gemini Nano Banana') {
         temperature = 0.7;  // Moderate variation
-    } else if (model === 'Flux') {
-        temperature = 0.9;  // More creative
-    } else if (model === 'Flux Kontext Max Multi') {
-        temperature = 1.0;  // Maximum variation
     }
-    // Imagen uses default temperature (undefined)
 
-    const fluxVariant: FluxModelVariant | null = null; // Disabled - using Gemini for all models
-    const shouldUseFluxApi = false; // Disabled - using Gemini for all models
+    const fluxVariant: FluxModelVariant | null = null; // Disabled - using Gemini/Together.AI
+    const shouldUseFluxApi = false; // Disabled - using Gemini/Together.AI
 
-    // When Imagen/other models have reference images, use Gemini Flash Image (multimodal)
-    const effectiveModel = (normalizedModel === 'Imagen' && reference_images.length > 0)
-        ? 'Gemini Flash Image'
-        : normalizedModel;
+    const effectiveModel = normalizedModel;
 
     if (!canUseGemini && !shouldUseFluxApi) {
         onProgress?.(100);
@@ -1284,113 +1359,14 @@ export const generateVisual = async (
             return { url: imageUrl, fromFallback: false };
         }
 
-        // === GEMINI API PATH (Imagen and Gemini Flash Image) ===
+        // === GEMINI API PATH (Gemini Flash Image for Nano Banana) ===
         const ai = requireGeminiClient();
 
         onProgress?.(10);
         await new Promise(res => setTimeout(res, 200));
         onProgress?.(30);
 
-        // Use Imagen API for Imagen model (when NO reference images)
-        if (normalizedModel === 'Imagen' && reference_images.length === 0) {
-            // Implement exponential backoff for rate limiting
-            let retryCount = 0;
-            const maxRetries = 3;
-            const baseDelay = 1000; // 1 second base delay
-
-            while (retryCount <= maxRetries) {
-                try {
-                    const response = await ai.models.generateImages({
-                        model: 'imagen-4.0-generate-001',
-                        prompt: prompt, // Use the fully constructed prompt directly
-                        config: {
-                            numberOfImages: 1,
-                            outputMimeType: 'image/jpeg',
-                            aspectRatio: aspect_ratio as any,
-                        },
-                    });
-
-                    // If successful, break out of retry loop
-                    if (response.generatedImages && response.generatedImages.length > 0) {
-                        const base64Image = response.generatedImages[0].image.imageBytes;
-
-                        // Log usage for analytics
-                        if (context?.userId && context?.projectId) {
-                            await logAIUsage(
-                                context.userId,
-                                USAGE_ACTIONS.IMAGE_GENERATION,
-                                undefined, // Token count not available for Imagen
-                                context.projectId,
-                                {
-                                    model: normalizedModel,
-                                    prompt: prompt.substring(0, 200),
-                                    aspectRatio: aspect_ratio,
-                                    hasReferenceImages: false,
-                                    sceneId: context.sceneId,
-                                    frameId: context.frameId,
-                                    retryCount: retryCount,
-                                }
-                            );
-                        }
-
-                        // Upload to Supabase Storage if context is available
-                        if (context?.projectId && context?.userId) {
-                            const fileName = `${model.replace(/\s+/g, '_')}_${aspect_ratio}_${seed}`;
-                            const { url, error } = await uploadImageToSupabase(
-                                base64Image,
-                                fileName,
-                                context.projectId,
-                                context.userId,
-                                {
-                                    model: normalizedModel,
-                                    prompt: prompt.substring(0, 200),
-                                    aspectRatio: aspect_ratio,
-                                    generationType: 'image_generation',
-                                    sceneId: context.sceneId,
-                                    frameId: context.frameId,
-                                    retryCount: retryCount,
-                                }
-                            );
-
-                            onProgress?.(100);
-                            if (error) {
-                                console.warn('Failed to upload to Supabase, returning base64:', error);
-                            }
-                            return { url, fromFallback: false };
-                        }
-
-                        onProgress?.(100);
-                        return { url: `data:image/jpeg;base64,${base64Image}`, fromFallback: false };
-                    }
-                } catch (imagenError) {
-                    const errorMessage = imagenError instanceof Error ? imagenError.message : String(imagenError);
-
-                    // Check if this is a rate limit error
-                    if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('Too Many Requests')) {
-                        retryCount++;
-
-                        if (retryCount <= maxRetries) {
-                            // Calculate exponential backoff delay
-                            const delay = baseDelay * Math.pow(2, retryCount - 1) + Math.random() * 1000; // Add jitter
-                            console.warn(`[Imagen] Rate limit hit, retry ${retryCount}/${maxRetries} in ${Math.round(delay)}ms`);
-
-                            // Wait before retrying
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            continue; // Try again
-                        } else {
-                            console.error(`[Imagen] Max retries (${maxRetries}) exceeded for rate limit`);
-                            throw new Error(`Imagen API rate limit exceeded after ${maxRetries} retries. Please wait a few minutes before trying again, or switch to a FLUX model which has more generous limits.`);
-                        }
-                    } else {
-                        // For non-rate-limit errors, throw immediately
-                        throw imagenError;
-                    }
-                }
-            }
-
-            throw new Error('Imagen generation failed after retries.');
-        
-        } else if (effectiveModel === 'Gemini Flash Image') {
+        if (effectiveModel === 'Gemini Flash Image') {
             const safetySettings = [
                 {
                     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
