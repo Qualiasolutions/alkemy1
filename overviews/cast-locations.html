@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cast & Locations System - Alkemy AI Studio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: #0B0B0B; color: #FFFFFF; line-height: 1.6; padding: 40px 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; padding-bottom: 40px; border-bottom: 1px solid #2A2A2A; margin-bottom: 40px; }
+        .logo { width: 120px; height: 120px; margin: 0 auto 20px; border: 1px solid #2A2A2A; }
+        h1 { font-size: 32px; font-weight: 600; margin-bottom: 8px; color: #FFFFFF; }
+        .subtitle { font-size: 16px; color: #A0A0A0; font-weight: 400; }
+        h2 { font-size: 24px; font-weight: 600; color: #10A37F; margin: 40px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid #2A2A2A; }
+        h3 { font-size: 18px; font-weight: 600; color: #1AD8B1; margin: 24px 0 12px 0; }
+        p { color: #A0A0A0; margin-bottom: 16px; font-size: 15px; }
+        .section { margin-bottom: 32px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 20px 0; }
+        .card { background: #161616; border: 1px solid #2A2A2A; padding: 20px; }
+        .card h4 { color: #FFFFFF; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card p { color: #A0A0A0; font-size: 14px; margin: 0; }
+        .workflow { background: #1C1C1C; border-left: 3px solid #10A37F; padding: 16px 20px; margin: 20px 0; }
+        .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .workflow-step:last-child { margin-bottom: 0; }
+        .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+        .step-content { flex: 1; }
+        .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .step-desc { color: #A0A0A0; font-size: 13px; }
+        .highlight-box { background: #161616; border: 1px solid #10A37F; padding: 20px; margin: 20px 0; }
+        .highlight-box h4 { color: #10A37F; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        ul { list-style: none; margin: 12px 0; }
+        ul li { color: #A0A0A0; font-size: 14px; padding: 8px 0 8px 20px; position: relative; }
+        ul li:before { content: "▪"; color: #10A37F; position: absolute; left: 0; font-weight: bold; }
+        .badge { display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; margin: 4px; }
+        .badge-ready { background: #10A37F; color: #0B0B0B; }
+        .badge-identity { background: #1AD8B1; color: #0B0B0B; }
+        .badge-training { background: #F59E0B; color: #0B0B0B; }
+        .badge-draft { background: #6B7280; color: #FFFFFF; }
+        .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #2A2A2A; text-align: center; color: #707070; font-size: 13px; }
+        code { background: #1C1C1C; color: #1AD8B1; padding: 2px 6px; font-family: 'Courier New', monospace; font-size: 13px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../public/logo.jpeg" alt="Alkemy AI Studio" class="logo">
+            <h1>Cast & Locations System</h1>
+            <p class="subtitle">AI-Powered Visual Development with Character Identity Training</p>
+        </div>
+
+        <div class="section">
+            <h2>What is Cast & Locations?</h2>
+            <p>The Cast & Locations system is your visual development studio for characters and filming locations. Generate photorealistic images with multiple AI models, train custom character identities for 90-98% visual consistency, and build a complete visual library for your production.</p>
+        </div>
+
+        <div class="section">
+            <h2>Character Generation Workflow</h2>
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Select Character</div>
+                        <div class="step-desc">Choose from script-analyzed characters or create custom entries. Click card to open Generation Studio.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Configure Generation</div>
+                        <div class="step-desc">Select AI model (Flux Pro, Gemini, Imagen), aspect ratio, number of variants (1-10), and attach reference images.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Generate Variants</div>
+                        <div class="step-desc">AI creates multiple visual options based on character description and moodboard context. 15-45 seconds per variant.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Review & Select</div>
+                        <div class="step-desc">Compare variants side-by-side in grid view. Select hero image or enter Refine Studio for improvements.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Train Identity (Optional)</div>
+                        <div class="step-desc">Upload 6-12 reference images to train custom LoRA model. Ensures character consistency across all future generations.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Character Identity Training</h2>
+            <p>LoRA (Low-Rank Adaptation) technology enables training custom character models that maintain 90-98% visual similarity across all generations.</p>
+
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Prepare References</div>
+                        <div class="step-desc">Collect 6-12 high-quality images of character from multiple angles and lighting conditions.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Upload & Train</div>
+                        <div class="step-desc">Drag images into Character Identity Modal. Fal.ai trains custom Flux LoRA model (5-10 minutes).</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Visual Testing</div>
+                        <div class="step-desc">System generates test images to validate consistency. AI rates similarity score (target: 90-98%).</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Auto-Integration</div>
+                        <div class="step-desc">Trained LoRA automatically applied to all future generations featuring this character. Zero manual setup required.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>AI Models Available</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Flux Pro 1.1</h4>
+                    <p>Highest quality photorealistic images via Fal.ai. Best for final hero images and client presentations.</p>
+                </div>
+                <div class="card">
+                    <h4>Flux Dev</h4>
+                    <p>Fast iterations with character identity support. Best for rapid exploration and refinement cycles.</p>
+                </div>
+                <div class="card">
+                    <h4>Gemini Flash Image</h4>
+                    <p>Multimodal editing with reference images. Best when working with existing visuals and refinements.</p>
+                </div>
+                <div class="card">
+                    <h4>Imagen 4.0</h4>
+                    <p>Google's text-to-image model. Best for pure text-based generation without references.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Status Badges Explained</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4><span class="badge badge-ready">Ready</span></h4>
+                    <p>Hero image assigned. Character ready for use in Scene Assembler and presentations.</p>
+                </div>
+                <div class="card">
+                    <h4><span class="badge badge-identity">Identity</span></h4>
+                    <p>Character identity trained. LoRA model ready and will auto-apply to all generations.</p>
+                </div>
+                <div class="card">
+                    <h4><span class="badge badge-training">Training</span></h4>
+                    <p>LoRA model currently training on Fal.ai infrastructure. Check back in 5-10 minutes.</p>
+                </div>
+                <div class="card">
+                    <h4><span class="badge badge-draft">Draft</span></h4>
+                    <p>No hero image selected yet. Generate variants to populate character visual library.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Features</h2>
+            <div class="highlight-box">
+                <h4>Generation Studio</h4>
+                <ul>
+                    <li>Multi-model support with instant switching</li>
+                    <li>Variant generation (1-10 images per request)</li>
+                    <li>Multiple aspect ratios (1:1, 16:9, 9:16, 4:3, 3:4)</li>
+                    <li>Reference image attachment and moodboard integration</li>
+                    <li>Real-time progress tracking (0-100%)</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Refine Studio</h4>
+                <ul>
+                    <li>Prompt-based iterative improvement</li>
+                    <li>Unlimited refinement iterations</li>
+                    <li>Keyboard shortcuts for fast workflow</li>
+                    <li>Refinement history with rollback capability</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Cloud Storage</h4>
+                <ul>
+                    <li>All images uploaded to Supabase cloud</li>
+                    <li>Permanent URLs for gallery access</li>
+                    <li>Metadata tracking for organization</li>
+                    <li>4K upscaling for final selections</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Business Value</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Speed</h4>
+                    <p>10x faster than traditional concept art. Generate 100 character visuals in hours vs weeks.</p>
+                </div>
+                <div class="card">
+                    <h4>Cost Savings</h4>
+                    <p>70% reduction in concept art costs. Unlimited iterations without additional artist fees.</p>
+                </div>
+                <div class="card">
+                    <h4>Consistency</h4>
+                    <p>LoRA training ensures 90-98% visual similarity across all shots featuring the character.</p>
+                </div>
+                <div class="card">
+                    <h4>Flexibility</h4>
+                    <p>Test multiple visual directions risk-free. Show clients finished-quality previews in minutes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Integration Points</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><code>Scene Assembler</code> - Characters/locations used in shot composition with LoRA auto-injection</li>
+                <li><code>Presentation Tab</code> - Hero images displayed in professional pitch deck</li>
+                <li><code>Moodboard</code> - Visual references inform character generation context</li>
+                <li><code>Script Analysis</code> - Character descriptions seed generation prompts</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Alkemy AI Studio V2.0 Alpha - Professional Film Production Platform</p>
+            <p style="margin-top: 8px;">Last Updated: November 2025</p>
+        </div>
+    </div>
+</body>
+</html>

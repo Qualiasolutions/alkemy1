@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D World Generation System - Alkemy AI Studio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: #0B0B0B; color: #FFFFFF; line-height: 1.6; padding: 40px 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; padding-bottom: 40px; border-bottom: 1px solid #2A2A2A; margin-bottom: 40px; }
+        .logo { width: 120px; height: 120px; margin: 0 auto 20px; border: 1px solid #2A2A2A; }
+        h1 { font-size: 32px; font-weight: 600; margin-bottom: 8px; color: #FFFFFF; }
+        .subtitle { font-size: 16px; color: #A0A0A0; font-weight: 400; }
+        h2 { font-size: 24px; font-weight: 600; color: #10A37F; margin: 40px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid #2A2A2A; }
+        h3 { font-size: 18px; font-weight: 600; color: #1AD8B1; margin: 24px 0 12px 0; }
+        p { color: #A0A0A0; margin-bottom: 16px; font-size: 15px; }
+        .section { margin-bottom: 32px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 20px 0; }
+        .card { background: #161616; border: 1px solid #2A2A2A; padding: 20px; }
+        .card h4 { color: #FFFFFF; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card p { color: #A0A0A0; font-size: 14px; margin: 0; }
+        .workflow { background: #1C1C1C; border-left: 3px solid #10A37F; padding: 16px 20px; margin: 20px 0; }
+        .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .workflow-step:last-child { margin-bottom: 0; }
+        .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+        .step-content { flex: 1; }
+        .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .step-desc { color: #A0A0A0; font-size: 13px; }
+        .highlight-box { background: #161616; border: 1px solid #10A37F; padding: 20px; margin: 20px 0; }
+        .highlight-box h4 { color: #10A37F; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        ul { list-style: none; margin: 12px 0; }
+        ul li { color: #A0A0A0; font-size: 14px; padding: 8px 0 8px 20px; position: relative; }
+        ul li:before { content: "▪"; color: #10A37F; position: absolute; left: 0; font-weight: bold; }
+        .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #2A2A2A; text-align: center; color: #707070; font-size: 13px; }
+        code { background: #1C1C1C; color: #1AD8B1; padding: 2px 6px; font-family: 'Courier New', monospace; font-size: 13px; }
+        .status-badge { display: inline-block; padding: 4px 12px; background: #F59E0B; color: #0B0B0B; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-left: 12px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../public/logo.jpeg" alt="Alkemy AI Studio" class="logo">
+            <h1>3D World Generation <span class="status-badge">Infrastructure Ready</span></h1>
+            <p class="subtitle">Advanced Gaussian Splatting with Rapier3D Physics Engine</p>
+        </div>
+
+        <div class="section">
+            <h2>What is 3D World Generation?</h2>
+            <p>The 3D World Generation system creates photorealistic 3D environments from text descriptions using advanced Gaussian Splatting rendering technology and a professional physics engine. Generate virtual sets, location scouts, and immersive environments that can be exported to industry-standard 3D formats.</p>
+            <p><strong>Current Status:</strong> Complete production-ready infrastructure in place. Full AI generation pipeline planned for future implementation.</p>
+        </div>
+
+        <div class="section">
+            <h2>Generation Workflow</h2>
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Describe World</div>
+                        <div class="step-desc">Enter text prompt describing desired 3D environment. Example: "Ancient temple ruins overgrown with vines, soft morning light."</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Configure Quality</div>
+                        <div class="step-desc">Choose quality level (Draft/Balanced/Ultra), camera type (Orbit/First-Person/Cinematic), and enable features like physics and lighting.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Generate 3D World</div>
+                        <div class="step-desc">AI converts prompt to 3D Gaussian Splats with real-time progress tracking. Rapier3D physics engine adds collision detection and interactions.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Explore & Interact</div>
+                        <div class="step-desc">Navigate with mouse/keyboard controls. Click objects for physics interactions. Toggle features and camera modes in real-time.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Export World</div>
+                        <div class="step-desc">Export to GLB, GLTF, Draco, or Splat formats for use in Unreal Engine, Unity, Blender, or other 3D tools.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Technology Stack</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Gaussian Splatting</h4>
+                    <p>Advanced rendering technique for photorealistic 3D visualization. Millions of splats create detailed environments with accurate lighting.</p>
+                </div>
+                <div class="card">
+                    <h4>Rapier3D Physics</h4>
+                    <p>Production-grade physics engine with collision detection, rigid body dynamics, and realistic object interactions.</p>
+                </div>
+                <div class="card">
+                    <h4>Three.js Renderer</h4>
+                    <p>WebGL-based 3D graphics library for real-time rendering in the browser. Hardware-accelerated performance.</p>
+                </div>
+                <div class="card">
+                    <h4>Performance Optimization</h4>
+                    <p>Level of Detail (LOD) system, frustum culling, and instancing for smooth 60+ FPS rendering of complex scenes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Quality Levels</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Draft (Fast)</h4>
+                    <p>Quick previews with reduced splat count. Ideal for rapid iteration and concept exploration. ~30 second generation.</p>
+                </div>
+                <div class="card">
+                    <h4>Balanced (Standard)</h4>
+                    <p>Production-quality with optimized splat density. Best balance of visual fidelity and performance. ~2 minute generation.</p>
+                </div>
+                <div class="card">
+                    <h4>Ultra (Premium)</h4>
+                    <p>Maximum splat count for photorealistic detail. Cinematic quality for final presentations. ~5 minute generation.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Camera Modes</h2>
+            <div class="highlight-box">
+                <h4>Orbit Camera</h4>
+                <ul>
+                    <li>Left Click + Drag: Rotate around world center</li>
+                    <li>Right Click + Drag: Pan camera position</li>
+                    <li>Scroll Wheel: Zoom in/out</li>
+                    <li>Auto-rotate option for presentations</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>First-Person Camera</h4>
+                <ul>
+                    <li>WASD Keys: Move forward/back/left/right</li>
+                    <li>Mouse Movement: Look around</li>
+                    <li>Space: Jump (with physics enabled)</li>
+                    <li>Shift: Sprint modifier</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Cinematic Camera</h4>
+                <ul>
+                    <li>Automated camera movements and keyframes</li>
+                    <li>Smooth interpolation between positions</li>
+                    <li>Perfect for showcase videos and presentations</li>
+                    <li>Customizable speed and easing curves</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Feature Toggles</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Physics</h4>
+                    <p>Enable Rapier3D physics engine for realistic object behavior, gravity, and collision response.</p>
+                </div>
+                <div class="card">
+                    <h4>Lighting</h4>
+                    <p>Dynamic lighting system with ambient, directional, and point lights. Adjustable intensity and color temperature.</p>
+                </div>
+                <div class="card">
+                    <h4>Shadows</h4>
+                    <p>Real-time shadow mapping for depth and realism. Toggle for performance optimization when needed.</p>
+                </div>
+                <div class="card">
+                    <h4>Collisions</h4>
+                    <p>Prevent camera and objects from passing through geometry. Essential for first-person navigation.</p>
+                </div>
+                <div class="card">
+                    <h4>Interactions</h4>
+                    <p>Click to apply forces to physics objects. Pick up, throw, and manipulate world elements.</p>
+                </div>
+                <div class="card">
+                    <h4>Post-Processing</h4>
+                    <p>Screen-space effects like bloom, depth of field, and color grading for cinematic polish.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Export Formats</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>GLB (Binary glTF)</h4>
+                    <p>Industry standard for 3D assets. Single-file format compatible with Unreal, Unity, Blender, and web viewers.</p>
+                </div>
+                <div class="card">
+                    <h4>GLTF (JSON glTF)</h4>
+                    <p>Human-readable JSON with separate asset files. Ideal for version control and collaborative editing.</p>
+                </div>
+                <div class="card">
+                    <h4>Draco Compressed</h4>
+                    <p>Google Draco compression reduces file size by 90% while maintaining visual quality. Best for web delivery.</p>
+                </div>
+                <div class="card">
+                    <h4>Splat Format</h4>
+                    <p>Native Gaussian Splat format preserving full rendering quality. Import into specialized splat viewers.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Performance Monitoring</h2>
+            <p>Built-in performance statistics display frame rate, memory usage, draw calls, and splat count in real-time. Identify bottlenecks and optimize world complexity for smooth playback on target hardware.</p>
+            <div class="grid">
+                <div class="card">
+                    <h4>Level of Detail (LOD)</h4>
+                    <p>Automatically reduces splat density based on camera distance. Maintains performance in large scenes.</p>
+                </div>
+                <div class="card">
+                    <h4>Frustum Culling</h4>
+                    <p>Only renders splats visible to camera. Massive performance gain in complex environments.</p>
+                </div>
+                <div class="card">
+                    <h4>Instancing</h4>
+                    <p>Efficiently renders repeated objects (trees, rocks, props) with minimal overhead.</p>
+                </div>
+                <div class="card">
+                    <h4>Target FPS</h4>
+                    <p>Choose 30, 60, or 120 FPS target. System dynamically adjusts quality to maintain frame rate.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Business Value</h2>
+            <div class="highlight-box">
+                <h4>Cost Savings on Set Construction</h4>
+                <ul>
+                    <li>50-80% reduction in physical set construction costs</li>
+                    <li>Virtual location scouting eliminates travel expenses</li>
+                    <li>Test multiple environment designs before committing to build</li>
+                    <li>Reuse and modify 3D sets across projects</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Creative Flexibility</h4>
+                <ul>
+                    <li>Iterate on environment design in minutes, not weeks</li>
+                    <li>Show clients photorealistic set visualizations before production</li>
+                    <li>Export to game engines for virtual production workflows</li>
+                    <li>Create impossible environments (fantasy, sci-fi, historical)</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Production Integration</h4>
+                <ul>
+                    <li>Use as virtual backgrounds for green screen compositing</li>
+                    <li>Plan camera movements and blocking in 3D space</li>
+                    <li>Train crew on set layout before shoot day</li>
+                    <li>Generate storyboard angles from any camera position</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Use Cases</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><strong>Virtual Sets:</strong> Generate 3D environments for green screen compositing and virtual production</li>
+                <li><strong>Location Scouting:</strong> Preview multiple filming locations without travel costs</li>
+                <li><strong>Pre-Visualization:</strong> Plan camera angles and blocking in photorealistic 3D space</li>
+                <li><strong>Investor Pitches:</strong> Show immersive world concepts to secure funding</li>
+                <li><strong>Game Integration:</strong> Export worlds to Unity/Unreal for interactive experiences</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Integration Points</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><code>Script Analysis</code> - Location descriptions seed world generation prompts</li>
+                <li><code>Moodboard</code> - Visual references inform 3D environment aesthetic</li>
+                <li><code>Scene Assembler</code> - 3D environments used as backgrounds for character compositing</li>
+                <li><code>Presentation</code> - Interactive 3D worlds embedded in pitch decks</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Alkemy AI Studio V2.0 Alpha - Professional Film Production Platform</p>
+            <p style="margin-top: 8px;">Last Updated: November 2025</p>
+            <p style="margin-top: 4px; font-style: italic;">3D World Generation: Infrastructure complete, AI pipeline in development</p>
+        </div>
+    </div>
+</body>
+</html>

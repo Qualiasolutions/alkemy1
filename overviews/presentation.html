@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation System - Alkemy AI Studio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: #0B0B0B; color: #FFFFFF; line-height: 1.6; padding: 40px 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; padding-bottom: 40px; border-bottom: 1px solid #2A2A2A; margin-bottom: 40px; }
+        .logo { width: 120px; height: 120px; margin: 0 auto 20px; border: 1px solid #2A2A2A; }
+        h1 { font-size: 32px; font-weight: 600; margin-bottom: 8px; color: #FFFFFF; }
+        .subtitle { font-size: 16px; color: #A0A0A0; font-weight: 400; }
+        h2 { font-size: 24px; font-weight: 600; color: #10A37F; margin: 40px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid #2A2A2A; }
+        h3 { font-size: 18px; font-weight: 600; color: #1AD8B1; margin: 24px 0 12px 0; }
+        p { color: #A0A0A0; margin-bottom: 16px; font-size: 15px; }
+        .section { margin-bottom: 32px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 20px 0; }
+        .card { background: #161616; border: 1px solid #2A2A2A; padding: 20px; }
+        .card h4 { color: #FFFFFF; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card p { color: #A0A0A0; font-size: 14px; margin: 0; }
+        .workflow { background: #1C1C1C; border-left: 3px solid #10A37F; padding: 16px 20px; margin: 20px 0; }
+        .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .workflow-step:last-child { margin-bottom: 0; }
+        .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+        .step-content { flex: 1; }
+        .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .step-desc { color: #A0A0A0; font-size: 13px; }
+        .highlight-box { background: #161616; border: 1px solid #10A37F; padding: 20px; margin: 20px 0; }
+        .highlight-box h4 { color: #10A37F; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        ul { list-style: none; margin: 12px 0; }
+        ul li { color: #A0A0A0; font-size: 14px; padding: 8px 0 8px 20px; position: relative; }
+        ul li:before { content: "▪"; color: #10A37F; position: absolute; left: 0; font-weight: bold; }
+        .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #2A2A2A; text-align: center; color: #707070; font-size: 13px; }
+        code { background: #1C1C1C; color: #1AD8B1; padding: 2px 6px; font-family: 'Courier New', monospace; font-size: 13px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../public/logo.jpeg" alt="Alkemy AI Studio" class="logo">
+            <h1>Presentation System</h1>
+            <p class="subtitle">Automatic Pitch Deck Generation from Production Assets</p>
+        </div>
+
+        <div class="section">
+            <h2>What is the Presentation System?</h2>
+            <p>The Presentation System automatically generates professional pitch decks from your production assets. Every element in your project - from moodboards to storyboards - updates the presentation in real-time, ensuring stakeholders always see the latest creative vision.</p>
+        </div>
+
+        <div class="section">
+            <h2>How It Works</h2>
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Asset Collection</div>
+                        <div class="step-desc">System automatically gathers assets from all tabs: script analysis, moodboards, character/location visuals, and scene storyboards.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Professional Layout</div>
+                        <div class="step-desc">Content arranged in production-standard format: Title & Logline, Visual References, Cast, Locations, Scene-by-Scene Storyboard.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Interactive Gallery</div>
+                        <div class="step-desc">Click any character or location to enter fullscreen image gallery. Navigate with arrow keys, view all generated variants.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Real-Time Updates</div>
+                        <div class="step-desc">Presentation automatically reflects changes. Add new moodboard images, refine characters, or update scenes - deck stays synchronized.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Presentation Sections</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Title & Logline</h4>
+                    <p>Project name and AI-generated one-sentence pitch extracted from script analysis.</p>
+                </div>
+                <div class="card">
+                    <h4>Moodboard</h4>
+                    <p>Visual references organized by category with AI summaries. Auto-carousel cycles through references every 4 seconds.</p>
+                </div>
+                <div class="card">
+                    <h4>Cast</h4>
+                    <p>Character cards with hero images, descriptions, and full image galleries. Hover for gallery access prompt.</p>
+                </div>
+                <div class="card">
+                    <h4>Locations</h4>
+                    <p>Filming location visuals with setting details. Click to view full resolution and explore all variants.</p>
+                </div>
+                <div class="card">
+                    <h4>Storyboard</h4>
+                    <p>Scene-by-scene shot breakdown with visual previews. Shows shot number, description, and hero frame image.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Interactive Features</h2>
+            <div class="highlight-box">
+                <h4>Fullscreen Image Gallery</h4>
+                <ul>
+                    <li>Click character or location card to enter gallery mode</li>
+                    <li>Arrow keys navigate through all generated variants</li>
+                    <li>ESC key returns to main presentation view</li>
+                    <li>Image counter shows current position (e.g., "3 / 12")</li>
+                    <li>Includes hero images, generations, and refined outputs</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Moodboard Carousel</h4>
+                <ul>
+                    <li>Auto-rotates through reference images every 4 seconds</li>
+                    <li>Smooth cross-fade transitions between references</li>
+                    <li>Displays AI-generated visual language summaries</li>
+                    <li>Supports both legacy moodboard and new template system</li>
+                    <li>Shows reference count per category</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Business Value</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Zero Design Time</h4>
+                    <p>No manual deck creation. Presentation auto-generates from production assets instantly.</p>
+                </div>
+                <div class="card">
+                    <h4>Always Up-to-Date</h4>
+                    <p>Changes to characters, locations, or scenes immediately reflected. No version control issues.</p>
+                </div>
+                <div class="card">
+                    <h4>Professional Quality</h4>
+                    <p>Production-standard layout with hero images, loglines, and comprehensive visual documentation.</p>
+                </div>
+                <div class="card">
+                    <h4>Interactive Experience</h4>
+                    <p>Stakeholders can explore full image galleries and see all creative options generated.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Use Cases</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><strong>Investor Pitches:</strong> Show comprehensive visual treatment in single scrollable deck</li>
+                <li><strong>Director Presentations:</strong> Walk producers through shot-by-shot visual plan</li>
+                <li><strong>Client Reviews:</strong> Share complete creative vision without manual deck assembly</li>
+                <li><strong>Studio Approvals:</strong> Present character designs, locations, and scene breakdown professionally</li>
+                <li><strong>Team Alignment:</strong> Give crew unified reference document with all production visuals</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Integration Points</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><code>Script Analysis</code> - Provides title, logline, and story summary</li>
+                <li><code>Moodboard</code> - Visual references with AI summaries displayed prominently</li>
+                <li><code>Cast & Locations</code> - Hero images and variant galleries for characters and locations</li>
+                <li><code>Scene Assembler</code> - Storyboard shots with descriptions and visual previews</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Alkemy AI Studio V2.0 Alpha - Professional Film Production Platform</p>
+            <p style="margin-top: 8px;">Last Updated: November 2025</p>
+        </div>
+    </div>
+</body>
+</html>

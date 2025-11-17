@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post-Production System - Alkemy AI Studio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: #0B0B0B; color: #FFFFFF; line-height: 1.6; padding: 40px 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; padding-bottom: 40px; border-bottom: 1px solid #2A2A2A; margin-bottom: 40px; }
+        .logo { width: 120px; height: 120px; margin: 0 auto 20px; border: 1px solid #2A2A2A; }
+        h1 { font-size: 32px; font-weight: 600; margin-bottom: 8px; color: #FFFFFF; }
+        .subtitle { font-size: 16px; color: #A0A0A0; font-weight: 400; }
+        h2 { font-size: 24px; font-weight: 600; color: #10A37F; margin: 40px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid #2A2A2A; }
+        h3 { font-size: 18px; font-weight: 600; color: #1AD8B1; margin: 24px 0 12px 0; }
+        p { color: #A0A0A0; margin-bottom: 16px; font-size: 15px; }
+        .section { margin-bottom: 32px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 20px 0; }
+        .card { background: #161616; border: 1px solid #2A2A2A; padding: 20px; }
+        .card h4 { color: #FFFFFF; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card p { color: #A0A0A0; font-size: 14px; margin: 0; }
+        .workflow { background: #1C1C1C; border-left: 3px solid #10A37F; padding: 16px 20px; margin: 20px 0; }
+        .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+        .workflow-step:last-child { margin-bottom: 0; }
+        .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+        .step-content { flex: 1; }
+        .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .step-desc { color: #A0A0A0; font-size: 13px; }
+        .highlight-box { background: #161616; border: 1px solid #10A37F; padding: 20px; margin: 20px 0; }
+        .highlight-box h4 { color: #10A37F; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        ul { list-style: none; margin: 12px 0; }
+        ul li { color: #A0A0A0; font-size: 14px; padding: 8px 0 8px 20px; position: relative; }
+        ul li:before { content: "▪"; color: #10A37F; position: absolute; left: 0; font-weight: bold; }
+        .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #2A2A2A; text-align: center; color: #707070; font-size: 13px; }
+        code { background: #1C1C1C; color: #1AD8B1; padding: 2px 6px; font-family: 'Courier New', monospace; font-size: 13px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../public/logo.jpeg" alt="Alkemy AI Studio" class="logo">
+            <h1>Post-Production System</h1>
+            <p class="subtitle">Real-Time Color Grading with Professional Video Scopes</p>
+        </div>
+
+        <div class="section">
+            <h2>What is Post-Production?</h2>
+            <p>The Post-Production system brings professional color grading and visual effects directly into the browser. Upload video footage and apply real-time color corrections with industry-standard tools like waveform monitors, vectorscopes, and RGB histograms - all without expensive software like DaVinci Resolve.</p>
+        </div>
+
+        <div class="section">
+            <h2>Color Grading Workflow</h2>
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Upload Source Video</div>
+                        <div class="step-desc">Drag and drop video file or click to browse. Supports all standard video formats (MP4, MOV, WebM).</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Choose Preset or Customize</div>
+                        <div class="step-desc">Apply cinematic presets (Noir, Vintage, Bleach, Warm) or manually adjust 7 color parameters with precision sliders.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Real-Time Preview</div>
+                        <div class="step-desc">Graded preview updates instantly via canvas rendering. See changes frame-by-frame or during playback.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Monitor Scopes</div>
+                        <div class="step-desc">Professional video scopes (Waveform, Vectorscope, Histogram) analyze exposure, color distribution, and contrast in real-time.</div>
+                    </div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Export Frame</div>
+                        <div class="step-desc">Export graded still frames as PNG. Full video export planned with FFmpeg.wasm integration.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Color Grading Parameters</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Exposure</h4>
+                    <p>Adjusts overall brightness. Range -1 to +1. Affects all pixels uniformly across the image.</p>
+                </div>
+                <div class="card">
+                    <h4>Contrast</h4>
+                    <p>Controls difference between light and dark areas. Increases depth and visual separation.</p>
+                </div>
+                <div class="card">
+                    <h4>Saturation</h4>
+                    <p>Intensity of colors. -1 removes all color (grayscale), +1 maximizes color vibrancy.</p>
+                </div>
+                <div class="card">
+                    <h4>Temperature</h4>
+                    <p>Shifts color toward warm (orange) or cool (blue). Simulates different lighting conditions.</p>
+                </div>
+                <div class="card">
+                    <h4>Tint</h4>
+                    <p>Adjusts magenta/green balance. Fine-tunes color cast for accurate skin tones.</p>
+                </div>
+                <div class="card">
+                    <h4>Highlights</h4>
+                    <p>Targets bright pixels (luminance >180). Recover blown-out areas or enhance brightness.</p>
+                </div>
+                <div class="card">
+                    <h4>Shadows</h4>
+                    <p>Targets dark pixels (luminance <75). Lift shadows or deepen blacks for mood.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Cinematic Presets</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Cinematic</h4>
+                    <p>Subtle warm tones with lifted shadows and enhanced contrast. Classic film look for dramas.</p>
+                </div>
+                <div class="card">
+                    <h4>Noir</h4>
+                    <p>High contrast black and white with crushed shadows. Perfect for mystery and crime genres.</p>
+                </div>
+                <div class="card">
+                    <h4>Vintage</h4>
+                    <p>Desaturated warm tones with lifted blacks. Nostalgic 1970s aesthetic.</p>
+                </div>
+                <div class="card">
+                    <h4>Bleach Bypass</h4>
+                    <p>Reduced contrast with boosted saturation and highlights. Modern action film aesthetic.</p>
+                </div>
+                <div class="card">
+                    <h4>Warm</h4>
+                    <p>Strong orange temperature shift with enhanced saturation. Sunset and golden hour feel.</p>
+                </div>
+                <div class="card">
+                    <h4>None (Reset)</h4>
+                    <p>Resets all parameters to 0. Returns to original ungraded footage.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Professional Video Scopes</h2>
+            <h3>Waveform Monitor</h3>
+            <p>Displays luminance values across the horizontal axis of the image. Vertical position represents brightness (0-255). Use to check exposure balance and ensure highlights/shadows stay within broadcast-safe ranges.</p>
+
+            <h3>Vectorscope</h3>
+            <p>Shows color distribution in UV color space. Center represents neutral gray, distance from center indicates saturation, angle represents hue. Use to verify accurate skin tones and identify color casts.</p>
+
+            <h3>RGB Histogram</h3>
+            <p>Three overlaid histograms (red, green, blue) showing pixel distribution across tonal ranges. Left side is shadows, right side is highlights. Use to identify clipping and ensure full tonal range utilization.</p>
+        </div>
+
+        <div class="section">
+            <h2>Key Features</h2>
+            <div class="highlight-box">
+                <h4>Real-Time Processing</h4>
+                <ul>
+                    <li>Canvas-based GPU-accelerated rendering</li>
+                    <li>Instant preview updates during video playback</li>
+                    <li>Frame-accurate grading when paused or seeking</li>
+                    <li>Toggle scopes visibility for focused color work</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Professional Workflow</h4>
+                <ul>
+                    <li>Precision sliders with 0.01 step increments</li>
+                    <li>Numeric value display next to each parameter</li>
+                    <li>One-click preset application with instant reset</li>
+                    <li>Scopes update in sync with playhead position</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Business Value</h2>
+            <div class="grid">
+                <div class="card">
+                    <h4>Eliminates DaVinci Resolve</h4>
+                    <p>No expensive software licenses or training required. Professional grading in the browser.</p>
+                </div>
+                <div class="card">
+                    <h4>Instant Previews</h4>
+                    <p>See color changes immediately. No render time or export delay for client reviews.</p>
+                </div>
+                <div class="card">
+                    <h4>Accessible Anywhere</h4>
+                    <p>Web-based system works on any device. Share graded previews with stakeholders instantly.</p>
+                </div>
+                <div class="card">
+                    <h4>Learning Tool</h4>
+                    <p>Video scopes provide professional feedback. Understand color theory through real-time visualization.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Planned Enhancements</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><strong>Full Video Export:</strong> FFmpeg.wasm integration for rendering complete graded videos</li>
+                <li><strong>Timeline Editing:</strong> Multi-clip timeline with transitions and composite shots</li>
+                <li><strong>LUT Support:</strong> Import and apply industry-standard lookup tables</li>
+                <li><strong>Curves Control:</strong> Advanced tonal mapping with RGB curves interface</li>
+                <li><strong>Masking & Tracking:</strong> Localized color corrections with power windows</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Integration Points</h2>
+            <ul style="list-style-position: inside; color: #A0A0A0; font-size: 14px; line-height: 2;">
+                <li><code>Scene Assembler</code> - Animated clips transferred for color grading and final export</li>
+                <li><code>Exports Tab</code> - Graded videos delivered to clients with render metadata</li>
+                <li><code>Analytics</code> - Processing time and export statistics tracked</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Alkemy AI Studio V2.0 Alpha - Professional Film Production Platform</p>
+            <p style="margin-top: 8px;">Last Updated: November 2025</p>
+        </div>
+    </div>
+</body>
+</html>
