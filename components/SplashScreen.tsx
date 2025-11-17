@@ -71,7 +71,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
                                     delay: Math.random() * 2,
                                 }}
                                 className={`absolute w-1 h-1 rounded-full ${
-                                    isDark ? 'bg-teal-500' : 'bg-teal-600'
+                                    isDark ? 'bg-[#dfec2d]' : 'bg-[#dfec2d]'
                                 }`}
                             />
                         ))}
@@ -85,7 +85,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
                             transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
                             className="mb-8"
                         >
-                            <AlkemyLoadingIcon className={`w-24 h-24 ${isDark ? 'text-teal-500' : 'text-teal-600'}`} />
+                            <AlkemyLoadingIcon className={`w-24 h-24 ${isDark ? 'text-[#dfec2d]' : 'text-[#dfec2d]'}`} />
                         </motion.div>
 
                         <motion.h1
@@ -115,8 +115,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
                                     transition={{ duration: 0.1, ease: 'linear' }}
                                     className={`h-full rounded-full ${
                                         isDark
-                                            ? 'bg-gradient-to-r from-teal-500 to-teal-400'
-                                            : 'bg-gradient-to-r from-teal-600 to-teal-500'
+                                            ? 'bg-gradient-to-r from-[#dfec2d] to-[#dfec2d]'
+                                            : 'bg-gradient-to-r from-[#dfec2d] to-[#dfec2d]'
                                     }`}
                                 />
                             </div>
@@ -133,7 +133,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
                     {/* Glow effect */}
                     <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 ${
-                        isDark ? 'bg-teal-500/10' : 'bg-teal-600/15'
+                        isDark ? 'bg-[#dfec2d]/10' : 'bg-[#dfec2d]/15'
                     } rounded-full blur-3xl pointer-events-none`} />
                 </motion.div>
             )}

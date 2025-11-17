@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import Button from '../components/Button';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -104,23 +105,24 @@ const HomePage = () => {
 
   return (
     <div className='min-h-screen relative overflow-hidden'>
-      {/* Animated Gradient Background */}
-      <div className='absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-950'>
+      {/* Black Background */}
+      <div className='absolute inset-0 bg-black'>
         {/* Animated gradient orbs */}
-        <div className='absolute top-1/4 -left-20 w-96 h-96 bg-lime-500/10 rounded-full blur-3xl animate-pulse-soft'></div>
-        <div className='absolute bottom-1/4 -right-20 w-96 h-96 bg-lime-400/10 rounded-full blur-3xl animate-pulse-soft' style={{ animationDelay: '1s' }}></div>
-        <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-lime-500/5 rounded-full blur-3xl animate-pulse-soft' style={{ animationDelay: '2s' }}></div>
+        <div className='absolute top-1/4 -left-20 w-96 h-96 bg-[#dfec2d]/10 rounded-full blur-3xl animate-pulse-soft'></div>
+        <div className='absolute bottom-1/4 -right-20 w-96 h-96 bg-[#dfec2d]/10 rounded-full blur-3xl animate-pulse-soft' style={{ animationDelay: '1s' }}></div>
+        <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#dfec2d]/5 rounded-full blur-3xl animate-pulse-soft' style={{ animationDelay: '2s' }}></div>
       </div>
 
       {/* Sign Out Button (if authenticated) */}
       {supabaseConfigured && isAuthenticated && (
         <div className='absolute top-6 right-6 z-40'>
-          <button
+          <Button
             onClick={handleSignOut}
-            className='px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-all backdrop-blur-sm border border-white/20'
+            variant='secondary'
+            size='md'
           >
             Sign Out
-          </button>
+          </Button>
         </div>
       )}
 
@@ -137,13 +139,15 @@ const HomePage = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className='mb-12'
+            className='mb-12 flex justify-center'
           >
-            <img
-              src='/logo.jpeg'
-              alt='Alkemy AI Studio'
-              className='w-48 h-48 mx-auto rounded-2xl shadow-2xl shadow-lime-500/20 border border-lime-500/20'
-            />
+            <div className='w-64 h-64 bg-black rounded-2xl shadow-2xl shadow-[#dfec2d]/20 border border-[#dfec2d]/20 flex items-center justify-center p-4'>
+              <img
+                src='/logo.jpeg'
+                alt='Alkemy AI Studio'
+                className='w-full h-full object-contain'
+              />
+            </div>
           </motion.div>
 
           {/* Title */}
@@ -151,7 +155,7 @@ const HomePage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className='text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-white via-lime-100 to-lime-200 bg-clip-text text-transparent'
+            className='text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-white via-[#dfec2d] to-[#dfec2d] bg-clip-text text-transparent'
           >
             Alkemy AI Studio
           </motion.h1>
@@ -185,35 +189,38 @@ const HomePage = () => {
             >
               {supabaseConfigured ? (
                 <>
-                  <button
+                  <Button
                     onClick={() => {
                       setAuthMode('signin');
                       setShowAuthModal(true);
                     }}
-                    className='group relative px-12 py-5 bg-white/5 hover:bg-white/10 text-white font-semibold text-lg rounded-xl transition-all transform hover:scale-105 backdrop-blur-sm border-2 border-white/20 hover:border-lime-500/50 shadow-xl min-w-[200px]'
+                    variant='secondary'
+                    size='lg'
+                    className='min-w-[200px]'
                   >
-                    <span className='relative z-10'>Sign In</span>
-                    <div className='absolute inset-0 rounded-xl bg-lime-500/0 group-hover:bg-lime-500/5 transition-all'></div>
-                  </button>
-                  <button
+                    Sign In
+                  </Button>
+                  <Button
                     onClick={() => {
                       setAuthMode('signup');
                       setShowAuthModal(true);
                     }}
-                    className='group relative px-12 py-5 bg-lime-500 hover:bg-lime-400 text-black font-bold text-lg rounded-xl transition-all transform hover:scale-105 shadow-2xl shadow-lime-500/30 hover:shadow-lime-500/50 min-w-[200px]'
+                    variant='primary'
+                    size='lg'
+                    className='min-w-[200px]'
                   >
-                    <span className='relative z-10'>Sign Up</span>
-                    <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-lime-400/50 to-lime-600/50 opacity-0 group-hover:opacity-100 transition-opacity blur'></div>
-                  </button>
+                    Sign Up
+                  </Button>
                 </>
               ) : (
-                <button
+                <Button
                   onClick={() => navigate('/app')}
-                  className='group relative px-12 py-5 bg-lime-500 hover:bg-lime-400 text-black font-bold text-lg rounded-xl transition-all transform hover:scale-105 shadow-2xl shadow-lime-500/30 hover:shadow-lime-500/50'
+                  variant='primary'
+                  size='lg'
+                  className='px-12'
                 >
-                  <span className='relative z-10'>Launch Studio</span>
-                  <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-lime-400/50 to-lime-600/50 opacity-0 group-hover:opacity-100 transition-opacity blur'></div>
-                </button>
+                  Launch Studio
+                </Button>
               )}
             </motion.div>
           ) : (
@@ -222,13 +229,14 @@ const HomePage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9, duration: 0.5 }}
             >
-              <button
+              <Button
                 onClick={() => navigate('/app')}
-                className='group relative px-16 py-6 bg-lime-500 hover:bg-lime-400 text-black font-bold text-xl rounded-xl transition-all transform hover:scale-105 shadow-2xl shadow-lime-500/30 hover:shadow-lime-500/50'
+                variant='primary'
+                size='lg'
+                className='px-16 py-6 text-xl'
               >
-                <span className='relative z-10'>Open Studio</span>
-                <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-lime-400/50 to-lime-600/50 opacity-0 group-hover:opacity-100 transition-opacity blur'></div>
-              </button>
+                Open Studio
+              </Button>
             </motion.div>
           )}
 
@@ -263,7 +271,7 @@ const HomePage = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className='bg-gray-900/95 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full mx-4 border border-lime-500/20 shadow-2xl shadow-lime-500/10'
+            className='bg-gray-900/95 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full mx-4 border border-[#dfec2d]/20 shadow-2xl shadow-[#dfec2d]/10'
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className='text-3xl font-bold text-white mb-2'>
@@ -282,7 +290,7 @@ const HomePage = () => {
                   type='email'
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className='w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 transition-all'
+                  className='w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#dfec2d] focus:ring-2 focus:ring-[#dfec2d]/20 transition-all'
                   placeholder='you@example.com'
                   required
                 />
@@ -296,7 +304,7 @@ const HomePage = () => {
                   type='password'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className='w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 transition-all'
+                  className='w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#dfec2d] focus:ring-2 focus:ring-[#dfec2d]/20 transition-all'
                   required
                   minLength={6}
                   placeholder='Minimum 6 characters'
@@ -313,16 +321,19 @@ const HomePage = () => {
                 </motion.div>
               )}
 
-              <button
+              <Button
                 type='submit'
                 disabled={isSigningIn || isSigningUp}
-                className='w-full py-4 bg-lime-500 hover:bg-lime-400 text-black font-bold text-lg rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] shadow-lg shadow-lime-500/30 hover:shadow-lime-500/50'
+                variant='primary'
+                size='lg'
+                fullWidth
+                isLoading={isSigningIn || isSigningUp}
               >
                 {authMode === 'signin'
                   ? (isSigningIn ? 'Signing In...' : 'Sign In')
                   : (isSigningUp ? 'Creating Account...' : 'Create Account')
                 }
-              </button>
+              </Button>
             </form>
 
             <div className='mt-6 text-center'>
@@ -331,7 +342,7 @@ const HomePage = () => {
                   setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
                   setAuthError(null);
                 }}
-                className='text-lime-400 hover:text-lime-300 text-sm font-medium transition-colors'
+                className='text-[#dfec2d] hover:text-[#dfec2d]/80 text-sm font-medium transition-colors'
               >
                 {authMode === 'signin'
                   ? "Don't have an account? Create one"
