@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Users, Zap, Palette, CreditCard, Share2, ArrowRight, Play, Sparkles } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { supabase, isSupabaseConfigured } from '../services/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import Button from '../components/Button';
+import AuthModal from '@/components/auth/AuthModal';
+import { isSupabaseConfigured } from '@/services/supabase';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -11,364 +14,321 @@ const HomePage = () => {
   const authContext = supabaseConfigured ? useAuth() : null;
   const { user, isAuthenticated, signOut } = authContext || { user: null, isAuthenticated: false, signOut: async () => {} };
 
-  const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isSigningUp, setIsSigningUp] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login');
 
-  const handleSignIn = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    if (!email || !password || email.trim() === '' || password.trim() === '') {
-      setAuthError('Email and password are required');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setAuthError('Please enter a valid email address');
-      return;
-    }
-
-    if (password.length < 6) {
-      setAuthError('Password must be at least 6 characters long');
-      return;
-    }
-
-    setIsSigningIn(true);
-    setAuthError(null);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) throw error;
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
       navigate('/app');
-    } catch (error: any) {
-      setAuthError(error.message || 'Failed to sign in');
-    } finally {
-      setIsSigningIn(false);
+    } else if (supabaseConfigured) {
+      setAuthMode('register');
+      setShowAuthModal(true);
+    } else {
+      navigate('/app');
     }
   };
 
-  const handleSignUp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    if (!email || !password || email.trim() === '' || password.trim() === '') {
-      setAuthError('Email and password are required');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setAuthError('Please enter a valid email address');
-      return;
-    }
-
-    if (password.length < 6) {
-      setAuthError('Password must be at least 6 characters long');
-      return;
-    }
-
-    setIsSigningUp(true);
-    setAuthError(null);
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) throw error;
-
-      setAuthError(null);
-      alert('Check your email to confirm your account!');
-      setShowAuthModal(false);
-    } catch (error: any) {
-      setAuthError(error.message || 'Failed to sign up');
-    } finally {
-      setIsSigningUp(false);
-    }
+  const handleSignIn = () => {
+    setAuthMode('login');
+    setShowAuthModal(true);
   };
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    navigate('/app');
   };
 
   return (
-    <div className='min-h-screen relative overflow-hidden'>
-      {/* Black Background */}
-      <div className='absolute inset-0 bg-black'>
-        {/* Animated gradient orbs */}
-        <div className='absolute top-1/4 -left-20 w-96 h-96 bg-[#dfec2d]/10 rounded-full blur-3xl animate-pulse-soft'></div>
-        <div className='absolute bottom-1/4 -right-20 w-96 h-96 bg-[#dfec2d]/10 rounded-full blur-3xl animate-pulse-soft' style={{ animationDelay: '1s' }}></div>
-        <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#dfec2d]/5 rounded-full blur-3xl animate-pulse-soft' style={{ animationDelay: '2s' }}></div>
-      </div>
-
-      {/* Sign Out Button (if authenticated) */}
-      {supabaseConfigured && isAuthenticated && (
-        <div className='absolute top-6 right-6 z-40'>
-          <Button
-            onClick={handleSignOut}
-            variant='secondary'
-            size='md'
-          >
-            Sign Out
-          </Button>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className='relative z-10 min-h-screen flex flex-col items-center justify-center px-4'>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className='text-center max-w-4xl'
-        >
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className='mb-12 flex justify-center'
-          >
-            <div className='w-64 h-64 bg-black rounded-2xl shadow-2xl shadow-[#dfec2d]/20 border border-[#dfec2d]/20 flex items-center justify-center p-4'>
-              <img
-                src='/logo.jpeg'
-                alt='Alkemy AI Studio'
-                className='w-full h-full object-contain'
-              />
+    <div className="min-h-screen bg-black text-white overflow-hidden">
+      {/* Navigation Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-black/50 border-b border-gray-800">
+        <nav className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#dfec2d] to-[#c4d319] rounded-lg font-bold text-black text-xl">
+                A
+              </div>
+              <span className="text-xl font-bold">Alkemy Studio</span>
             </div>
-          </motion.div>
 
-          {/* Title */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className='text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-white via-[#dfec2d] to-[#dfec2d] bg-clip-text text-transparent'
-          >
-            Alkemy AI Studio
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className='text-2xl md:text-3xl text-gray-300 mb-4'
-          >
-            Next-Gen Film Production
-          </motion.p>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
-            className='text-lg md:text-xl text-gray-400 mb-16'
-          >
-            Powered by Artificial Intelligence
-          </motion.p>
-
-          {/* CTA Buttons */}
-          {!isAuthenticated ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.5 }}
-              className='flex flex-col sm:flex-row gap-6 justify-center items-center'
-            >
-              {supabaseConfigured ? (
+            <div className="flex items-center gap-4">
+              {supabaseConfigured && isAuthenticated ? (
                 <>
                   <Button
-                    onClick={() => {
-                      setAuthMode('signin');
-                      setShowAuthModal(true);
-                    }}
-                    variant='secondary'
-                    size='lg'
-                    className='min-w-[200px]'
+                    onClick={() => navigate('/app')}
+                    className="bg-[#dfec2d] text-black hover:bg-[#c4d319] font-semibold"
+                  >
+                    Open Studio
+                  </Button>
+                  <Button
+                    onClick={() => signOut()}
+                    variant="ghost"
+                    className="text-gray-400 hover:text-white"
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              ) : supabaseConfigured ? (
+                <>
+                  <Button
+                    onClick={handleSignIn}
+                    variant="ghost"
+                    className="text-gray-400 hover:text-white"
                   >
                     Sign In
                   </Button>
                   <Button
-                    onClick={() => {
-                      setAuthMode('signup');
-                      setShowAuthModal(true);
-                    }}
-                    variant='primary'
-                    size='lg'
-                    className='min-w-[200px]'
+                    onClick={handleGetStarted}
+                    className="bg-[#dfec2d] text-black hover:bg-[#c4d319] font-semibold"
                   >
-                    Sign Up
+                    Get Started
                   </Button>
                 </>
               ) : (
                 <Button
                   onClick={() => navigate('/app')}
-                  variant='primary'
-                  size='lg'
-                  className='px-12'
+                  className="bg-[#dfec2d] text-black hover:bg-[#c4d319] font-semibold"
                 >
                   Launch Studio
                 </Button>
               )}
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.5 }}
-            >
-              <Button
-                onClick={() => navigate('/app')}
-                variant='primary'
-                size='lg'
-                className='px-16 py-6 text-xl'
-              >
-                Open Studio
-              </Button>
-            </motion.div>
-          )}
+            </div>
+          </div>
+        </nav>
+      </header>
 
-          {/* Footer Text */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1, duration: 0.5 }}
-            className='mt-20 text-gray-500 text-sm'
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 px-6">
+        {/* Animated background gradient */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#dfec2d]/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-60 -left-40 w-80 h-80 bg-[#dfec2d]/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+
+        <div className="container mx-auto max-w-6xl relative z-10">
+          <div className="text-center space-y-6">
+            {/* Badge */}
+            <div className="flex justify-center">
+              <Badge variant="outline" className="border-[#dfec2d]/30 text-[#dfec2d] px-4 py-1">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Powered by Gemini 2.5, Imagen 4 & Veo 3.1
+              </Badge>
+            </div>
+
+            {/* Main heading */}
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">
+              <span className="block">AI-POWERED</span>
+              <span className="block text-[#dfec2d] drop-shadow-[0_0_30px_rgba(223,236,45,0.5)]">
+                FILM PRODUCTION
+              </span>
+              <span className="block">MADE SIMPLE</span>
+            </h1>
+
+            {/* Subheading */}
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              From script analysis to frame generation with character consistency.
+              Alkemy transforms your creative vision into stunning visuals in hours, not weeks.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex gap-4 justify-center pt-4">
+              <Button
+                size="lg"
+                onClick={handleGetStarted}
+                className="bg-[#dfec2d] text-black hover:bg-[#c4d319] font-semibold text-lg px-8 py-6 group"
+              >
+                Start Creating
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-gray-700 text-white hover:bg-gray-900 text-lg px-8 py-6 group"
+                onClick={() => window.open('https://www.youtube.com/watch?v=demo', '_blank')}
+              >
+                <Play className="mr-2 w-5 h-5" />
+                Watch Demo
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 px-6 bg-gradient-to-b from-black to-gray-950">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Everything You Need to Create
+            </h2>
+            <p className="text-gray-400 text-lg">
+              Professional tools that adapt to your creative workflow
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <Card
+                key={index}
+                className="bg-gray-900/50 border-gray-800 p-6 hover:bg-gray-900/80 transition-all duration-300 hover:scale-105 hover:border-[#dfec2d]/30"
+              >
+                <feature.icon className="w-10 h-10 text-[#dfec2d] mb-4" />
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-gray-400">{feature.description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-20 px-6 bg-gray-950">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div>
+              <div className="text-4xl md:text-5xl font-bold text-[#dfec2d] mb-2">90%</div>
+              <p className="text-gray-400">Faster than traditional production</p>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold text-[#dfec2d] mb-2">98%</div>
+              <p className="text-gray-400">Character consistency with LoRA</p>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold text-[#dfec2d] mb-2">60%</div>
+              <p className="text-gray-400">Cost savings with intelligent caching</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Workflow Section */}
+      <section className="py-20 px-6 bg-black">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Simple Workflow, Powerful Results
+            </h2>
+            <p className="text-gray-400 text-lg">
+              From script to screen in four simple steps
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {workflow.map((step, index) => (
+              <div key={index} className="text-center">
+                <div className="w-16 h-16 bg-[#dfec2d]/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#dfec2d]/30">
+                  <span className="text-2xl font-bold text-[#dfec2d]">{index + 1}</span>
+                </div>
+                <h3 className="font-semibold mb-2">{step.title}</h3>
+                <p className="text-gray-400 text-sm">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-6 bg-gradient-to-b from-gray-950 to-black">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Transform Your Vision?
+          </h2>
+          <p className="text-gray-400 text-lg mb-8">
+            Join creators who are revolutionizing film production with AI
+          </p>
+          <Button
+            size="lg"
+            onClick={handleGetStarted}
+            className="bg-[#dfec2d] text-black hover:bg-[#c4d319] font-semibold text-lg px-10 py-6"
           >
-            Transform your creative vision into reality with AI-powered filmmaking tools
-          </motion.p>
-        </motion.div>
-      </div>
+            Start Your Free Trial
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-6 border-t border-gray-800">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#dfec2d] to-[#c4d319] rounded-lg font-bold text-black">
+                A
+              </div>
+              <span className="text-sm text-gray-400">© 2024 Alkemy Studio. All rights reserved.</span>
+            </div>
+            <div className="flex gap-6 text-sm text-gray-400">
+              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms</a>
+              <a href="#" className="hover:text-white transition-colors">Contact</a>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Auth Modal */}
       {supabaseConfigured && showAuthModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className='fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md'
-          onClick={() => {
-            setShowAuthModal(false);
-            setAuthError(null);
-            setEmail('');
-            setPassword('');
-          }}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className='bg-gray-900/95 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full mx-4 border border-[#dfec2d]/20 shadow-2xl shadow-[#dfec2d]/10'
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className='text-3xl font-bold text-white mb-2'>
-              {authMode === 'signin' ? 'Welcome Back' : 'Create Account'}
-            </h2>
-            <p className='text-gray-400 mb-8'>
-              {authMode === 'signin' ? 'Sign in to continue to Alkemy AI Studio' : 'Start your filmmaking journey today'}
-            </p>
-
-            <form onSubmit={authMode === 'signin' ? handleSignIn : handleSignUp} className='space-y-5'>
-              <div>
-                <label className='block text-sm font-medium text-gray-300 mb-2'>
-                  Email Address
-                </label>
-                <input
-                  type='email'
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className='w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#dfec2d] focus:ring-2 focus:ring-[#dfec2d]/20 transition-all'
-                  placeholder='you@example.com'
-                  required
-                />
-              </div>
-
-              <div>
-                <label className='block text-sm font-medium text-gray-300 mb-2'>
-                  Password
-                </label>
-                <input
-                  type='password'
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className='w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#dfec2d] focus:ring-2 focus:ring-[#dfec2d]/20 transition-all'
-                  required
-                  minLength={6}
-                  placeholder='Minimum 6 characters'
-                />
-              </div>
-
-              {authError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className='p-3 bg-red-500/10 border border-red-500/30 rounded-lg'
-                >
-                  <p className='text-red-400 text-sm'>{authError}</p>
-                </motion.div>
-              )}
-
-              <Button
-                type='submit'
-                disabled={isSigningIn || isSigningUp}
-                variant='primary'
-                size='lg'
-                fullWidth
-                isLoading={isSigningIn || isSigningUp}
-              >
-                {authMode === 'signin'
-                  ? (isSigningIn ? 'Signing In...' : 'Sign In')
-                  : (isSigningUp ? 'Creating Account...' : 'Create Account')
-                }
-              </Button>
-            </form>
-
-            <div className='mt-6 text-center'>
-              <button
-                onClick={() => {
-                  setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
-                  setAuthError(null);
-                }}
-                className='text-[#dfec2d] hover:text-[#dfec2d]/80 text-sm font-medium transition-colors'
-              >
-                {authMode === 'signin'
-                  ? "Don't have an account? Create one"
-                  : 'Already have an account? Sign in'
-                }
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                setShowAuthModal(false);
-                setAuthError(null);
-                setEmail('');
-                setPassword('');
-              }}
-              className='absolute top-6 right-6 text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5'
-            >
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
-              </svg>
-            </button>
-          </motion.div>
-        </motion.div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          mode={authMode}
+          onSwitchMode={setAuthMode}
+          onSuccess={handleAuthSuccess}
+        />
       )}
     </div>
   );
 };
+
+const features = [
+  {
+    icon: FileText,
+    title: "AI Script Analysis",
+    description: "Automatically extract characters, locations, and scenes from any screenplay format."
+  },
+  {
+    icon: Users,
+    title: "Consistent Characters",
+    description: "LoRA-trained models ensure perfect character consistency across all frames."
+  },
+  {
+    icon: Zap,
+    title: "Fast Generation",
+    description: "Draft to production in hours with multi-tier quality levels."
+  },
+  {
+    icon: Palette,
+    title: "Look Bible System",
+    description: "Reference images that guide your film's visual style throughout."
+  },
+  {
+    icon: CreditCard,
+    title: "Cost Tracking",
+    description: "Real-time budget tracking with intelligent caching for 40-60% savings."
+  },
+  {
+    icon: Share2,
+    title: "Collaboration",
+    description: "Real-time multi-user editing with conflict resolution built-in."
+  }
+];
+
+const workflow = [
+  {
+    title: "Upload Script",
+    description: "Import your screenplay in any format"
+  },
+  {
+    title: "AI Analysis",
+    description: "Extract scenes, characters, and locations"
+  },
+  {
+    title: "Generate Frames",
+    description: "Create consistent visuals with AI"
+  },
+  {
+    title: "Export & Share",
+    description: "Download your production-ready assets"
+  }
+];
 
 export default HomePage;
