@@ -258,7 +258,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 }) => {
     const { isDark } = useTheme();
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi'>('Imagen');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'Flux' | 'Flux Schnell' | 'Seedream 4.0'>('Gemini Nano Banana');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -393,7 +393,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const files = Array.from(e.target.files);
-            const isFluxMulti = model === 'Flux Kontext Max Multi';
+            const isFluxMulti = false; // Removed Flux Multi - use Flux or Flux Schnell instead
 
             // For Flux Multi, allow multiple files; for other models, only take the first one
             const filesToProcess = isFluxMulti ? files : [files[0]];
@@ -424,7 +424,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
         setAttachedImages(prev => prev.filter((_, i) => i !== index));
     };
 
-    const isFluxMulti = model === 'Flux Kontext Max Multi';
+    const isFluxMulti = false; // Removed Flux Multi
 
     const handleSetMainImage = (imageUrl: string) => {
         onUpdateItem(prev => ({ ...prev, imageUrl }));
@@ -550,10 +550,9 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         onChange={e => setModel(e.target.value as any)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
                     >
-                        <option value="Imagen" className="bg-[#0a0a0a]">Imagen</option>
-                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Gemini Nano Banana</option>
-                        <option value="Flux" className="bg-[#0a0a0a]">Flux</option>
-                        <option value="Flux Kontext Max Multi" className="bg-[#0a0a0a]">Flux Kontext Max Multi (FAL)</option>
+                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Gemini)</option>
+                        <option value="Flux Schnell" className="bg-[#0a0a0a]">Flux (Together.AI - FREE 3 months!)</option>
+                        <option value="Seedream 4.0" className="bg-[#0a0a0a]">Seedream 4.0 (ByteDance)</option>
                     </select>
                 </div>
 
@@ -685,7 +684,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         </div>
                         {isFluxMulti && (
                             <p className="text-xs text-white/40 mt-1">
-                                💡 {model === 'Flux Kontext Max Multi' ? 'Flux Multi can use multiple reference images' : 'Switch to Flux Kontext Max Multi for multiple images'}
+                                💡 All models support reference images for better results
                             </p>
                         )}
                     </div>

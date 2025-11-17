@@ -74,6 +74,7 @@ export default defineConfig(({ mode }) => {
     // Prioritize Vercel's env vars, fall back to local .env
     const geminiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '';
     const fluxKey = process.env.FLUX_API_KEY || env.FLUX_API_KEY || '';
+    const togetherKey = process.env.TOGETHER_AI_API_KEY || env.TOGETHER_AI_API_KEY || '';
     const wanKey = process.env.WAN_API_KEY || env.WAN_API_KEY || '';
     const lumaKey = process.env.LUMA_API_KEY || env.LUMA_API_KEY || '';
     const braveSearchKey = process.env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY || '';
@@ -159,6 +160,7 @@ export default defineConfig(({ mode }) => {
         'process.env.API_KEY': JSON.stringify(geminiKey),
         'process.env.GEMINI_API_KEY': JSON.stringify(geminiKey),
         'process.env.FLUX_API_KEY': JSON.stringify(fluxKey),
+        'process.env.TOGETHER_AI_API_KEY': JSON.stringify(togetherKey),
         'process.env.WAN_API_KEY': JSON.stringify(wanKey),
         'process.env.LUMA_API_KEY': JSON.stringify(lumaKey),
         'process.env.BRAVE_SEARCH_API_KEY': JSON.stringify(braveSearchKey),
@@ -169,6 +171,7 @@ export default defineConfig(({ mode }) => {
         'process.env.USE_FALLBACK_MODE': JSON.stringify(useFallbackMode),
         // Also expose via import.meta.env for better client-side access
         'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiKey),
+        'import.meta.env.VITE_TOGETHER_AI_API_KEY': JSON.stringify(togetherKey),
         'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
         'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
         'import.meta.env.VITE_FORCE_DEMO_MODE': JSON.stringify(forceDemoMode),
