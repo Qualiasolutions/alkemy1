@@ -7,6 +7,7 @@ import { ArrowLeftIcon, AlkemyLoadingIcon, XIcon, ImagePlusIcon, Trash2Icon, Exp
 import { useTheme } from '../theme/ThemeContext';
 import { getCharacterIdentityStatus } from '../services/characterIdentityService';
 import PromptChatBubble from './PromptChatBubble';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 interface CastLocationGeneratorProps {
     item: { type: 'character' | 'location'; data: AnalyzedCharacter | AnalyzedLocation };
@@ -593,8 +594,12 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                 {item.data.imageUrl && (
                     <div>
                         <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Current Main Image</label>
-                        <div className="relative group rounded-lg overflow-hidden border-2 border-lime-500/50">
-                            <div className={`${aspectRatioClasses[aspectRatio] || 'aspect-[4/3]'}`}>
+                        <GlowCard
+                            glowColor="orange"
+                            customSize={true}
+                            className="w-full !p-0 overflow-hidden border-2 border-lime-500/50"
+                        >
+                            <div className={`${aspectRatioClasses[aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg`}>
                                 <img src={item.data.imageUrl} alt="Main" className="w-full h-full object-cover" />
                             </div>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -605,7 +610,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                             <div className="absolute top-2 left-2 bg-lime-500 text-black text-xs px-2 py-1 rounded font-semibold">
                                 MAIN
                             </div>
-                        </div>
+                        </GlowCard>
                     </div>
                 )}
 
@@ -819,8 +824,13 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                         className="relative group cursor-pointer"
                                         onClick={() => setViewingGeneration(gen)}
                                     >
-                                        <div className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-white/20 hover:border-[#c8ff2f]/50 transition-all`}>
-                                            <img src={gen.url!} alt={`Generation ${idx + 1}`} className="w-full h-full object-cover" />
+                                        <GlowCard
+                                            glowColor="green"
+                                            customSize={true}
+                                            className="w-full !p-0 overflow-hidden"
+                                        >
+                                            <div className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg`}>
+                                                <img src={gen.url!} alt={`Generation ${idx + 1}`} className="w-full h-full object-cover" />
 
                                             {/* Hover overlay with actions */}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -914,7 +924,8 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
+                                            </div>
+                                        </GlowCard>
                                     </div>
                                 ))}
 
