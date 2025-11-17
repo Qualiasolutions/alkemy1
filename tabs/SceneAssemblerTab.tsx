@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, AnalyzedLocation, Moodboard, FrameStatus } from '../types';
 import Button from '../components/Button';
-import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo } from '../services/aiService';
+import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo, analyzeVideoWithGemini } from '../services/aiService';
 import { generateVideoFromImageWan } from '../services/wanService';
 import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, ChevronDownIcon, DownloadIcon, SparklesIcon } from '../components/icons/Icons';
 import ImageCarousel from '../components/ImageCarousel';
@@ -182,7 +182,7 @@ const LoadingSkeleton: React.FC<{ aspectRatio: string; progress: number }> = ({ 
             <AlkemyLoadingIcon className="w-12 h-12 mx-auto mb-3 animate-subtle-pulse" />
             <p className="font-semibold text-sm mb-2">Generating...</p>
             <div className="w-full bg-gray-600 rounded-full h-1.5">
-                <div className="bg-teal-500 h-1.5 rounded-full" style={{width: `${progress}%`}}></div>
+                <div className="bg-[var(--color-accent-primary)] h-1.5 rounded-full" style={{width: `${progress}%`}}></div>
             </div>
             <p className="font-mono text-xs mt-1">{Math.round(progress)}%</p>
         </div>
@@ -190,7 +190,7 @@ const LoadingSkeleton: React.FC<{ aspectRatio: string; progress: number }> = ({ 
 );
 
 
-// --- Refinement Studio (for Shots) ---
+// --- Refinement Studio (for Shots) - Clean Design from Cast Locations ---
 const RefinementStudio: React.FC<{
     baseGeneration: Generation;
     onClose: () => void;
@@ -201,229 +201,211 @@ const RefinementStudio: React.FC<{
     frame?: Frame;
 }> = ({ baseGeneration, onClose, onUpdateFrame, currentProject, user, scene, frame }) => {
     const [prompt, setPrompt] = useState('');
+    const [currentImage, setCurrentImage] = useState(baseGeneration.url);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [currentBaseImage, setCurrentBaseImage] = useState(baseGeneration.url!);
-    const [sessionVariants, setSessionVariants] = useState<string[]>([]);
-    const [upscalingVariant, setUpscalingVariant] = useState<string | null>(null);
-    const [upscaleProgress, setUpscaleProgress] = useState(0);
+    const [refinementHistory, setRefinementHistory] = useState<Array<{id: string, url: string, prompt: string, timestamp: Date}>>([
+        { id: 'initial', url: baseGeneration.url!, prompt: 'Initial Image', timestamp: new Date() }
+    ]);
 
-    const handleGenerate = async () => {
-        if (!prompt.trim() || !currentBaseImage) return;
+    const handleRefine = async () => {
+        if (!prompt.trim() || !currentImage) return;
+
         setIsGenerating(true);
         try {
-            const newUrl = await refineVariant(prompt, currentBaseImage, baseGeneration.aspectRatio, {
-                projectId: currentProject?.id || null,
-                userId: user?.id || null,
-                sceneId: scene?.id || null,
-                frameId: frame?.id || null
-            });
-            setSessionVariants(prev => [newUrl, ...prev]);
-            
-            onUpdateFrame(prevFrame => ({
-                ...prevFrame,
-                generations: [...(prevFrame.generations || []), { id: `gen-${Date.now()}`, url: newUrl, aspectRatio: baseGeneration.aspectRatio, isLoading: false }],
-                refinedGenerationUrls: [...(prevFrame.refinedGenerationUrls || []), newUrl],
-            }));
-            
-            setCurrentBaseImage(newUrl);
-            setPrompt('');
+            const refinedImageUrl = await refineVariant(
+                prompt,
+                currentImage,
+                baseGeneration.aspectRatio,
+                {
+                    projectId: currentProject?.id,
+                    userId: user?.id,
+                    sceneId: scene?.id,
+                    frameId: frame?.id
+                }
+            );
+
+            if (refinedImageUrl) {
+                const newRefinement = {
+                    id: `refine-${Date.now()}`,
+                    url: refinedImageUrl,
+                    prompt: prompt,
+                    timestamp: new Date()
+                };
+
+                setRefinementHistory(prev => [...prev, newRefinement]);
+                setCurrentImage(refinedImageUrl);
+                onUpdateFrame(prevFrame => ({
+                    ...prevFrame,
+                    generations: [...(prevFrame.generations || []), {
+                        id: `gen-${Date.now()}`,
+                        url: refinedImageUrl,
+                        aspectRatio: baseGeneration.aspectRatio,
+                        isLoading: false
+                    }],
+                    refinedGenerationUrls: [...(prevFrame.refinedGenerationUrls || []), refinedImageUrl]
+                }));
+            } else {
+                throw new Error('No refined image returned from AI service');
+            }
         } catch (error) {
-            alert(`Error refining variant: ${error instanceof Error ? error.message : 'Unknown Error'}`);
+            console.error('Refinement failed:', error);
+            alert('Refinement failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
         } finally {
             setIsGenerating(false);
-        }
-    };
-    
-    const handleSetMainImage = (imageUrl: string) => {
-        onUpdateFrame(prev => ({...prev, media: { ...prev.media, start_frame_url: imageUrl }, status: FrameStatus.GeneratedStill }));
-    };
-
-    const handleSetMainAndClose = (imageUrl: string) => {
-        handleSetMainImage(imageUrl);
-        onClose();
-    };
-
-    const handleUpscale = async (imageUrl: string) => {
-        setUpscalingVariant(imageUrl);
-        setUpscaleProgress(0);
-        try {
-            const { image_url } = await upscaleImage(imageUrl, (progress) => {
-                setUpscaleProgress(progress);
-            });
-            onUpdateFrame(prev => ({ ...prev, media: { ...prev.media, upscaled_start_frame_url: image_url }, status: FrameStatus.UpscaledImageReady }));
-            onClose(); // Close refinement studio after upscale
-        } catch (error) {
-            alert(`Error upscaling image: ${error instanceof Error ? error.message : 'Unknown Error'}`);
-        } finally {
-            setUpscalingVariant(null);
-            setUpscaleProgress(0);
+            setPrompt('');
         }
     };
 
-    const handleDownload = (imageUrl: string, fileName?: string) => {
-        try {
-            const link = document.createElement('a');
-            link.href = imageUrl;
-            const defaultName = `frame-${frame?.shot_number || 'unknown'}-${scene?.sceneNumber || 'unknown'}-${Date.now()}.png`;
-            link.download = fileName || defaultName;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (error) {
-            console.error('Download failed:', error);
-            alert('Download failed. Please try right-clicking the image instead.');
+    const handleSetMainAndClose = () => {
+        if (currentImage) {
+            onUpdateFrame(prev => ({
+                ...prev,
+                media: { ...prev.media, start_frame_url: currentImage },
+                status: FrameStatus.GeneratedStill
+            }));
+            onClose();
         }
     };
 
-    const allDisplayableVariants = [baseGeneration.url!, ...sessionVariants];
+    const handleSelectVersion = (version: typeof refinementHistory[0]) => {
+        setCurrentImage(version.url);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            onClose();
+        }
+    };
+
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
     return (
-        <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50 p-6">
-            <header className="flex-shrink-0 mb-4 flex justify-between items-center">
-                <Button onClick={onClose} variant="secondary" className="!text-sm !gap-2 !px-3 !py-2"><ArrowLeftIcon className="w-4 h-4" /> Back to Still Studio</Button>
-            </header>
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-2">
+            <div className="w-full h-full bg-[#0a0a0a] text-white flex overflow-hidden rounded-xl">
+                {/* Left Sidebar */}
+                <div className="w-72 bg-gradient-to-b from-white/5 to-white/[0.02] backdrop-blur-xl border-r border-white/10 flex flex-col p-6 relative z-10">
+                    <div className="flex-1 flex flex-col space-y-4">
+                        <div>
+                            <h2 className="text-lg font-bold text-white mb-2">Refine Studio</h2>
+                            <p className="text-xs text-white/60">Scene {scene?.sceneNumber} • Shot {frame?.shot_number} • {baseGeneration.aspectRatio}</p>
+                        </div>
 
-            <div className="flex-1 flex flex-col overflow-hidden gap-6">
-                <div className="flex-1 flex flex-row overflow-hidden gap-6">
-                    <div className="w-2/3 h-full bg-black flex items-center justify-center rounded-lg overflow-hidden">
-                       <img src={currentBaseImage} alt="Base for refinement" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="w-1/3 flex flex-col">
-                         <h3 className="text-lg font-semibold text-gray-300 mb-4 flex-shrink-0">Refinements</h3>
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-                           {allDisplayableVariants.map((url, i) => (
-                                <div 
-                                    key={`${url}-${i}`}
-                                    className={`relative group aspect-video rounded-lg overflow-hidden cursor-pointer transition-all ${currentBaseImage === url ? 'ring-2 ring-teal-500' : 'ring-2 ring-transparent'}`} 
-                                    onClick={() => !upscalingVariant && setCurrentBaseImage(url)}
-                                >
-                                    <img src={url} alt={`Variant`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                     <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                                        {upscalingVariant === url ? (
-                                             <div className="text-center text-white">
-                                                <p className="text-xs font-semibold mb-1">Upscaling...</p>
-                                                <div className="w-24 bg-gray-600 rounded-full h-1"><div className="bg-teal-400 h-1 rounded-full" style={{width: `${upscaleProgress}%`}}></div></div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="flex gap-2 justify-center">
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.2 }}
-                                                        whileTap={{ scale: 0.9 }}
-                                                        onClick={(e) => { e.stopPropagation(); handleSetMainAndClose(url); }}
-                                                        className="p-2 bg-white/90 rounded-full hover:bg-white transition-all"
-                                                        title="Set as Main"
-                                                    >
-                                                        <CheckIcon className="w-4 h-4 text-black" />
-                                                    </motion.button>
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.2 }}
-                                                        whileTap={{ scale: 0.9 }}
-                                                        onClick={(e) => { e.stopPropagation(); handleUpscale(url); }}
-                                                        className="p-2 bg-teal-500/80 rounded-full hover:bg-teal-500 transition-all"
-                                                        title="Upscale"
-                                                    >
-                                                        <FourKIcon className="w-4 h-4 text-white" />
-                                                    </motion.button>
+                        {/* Prompt Input */}
+                        <div className="space-y-3">
+                            <label className="text-xs text-white/60 uppercase tracking-widest font-medium">Refinement Prompt</label>
+                            <textarea
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="Describe what you want to change..."
+                                className="w-full h-32 bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#dfec2d] focus:border-transparent focus:bg-white/10 transition-all resize-none"
+                                disabled={isGenerating}
+                            />
+
+                            <button
+                                onClick={handleRefine}
+                                disabled={!prompt.trim() || isGenerating}
+                                className="w-full py-3 bg-[#dfec2d] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#dfec2d]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                                        Refining...
+                                    </>
+                                ) : (
+                                    <>
+                                        Apply Refinement
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Refinement History */}
+                        {refinementHistory.length > 1 && (
+                            <div className="mt-6">
+                                <h3 className="text-xs text-white/60 uppercase tracking-widest font-medium mb-3">Refinement History</h3>
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    {refinementHistory.slice().reverse().map((version, index) => (
+                                        <button
+                                            key={version.id}
+                                            onClick={() => handleSelectVersion(version)}
+                                            className={`w-full text-left p-3 rounded-lg border transition-all ${
+                                                currentImage === version.url
+                                                    ? 'bg-[#dfec2d]/20 border-[#dfec2d]/50 text-white'
+                                                    : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                                    currentImage === version.url ? 'bg-[#dfec2d]' : 'bg-white/40'
+                                                }`}></div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">
+                                                        {version.prompt}
+                                                    </p>
+                                                    <p className="text-xs text-white/50">
+                                                        {index === 0 ? 'Just now' : `${index} version${index > 1 ? 's' : ''} ago`}
+                                                    </p>
                                                 </div>
-                                            </>
-                                        )}
-                                    </div>
+                                            </div>
+                                        </button>
+                                    ))}
                                 </div>
-                            ))}
-                              {isGenerating && (
-                                <div className="w-full aspect-video bg-gray-800/50 animate-pulse flex items-center justify-center rounded-lg">
-                                    <svg className="w-8 h-8 text-gray-600 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                </div>
-                            )}
+                            </div>
+                        )}
+
+                        <div className="mt-auto pt-4 border-t border-white/10">
+                            <p className="text-xs text-white/40">
+                                {refinementHistory.length} version{refinementHistory.length !== 1 ? 's' : ''}
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex-shrink-0 flex justify-center pb-2">
-                     <div className="w-full max-w-4xl">
-                        {/* Multi-layered animated gradient glow container */}
-                        <div className="relative group">
-                            {/* Prominent animated gradient glow */}
-                            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-3xl opacity-40 group-hover:opacity-60 blur-2xl transition-opacity duration-500 animate-pulse"></div>
-
-                            {/* Chat bubble style container with glassmorphism */}
-                            <div className="relative backdrop-blur-3xl bg-gradient-to-br from-gray-900/98 via-gray-800/98 to-gray-900/98 rounded-3xl p-6 border border-teal-500/30 shadow-2xl">
-                                {/* Chat bubble tail */}
-                                <div className="absolute -top-3 left-8 w-6 h-6 bg-gradient-to-br from-gray-900/98 to-gray-800/98 transform rotate-45 border-l border-t border-teal-500/30"></div>
-
-                                {/* Header with title */}
-                                <div className="mb-4 flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-gradient-to-r from-teal-500 to-purple-500 rounded-full animate-pulse"></div>
-                                    <h3 className="text-lg font-bold text-white">Refinement Chat</h3>
-                                    <div className="flex-1"></div>
-                                    <span className="text-xs text-gray-400 bg-gray-800/60 px-3 py-1 rounded-full">Press Enter to send</span>
-                                </div>
-
-                                {/* Chat input area with gradient border on focus */}
-                                <div className="relative group/input">
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/30 group-focus-within/input:via-purple-500/30 group-focus-within/input:to-pink-500/30 rounded-2xl blur transition-all duration-300"></div>
-                                    <div className="relative bg-gray-800/60 rounded-2xl p-4 border border-gray-700/40 focus-within:border-teal-500/60 focus-within:bg-gray-800/80 transition-all">
-                                        <div className="flex items-start gap-3">
-                                            {/* Chat bubble indicator */}
-                                            <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-teal-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
-                                                💬
-                                            </div>
-
-                                            {/* Large textarea */}
-                                            <textarea
-                                                value={prompt}
-                                                onChange={(e) => setPrompt(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                        e.preventDefault();
-                                                        if (prompt.trim() && !isGenerating) handleGenerate();
-                                                    }
-                                                }}
-                                                placeholder="Describe how to refine this image... Make the character smile, add cinematic lighting, change the background, etc."
-                                                rows={3}
-                                                className="flex-1 bg-transparent text-lg resize-none focus:outline-none max-h-40 py-2 text-gray-100 placeholder-gray-400 leading-relaxed"
-                                            />
-                                        </div>
-
-                                        {/* Bottom controls */}
-                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-700/30">
-                                            <div className="bg-gradient-to-br from-gray-700/90 to-gray-800/90 text-white text-sm rounded-xl font-semibold px-4 py-2.5 whitespace-nowrap border border-gray-600/50 shadow-lg backdrop-blur-sm">
-                                                Gemini Nano Banana
-                                            </div>
-                                            <Button
-                                                onClick={handleGenerate}
-                                                disabled={isGenerating || !prompt.trim()}
-                                                isLoading={isGenerating}
-                                                className="!bg-gradient-to-r !from-teal-500 !via-purple-500 !to-pink-500 !text-white !font-bold !py-3 !px-8 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all flex-shrink-0 disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg text-base"
-                                            >
-                                                {isGenerating ? (
-                                                    <>
-                                                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                        </svg>
-                                                        Refining...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span>Refine</span>
-                                                        <motion.span
-                                                            animate={{ x: [0, 3, 0] }}
-                                                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                                            className="text-xl"
-                                                        >
-                                                            →
-                                                        </motion.span>
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
+                {/* Main Image Area */}
+                <div className="flex-1 relative overflow-hidden bg-[#0a0a0a]">
+                    {/* Loading State */}
+                    {isGenerating && (
+                        <div className="absolute inset-0 bg-black/70 z-10 flex items-center justify-center">
+                            <div className="flex flex-col items-center text-center">
+                                <AlkemyLoadingIcon className="w-16 h-16 text-[#dfec2d] mb-4 animate-spin" />
+                                <h3 className="text-xl font-semibold text-white mb-2">Refining image...</h3>
+                                <p className="text-white/60">Applying: "{prompt}"</p>
                             </div>
                         </div>
+                    )}
+
+                    {/* Image Container - Full Height */}
+                    {currentImage && (
+                        <img
+                            src={currentImage}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                        />
+                    )}
+
+                    <button
+                        onClick={onClose}
+                        className="absolute top-6 left-6 p-3 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all z-20"
+                    >
+                        <ArrowLeftIcon className="w-5 h-5" />
+                    </button>
+
+                    <button
+                        onClick={handleSetMainAndClose}
+                        className="absolute top-6 right-6 bg-[#dfec2d]/90 hover:bg-[#dfec2d] text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm z-20"
+                    >
+                        <CheckIcon className="w-5 h-5" />
+                        Set as Main & Close
+                    </button>
+
+                    {/* Image info overlay */}
+                    <div className="absolute bottom-6 left-6 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-lg">
+                        <p className="text-white text-sm">
+                            Current version • {refinementHistory.findIndex(v => v.url === currentImage) + 1} of {refinementHistory.length}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1027,157 +1009,134 @@ const StillStudio: React.FC<{
                 </div>
             </header>
 
-            {/* Main Content: Left Sidebar + Main Grid + Right Sidebar */}
+            {/* Main Content: Left Sidebar + Main Grid */}
             <main className="flex-1 overflow-hidden flex">
-                {/* LEFT SIDEBAR: Prompt Controls + Director Widget */}
-                <aside className="w-72 bg-gradient-to-b from-white/5 to-white/[0.02] backdrop-blur-xl border-r border-white/10 flex flex-col p-5 gap-3 h-full overflow-y-auto">
-                    {/* Prompt Controls Section */}
-                    <div className="space-y-4">
-                        <div>
-                            {/* Prompt Input - Consistent with CastLocationGenerator */}
-                            <div className="flex flex-col gap-3">
-                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium">Prompt</label>
-                                <div className="relative">
-                                    <textarea
-                                        value={detailedPrompt}
-                                        onChange={(e) => setDetailedPrompt(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                if (detailedPrompt.trim()) handleGenerate();
-                                            }
-                                        }}
-                                        placeholder="Describe your shot in detail..."
-                                        rows={6}
-                                        className="w-full h-32 pr-12 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#dfec2d] focus:border-transparent focus:bg-white/10 transition-all resize-none"
-                                    />
-                                    {/* Attachment button in top-right corner */}
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="absolute top-3 right-3 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                                        title="Attach reference image"
-                                    >
-                                        <PaperclipIcon className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Model Selector */}
-                            <div>
-                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Model</label>
-                                <select
-                                    value={model}
-                                    onChange={e => setModel(e.target.value as 'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion')}
-                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
-                                >
-                                    <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana</option>
-                                    <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell</option>
-                                    <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism</option>
-                                    <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion</option>
-                                </select>
-                            </div>
-
-                            {/* Aspect Ratio */}
-                            <div>
-                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Aspect Ratio</label>
-                                <select
-                                    value={aspectRatio}
-                                    onChange={e => setAspectRatio(e.target.value)}
-                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
-                                >
-                                    <option value="16:9" className="bg-[#0a0a0a]">16:9</option>
-                                    <option value="9:16" className="bg-[#0a0a0a]">9:16</option>
-                                    <option value="1:1" className="bg-[#0a0a0a]">1:1</option>
-                                    <option value="4:3" className="bg-[#0a0a0a]">4:3</option>
-                                    <option value="3:4" className="bg-[#0a0a0a]">3:4</option>
-                                </select>
-                            </div>
-
-                            {/* Location Selector */}
-                            <div>
-                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Location</label>
-                                <LocationSelect
-                                    locations={locations}
-                                    selectedId={selectedLocationId}
-                                    onChange={setSelectedLocationId}
-                                />
-                            </div>
-
-                            {/* Character Selector */}
-                            <div>
-                                <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Characters</label>
-                                <CharacterMultiSelect
-                                    characters={characters}
-                                    selectedIds={selectedCharacterIds}
-                                    onChange={setSelectedCharacterIds}
-                                />
-                            </div>
-
-                            {/* Attached Image Preview */}
-                            {attachedImage && (
-                                <div className="relative rounded-lg overflow-hidden border border-white/20">
-                                    <img src={attachedImage} alt="Attached reference" className="w-full h-16 object-cover"/>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAttachedImage(null)}
-                                        className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Remove image"
-                                    >
-                                        <XIcon className="w-3 h-3" />
-                                    </button>
-                                    <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
-                                        Reference
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Generate Button - Consistent with CastLocationGenerator */}
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                {/* LEFT SIDEBAR: Prompt Controls */}
+                <aside className="w-72 bg-gradient-to-b from-white/5 to-white/[0.02] backdrop-blur-xl border-r border-white/10 flex flex-col p-6 gap-6 h-full overflow-y-auto">
+                    {/* Prompt Input */}
+                    <div className="space-y-3">
+                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium">Prompt</label>
+                        <div className="relative">
+                            <textarea
+                                value={detailedPrompt}
+                                onChange={(e) => setDetailedPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (detailedPrompt.trim()) handleGenerate();
+                                    }
+                                }}
+                                placeholder="Describe your shot in detail..."
+                                rows={6}
+                                className="w-full h-32 pr-12 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#dfec2d] focus:border-transparent focus:bg-white/10 transition-all resize-none"
+                            />
+                            {/* Attachment button in top-right corner */}
                             <button
-                                onClick={handleGenerate}
-                                disabled={!detailedPrompt.trim() || isGenerating}
-                                className="w-full py-3 bg-[#dfec2d] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#dfec2d]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute top-3 right-3 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                                title="Attach reference image"
                             >
-                                {isGenerating ? (
-                                    <>
-                                        <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-                                        Generating...
-                                    </>
-                                ) : (
-                                    <>
-                                        Generate
-                                        <span className="text-xs">({validGenerations.length} images)</span>
-                                    </>
-                                )}
+                                <PaperclipIcon className="w-4 h-4" />
                             </button>
-
-                            {promptWasAdjusted && (
-                                <div className="text-xs text-lime-900/90 px-3 py-2 bg-[#dfec2d]/10 rounded-xl border border-[#dfec2d]/20 mt-3">
-                                    <span className="font-semibold">Note:</span> Prompt was adjusted for safety.
-                                </div>
-                            )}
                         </div>
                     </div>
 
-                    {/* Director Widget */}
-                    <div className="flex-1 p-4 pt-0">
-                        <MiniDirectorWidget
-                            scriptAnalysis={{
-                                title: '',
-                                logline: '',
-                                summary: '',
-                                scenes: [scene],
-                                characters,
-                                locations,
-                                props: [],
-                                styling: [],
-                                setDressing: [],
-                                makeupAndHair: [],
-                                sound: []
-                            }}
-                            setScriptAnalysis={() => {}}
+                    {/* Model Selector */}
+                    <div className="space-y-3">
+                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Model</label>
+                        <select
+                            value={model}
+                            onChange={e => setModel(e.target.value as 'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion')}
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
+                        >
+                            <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana</option>
+                            <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell</option>
+                            <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism</option>
+                            <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion</option>
+                        </select>
+                    </div>
+
+                    {/* Aspect Ratio */}
+                    <div className="space-y-3">
+                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Aspect Ratio</label>
+                        <select
+                            value={aspectRatio}
+                            onChange={e => setAspectRatio(e.target.value)}
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
+                        >
+                            <option value="16:9" className="bg-[#0a0a0a]">16:9</option>
+                            <option value="9:16" className="bg-[#0a0a0a]">9:16</option>
+                            <option value="1:1" className="bg-[#0a0a0a]">1:1</option>
+                            <option value="4:3" className="bg-[#0a0a0a]">4:3</option>
+                            <option value="3:4" className="bg-[#0a0a0a]">3:4</option>
+                        </select>
+                    </div>
+
+                    {/* Location Selector - No wrapper container */}
+                    <div className="space-y-3">
+                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Location</label>
+                        <LocationSelect
+                            locations={locations}
+                            selectedId={selectedLocationId}
+                            onChange={setSelectedLocationId}
                         />
+                    </div>
+
+                    {/* Character Selector - No wrapper container */}
+                    <div className="space-y-3">
+                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Characters</label>
+                        <CharacterMultiSelect
+                            characters={characters}
+                            selectedIds={selectedCharacterIds}
+                            onChange={setSelectedCharacterIds}
+                        />
+                    </div>
+
+                    {/* Attached Image Preview */}
+                    {attachedImage && (
+                        <div className="relative rounded-lg overflow-hidden border border-white/20">
+                            <img src={attachedImage} alt="Attached reference" className="w-full h-16 object-cover"/>
+                            <button
+                                type="button"
+                                onClick={() => setAttachedImage(null)}
+                                className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Remove image"
+                            >
+                                <XIcon className="w-3 h-3" />
+                            </button>
+                            <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
+                                Reference
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Generate Button */}
+                    <div className="space-y-3">
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileAttach}/>
+                        <button
+                            onClick={handleGenerate}
+                            disabled={!detailedPrompt.trim() || isGenerating}
+                            className="w-full py-3 bg-[#dfec2d] hover:bg-[#b3e617] disabled:bg-white/10 disabled:text-white/50 text-black font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#dfec2d]/50 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    Generate
+                                    <span className="text-xs">({validGenerations.length} images)</span>
+                                </>
+                            )}
+                        </button>
+
+                        {promptWasAdjusted && (
+                            <div className="text-xs text-lime-900/90 px-3 py-2 bg-[#dfec2d]/10 rounded-xl border border-[#dfec2d]/20">
+                                <span className="font-semibold">Note:</span> Prompt was adjusted for safety.
+                            </div>
+                        )}
                     </div>
                 </aside>
 
@@ -1229,7 +1188,7 @@ const StillStudio: React.FC<{
                                                 {/* Hover overlay */}
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
-                                                        <button className="p-2.5 bg-blue-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-blue-500 hover:scale-110 transition-all shadow-lg">
+                                                        <button className="p-2.5 bg-[var(--color-accent-primary)]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[var(--color-accent-primary)] hover:scale-110 transition-all shadow-lg">
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -1238,7 +1197,7 @@ const StillStudio: React.FC<{
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded font-semibold">
+                                            <div className="absolute top-2 left-2 bg-[var(--color-accent-primary)] text-black text-xs px-2 py-1 rounded font-semibold">
                                                 END
                                             </div>
                                         </div>
@@ -1273,16 +1232,32 @@ const StillStudio: React.FC<{
                                             {/* Hover overlay with actions */}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                                                 {/* Action buttons - icon only with color palette */}
-                                                <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
+                                                <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center flex-wrap">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleAssignImage('main', gen.url!);
+                                                            handleSetFrame('start', gen.url!);
                                                         }}
                                                         className="p-2.5 bg-[#dfec2d]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[#dfec2d] hover:scale-110 transition-all shadow-lg"
-                                                        title="Set as Main"
+                                                        title="Set as Start Frame"
                                                     >
-                                                        <CheckIcon className="w-4 h-4" />
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleSetFrame('end', gen.url!);
+                                                        }}
+                                                        className="p-2.5 bg-[var(--color-accent-secondary)]/90 backdrop-blur-sm text-white rounded-lg hover:bg-[var(--color-accent-secondary)] hover:scale-110 transition-all shadow-lg"
+                                                        title="Set as End Frame"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                                        </svg>
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
@@ -1299,7 +1274,7 @@ const StillStudio: React.FC<{
                                                             e.stopPropagation();
                                                             handleDownload(gen.url!);
                                                         }}
-                                                        className="p-2.5 bg-blue-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-blue-500 hover:scale-110 transition-all shadow-lg"
+                                                        className="p-2.5 bg-green-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-green-500 hover:scale-110 transition-all shadow-lg"
                                                         title="Download"
                                                     >
                                                         <DownloadIcon className="w-4 h-4" />
@@ -1512,15 +1487,27 @@ const AnimateStudio: React.FC<{
 
             onUpdateFrame(prevFrame => {
                 let currentGenerations = [...(prevFrame.videoGenerations || [])];
+                const newlyCompletedVideos: Generation[] = [];
+
                 videoUrls.forEach((url, i) => {
                     if (i < loadingGenerations.length) {
                         const loaderId = loadingGenerations[i].id;
                         const index = currentGenerations.findIndex(g => g.id === loaderId);
                         if (index !== -1) {
-                            currentGenerations[index] = { ...currentGenerations[index], url, isLoading: false, progress: 100 };
+                            const completedVideo = { ...currentGenerations[index], url, isLoading: false, progress: 100 };
+                            currentGenerations[index] = completedVideo;
+                            newlyCompletedVideos.push(completedVideo);
                         }
                     }
                 });
+
+                // Auto-analyze newly completed videos
+                newlyCompletedVideos.forEach(video => {
+                    if (video.url) {
+                        handleAnalyzeVideo(video);
+                    }
+                });
+
                 return {
                     ...prevFrame,
                     videoGenerations: currentGenerations.filter(g => g.url || g.isLoading),
@@ -1547,12 +1534,36 @@ const AnimateStudio: React.FC<{
             status: FrameStatus.AnimatedVideoReady,
         }));
         setFullScreenVideoUrl(null);
-        onBack();
+        // Stay in AnimateStudio - user can manually click "Back" when done
+    };
+
+    const handleAnalyzeVideo = async (video: Generation) => {
+        if (!video.url) return;
+
+        console.log('[AnimateStudio] Analyzing video:', video.id);
+
+        try {
+            const analysis = await analyzeVideoWithGemini(video.url);
+
+            onUpdateFrame(prev => ({
+                ...prev,
+                videoGenerations: prev.videoGenerations?.map(v =>
+                    v.id === video.id ? { ...v, analysisPrompt: analysis } : v
+                )
+            }));
+
+            console.log('[AnimateStudio] Video analysis complete:', analysis);
+        } catch (error) {
+            console.error('[AnimateStudio] Video analysis failed:', error);
+        }
     };
 
     const videoGenerations = frame.videoGenerations || [];
-    const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
-    const selectedVideo = videoGenerations.find(g => g.url && !g.isLoading) || videoGenerations[selectedVideoIndex];
+    const selectedVideoIndex = frame.selectedVideoIndex ?? 0;
+    const setSelectedVideoIndex = (index: number) => {
+        onUpdateFrame(prev => ({ ...prev, selectedVideoIndex: index }));
+    };
+    const selectedVideo = videoGenerations[selectedVideoIndex] || videoGenerations.find(g => g.url && !g.isLoading);
 
     return (
         <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
@@ -1584,22 +1595,22 @@ const AnimateStudio: React.FC<{
                             <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Animation Settings</h3>
 
                             {/* Frame Upload Section */}
-                            <div className="mb-4">
-                                <label className="text-xs text-gray-400 mb-2 block">Frames</label>
+                            <div className="mb-4 p-3 rounded-lg border border-[#dfec2d]/30 bg-gray-800/20">
+                                <label className="text-xs text-gray-400 mb-2 block font-semibold">Frames</label>
                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
 
                                 {/* Start Frame */}
                                 <div className="mb-3">
                                     <p className="text-xs text-gray-500 mb-1">Hero Frame</p>
                                     <div className="relative group">
-                                        <div className="w-full aspect-video rounded-xl border-2 border-green-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-green-400 transition-all">
+                                        <div className="w-full aspect-video rounded-xl border-2 border-[#dfec2d]/60 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-[#dfec2d] transition-all">
                                             {((frame.media?.upscaled_start_frame_url && frame.media.upscaled_start_frame_url.trim()) || (frame.media?.start_frame_url && frame.media.start_frame_url.trim())) ? (
                                                 <img src={frame.media?.upscaled_start_frame_url || frame.media?.start_frame_url} alt="Starting frame" className="w-full h-full object-cover"/>
                                             ) : (
                                                 <p className="text-xs text-gray-500">Not Set</p>
                                             )}
                                             <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                <button onClick={() => handleFrameControlClick('start')} className="p-2 text-white bg-green-500/20 rounded-xl hover:bg-green-500/30 hover:scale-110 transition-all border border-green-500/50" title="Upload Start Frame">
+                                                <button onClick={() => handleFrameControlClick('start')} className="p-2 text-black bg-[#dfec2d]/80 rounded-xl hover:bg-[#dfec2d] hover:scale-110 transition-all border border-[#dfec2d]" title="Upload Start Frame">
                                                     <ImagePlusIcon className="w-4 h-4"/>
                                                 </button>
                                                 {(frame.media?.start_frame_url || frame.media?.upscaled_start_frame_url) && (
@@ -1616,14 +1627,14 @@ const AnimateStudio: React.FC<{
                                 <div>
                                     <p className="text-xs text-gray-500 mb-1">End Frame (Optional)</p>
                                     <div className="relative group">
-                                        <div className="w-full aspect-video rounded-xl border-2 border-blue-500/80 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-blue-400 transition-all">
+                                        <div className="w-full aspect-video rounded-xl border-2 border-[#dfec2d]/40 flex items-center justify-center bg-gray-800/40 overflow-hidden backdrop-blur-sm hover:border-[#dfec2d] transition-all">
                                             {frame.media?.end_frame_url ? (
                                                 <img src={frame.media.end_frame_url} alt="Ending frame" className="w-full h-full object-cover"/>
                                             ) : (
                                                 <p className="text-xs text-gray-500">Not Set</p>
                                             )}
                                             <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                <button onClick={() => handleFrameControlClick('end')} className="p-2 text-white bg-blue-500/20 rounded-xl hover:bg-blue-500/30 hover:scale-110 transition-all border border-blue-500/50" title="Upload End Frame">
+                                                <button onClick={() => handleFrameControlClick('end')} className="p-2 text-black bg-[#dfec2d]/80 rounded-xl hover:bg-[#dfec2d] hover:scale-110 transition-all border border-[#dfec2d]" title="Upload End Frame">
                                                     <ImagePlusIcon className="w-4 h-4"/>
                                                 </button>
                                                 {frame.media?.end_frame_url && (
@@ -1638,37 +1649,34 @@ const AnimateStudio: React.FC<{
                             </div>
 
                             {/* Video Model Selector */}
-                            <div className="mb-4">
+                            <div className="mb-4 p-3 rounded-lg border border-[#dfec2d]/30 bg-gray-800/20">
                                 <label className="text-xs text-gray-400 mb-2 block font-semibold">Video Model</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {(['Veo 3.1', 'Wan'] as const).map((model) => (
                                         <button
                                             key={model}
                                             onClick={() => setVideoModel(model)}
-                                            className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                                            className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all border ${
                                                 videoModel === model
-                                                    ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white'
-                                                    : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/60'
+                                                    ? 'bg-[#dfec2d] text-black border-[#dfec2d]'
+                                                    : 'bg-gray-800/60 text-gray-400 border-gray-700/30 hover:bg-gray-700/60 hover:border-[#dfec2d]/50'
                                             }`}
                                         >
                                             {model}
-                                            {model === 'SeedDream v4' && (
-                                                <span className="block text-[10px] opacity-70">Refine</span>
-                                            )}
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
                             {/* Motion Prompt */}
-                            <div className="mb-4">
-                                <label className="text-xs text-gray-400 mb-1 block">Motion Description</label>
+                            <div className="mb-4 p-3 rounded-lg border border-[#dfec2d]/30 bg-gray-800/20">
+                                <label className="text-xs text-gray-400 mb-2 block font-semibold">Motion Description</label>
                                 <textarea
                                     value={motionPrompt}
                                     onChange={(e) => setMotionPrompt(e.target.value)}
                                     placeholder="Describe the motion, e.g., slow dolly zoom in, camera pans left..."
                                     rows={4}
-                                    className="w-full bg-gray-800/40 text-white text-sm rounded-xl p-3 border border-gray-700/30 focus:border-teal-500/50 focus:bg-gray-800/60 transition-all resize-none focus:outline-none placeholder-gray-500"
+                                    className="w-full bg-gray-800/40 text-white text-sm rounded-xl p-3 border border-[#dfec2d]/30 focus:border-[#dfec2d] focus:bg-gray-800/60 transition-all resize-none focus:outline-none placeholder-gray-500"
                                 />
                             </div>
 
@@ -1754,6 +1762,93 @@ const AnimateStudio: React.FC<{
                         </div>
                     )}
                 </div>
+
+                {/* RIGHT COLUMN: Video Gallery & Analysis */}
+                <aside className="w-[360px] border-l border-gray-800/50 flex flex-col bg-gradient-to-b from-[#0d0f16]/90 to-[#0B0B0B]/90 overflow-y-auto">
+                    <div className="p-4 space-y-4">
+                        {/* Video Gallery */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">
+                                Generated Videos ({videoGenerations.filter(v => v.url && !v.isLoading).length})
+                            </h3>
+
+                            <div className="space-y-3">
+                                {videoGenerations.filter(v => v.url && !v.isLoading).map((video, index) => {
+                                    const actualIndex = videoGenerations.indexOf(video);
+                                    return (
+                                        <div
+                                            key={video.id}
+                                            onClick={() => setSelectedVideoIndex(actualIndex)}
+                                            className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                                                selectedVideoIndex === actualIndex
+                                                    ? 'border-[#dfec2d] ring-2 ring-[#dfec2d]/50'
+                                                    : 'border-gray-700 hover:border-gray-500'
+                                            }`}
+                                        >
+                                            <video
+                                                src={video.url!}
+                                                className="w-full aspect-video object-cover"
+                                                muted
+                                                loop
+                                                playsInline
+                                                onMouseEnter={(e) => e.currentTarget.play()}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.pause();
+                                                    e.currentTarget.currentTime = 0;
+                                                }}
+                                            />
+
+                                            {/* Video Number Badge */}
+                                            <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-white">
+                                                #{index + 1}
+                                            </div>
+
+                                            {/* Selected Indicator */}
+                                            {selectedVideoIndex === actualIndex && (
+                                                <div className="absolute top-2 right-2 bg-[#dfec2d] backdrop-blur-sm p-1 rounded-full">
+                                                    <CheckIcon className="w-3 h-3 text-black" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {videoGenerations.filter(v => v.url && !v.isLoading).length === 0 && (
+                                <div className="text-center py-8 text-gray-500 text-sm">
+                                    No videos yet
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Video Analysis Panel */}
+                        {selectedVideo?.url && !selectedVideo.isLoading && (
+                            <div className="mt-6 p-4 bg-gray-800/40 rounded-lg border border-gray-700/30">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                        AI Analysis
+                                    </h4>
+                                    {selectedVideo.analysisPrompt && (
+                                        <SparklesIcon className="w-4 h-4 text-[#dfec2d]" />
+                                    )}
+                                </div>
+
+                                {selectedVideo.analysisPrompt ? (
+                                    <p className="text-sm text-gray-300 leading-relaxed">
+                                        {selectedVideo.analysisPrompt}
+                                    </p>
+                                ) : (
+                                    <div className="text-center py-4">
+                                        <p className="text-xs text-gray-500 mb-2">Analyzing video...</p>
+                                        <div className="w-full bg-gray-700 rounded-full h-1">
+                                            <div className="bg-[#dfec2d] h-1 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </aside>
             </main>
         </div>
     );
@@ -1776,7 +1871,7 @@ const ProgressStudio: React.FC<{
             <h3 className="text-2xl font-bold">{title}</h3>
             <p className="text-gray-400 mb-4">Enhancing to 4K resolution...</p>
             <div className="w-full max-w-md bg-gray-700 rounded-full h-2.5">
-                <div className="bg-teal-500 h-2.5 rounded-full" style={{ width: `${progress}%`, transition: 'width 0.5s ease-in-out' }}></div>
+                <div className="bg-[var(--color-accent-primary)] h-2.5 rounded-full" style={{ width: `${progress}%`, transition: 'width 0.5s ease-in-out' }}></div>
             </div>
             <p className="mt-2 font-mono">{Math.round(progress)}%</p>
         </main>
