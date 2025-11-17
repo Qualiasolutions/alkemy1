@@ -233,7 +233,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                             exit={{ opacity: 0, x: -50 }}
                             className={`relative rounded-xl overflow-hidden border-2 transition-all ${
                                 video.status === 'generating'
-                                    ? 'border-lime-500/30 bg-lime-900/10'
+                                    ? 'border-#dfec2d/30 bg-lime-900/10'
                                     : video.status === 'error'
                                     ? 'border-red-500/30 bg-red-900/10'
                                     : 'border-purple-500/30 bg-purple-900/10 hover:border-purple-400/50'

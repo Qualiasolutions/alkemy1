@@ -115,13 +115,13 @@ const CharacterCastingCard: React.FC<{
     return (
         <div className={`bg-[var(--color-surface-card)] rounded-lg border border-[var(--color-border-color)] p-6 flex flex-col gap-6`}>
             <div className="w-full">
-                 <button onClick={onViewImages} className="relative aspect-w-3 aspect-h-4 bg-[var(--color-surface-card)] rounded-xl overflow-hidden mb-4 group block w-full text-left border border-[var(--color-border-color)] hover:border-lime-500/50 transition-all">
+                 <button onClick={onViewImages} className="relative aspect-w-3 aspect-h-4 bg-[var(--color-surface-card)] rounded-xl overflow-hidden mb-4 group block w-full text-left border border-[var(--color-border-color)] hover:border-#dfec2d/50 transition-all">
                     {character.imageUrl
                         ? <img src={character.imageUrl} alt={character.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                         : <div className="flex items-center justify-center h-full"><UsersIcon className={`w-12 h-12 text-[var(--color-text-secondary)]`} /></div>
                     }
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-lime-500 to-lime-600 text-white font-semibold text-sm shadow-lg shadow-lime-500/30 hover:shadow-lime-500/50 transition-shadow">
+                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-#dfec2d to-#b3e617 text-white font-semibold text-sm shadow-lg shadow-#dfec2d/30 hover:shadow-#dfec2d/50 transition-shadow">
                             <CameraIcon className="w-4 h-4" />
                             <span>View Image Gallery</span>
                         </div>
@@ -136,7 +136,7 @@ const CharacterCastingCard: React.FC<{
 
 
 const LocationCard: React.FC<{ location: AnalyzedLocation }> = ({ location }) => (
-     <div className={`bg-[var(--color-surface-card)] rounded-xl overflow-hidden border border-[var(--color-border-color)] hover:border-lime-500/50 h-full w-full transition-all duration-300 hover:shadow-lg hover:shadow-lime-500/10`}>
+     <div className={`bg-[var(--color-surface-card)] rounded-xl overflow-hidden border border-[var(--color-border-color)] hover:border-#dfec2d/50 h-full w-full transition-all duration-300 hover:shadow-lg hover:shadow-#dfec2d/10`}>
         <div className="aspect-video bg-[var(--color-surface-elevated)] flex items-center justify-center">
             {location.imageUrl
                 ? <img src={location.imageUrl} alt={location.name} className="w-full h-full object-cover" />

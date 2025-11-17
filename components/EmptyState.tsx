@@ -77,7 +77,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     title: title || 'Timeline is Empty',
                     description: description || 'Transfer your upscaled video shots to the timeline to assemble your final production. You can trim, reorder, and export your complete video sequence.',
                     actionLabel: actionLabel || 'Go to Compositing',
-                    illustrationColor: isDark ? 'from-green-500/20 to-lime-600/10' : 'from-green-500/30 to-lime-600/20'
+                    illustrationColor: isDark ? 'from-green-500/20 to-#b3e617/10' : 'from-green-500/30 to-#b3e617/20'
                 };
             default:
                 return {

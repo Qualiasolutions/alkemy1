@@ -192,9 +192,9 @@ const Card: React.FC<{
                         aria-label={`Character identity status: ${identityStatus === 'ready' ? 'Ready' : identityStatus === 'preparing' ? 'Training in progress' : identityStatus === 'error' ? 'Error occurred' : 'Not prepared'}`}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md flex items-center gap-1 ${
                             identityStatus === 'ready'
-                                ? 'bg-lime-500/20 text-lime-400 border border-lime-500/30'
+                                ? 'bg-#dfec2d/20 text-#dfec2d border border-#dfec2d/30'
                                 : identityStatus === 'preparing'
-                                ? 'bg-lime-500/20 text-lime-400 border border-lime-500/30'
+                                ? 'bg-#dfec2d/20 text-#dfec2d border border-#dfec2d/30'
                                 : identityStatus === 'error'
                                 ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                                 : 'bg-gray-500/20 text-gray-500 border border-gray-500/30'

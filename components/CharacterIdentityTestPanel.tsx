@@ -149,7 +149,7 @@ export function CharacterIdentityTestPanel({
 
   const getScoreBadgeClass = (score: number): string => {
     if (score >= 85) return 'bg-green-500/20 text-green-400 border-green-500/30';
-    if (score >= 70) return 'bg-lime-500/20 text-lime-400 border-lime-500/30';
+    if (score >= 70) return 'bg-#dfec2d/20 text-#dfec2d border-#dfec2d/30';
     return 'bg-red-500/20 text-red-400 border-red-500/30';
   };
 

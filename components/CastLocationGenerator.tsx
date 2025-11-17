@@ -226,7 +226,7 @@ const RefineStudio: React.FC<{
 
                     <button
                         onClick={handleSetMainAndClose}
-                        className="absolute top-6 right-6 bg-lime-400/90 hover:bg-lime-400 text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm z-20"
+                        className="absolute top-6 right-6 bg-#dfec2d/90 hover:bg-#dfec2d text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm z-20"
                     >
                         <CheckIcon className="w-5 h-5" />
                         Set as Main & Close
@@ -593,7 +593,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                 {item.data.imageUrl && (
                     <div>
                         <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Current Main Image</label>
-                        <div className="relative group rounded-lg overflow-hidden border-2 border-lime-500/50">
+                        <div className="relative group rounded-lg overflow-hidden border-2 border-#dfec2d/50">
                             <div className={`${aspectRatioClasses[aspectRatio] || 'aspect-[4/3]'}`}>
                                 <img src={item.data.imageUrl} alt="Main" className="w-full h-full object-cover" />
                             </div>
@@ -602,7 +602,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                     <p className="text-white text-xs font-semibold">Main Image ({aspectRatio})</p>
                                 </div>
                             </div>
-                            <div className="absolute top-2 left-2 bg-lime-500 text-black text-xs px-2 py-1 rounded font-semibold">
+                            <div className="absolute top-2 left-2 bg-#dfec2d text-black text-xs px-2 py-1 rounded font-semibold">
                                 MAIN
                             </div>
                         </div>
@@ -708,16 +708,16 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                 </div>
                             </div>
                             {getCharacterIdentityStatus(character.identity) === 'ready' && (
-                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-lime-500/20 border border-lime-500/30">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-semibold text-lime-400 uppercase tracking-wider">LoRA Active</span>
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-#dfec2d/20 border border-#dfec2d/30">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-#dfec2d animate-pulse"></div>
+                                    <span className="text-[10px] font-semibold text-#dfec2d uppercase tracking-wider">LoRA Active</span>
                                 </div>
                             )}
                         </div>
                         <div className="flex items-center gap-2 mb-3">
                             <div className={`w-2 h-2 rounded-full ${
                                 getCharacterIdentityStatus(character.identity) === 'ready' ? 'bg-green-500' :
-                                getCharacterIdentityStatus(character.identity) === 'preparing' ? 'bg-lime-500 animate-pulse' :
+                                getCharacterIdentityStatus(character.identity) === 'preparing' ? 'bg-#dfec2d animate-pulse' :
                                 getCharacterIdentityStatus(character.identity) === 'error' ? 'bg-red-500' : 'bg-gray-500'
                             }`}></div>
                             <p className="text-xs text-white/80 capitalize">
@@ -745,7 +745,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                     <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                                         loraImages.length >= 6 && loraImages.length <= 12
                                             ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                            : 'bg-lime-500/20 text-lime-900 border border-lime-500/30'
+                                            : 'bg-#dfec2d/20 text-lime-900 border border-#dfec2d/30'
                                     }`}>
                                         {loraImages.length}/12
                                     </div>
@@ -768,7 +768,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                     ))}
                                 </div>
                                 {loraImages.length < 6 && (
-                                    <p className="text-[10px] text-lime-400 mt-2">
+                                    <p className="text-[10px] text-#dfec2d mt-2">
                                         ⚠️ Minimum 6 images required ({6 - loraImages.length} more needed)
                                     </p>
                                 )}
@@ -857,7 +857,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                                 e.stopPropagation();
                                                                 handleSetMainImage(gen.url!);
                                                             }}
-                                                            className="p-2.5 bg-lime-500/90 backdrop-blur-sm text-black rounded-lg hover:bg-lime-500 hover:scale-110 transition-all shadow-lg"
+                                                            className="p-2.5 bg-#dfec2d/90 backdrop-blur-sm text-black rounded-lg hover:bg-#dfec2d hover:scale-110 transition-all shadow-lg"
                                                             title="Set as Main"
                                                         >
                                                             <CheckIcon className="w-4 h-4" />
@@ -920,15 +920,15 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 
                                 {/* Loading States */}
                                 {allGenerations.filter(g => g.isLoading).map((gen, idx) => (
-                                    <div key={gen.id} className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-lime-500/30 bg-black/20`}>
+                                    <div key={gen.id} className={`${aspectRatioClasses[gen.aspectRatio] || 'aspect-[4/3]'} relative overflow-hidden rounded-lg border border-#dfec2d/30 bg-black/20`}>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                                             <AlkemyLoadingIcon className="w-8 h-8 text-white/60 mb-2 animate-spin" />
                                             <p className="text-white text-xs mb-2">Generating...</p>
                                             <div className="w-24 bg-gray-600 rounded-full h-1">
-                                                <div className="bg-lime-500 h-1 rounded-full transition-all" style={{ width: `${gen.progress || 0}%` }}></div>
+                                                <div className="bg-#dfec2d h-1 rounded-full transition-all" style={{ width: `${gen.progress || 0}%` }}></div>
                                             </div>
                                         </div>
-                                        <div className="absolute top-2 right-2 bg-lime-500 text-black text-xs px-2 py-1 rounded font-semibold">
+                                        <div className="absolute top-2 right-2 bg-#dfec2d text-black text-xs px-2 py-1 rounded font-semibold">
                                             #{validGenerations.length + idx + 1}
                                         </div>
                                     </div>
@@ -1050,7 +1050,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                 className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
                                                     viewingGeneration.url && loraImages.includes(viewingGeneration.url)
                                                         ? 'bg-red-500 hover:bg-red-600 text-white'
-                                                        : 'bg-lime-500 hover:bg-lime-600 text-white'
+                                                        : 'bg-#dfec2d hover:bg-#b3e617 text-white'
                                                 }`}
                                             >
                                                 {viewingGeneration.url && loraImages.includes(viewingGeneration.url) ? (
@@ -1073,7 +1073,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                                     if (viewingGeneration.url) handleSetMainImage(viewingGeneration.url);
                                                     setViewingGeneration(null);
                                                 }}
-                                                className="px-4 py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 transition"
+                                                className="px-4 py-2 bg-#dfec2d text-white rounded-lg hover:bg-#b3e617 transition"
                                             >
                                                 Set as Main
                                             </button>
