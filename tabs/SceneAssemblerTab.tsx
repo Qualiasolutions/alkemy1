@@ -36,12 +36,12 @@ const FullScreenVideoPlayer: React.FC<{
     }, [onClose]);
     
     return (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-            <div className="relative w-full h-full flex items-center justify-center">
-                <video src={url} controls autoPlay loop className="max-w-full max-h-full" />
+        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
+            {/* Fixed Header with Controls */}
+            <div className="fixed top-0 left-0 right-0 z-60 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 left-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/80 transition-colors"
+                    className="text-white bg-black/50 rounded-full p-2 hover:bg-black/80 transition-colors backdrop-blur-sm"
                     aria-label="Close viewer"
                 >
                     <XIcon className="w-6 h-6" />
@@ -49,129 +49,21 @@ const FullScreenVideoPlayer: React.FC<{
                 <Button
                     onClick={onSelect}
                     variant="primary"
-                    className="absolute top-4 right-4"
+                    className="shadow-lg"
                 >
                     Select Video
                 </Button>
             </div>
-        </div>
-    );
-};
 
-// --- FullScreen Image Viewer Modal ---
-const FullScreenImagePlayer: React.FC<{
-    generation: Generation;
-    onClose: () => void;
-    onSetFrame: (type: 'start' | 'end', imageUrl: string) => void;
-    onRefine: () => void;
-}> = ({ generation, onClose, onSetFrame, onRefine }) => {
-    const [prompt, setPrompt] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
-
-    const handleRefineWithPrompt = async () => {
-        if (!prompt.trim() || isGenerating) return;
-        setIsGenerating(true);
-        try {
-            // Call the onRefine function which will handle the refinement
-            onRefine();
-            setPrompt('');
-        } catch (error) {
-            console.error('Refinement failed:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    if (!generation.url) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex p-4">
-            <div className="relative w-full h-full flex flex-col lg:flex-row gap-4">
-
-                {/* LEFT SIDEBAR: Prompt Input */}
-                <div className="w-full lg:w-80 lg:flex-shrink-0 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-2xl border border-gray-700/40 shadow-2xl p-4 lg:p-6 flex flex-col">
-                    <div className="mb-4">
-                        <h3 className="text-lg font-semibold text-white mb-2">Refine Image</h3>
-                        <p className="text-sm text-gray-400 hidden lg:block">Describe how to refine this image...</p>
-                        <p className="text-xs text-gray-400 lg:hidden">Describe how to refine this image...</p>
-                    </div>
-
-                    <div className="flex-1 flex flex-col min-h-0">
-                        <div className="relative group flex-1 min-h-0">
-                            {/* Animated gradient glow */}
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 group-hover:opacity-50 blur-xl transition-opacity duration-500"></div>
-
-                            {/* Main content container with glassmorphism */}
-                            <div className="relative backdrop-blur-xl bg-gray-900/60 rounded-2xl p-3 lg:p-4 border border-gray-700/40 shadow-2xl h-full flex flex-col">
-                                {/* Input area with gradient border on focus */}
-                                <div className="relative group/input flex-1 min-h-0">
-                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500/0 via-purple-500/0 to-pink-500/0 group-focus-within/input:from-teal-500/30 group-focus-within/input:via-purple-500/30 group-focus-within/input:to-pink-500/30 rounded-xl blur transition-all duration-300"></div>
-                                    <div className="relative h-full bg-gray-800/40 rounded-xl p-3 border border-gray-700/40 focus-within:border-teal-500/60 focus-within:bg-gray-800/60 transition-all flex flex-col">
-                                        <textarea
-                                            value={prompt}
-                                            onChange={(e) => setPrompt(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    if (prompt.trim() && !isGenerating) handleRefineWithPrompt();
-                                                }
-                                            }}
-                                            placeholder="Describe how to refine this image... (Press Enter to refine)"
-                                            rows={window.innerWidth < 1024 ? 3 : undefined}
-                                            className="flex-1 bg-transparent text-base resize-none focus:outline-none text-gray-100 placeholder-gray-400 min-h-[80px] lg:min-h-[120px]"
-                                        />
-                                        <Button
-                                            onClick={handleRefineWithPrompt}
-                                            disabled={isGenerating || !prompt.trim()}
-                                            isLoading={isGenerating}
-                                            className="!bg-gradient-to-r !from-teal-500 !via-purple-500 !to-pink-500 !text-white !font-bold !py-2.5 !px-6 !rounded-xl hover:!shadow-2xl hover:!scale-105 !transition-all disabled:!opacity-50 disabled:!cursor-not-allowed disabled:hover:!scale-100 !gap-2 !shadow-lg mt-3"
-                                        >
-                                            <span>Refine</span>
-                                            <motion.span
-                                                animate={{ x: [0, 3, 0] }}
-                                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                                className="text-lg"
-                                            >
-                                                →
-                                            </motion.span>
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* MAIN CONTENT: Image Viewer */}
-                <div className="flex-1 flex items-center justify-center min-h-0">
-                    <div className="relative w-full h-full flex items-center justify-center">
-                        <img src={generation.url} alt="Fullscreen generated shot" className="max-w-full max-h-full object-contain" />
-
-                        {/* TOP CONTROLS */}
-                        <Button onClick={onClose} variant="secondary" className="absolute top-4 left-4 !text-sm !gap-2 !px-3 !py-2 z-10">
-                            <ArrowLeftIcon className="w-4 h-4" /> Back
-                        </Button>
-
-                        <div className="absolute top-4 right-4 flex flex-col sm:flex-row gap-2 z-10">
-                            <Button onClick={() => onSetFrame('start', generation.url!)} variant="secondary" className="!text-xs sm:!text-sm">Set as Hero</Button>
-                            <Button onClick={() => onSetFrame('end', generation.url!)} variant="secondary" className="!text-xs sm:!text-sm">Set as End</Button>
-                            <Button onClick={onRefine} variant="primary" className="!text-xs sm:!text-sm">Refine</Button>
-                        </div>
-                    </div>
-                </div>
-
+            {/* Video Container */}
+            <div className="flex-1 flex items-center justify-center p-4">
+                <video src={url} controls autoPlay loop className="max-w-full max-h-full rounded-lg" />
             </div>
         </div>
     );
 };
+
+// FullScreenImagePlayer component removed - clicking on images now directly opens RefinementStudio
 
 
 // --- Shared Loading Component ---
@@ -398,7 +290,7 @@ const RefinementStudio: React.FC<{
                         className="absolute top-6 right-6 bg-[#dfec2d]/90 hover:bg-[#dfec2d] text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm z-20"
                     >
                         <CheckIcon className="w-5 h-5" />
-                        Set as Main & Close
+                        Save
                     </button>
 
                     {/* Image info overlay */}
@@ -718,7 +610,6 @@ const StillStudio: React.FC<{
     const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
     const [selectedLocationId, setSelectedLocationId] = useState<string>('');
     const [promptWasAdjusted, setPromptWasAdjusted] = useState(false);
-    const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
     const [viewingMetadata, setViewingMetadata] = useState<Generation | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -916,20 +807,6 @@ const StillStudio: React.FC<{
 
     return (
         <div className="fixed inset-0 bg-[#0B0B0B] flex flex-col z-50">
-            {viewingGeneration && (
-                <FullScreenImagePlayer
-                    generation={viewingGeneration}
-                    onClose={() => setViewingGeneration(null)}
-                    onSetFrame={(type, url) => {
-                        handleSetFrame(type, url);
-                        setViewingGeneration(null);
-                    }}
-                    onRefine={() => {
-                        onEnterRefinement(viewingGeneration);
-                        setViewingGeneration(null);
-                    }}
-                />
-            )}
 
             {/* Metadata Modal */}
             <AnimatePresence>
@@ -1176,7 +1053,7 @@ const StillStudio: React.FC<{
                                     <div
                                         key={gen.id}
                                         className="relative group cursor-pointer"
-                                        onClick={() => setViewingGeneration(gen)}
+                                        onClick={() => onEnterRefinement(gen)}
                                     >
                                         <GlowCard
                                             glowColor="purple"
@@ -1219,7 +1096,7 @@ const StillStudio: React.FC<{
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            setViewingGeneration(gen);
+                                                            onEnterRefinement(gen);
                                                         }}
                                                         className="p-2.5 bg-purple-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-purple-500 hover:scale-110 transition-all shadow-lg"
                                                         title="Refine Image"
@@ -1653,55 +1530,80 @@ const AnimateStudio: React.FC<{
                 {/* CENTER COLUMN: Video Player */}
                 <div className="flex-1 flex flex-col items-center justify-center bg-black p-8">
                     {selectedVideo ? (
-                        <div className="relative w-full max-w-4xl">
+                        <div className="relative w-full max-w-4xl space-y-4">
                             {selectedVideo.isLoading ? (
                                 <div className="aspect-video rounded-2xl overflow-hidden border-2 border-gray-800">
                                     <LoadingSkeleton aspectRatio="16:9" progress={selectedVideo.progress || 0} />
                                 </div>
                             ) : selectedVideo.url ? (
-                                <div className="relative group">
-                                    <video
-                                        src={selectedVideo.url}
-                                        muted
-                                        loop
-                                        autoPlay
-                                        playsInline
-                                        className="w-full aspect-video rounded-2xl border-4 border-teal-500/30 shadow-[0_0_40px_rgba(20,184,166,0.2)] object-cover"
-                                    />
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-#dfec2d/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
+                                <>
+                                    <div className="relative group">
+                                        <video
+                                            src={selectedVideo.url}
+                                            muted
+                                            loop
+                                            autoPlay
+                                            playsInline
+                                            className="w-full aspect-video rounded-2xl border-4 border-teal-500/30 shadow-[0_0_40px_rgba(20,184,166,0.2)] object-cover"
+                                        />
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-#dfec2d/20 to-teal-500/20 rounded-2xl -z-10 blur-xl"></div>
 
-                                    {/* Overlay Controls */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end justify-center pb-8 gap-3">
-                                        <Button
-                                            onClick={() => handleSelectVideo(selectedVideo.url!)}
-                                            variant="primary"
-                                            className="!bg-white !text-black !font-bold !py-2 !px-6 !rounded-lg hover:!bg-gray-100 !transition-all !shadow-lg"
-                                        >
-                                            Use this video
-                                        </Button>
-                                        <Button
-                                            onClick={() => {
-                                                const a = document.createElement('a');
-                                                a.href = selectedVideo.url!;
-                                                a.download = `video-${selectedVideo.id}.mp4`;
-                                                document.body.appendChild(a);
-                                                a.click();
-                                                document.body.removeChild(a);
-                                            }}
-                                            variant="secondary"
-                                            className="!bg-black/70 !text-white !py-2 !px-6 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
-                                        >
-                                            Download
-                                        </Button>
-                                        <Button
-                                            onClick={() => setFullScreenVideoUrl(selectedVideo.url!)}
-                                            variant="secondary"
-                                            className="!bg-black/70 !text-white !p-2 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
-                                        >
-                                            <ExpandIcon className="w-5 h-5" />
-                                        </Button>
+                                        {/* Overlay Controls */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-end justify-center pb-8 gap-3">
+                                            <Button
+                                                onClick={() => handleSelectVideo(selectedVideo.url!)}
+                                                variant="primary"
+                                                className="!bg-white !text-black !font-bold !py-2 !px-6 !rounded-lg hover:!bg-gray-100 !transition-all !shadow-lg"
+                                            >
+                                                Use this video
+                                            </Button>
+                                            <Button
+                                                onClick={() => {
+                                                    const a = document.createElement('a');
+                                                    a.href = selectedVideo.url!;
+                                                    a.download = `video-${selectedVideo.id}.mp4`;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                }}
+                                                variant="secondary"
+                                                className="!bg-black/70 !text-white !py-2 !px-6 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
+                                            >
+                                                Download
+                                            </Button>
+                                            <Button
+                                                onClick={() => setFullScreenVideoUrl(selectedVideo.url!)}
+                                                variant="secondary"
+                                                className="!bg-black/70 !text-white !p-2 !rounded-lg hover:!bg-black/90 !transition-all !backdrop-blur-sm"
+                                            >
+                                                <ExpandIcon className="w-5 h-5" />
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
+
+                                    {/* AI Analysis Panel - Next to Video */}
+                                    <div className="p-5 bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-xl border border-[#dfec2d]/30 backdrop-blur-sm">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <SparklesIcon className="w-5 h-5 text-[#dfec2d]" />
+                                            <h4 className="text-sm font-bold text-white uppercase tracking-wide">
+                                                AI Video Analysis
+                                            </h4>
+                                        </div>
+
+                                        {selectedVideo.analysisPrompt ? (
+                                            <p className="text-sm text-gray-300 leading-relaxed">
+                                                {selectedVideo.analysisPrompt}
+                                            </p>
+                                        ) : (
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-full bg-gray-700/50 rounded-full h-1.5">
+                                                    <div className="bg-[#dfec2d] h-1.5 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                                                </div>
+                                                <p className="text-xs text-gray-400 whitespace-nowrap">Analyzing...</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
                             ) : (
                                 <div className="aspect-video rounded-2xl border-2 border-red-500/50 bg-red-900/20 flex flex-col items-center justify-center">
                                     <p className="text-red-400 font-semibold mb-2">Generation Failed</p>
@@ -1730,44 +1632,78 @@ const AnimateStudio: React.FC<{
                             </h3>
 
                             <div className="space-y-3">
-                                {videoGenerations.filter(v => v.url && !v.isLoading).map((video, index) => {
-                                    const actualIndex = videoGenerations.indexOf(video);
-                                    return (
-                                        <div
-                                            key={video.id}
-                                            onClick={() => setSelectedVideoIndex(actualIndex)}
-                                            className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-                                                selectedVideoIndex === actualIndex
-                                                    ? 'border-[#dfec2d] ring-2 ring-[#dfec2d]/50'
-                                                    : 'border-gray-700 hover:border-gray-500'
-                                            }`}
-                                        >
-                                            <video
-                                                src={video.url!}
-                                                className="w-full aspect-video object-cover"
-                                                muted
-                                                loop
-                                                playsInline
-                                                onMouseEnter={(e) => e.currentTarget.play()}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.pause();
-                                                    e.currentTarget.currentTime = 0;
-                                                }}
-                                            />
+                                {videoGenerations.map((video, index) => {
+                                    const actualIndex = index;
 
-                                            {/* Video Number Badge */}
-                                            <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-white">
-                                                #{index + 1}
-                                            </div>
-
-                                            {/* Selected Indicator */}
-                                            {selectedVideoIndex === actualIndex && (
-                                                <div className="absolute top-2 right-2 bg-[#dfec2d] backdrop-blur-sm p-1 rounded-full">
-                                                    <CheckIcon className="w-3 h-3 text-black" />
+                                    // Show loading state for videos being generated
+                                    if (video.isLoading) {
+                                        return (
+                                            <div
+                                                key={video.id}
+                                                className="relative rounded-lg overflow-hidden border-2 border-gray-700 bg-gray-900/50"
+                                            >
+                                                <div className="w-full aspect-video flex items-center justify-center">
+                                                    <div className="text-center">
+                                                        <AlkemyLoadingIcon className="w-8 h-8 mx-auto mb-2 animate-pulse text-[#dfec2d]" />
+                                                        <p className="text-xs text-gray-400 mb-2">Generating...</p>
+                                                        {video.progress !== undefined && video.progress > 0 && (
+                                                            <>
+                                                                <div className="w-32 mx-auto bg-gray-800 rounded-full h-1 mb-1">
+                                                                    <div
+                                                                        className="bg-[#dfec2d] h-1 rounded-full transition-all"
+                                                                        style={{ width: `${video.progress}%` }}
+                                                                    />
+                                                                </div>
+                                                                <p className="text-xs text-gray-500">{Math.round(video.progress)}%</p>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    );
+                                            </div>
+                                        );
+                                    }
+
+                                    // Show completed videos
+                                    if (video.url) {
+                                        return (
+                                            <div
+                                                key={video.id}
+                                                onClick={() => setSelectedVideoIndex(actualIndex)}
+                                                className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                                                    selectedVideoIndex === actualIndex
+                                                        ? 'border-[#dfec2d] ring-2 ring-[#dfec2d]/50'
+                                                        : 'border-gray-700 hover:border-gray-500'
+                                                }`}
+                                            >
+                                                <video
+                                                    src={video.url}
+                                                    className="w-full aspect-video object-cover"
+                                                    muted
+                                                    loop
+                                                    playsInline
+                                                    onMouseEnter={(e) => e.currentTarget.play()}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.pause();
+                                                        e.currentTarget.currentTime = 0;
+                                                    }}
+                                                />
+
+                                                {/* Video Number Badge */}
+                                                <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-white">
+                                                    #{videoGenerations.filter(v => v.url).indexOf(video) + 1}
+                                                </div>
+
+                                                {/* Selected Indicator */}
+                                                {selectedVideoIndex === actualIndex && (
+                                                    <div className="absolute top-2 right-2 bg-[#dfec2d] backdrop-blur-sm p-1 rounded-full">
+                                                        <CheckIcon className="w-3 h-3 text-black" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
+                                    return null;
                                 })}
                             </div>
 
@@ -1778,32 +1714,6 @@ const AnimateStudio: React.FC<{
                             )}
                         </div>
 
-                        {/* Video Analysis Panel */}
-                        {selectedVideo?.url && !selectedVideo.isLoading && (
-                            <div className="mt-6 p-4 bg-gray-800/40 rounded-lg border border-gray-700/30">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                                        AI Analysis
-                                    </h4>
-                                    {selectedVideo.analysisPrompt && (
-                                        <SparklesIcon className="w-4 h-4 text-[#dfec2d]" />
-                                    )}
-                                </div>
-
-                                {selectedVideo.analysisPrompt ? (
-                                    <p className="text-sm text-gray-300 leading-relaxed">
-                                        {selectedVideo.analysisPrompt}
-                                    </p>
-                                ) : (
-                                    <div className="text-center py-4">
-                                        <p className="text-xs text-gray-500 mb-2">Analyzing video...</p>
-                                        <div className="w-full bg-gray-700 rounded-full h-1">
-                                            <div className="bg-[#dfec2d] h-1 rounded-full animate-pulse" style={{ width: '60%' }}></div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
                 </aside>
             </main>
