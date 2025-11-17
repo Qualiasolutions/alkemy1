@@ -14,6 +14,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        lime: {
+          50: '#f7ffe5',
+          100: '#efffcc',
+          200: '#e5ff99',
+          300: '#d9ff66',
+          400: '#d4ff5c',
+          500: '#dfec2d',
+          600: '#b3e617',
+          700: '#9ec915',
+          800: '#7a9c10',
+          900: '#5a730c',
+        },
         emerald: {
           50: '#ECFDF5',
           100: '#D1FAE5',
@@ -43,9 +55,9 @@ const config: Config = {
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'glow-sm': '0 0 10px rgba(16, 185, 129, 0.3)',
-        'glow-md': '0 0 20px rgba(16, 185, 129, 0.4)',
-        'glow-lg': '0 0 30px rgba(16, 185, 129, 0.5)',
+        'glow-sm': '0 0 10px rgba(200, 255, 47, 0.3)',
+        'glow-md': '0 0 20px rgba(200, 255, 47, 0.4)',
+        'glow-lg': '0 0 30px rgba(200, 255, 47, 0.5)',
       },
       animation: {
         'shimmer': 'shimmer 1.5s infinite',

@@ -74,7 +74,7 @@ const UserMenu: React.FC<UserMenuProps> = ({
                 <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium overflow-hidden"
                     style={{
-                        backgroundColor: user.avatar_url ? 'transparent' : colors.accent_primary,
+                        backgroundColor: user.avatar_url ? 'transparent' : colors.accent_secondary,
                         color: user.avatar_url ? colors.text_primary : '#FFFFFF'
                     }}
                 >
@@ -136,7 +136,7 @@ const UserMenu: React.FC<UserMenuProps> = ({
                                 <div
                                     className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium overflow-hidden"
                                     style={{
-                                        backgroundColor: user.avatar_url ? 'transparent' : colors.accent_primary,
+                                        backgroundColor: user.avatar_url ? 'transparent' : colors.accent_secondary,
                                         color: user.avatar_url ? colors.text_primary : '#FFFFFF'
                                     }}
                                 >

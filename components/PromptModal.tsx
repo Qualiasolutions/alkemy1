@@ -69,7 +69,7 @@ const PromptModal: React.FC<PromptModalProps> = ({ prompt, onClose }) => {
           {/* Header */}
           <header className="flex items-center justify-between border-b border-white/10 bg-gradient-to-r from-[rgba(16,163,127,0.08)] to-transparent px-6 py-5">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-3 w-3 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 shadow-[0_0_20px_rgba(45,212,191,0.6)] animate-pulse" />
+              <span className="inline-flex h-3 w-3 rounded-full bg-gradient-to-br from-teal-400 to-lime-500 shadow-[0_0_20px_rgba(45,212,191,0.6)] animate-pulse" />
               <h2 className="text-base font-semibold uppercase tracking-[0.3em] text-white/90">
                 Prompt Ready
               </h2>
@@ -107,7 +107,7 @@ const PromptModal: React.FC<PromptModalProps> = ({ prompt, onClose }) => {
               {/* Copy Badge */}
               <span className={`absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] transition-all ${
                 copied
-                  ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                  ? 'border-lime-500/50 bg-lime-500/20 text-lime-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
                   : 'border-white/10 bg-black/50 text-white/60 group-hover:border-teal-400/50 group-hover:bg-teal-500/10 group-hover:text-teal-400'
               }`}>
                 {copied ? (
@@ -127,7 +127,7 @@ const PromptModal: React.FC<PromptModalProps> = ({ prompt, onClose }) => {
               <motion.p
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center text-sm text-emerald-400"
+                className="text-center text-sm text-lime-400"
               >
                 ✓ Prompt copied to clipboard successfully!
               </motion.p>

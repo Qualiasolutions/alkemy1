@@ -9,9 +9,9 @@
     --color-background-secondary: #111111;
     --color-surface-card: #171717;
     --color-surface-elevated: #1F1F1F;
-    --color-accent-primary: #10B981;
-    --color-accent-secondary: #0D9068;
-    --color-accent-hover: #13DDA0;
+    --color-accent-primary: #c8ff2f;
+    --color-accent-secondary: #b3e617;
+    --color-accent-hover: #d4ff5c;
     --color-text-primary: #FAFAFA;
     --color-text-secondary: #A8A8A8;
     --color-text-tertiary: #737373;
@@ -20,7 +20,7 @@
     --color-divider-color: #1A1A1A;
     --color-hover-background: #1C1C1C;
     --color-active-background: #222222;
-    --color-success: #10B981;
+    --color-success: #c8ff2f;
     --color-warning: #F59E0B;
     --color-error: #EF4444;
     --color-info: #3B82F6;
@@ -30,7 +30,7 @@
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
-    --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.3);
+    --shadow-glow: 0 0 20px rgba(200, 255, 47, 0.3);
   }
 
   [data-theme='light'] {
@@ -39,18 +39,18 @@
     --color-background-secondary: #F8F9FA;
     --color-surface-card: #F3F4F6;
     --color-surface-elevated: #FFFFFF;
-    --color-accent-primary: #059669;
-    --color-accent-secondary: #047857;
-    --color-accent-hover: #10B981;
+    --color-accent-primary: #b3e617;
+    --color-accent-secondary: #9ec915;
+    --color-accent-hover: #c8ff2f;
     --color-text-primary: #111827;
-    --color-text-secondary: #4B5563;
-    --color-text-tertiary: #9CA3AF;
+    --color-text-secondary: #374151;
+    --color-text-tertiary: #1F2937;
     --color-border-color: #E5E7EB;
     --color-border-subtle: #F3F4F6;
     --color-divider-color: #E5E7EB;
     --color-hover-background: #F9FAFB;
     --color-active-background: #F3F4F6;
-    --color-success: #059669;
+    --color-success: #b3e617;
     --color-warning: #F59E0B;
     --color-error: #DC2626;
     --color-info: #2563EB;
@@ -60,7 +60,7 @@
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
-    --shadow-glow: 0 0 20px rgba(5, 150, 105, 0.3);
+    --shadow-glow: 0 0 20px rgba(179, 230, 23, 0.3);
   }
 
   /* Enhanced Typography */

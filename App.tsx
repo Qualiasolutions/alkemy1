@@ -164,7 +164,7 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void; isDark?: boolean }> = 
                             if (error) setError(null);
                         }}
                         placeholder="AIza..."
-                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-emerald-500/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-emerald-500/40'}`}
+                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-lime-500/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-lime-500/40'}`}
                         autoComplete="off"
                         spellCheck={false}
                     />
@@ -177,7 +177,7 @@ const ApiKeyPrompt: React.FC<{ onKeySelected: () => void; isDark?: boolean }> = 
 
                 <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                     By using this service, you agree to the Gemini API's terms and pricing. Learn more at{' '}
-                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'} hover:underline`}>
+                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-lime-400' : 'text-lime-600'} hover:underline`}>
                         ai.google.dev/gemini-api/docs/billing
                     </a>.
                 </p>
@@ -1114,7 +1114,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
             <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 border-4 border-t-transparent border-emerald-500 rounded-full"
+                className="w-12 h-12 border-4 border-t-transparent border-lime-500 rounded-full"
             />
         </div>
     );
@@ -1140,7 +1140,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           <div className="space-y-3">
             <button
               onClick={() => window.location.reload()}
-              className="w-full px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+              className="w-full px-4 py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 transition-colors"
             >
               Reload Application
             </button>
@@ -1162,7 +1162,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
             <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 border-4 border-t-transparent border-emerald-500 rounded-full"
+                className="w-12 h-12 border-4 border-t-transparent border-lime-500 rounded-full"
             />
         </div>
     );
@@ -1245,8 +1245,8 @@ const activePhase = TABS_CONFIG.find(section => section.tabs.some(tab => tab.id 
 
 return (
   <div className="relative flex min-h-screen overflow-hidden bg-[var(--color-background-primary)]">
-    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
-    <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
+    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-lime-500/10 blur-3xl" />
+    <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-lime-400/10 blur-3xl" />
 
     <Sidebar
       activeTab={activeTab}
@@ -1281,7 +1281,7 @@ return (
               <motion.span
                 animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                className="inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.8)]"
+                className="inline-flex h-2 w-2 rounded-full bg-lime-400 shadow-[0_0_12px_rgba(163,230,53,0.8)]"
               />
               <span className="text-xs font-medium uppercase tracking-[0.3em]">Live Sync</span>
             </div>
@@ -1290,7 +1290,7 @@ return (
               onClick={() => setActiveTab('roadmap')}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-emerald-400/40 hover:text-[var(--color-text-primary)]"
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-lime-400/40 hover:text-[var(--color-text-primary)]"
               title="Roadmap"
             >
               <RoadmapIcon className="h-5 w-5" />
@@ -1300,7 +1300,7 @@ return (
               onClick={toggleTheme}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-emerald-400/40 hover:text-[var(--color-text-primary)]"
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-lime-400/40 hover:text-[var(--color-text-primary)]"
             >
               {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
               <span>{isDark ? 'Light mode' : 'Dark mode'}</span>

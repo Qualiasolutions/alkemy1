@@ -36,8 +36,8 @@ const AnalysisInfoCard: React.FC<AnalysisInfoCardProps> = ({ icon, label, value 
             <div className="relative p-6 flex items-center gap-4">
                 <div className={`w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center ${
                     isDark
-                        ? 'bg-gradient-to-br from-teal-500/20 to-emerald-500/20'
-                        : 'bg-gradient-to-br from-teal-400/30 to-emerald-400/30'
+                        ? 'bg-gradient-to-br from-teal-500/20 to-lime-500/20'
+                        : 'bg-gradient-to-br from-teal-400/30 to-lime-400/30'
                 }`}>
                     <div className="text-teal-400">{icon}</div>
                 </div>
@@ -80,7 +80,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({ title, children }) =>
             {/* Header with accent gradient */}
             <div className={`px-6 py-4 border-b ${
                 isDark ? 'border-gray-800/50' : 'border-gray-200'
-            } bg-gradient-to-r from-teal-500/10 to-emerald-500/10`}>
+            } bg-gradient-to-r from-teal-500/10 to-lime-500/10`}>
                 <h4 className={`text-lg font-bold ${
                     isDark ? 'text-white' : 'text-gray-900'
                 }`}>
@@ -119,7 +119,7 @@ const AIGeneratedSummary: React.FC<AIGeneratedSummaryProps> = ({ summary, isGene
             {/* AI Badge Header */}
             <div className={`px-6 py-4 border-b ${
                 isDark ? 'border-gray-800/50' : 'border-gray-200'
-            } bg-gradient-to-r from-purple-500/10 via-teal-500/10 to-emerald-500/10`}>
+            } bg-gradient-to-r from-purple-500/10 via-teal-500/10 to-lime-500/10`}>
                 <div className="flex items-center gap-3">
                     <motion.div
                         animate={isGenerating ? { rotate: 360 } : {}}
@@ -169,7 +169,7 @@ const AIGeneratedSummary: React.FC<AIGeneratedSummaryProps> = ({ summary, isGene
             </div>
 
             {/* Subtle gradient footer accent */}
-            <div className="h-1 bg-gradient-to-r from-purple-500/50 via-teal-500/50 to-emerald-500/50" />
+            <div className="h-1 bg-gradient-to-r from-purple-500/50 via-teal-500/50 to-lime-500/50" />
         </motion.div>
     );
 };
@@ -191,15 +191,15 @@ const EnhancedListDisplay: React.FC<EnhancedListDisplayProps> = ({
     const { isDark } = useTheme();
 
     const colorClasses = {
-        teal: 'from-teal-500/10 to-emerald-500/10',
+        teal: 'from-teal-500/10 to-[var(--color-accent-secondary)]/10',
         purple: 'from-purple-500/10 to-pink-500/10',
-        blue: 'from-blue-500/10 to-cyan-500/10',
+        blue: 'from-[var(--color-accent-secondary)]/10 to-cyan-500/10',
     };
 
     const iconColorClasses = {
         teal: 'text-teal-400',
         purple: 'text-purple-400',
-        blue: 'text-blue-400',
+        blue: 'text-[var(--color-accent-secondary)]',
     };
 
     return (

@@ -168,7 +168,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
       )}
 
       {isFFmpegInitialized && timelineClips.length === 0 && (
-        <div className={`bg-yellow-900/20 border border-yellow-700 text-yellow-300 text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
+        <div className={`bg-lime-900/20 border border-lime-700 text-lime-300 text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
           <AlertCircleIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
             <span className="font-semibold">No Timeline Clips:</span> Please add video clips to the Timeline tab before exporting. Go to Compositing → Transfer shots to Timeline.

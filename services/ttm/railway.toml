@@ -1,0 +1,20 @@
+# Railway.toml - Deployment configuration for Railway
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[env]
+CUDA_VISIBLE_DEVICES = "0"
+PORT = "8100"
+
+[[services]]
+name = "ttm-api"
+
+[services.variables]
+VITE_SUPABASE_URL = "${VITE_SUPABASE_URL}"
+VITE_SUPABASE_SERVICE_ROLE_KEY = "${VITE_SUPABASE_SERVICE_ROLE_KEY}"

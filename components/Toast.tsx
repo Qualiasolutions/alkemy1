@@ -30,17 +30,17 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
 
     const styles = {
         success: isDark
-            ? 'bg-gradient-to-r from-emerald-950/98 via-emerald-900/98 to-green-900/98 border-emerald-600/60 text-emerald-100 shadow-[0_8px_32px_rgba(16,185,129,0.3)]'
-            : 'bg-gradient-to-r from-emerald-50 via-emerald-100 to-green-100 border-emerald-400/70 text-emerald-900 shadow-[0_8px_32px_rgba(5,150,105,0.25)]',
+            ? 'bg-gradient-to-r from-lime-950/98 via-lime-900/98 to-green-900/98 border-lime-600/60 text-lime-100 shadow-[0_8px_32px_rgba(16,185,129,0.3)]'
+            : 'bg-gradient-to-r from-lime-50 via-lime-100 to-green-100 border-lime-400/70 text-lime-900 shadow-[0_8px_32px_rgba(5,150,105,0.25)]',
         error: isDark
             ? 'bg-gradient-to-r from-red-950/98 via-red-900/98 to-rose-900/98 border-red-600/60 text-red-100 shadow-[0_8px_32px_rgba(239,68,68,0.3)]'
             : 'bg-gradient-to-r from-red-50 via-red-100 to-rose-100 border-red-400/70 text-red-900 shadow-[0_8px_32px_rgba(220,38,38,0.25)]',
         warning: isDark
-            ? 'bg-gradient-to-r from-amber-950/98 via-amber-900/98 to-yellow-900/98 border-amber-600/60 text-amber-100 shadow-[0_8px_32px_rgba(245,158,11,0.3)]'
-            : 'bg-gradient-to-r from-amber-50 via-amber-100 to-yellow-100 border-amber-400/70 text-amber-900 shadow-[0_8px_32px_rgba(245,158,11,0.25)]',
+            ? 'bg-gradient-to-r from-lime-950/98 via-lime-900/98 to-lime-900/98 border-lime-600/60 text-lime-100 shadow-[0_8px_32px_rgba(223,236,45,0.3)]'
+            : 'bg-gradient-to-r from-lime-50 via-lime-100 to-lime-100 border-lime-400/70 text-lime-900 shadow-[0_8px_32px_rgba(223,236,45,0.25)]',
         info: isDark
-            ? 'bg-gradient-to-r from-blue-950/98 via-blue-900/98 to-sky-900/98 border-blue-600/60 text-blue-100 shadow-[0_8px_32px_rgba(59,130,246,0.3)]'
-            : 'bg-gradient-to-r from-blue-50 via-blue-100 to-sky-100 border-blue-400/70 text-blue-900 shadow-[0_8px_32px_rgba(37,99,235,0.25)]'
+            ? 'bg-gradient-to-r from-[var(--color-accent-secondary)]/98 via-[var(--color-accent-secondary)]/90 to-sky-900/98 border-[var(--color-accent-secondary)]/60 text-[var(--color-accent-secondary)] shadow-[0_8px_32px_rgba(59,130,246,0.3)]'
+            : 'bg-gradient-to-r from-[var(--color-accent-secondary)]/50 via-[var(--color-accent-secondary)]/70 to-sky-100 border-[var(--color-accent-secondary)]/70 text-[var(--color-accent-secondary)] shadow-[0_8px_32px_rgba(37,99,235,0.25)]'
     };
 
     return (
@@ -81,11 +81,11 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
                     transition={{ duration: 3, ease: 'linear' }}
                     className={`absolute bottom-0 left-0 h-1 rounded-b-2xl ${
                         toast.type === 'success'
-                            ? 'bg-gradient-to-r from-emerald-500 to-green-500'
+                            ? 'bg-gradient-to-r from-lime-500 to-green-500'
                             : toast.type === 'error'
                             ? 'bg-gradient-to-r from-red-500 to-rose-500'
                             : toast.type === 'warning'
-                            ? 'bg-gradient-to-r from-amber-500 to-yellow-500'
+                            ? 'bg-gradient-to-r from-lime-500 to-lime-500'
                             : 'bg-gradient-to-r from-blue-500 to-sky-500'
                     }`}
                 />

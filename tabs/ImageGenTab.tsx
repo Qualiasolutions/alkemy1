@@ -193,7 +193,7 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                         onClick={() => setMode('search')}
                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                             mode === 'search'
-                                ? 'bg-emerald-500 text-white'
+                                ? 'bg-lime-500 text-white'
                                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         }`}
                     >
@@ -204,7 +204,7 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                         onClick={() => setMode('generate')}
                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                             mode === 'generate'
-                                ? 'bg-emerald-500 text-white'
+                                ? 'bg-lime-500 text-white'
                                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         }`}
                     >
@@ -218,13 +218,13 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                 {mode === 'search' && (
                     <>
                         {isSearching && (
-                            <div className="mb-4 p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                            <div className="mb-4 p-4 bg-lime-900/20 border border-lime-500/30 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <AlkemyLoadingIcon className="w-5 h-5 animate-spin text-emerald-400" />
+                                    <AlkemyLoadingIcon className="w-5 h-5 animate-spin text-lime-400" />
                                     <div className="flex-1">
-                                        <p className="text-sm font-semibold text-emerald-300">{searchProgress.message}</p>
+                                        <p className="text-sm font-semibold text-lime-300">{searchProgress.message}</p>
                                         <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                                            <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${searchProgress.progress}%` }}></div>
+                                            <div className="bg-lime-500 h-2 rounded-full transition-all" style={{ width: `${searchProgress.progress}%` }}></div>
                                         </div>
                                     </div>
                                 </div>
@@ -248,7 +248,7 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                                                         e.stopPropagation();
                                                         handleDownloadImage(result.url);
                                                     }}
-                                                    className="absolute top-2 right-2 p-2 bg-emerald-500 rounded-full text-white hover:bg-emerald-600 transition-colors"
+                                                    className="absolute top-2 right-2 p-2 bg-lime-500 rounded-full text-white hover:bg-lime-600 transition-colors"
                                                     aria-label="Add to gallery"
                                                 >
                                                     <DownloadIcon className="w-4 h-4" />
@@ -293,7 +293,7 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                  <div className="max-w-3xl mx-auto">
                     <div className="bg-[#1C1C1C] p-3 rounded-2xl flex flex-col gap-2.5 shadow-2xl border border-gray-700">
                         {promptWasAdjusted && (
-                            <div className="text-xs text-yellow-400/80 px-4">Note: Your prompt was adjusted for safety.</div>
+                            <div className="text-xs text-lime-400/80 px-4">Note: Your prompt was adjusted for safety.</div>
                         )}
                         {attachedImage && (
                             <div className="relative self-start p-1 bg-black/20 rounded-lg ml-3">
@@ -342,7 +342,7 @@ const ImageGenTab: React.FC<{ moodboard?: Moodboard; moodboardTemplates?: Moodbo
                              )}
                             <div className="flex items-center ml-auto">
                                 {mode === 'search' ? (
-                                    <Button onClick={handleSearch} disabled={!prompt.trim() || isSearching} className="!bg-emerald-500 !text-white !font-bold !py-2 !px-5 rounded-lg hover:!bg-emerald-600">
+                                    <Button onClick={handleSearch} disabled={!prompt.trim() || isSearching} className="!bg-lime-500 !text-white !font-bold !py-2 !px-5 rounded-lg hover:!bg-lime-600">
                                         <SearchIcon className="w-4 h-4 inline mr-2" />
                                         {isSearching ? 'Searching...' : 'Search Web'}
                                     </Button>

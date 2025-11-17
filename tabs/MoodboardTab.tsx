@@ -392,17 +392,17 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                 onClick={() => setActiveId(board.id)}
                 className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
                   isActive
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100'
+                    ? 'border-lime-500/40 bg-lime-500/10 text-lime-100'
                     : isDark
                       ? 'border-white/5 bg-white/5 text-white/70 hover:border-white/15 hover:bg-white/10'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400/40 hover:text-slate-900'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-lime-400/40 hover:text-slate-900'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="truncate text-sm font-semibold">{board.title}</div>
                   <span className={`rounded-full px-2 py-0.5 text-xs ${
                     board.items.length > 0
-                      ? 'bg-emerald-500/15 text-emerald-300'
+                      ? 'bg-lime-500/15 text-lime-300'
                       : 'bg-slate-500/15 text-slate-400'
                   }`}>
                     {board.items.length}/{MAX_ITEMS}
@@ -461,7 +461,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
               <div
                 className={`relative flex flex-col gap-4 rounded-2xl border-2 border-dashed transition ${
                   dragActive
-                    ? 'border-emerald-400 bg-emerald-500/10'
+                    ? 'border-lime-400 bg-lime-500/10'
                     : isDark
                       ? 'border-white/10 bg-white/5'
                       : 'border-slate-200 bg-slate-50'
@@ -578,7 +578,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                             onClick={() => setCurrentSlideIndex(index)}
                             className={`flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden border-2 transition ${
                               index === currentSlideIndex
-                                ? 'border-emerald-500 ring-2 ring-emerald-500/50'
+                                ? 'border-lime-500 ring-2 ring-lime-500/50'
                                 : 'border-white/10 hover:border-white/30'
                             }`}
                           >
@@ -594,8 +594,8 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                             htmlFor="moodboard-file-input"
                             className={`flex-shrink-0 w-24 h-16 cursor-pointer flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs transition ${
                               isDark
-                                ? 'border-white/20 text-white/60 hover:border-emerald-400/40 hover:text-emerald-200'
-                                : 'border-slate-300 text-slate-500 hover:border-emerald-400 hover:text-emerald-600'
+                                ? 'border-white/20 text-white/60 hover:border-lime-400/40 hover:text-lime-200'
+                                : 'border-slate-300 text-slate-500 hover:border-lime-400 hover:text-lime-600'
                             }`}
                           >
                             <PlusIcon className="h-4 w-4" />
@@ -638,8 +638,8 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     placeholder="Brief notes about this moodboard..."
                     className={`w-full px-3 py-2 rounded-lg border outline-none transition resize-none ${
                       isDark
-                        ? 'border-white/10 bg-white/5 text-white/80 placeholder:text-white/30 focus:border-emerald-400/40'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 focus:border-emerald-400/40'
+                        ? 'border-white/10 bg-white/5 text-white/80 placeholder:text-white/30 focus:border-lime-400/40'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 focus:border-lime-400/40'
                     }`}
                     rows={2}
                   />
@@ -699,8 +699,8 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     placeholder="Search for reference images..."
                     className={`flex-1 px-4 py-3 rounded-xl border outline-none transition ${
                       isDark
-                        ? 'border-white/10 bg-white/5 text-white/80 focus:border-emerald-400/40'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-emerald-400/40'
+                        ? 'border-white/10 bg-white/5 text-white/80 focus:border-lime-400/40'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-lime-400/40'
                     }`}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -721,13 +721,13 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                 </div>
 
                 {isSearching && (
-                  <div className="mt-4 p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                  <div className="mt-4 p-4 bg-lime-900/20 border border-lime-500/30 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin"></div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-emerald-300">{searchProgress.message}</p>
+                        <p className="text-sm font-semibold text-lime-300">{searchProgress.message}</p>
                         <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                          <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${searchProgress.progress}%` }}></div>
+                          <div className="bg-lime-500 h-2 rounded-full transition-all" style={{ width: `${searchProgress.progress}%` }}></div>
                         </div>
                       </div>
                     </div>
@@ -755,7 +755,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                                 handleAddImageToMoodboard(result.url);
                                 alert('Image added to moodboard!');
                               }}
-                              className="absolute top-2 right-2 p-2 bg-emerald-500 rounded-full text-white hover:bg-emerald-600 transition-colors"
+                              className="absolute top-2 right-2 p-2 bg-lime-500 rounded-full text-white hover:bg-lime-600 transition-colors"
                               aria-label="Add to moodboard"
                             >
                               <DownloadIcon className="w-4 h-4" />
