@@ -258,7 +258,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 }) => {
     const { isDark } = useTheme();
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Gemini Nano Banana' | 'Flux' | 'Flux Schnell' | 'Seedream 4.0'>('Gemini Nano Banana');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion'>('Gemini Nano Banana');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -551,8 +551,9 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
                     >
                         <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Gemini)</option>
-                        <option value="Flux Schnell" className="bg-[#0a0a0a]">Flux (Together.AI - FREE 3 months!)</option>
-                        <option value="Seedream 4.0" className="bg-[#0a0a0a]">Seedream 4.0 (ByteDance)</option>
+                        <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell (FREE! 🎉)</option>
+                        <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism (FREE! 🎉)</option>
+                        <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion (FREE! 🎉)</option>
                     </select>
                 </div>
 

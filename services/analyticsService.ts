@@ -19,14 +19,11 @@ import { askTheDirector } from '@/services/aiService';
 export const API_COST_ESTIMATES = {
     image: {
         flux: 0.02,              // Flux Pro/Dev (Fal.ai)
-        fluxSchnell: 0.0027,     // Flux Schnell (Together.AI) - FREE for 3 months, then $0.0027
-        seedream: 0.01,          // Seedream 4.0 (Together.AI estimate)
+        pollinations: 0,         // Pollinations.AI - 100% FREE! 🎉
         nanoBanana: 0.015        // Gemini Nano Banana
     },
     video: {
         veo: 0.30,               // Veo 3.1 (Gemini)
-        kling: 0.15,             // Kling 2.1 Pro/Master (Together.AI estimate)
-        seedance: 0.10,          // Seedance 1.0 Lite (Together.AI estimate)
         wan: 0.20                // Wan 2.2 (AI/ML API estimate)
     },
     audio: {

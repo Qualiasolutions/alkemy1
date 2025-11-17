@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, AnalyzedLocation, Moodboard, FrameStatus } from '../types';
 import Button from '../components/Button';
 import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo } from '../services/aiService';
-import { generateVideoWithKling, refineVideoWithSeedDream } from '../services/videoFalService';
-import { generateVideoFromImageTogether, type TogetherVideoModel } from '../services/togetherAIService';
 import { generateVideoFromImageWan } from '../services/wanService';
 import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, ChevronDownIcon, DownloadIcon, SparklesIcon } from '../components/icons/Icons';
 import ImageCarousel from '../components/ImageCarousel';
@@ -730,7 +728,7 @@ const StillStudio: React.FC<{
     user?: any;
 }> = ({ frame, scene, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations, currentProject, user }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Gemini Nano Banana' | 'Flux' | 'Flux Schnell' | 'Seedream 4.0'>('Gemini Nano Banana');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion'>('Gemini Nano Banana');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1069,12 +1067,13 @@ const StillStudio: React.FC<{
                                 <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Model</label>
                                 <select
                                     value={model}
-                                    onChange={e => setModel(e.target.value as 'Gemini Nano Banana' | 'Flux' | 'Flux Schnell' | 'Seedream 4.0')}
+                                    onChange={e => setModel(e.target.value as 'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion')}
                                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#c8ff2f] focus:outline-none"
                                 >
                                     <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Gemini)</option>
-                                    <option value="Flux Schnell" className="bg-[#0a0a0a]">Flux (Together.AI - FREE 3 months!)</option>
-                                    <option value="Seedream 4.0" className="bg-[#0a0a0a]">Seedream 4.0 (ByteDance)</option>
+                                    <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell (FREE! 🎉)</option>
+                                    <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism (FREE! 🎉)</option>
+                                    <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion (FREE! 🎉)</option>
                                 </select>
                             </div>
 
@@ -1357,7 +1356,7 @@ const AnimateStudio: React.FC<{
     scene?: AnalyzedScene;
 }> = ({ frame, onBack, onUpdateFrame, currentProject, user, scene }) => {
     const [motionPrompt, setMotionPrompt] = useState('');
-    const [videoModel, setVideoModel] = useState<'Veo 3.1' | 'Kling 2.1' | 'Wan' | 'Seedance 1.0'>('Veo 3.1');
+    const [videoModel, setVideoModel] = useState<'Veo 3.1' | 'Wan'>('Veo 3.1');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [frameToUpload, setFrameToUpload] = useState<'start' | 'end' | null>(null);
     const [fullScreenVideoUrl, setFullScreenVideoUrl] = useState<string | null>(null);
@@ -1475,20 +1474,6 @@ const AnimateStudio: React.FC<{
                     },
                     0.6  // Default Veo temperature
                 );
-            } else if (videoModel === 'Kling 2.1') {
-                // Use Together.AI Kling 2.1
-                const togetherModel: TogetherVideoModel = 'Kling 2.1 Pro';
-                const promises = Array.from({ length: N_VIDEO_GENERATIONS }, (_, i) =>
-                    generateVideoFromImageTogether(
-                        startFrame,
-                        motionPrompt,
-                        togetherModel,
-                        aspectRatio,
-                        5, // duration in seconds
-                        (progress) => onProgress(progress)
-                    )
-                );
-                videoUrls = await Promise.all(promises);
             } else if (videoModel === 'Wan') {
                 // Use Wan API for image-to-video
                 const promises = Array.from({ length: N_VIDEO_GENERATIONS }, (_, i) =>
@@ -1498,20 +1483,6 @@ const AnimateStudio: React.FC<{
                         5, // duration in seconds
                         undefined, // seed
                         1.5, // cfgScale
-                        (progress) => onProgress(progress)
-                    )
-                );
-                videoUrls = await Promise.all(promises);
-            } else if (videoModel === 'Seedance 1.0') {
-                // Use Together.AI Seedance (ByteDance)
-                const togetherModel: TogetherVideoModel = 'Seedance 1.0 Lite';
-                const promises = Array.from({ length: N_VIDEO_GENERATIONS }, (_, i) =>
-                    generateVideoFromImageTogether(
-                        startFrame,
-                        motionPrompt,
-                        togetherModel,
-                        aspectRatio,
-                        5, // duration in seconds
                         (progress) => onProgress(progress)
                     )
                 );
@@ -1651,7 +1622,7 @@ const AnimateStudio: React.FC<{
                             <div className="mb-4">
                                 <label className="text-xs text-gray-400 mb-2 block font-semibold">Video Model</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {(['Veo 3.1', 'Kling 2.1', 'Wan', 'Seedance 1.0'] as const).map((model) => (
+                                    {(['Veo 3.1', 'Wan'] as const).map((model) => (
                                         <button
                                             key={model}
                                             onClick={() => setVideoModel(model)}
