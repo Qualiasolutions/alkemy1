@@ -1073,24 +1073,21 @@ const StillStudio: React.FC<{
                         </select>
                     </div>
 
-                    {/* Location Selector - No wrapper container */}
+                    {/* Character & Location in One Row */}
                     <div className="space-y-3">
-                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Location</label>
-                        <LocationSelect
-                            locations={locations}
-                            selectedId={selectedLocationId}
-                            onChange={setSelectedLocationId}
-                        />
-                    </div>
-
-                    {/* Character Selector - No wrapper container */}
-                    <div className="space-y-3">
-                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Characters</label>
-                        <CharacterMultiSelect
-                            characters={characters}
-                            selectedIds={selectedCharacterIds}
-                            onChange={setSelectedCharacterIds}
-                        />
+                        <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Character & Location</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <CharacterMultiSelect
+                                characters={characters}
+                                selectedIds={selectedCharacterIds}
+                                onChange={setSelectedCharacterIds}
+                            />
+                            <LocationSelect
+                                locations={locations}
+                                selectedId={selectedLocationId}
+                                onChange={setSelectedLocationId}
+                            />
+                        </div>
                     </div>
 
                     {/* Attached Image Preview */}
@@ -1138,75 +1135,35 @@ const StillStudio: React.FC<{
                             </div>
                         )}
                     </div>
-                </aside>
 
-                {/* MAIN AREA: 3-Column Image Grid */}
-                <div className="flex-1 h-full overflow-y-auto p-4 md:p-6 bg-[#0a0a0a]">
-                    {/* Hero Frames Section */}
+                    {/* Hero Frames - Compact Sidebar Display */}
                     {(frame.media?.start_frame_url || frame.media?.end_frame_url) && (
-                        <div className="mb-8">
-                            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-widest font-medium mb-4">Hero Frames</h3>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                            <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Selected Frames</label>
+                            <div className="space-y-2">
                                 {frame.media.start_frame_url && (
-                                    <GlowCard
-                                        glowColor="orange"
-                                        customSize={true}
-                                        className="w-full !p-0 overflow-hidden border-2 border-[#dfec2d]/50"
-                                    >
-                                        <div className="relative group cursor-pointer rounded-xl overflow-hidden">
-                                            <div className="aspect-video relative overflow-hidden">
-                                                <img src={frame.media.start_frame_url} alt="Hero" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
-
-                                                {/* Hover overlay */}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
-                                                        <button className="p-2.5 bg-[#dfec2d]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[#dfec2d] hover:scale-110 transition-all shadow-lg">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="absolute top-2 left-2 bg-[#dfec2d] text-black text-xs px-2 py-1 rounded font-semibold">
-                                                HERO
-                                            </div>
+                                    <div className="relative rounded-lg overflow-hidden border-2 border-[#dfec2d]/50 bg-black">
+                                        <img src={frame.media.start_frame_url} alt="Start Frame" className="w-full h-16 object-cover" />
+                                        <div className="absolute top-1 left-1 bg-[#dfec2d] text-black text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                            START
                                         </div>
-                                    </GlowCard>
+                                    </div>
                                 )}
                                 {frame.media.end_frame_url && (
-                                    <GlowCard
-                                        glowColor="blue"
-                                        customSize={true}
-                                        className="w-full !p-0 overflow-hidden border-2 border-[var(--color-accent-secondary)]/50"
-                                    >
-                                        <div className="relative group cursor-pointer rounded-xl overflow-hidden">
-                                            <div className="aspect-video relative overflow-hidden">
-                                                <img src={frame.media.end_frame_url} alt="End" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
-
-                                                {/* Hover overlay */}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <div className="absolute bottom-2 left-2 right-2 flex gap-2 justify-center">
-                                                        <button className="p-2.5 bg-[var(--color-accent-primary)]/90 backdrop-blur-sm text-black rounded-lg hover:bg-[var(--color-accent-primary)] hover:scale-110 transition-all shadow-lg">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="absolute top-2 left-2 bg-[var(--color-accent-primary)] text-black text-xs px-2 py-1 rounded font-semibold">
-                                                END
-                                            </div>
+                                    <div className="relative rounded-lg overflow-hidden border-2 border-[var(--color-accent-secondary)]/50 bg-black">
+                                        <img src={frame.media.end_frame_url} alt="End Frame" className="w-full h-16 object-cover" />
+                                        <div className="absolute top-1 left-1 bg-[var(--color-accent-secondary)] text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                            END
                                         </div>
-                                    </GlowCard>
+                                    </div>
                                 )}
                             </div>
                         </div>
                     )}
+                </aside>
 
+                {/* MAIN AREA: 3-Column Image Grid */}
+                <div className="flex-1 h-full overflow-y-auto p-4 md:p-6 bg-[#0a0a0a]">
                     {/* Generated Images Grid */}
                     <div className="mb-6">
                         <div className="flex items-center justify-between mb-4">
