@@ -1214,7 +1214,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                         {message.promptData && (
                           <button
                             onClick={() => setPromptModal(message.promptData!)}
-                            className="mt-3 inline-flex items-center gap-2 rounded-xl border border-teal-400/30 bg-teal-500/10 px-4 py-2 text-xs font-medium text-teal-300 transition-all hover:border-teal-400/50 hover:bg-teal-500/20 hover:text-teal-200 hover:shadow-[0_0_15px_rgba(45,212,191,0.2)]"
+                            className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[#dfec2d]/30 bg-[#dfec2d]/10 px-4 py-2 text-xs font-medium text-[#dfec2d] transition-all hover:border-[#dfec2d]/50 hover:bg-[#dfec2d]/20 hover:text-[#dfec2d] hover:shadow-[0_0_15px_rgba(223,236,45,0.2)]"
                           >
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

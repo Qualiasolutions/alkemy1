@@ -19,8 +19,8 @@ const StyleLearningOptIn: React.FC<StyleLearningOptInProps> = ({ onEnable, onDec
       <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] p-8 shadow-[0_50px_100px_rgba(3,7,18,0.9)]">
         {/* Icon */}
         <div className="mb-6 flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(16,163,127,0.3)] to-[rgba(16,163,127,0.1)]">
-            <svg className="h-8 w-8 text-[#10A37F]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(223,236,45,0.3)] to-[rgba(223,236,45,0.1)]">
+            <svg className="h-8 w-8 text-[#dfec2d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
@@ -62,7 +62,7 @@ const StyleLearningOptIn: React.FC<StyleLearningOptInProps> = ({ onEnable, onDec
           <Button
             variant="primary"
             onClick={onEnable}
-            className="flex-1 !rounded-xl !py-3 !bg-gradient-to-r !from-[#10A37F] !to-[#0d8a68]"
+            className="flex-1 !rounded-xl !py-3"
           >
             Enable Style Learning
           </Button>
