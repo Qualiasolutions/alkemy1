@@ -8,7 +8,7 @@ import { logAIUsage, USAGE_ACTIONS } from './usageService';
 import { isFluxApiAvailable, generateImageWithFlux, isFluxModelVariant, getFluxModelDisplayName, type FluxModelVariant } from './fluxService';
 import { trackGenerationMetrics, API_COST_ESTIMATES } from './analyticsService';
 import { networkDetection } from './networkDetection';
-import { generateImageWithTogether, generateVideoFromImageTogether, isTogetherApiAvailable, type TogetherImageModel, type TogetherVideoModel } from './togetherAIService';
+import { generateImageWithPollinations, isPollinationsAvailable, type PollinationsImageModel } from './pollinationsService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
@@ -562,8 +562,7 @@ export const generateStillVariants = async (
             const duration = Date.now() - startTime;
             const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
                                   model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                                  model === 'Flux Schnell' || model === 'Flux' ? API_COST_ESTIMATES.image.fluxSchnell :
-                                  model === 'Seedream 4.0' ? API_COST_ESTIMATES.image.seedream :
+                                  model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
                                   API_COST_ESTIMATES.image.nanoBanana;
 
             trackGenerationMetrics(
@@ -582,8 +581,7 @@ export const generateStillVariants = async (
             const duration = Date.now() - startTime;
             const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
                                   model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                                  model === 'Flux Schnell' || model === 'Flux' ? API_COST_ESTIMATES.image.fluxSchnell :
-                                  model === 'Seedream 4.0' ? API_COST_ESTIMATES.image.seedream :
+                                  model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
                                   API_COST_ESTIMATES.image.nanoBanana;
 
             trackGenerationMetrics(
@@ -1149,56 +1147,39 @@ export const generateVisual = async (
     }
 
     const canUseGemini = prefersLiveGemini();
-    const canUseTogether = isTogetherApiAvailable();
+    const canUsePollinations = isPollinationsAvailable();
 
-    // Check if this is a Together.AI model
-    const isTogetherModel = model === 'Flux Schnell' || model === 'Flux' || model === 'Seedream 4.0';
+    // Check if this is a Pollinations.AI model (FREE!)
+    const isPollinationsModel = model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'FLUX Anime' || model === 'Stable Diffusion';
 
-    if (isTogetherModel) {
-        // Route to Together.AI service
-        if (!canUseTogether) {
+    if (isPollinationsModel) {
+        // Route to Pollinations.AI service (100% FREE!)
+        if (!canUsePollinations) {
             onProgress?.(100);
             return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
         }
 
-        console.log("[generateVisual] Using Together.AI for model:", model);
+        console.log("[generateVisual] Using Pollinations.AI for model:", model);
 
         try {
-            const togetherModel: TogetherImageModel = model === 'Seedream 4.0' ? 'Seedream 4.0' : 'Flux Schnell';
-            const imageUrls = await generateImageWithTogether(
+            const pollinationsModel: PollinationsImageModel = model as PollinationsImageModel;
+            const imageUrl = await generateImageWithPollinations(
                 prompt,
-                togetherModel,
+                pollinationsModel,
                 aspect_ratio,
                 onProgress,
-                1
+                seed
             );
 
-            if (imageUrls.length === 0) {
-                throw new Error('Together.AI returned no images');
-            }
-
-            const imageUrl = imageUrls[0];
-
             // Upload to Supabase if context is available
-            if (context?.projectId && context?.userId && !imageUrl.startsWith('data:')) {
-                // For external URLs from Together.AI, convert to base64 first
+            if (context?.projectId && context?.userId) {
                 try {
-                    const response = await fetch(imageUrl);
-                    const blob = await response.blob();
-                    const base64 = await new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            const dataUrl = reader.result as string;
-                            const base64Data = dataUrl.split(',')[1];
-                            resolve(base64Data);
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
+                    // imageUrl is already a data URL from Pollinations service
+                    const base64Data = imageUrl.split(',')[1];
 
                     const fileName = `${model.replace(/\s+/g, '_')}_${aspect_ratio}_${seed}`;
                     const { url: uploadedUrl, error } = await uploadImageToSupabase(
-                        base64,
+                        base64Data,
                         fileName,
                         context.projectId,
                         context.userId,
@@ -1206,10 +1187,10 @@ export const generateVisual = async (
                             model: model,
                             prompt: prompt.substring(0, 200),
                             aspectRatio: aspect_ratio,
-                            generationType: 'image_generation_together',
+                            generationType: 'image_generation_pollinations',
                             sceneId: context.sceneId,
                             frameId: context.frameId,
-                            provider: 'Together.AI'
+                            provider: 'Pollinations.AI (FREE)'
                         }
                     );
 
@@ -1217,13 +1198,13 @@ export const generateVisual = async (
                         return { url: uploadedUrl, fromFallback: false };
                     }
                 } catch (uploadError) {
-                    console.warn('Failed to upload Together.AI image to Supabase:', uploadError);
+                    console.warn('Failed to upload Pollinations.AI image to Supabase:', uploadError);
                 }
             }
 
             return { url: imageUrl, fromFallback: false };
         } catch (error) {
-            console.error('[generateVisual] Together.AI generation failed:', error);
+            console.error('[generateVisual] Pollinations.AI generation failed:', error);
             if (shouldUseFallbackForError(error)) {
                 return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
             }
