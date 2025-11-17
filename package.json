@@ -16,8 +16,7 @@
     "bmad:validate": "tsx scripts/validate-bmad-drift.ts",
     "bmad:report": "tsx scripts/generate-bmad-reports.ts",
     "bmad:init": "tsx scripts/init-bmad-database.ts",
-    "prepare": "husky install",
-    "postinstall": "test -d .git && husky install || echo 'Skipping husky in production'",
+    "prepare": "test -d .git && husky install || echo 'Skipping husky in production'",
     "supabase:db-push": "npx supabase db push",
     "supabase:migrate": "npx supabase migration up"
   },
