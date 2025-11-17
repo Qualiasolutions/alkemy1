@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/theme/ThemeContext';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 export interface GalleryItem {
     id: string;
@@ -102,26 +103,25 @@ const ResultsGallery: React.FC<ResultsGalleryProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ delay: index * 0.05 }}
-                        className="relative group cursor-pointer rounded-lg overflow-hidden"
-                        style={{
-                            background: colors.surface_card,
-                            borderWidth: '1px',
-                            borderStyle: 'solid',
-                            borderColor: colors.border_color
-                        }}
+                        className="relative group cursor-pointer"
                         onClick={() => handleItemClick(item)}
                         onMouseEnter={() => setHoveredItemId(item.id)}
                         onMouseLeave={() => setHoveredItemId(null)}
                         whileHover={{ scale: 1.03, y: -4 }}
                         whileTap={{ scale: 0.98 }}
                     >
-                        {/* Image/Preview */}
-                        <div className="relative w-full aspect-square overflow-hidden">
-                            <img
-                                src={item.url}
-                                alt={item.title}
-                                className="w-full h-full object-cover"
-                            />
+                        <GlowCard
+                            glowColor="purple"
+                            customSize={true}
+                            className="w-full !p-0 overflow-hidden"
+                        >
+                            {/* Image/Preview */}
+                            <div className="relative w-full aspect-square overflow-hidden">
+                                <img
+                                    src={item.url}
+                                    alt={item.title}
+                                    className="w-full h-full object-cover"
+                                />
 
                             {/* Overlay on Hover */}
                             <AnimatePresence>
@@ -212,6 +212,7 @@ const ResultsGallery: React.FC<ResultsGalleryProps> = ({
                                 </p>
                             )}
                         </div>
+                        </GlowCard>
                     </motion.div>
                 ))}
             </div>
