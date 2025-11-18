@@ -1,60 +1,56 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../theme/ThemeContext';
 import Button from '../components/Button';
+import { ModernCard } from '../components/ui/modern-card';
+import { ModernButton } from '../components/ui/modern-button';
+import { animationPresets } from '../components/animations/motion-presets';
 import { ScriptAnalysis } from '../types';
-import { UploadCloudIcon, XIcon, UsersIcon, MapPinIcon, ClapperboardIcon, SparklesIcon, CheckCircleIcon } from '../components/icons/Icons';
+import { UploadCloudIcon, XIcon, UsersIcon, MapPinIcon, ClapperboardIcon, SparklesIcon, CheckCircleIcon, ExpandIcon } from '../components/icons/Icons';
 import { SkeletonAnalysis } from '../components/SkeletonLoader';
+import DetailModal from '../components/DetailModal';
+import ScriptViewerModal from '../components/ScriptViewerModal';
+import FloatingViewScriptButton from '../components/FloatingViewScriptButton';
+import FullScreenWorkspace from '../components/FullScreenWorkspace';
 
 
 interface AnalysisInfoCardProps {
     icon: React.ReactNode;
     label: string;
     value: string | number;
+    onClick?: () => void;
 }
 
-const AnalysisInfoCard: React.FC<AnalysisInfoCardProps> = ({ icon, label, value }) => {
-    const { isDark } = useTheme();
+const AnalysisInfoCard: React.FC<AnalysisInfoCardProps> = ({ icon, label, value, onClick }) => {
+    const { colors } = useTheme();
 
     return (
-        <motion.div
-            whileHover={{ y: -8, scale: 1.02 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className={`group relative rounded-2xl overflow-hidden ${
-                isDark
-                    ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
-                    : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
-            } hover:border-[#dfec2d]/50 transition-all hover:shadow-2xl ${
-                isDark ? 'hover:shadow-[#dfec2d]/20' : 'hover:shadow-[#dfec2d]/30'
-            }`}
+        <ModernCard
+            variant="glass"
+            hover={true}
+            onClick={onClick}
+            className="cursor-pointer p-6"
+            delay={0}
         >
-            {/* Gradient glow overlay on hover */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${
-                isDark ? 'from-[#dfec2d]/10 to-[#dfec2d]/10' : 'from-[#dfec2d]/20 to-[#dfec2d]/20'
-            } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-
-            <div className="relative p-6 flex items-center gap-4">
-                <div className={`w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center ${
-                    isDark
-                        ? 'bg-gradient-to-br from-[#dfec2d]/20 to-[#dfec2d]/20'
-                        : 'bg-gradient-to-br from-[#dfec2d]/30 to-[#dfec2d]/30'
-                }`}>
-                    <div className="text-[#dfec2d]">{icon}</div>
+            <div className="flex items-center gap-4">
+                <div
+                    className="w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center"
+                    style={{
+                        background: colors.gradient_secondary,
+                    }}
+                >
+                    <div className="text-white">{icon}</div>
                 </div>
                 <div>
-                    <div className={`text-3xl font-bold ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <div className="text-3xl font-bold" style={{ color: colors.text_primary }}>
                         {value}
                     </div>
-                    <div className={`text-sm uppercase tracking-wider font-semibold ${
-                        isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
+                    <div className="text-sm uppercase tracking-wider font-semibold" style={{ color: colors.text_secondary }}>
                         {label}
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </ModernCard>
     );
 };
 
@@ -278,13 +274,29 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [inputMode, setInputMode] = useState<'upload' | 'paste'>('upload');
     const [pastedScript, setPastedScript] = useState<string>('');
-    
+
+    // Modal state management
+    const [showScriptViewer, setShowScriptViewer] = useState<boolean>(true);
+    const [detailsModalType, setDetailsModalType] = useState<'cast' | 'locations' | 'scenes' | null>(null);
+    const [showScriptModal, setShowScriptModal] = useState<boolean>(false);
+    const [showFocusMode, setShowFocusMode] = useState<boolean>(false);
+
     useEffect(() => {
         // FIX: Added !analysisError to prevent an infinite loop on analysis failure.
         if (scriptContent && !isAnalyzing && !analysis && !analysisError) {
             onAnalyze();
         }
     }, [scriptContent, isAnalyzing, analysis, analysisError, onAnalyze]);
+
+    // Hide script viewer after analysis completes
+    useEffect(() => {
+        if (analysis && !isAnalyzing) {
+            const timer = setTimeout(() => {
+                setShowScriptViewer(false);
+            }, 1000); // Delay to allow user to see the transition
+            return () => clearTimeout(timer);
+        }
+    }, [analysis, isAnalyzing]);
 
     const handleClearScript = useCallback(() => {
         onScriptUpdate(null);
@@ -293,6 +305,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
         }
         setInputMode('upload');
         setPastedScript('');
+        setShowScriptViewer(true); // Reset script viewer visibility
     }, [onScriptUpdate]);
 
     const handleFile = useCallback((file: File) => {
@@ -442,9 +455,24 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
         return (
              <div className="mt-8 space-y-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <AnalysisInfoCard icon={<UsersIcon />} label="Cast" value={analysis.characters.length} />
-                    <AnalysisInfoCard icon={<MapPinIcon />} label="Locations" value={analysis.locations.length} />
-                    <AnalysisInfoCard icon={<ClapperboardIcon />} label="Scenes" value={analysis.scenes.length} />
+                    <AnalysisInfoCard
+                        icon={<UsersIcon />}
+                        label="Cast"
+                        value={analysis.characters.length}
+                        onClick={() => setDetailsModalType('cast')}
+                    />
+                    <AnalysisInfoCard
+                        icon={<MapPinIcon />}
+                        label="Locations"
+                        value={analysis.locations.length}
+                        onClick={() => setDetailsModalType('locations')}
+                    />
+                    <AnalysisInfoCard
+                        icon={<ClapperboardIcon />}
+                        label="Scenes"
+                        value={analysis.scenes.length}
+                        onClick={() => setDetailsModalType('scenes')}
+                    />
                 </div>
 
                 {/* Enhanced AI Summary Component */}
@@ -711,14 +739,16 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                                     aria-label="Paste script content"
                                 />
                                 <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
-                                    <Button
-                                        type="submit"
-                                        variant="primary"
+                                    <ModernButton
+                                        variant="gradient"
+                                        size="lg"
                                         disabled={!pastedScript.trim()}
+                                        onClick={handleSubmit}
+                                        loading={isLoading}
                                         className="!px-8 !py-3 !text-lg"
                                     >
                                         Analyze Script
-                                    </Button>
+                                    </ModernButton>
                                     <button
                                         type="button"
                                         onClick={() => setInputMode('upload')}
@@ -746,32 +776,160 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                     <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>{analysis ? analysis.title : 'Script'}</h2>
                     <p className={`text-md text-[var(--color-text-secondary)]`}>{analysis ? analysis.logline : 'Analyze your script to prepare for production.'}</p>
                 </div>
-                 <button onClick={handleClearScript} aria-label="Clear script" className={`flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-white bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-lg px-3 py-2`}>
-                    <XIcon />
-                    <span>Clear</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    {scriptContent && (
+                        <button
+                            onClick={() => setShowFocusMode(true)}
+                            className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all ${
+                                isDark
+                                    ? 'bg-[#dfec2d]/10 text-[#dfec2d] hover:bg-[#dfec2d]/20 border border-[#dfec2d]/30'
+                                    : 'bg-[#dfec2d]/20 text-[#b3e617] hover:bg-[#dfec2d]/30 border border-[#dfec2d]/40'
+                            }`}
+                        >
+                            <ExpandIcon className="w-4 h-4" />
+                            <span>Focus Mode</span>
+                        </button>
+                    )}
+                    <button onClick={handleClearScript} aria-label="Clear script" className={`flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-white bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-lg px-3 py-2`}>
+                        <XIcon />
+                        <span>Clear</span>
+                    </button>
+                </div>
             </header>
-            
+
             <div className="mt-6 space-y-8">
-                <section aria-labelledby="script-viewer-heading">
-                     <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-4 h-96`}>
-                        {isParsing ? (
-                            <div className="flex items-center justify-center h-full text-center text-gray-400">
-                                <div>
-                                    <div className="w-8 h-8 border-4 border-t-transparent border-white rounded-full animate-spin mx-auto mb-3"></div>
-                                    <p>Extracting text from script...</p>
-                                </div>
+                {/* Script Viewer with AnimatePresence for smooth hide animation */}
+                <AnimatePresence>
+                    {showScriptViewer && (
+                        <motion.section
+                            initial={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                            aria-labelledby="script-viewer-heading"
+                        >
+                            <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-4 h-96`}>
+                                {isParsing ? (
+                                    <div className="flex items-center justify-center h-full text-center text-gray-400">
+                                        <div>
+                                            <div className="w-8 h-8 border-4 border-t-transparent border-white rounded-full animate-spin mx-auto mb-3"></div>
+                                            <p>Extracting text from script...</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <pre className="text-sm whitespace-pre-wrap break-words h-full overflow-y-auto text-gray-300 font-mono">
+                                        {scriptContent}
+                                    </pre>
+                                )}
                             </div>
-                        ) : (
-                          <pre className="text-sm whitespace-pre-wrap break-words h-full overflow-y-auto text-gray-300 font-mono">
-                              {scriptContent}
-                          </pre>
-                        )}
-                    </div>
-                </section>
-                
+                        </motion.section>
+                    )}
+                </AnimatePresence>
+
                 {renderAnalysisSummary()}
             </div>
+
+            {/* Modals */}
+            {analysis && (
+                <>
+                    {/* Detail Modals for Cast, Locations, Scenes */}
+                    <DetailModal
+                        isOpen={detailsModalType === 'cast'}
+                        onClose={() => setDetailsModalType(null)}
+                        type="cast"
+                        data={analysis.characters}
+                    />
+                    <DetailModal
+                        isOpen={detailsModalType === 'locations'}
+                        onClose={() => setDetailsModalType(null)}
+                        type="locations"
+                        data={analysis.locations}
+                    />
+                    <DetailModal
+                        isOpen={detailsModalType === 'scenes'}
+                        onClose={() => setDetailsModalType(null)}
+                        type="scenes"
+                        data={analysis.scenes}
+                    />
+
+                    {/* Script Viewer Modal */}
+                    <ScriptViewerModal
+                        isOpen={showScriptModal}
+                        onClose={() => setShowScriptModal(false)}
+                        scriptContent={scriptContent || ''}
+                        scriptTitle={analysis.title}
+                    />
+
+                    {/* Floating Action Button (only show when script viewer is hidden) */}
+                    <AnimatePresence>
+                        {!showScriptViewer && (
+                            <FloatingViewScriptButton onClick={() => setShowScriptModal(true)} />
+                        )}
+                    </AnimatePresence>
+                </>
+            )}
+
+            {/* Full-Screen Focus Mode */}
+            <FullScreenWorkspace
+                isOpen={showFocusMode}
+                onClose={() => setShowFocusMode(false)}
+                title={analysis?.title || 'Script Focus Mode'}
+                showBackButton={true}
+            >
+                <div className="h-full flex flex-col p-8">
+                    <div className={`flex-1 rounded-2xl overflow-hidden ${
+                        isDark
+                            ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0B0B0B] border border-gray-800/50'
+                            : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
+                    } shadow-2xl`}>
+                        <div className="h-full p-8 overflow-y-auto">
+                            <pre className={`text-base whitespace-pre-wrap break-words font-mono leading-relaxed ${
+                                isDark ? 'text-gray-300' : 'text-gray-800'
+                            }`}>
+                                {scriptContent}
+                            </pre>
+                        </div>
+                    </div>
+
+                    {/* Optional: Analysis Summary Bar at Bottom */}
+                    {analysis && (
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className={`mt-6 grid grid-cols-3 gap-4 p-4 rounded-xl ${
+                                isDark
+                                    ? 'bg-gradient-to-r from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
+                                    : 'bg-gradient-to-r from-white to-gray-50 border border-gray-200'
+                            }`}
+                        >
+                            <div className="text-center">
+                                <div className={`text-2xl font-bold ${isDark ? 'text-[#dfec2d]' : 'text-[#b3e617]'}`}>
+                                    {analysis.scenes.length}
+                                </div>
+                                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    Scenes
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className={`text-2xl font-bold ${isDark ? 'text-[#dfec2d]' : 'text-[#b3e617]'}`}>
+                                    {analysis.characters.length}
+                                </div>
+                                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    Characters
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className={`text-2xl font-bold ${isDark ? 'text-[#dfec2d]' : 'text-[#b3e617]'}`}>
+                                    {analysis.locations.length}
+                                </div>
+                                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    Locations
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </div>
+            </FullScreenWorkspace>
         </div>
     );
 };

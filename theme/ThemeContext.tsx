@@ -13,32 +13,55 @@ export interface ThemePalette {
   accent_secondary: string;
   border_primary: string;
   border_secondary: string;
+  // Enhanced modern theme additions
+  gradient_primary: string;
+  gradient_secondary: string;
+  glass_bg: string;
+  glass_border: string;
+  shadow_primary: string;
+  shadow_secondary: string;
 }
 
 export const THEMES: Record<ThemeMode, ThemePalette> = {
   dark: {
-    bg_primary: '#0B0B0B',
-    bg_secondary: '#161616',
-    bg_tertiary: '#1C1C1C',
+    // Refined dark palette with subtle warmth
+    bg_primary: '#0A0A0B',        // Deep blue-black
+    bg_secondary: '#141414',      // Soft black
+    bg_tertiary: '#1A1A1C',       // Dark slate
     text_primary: '#FFFFFF',
-    text_secondary: '#A0A0A0',
-    text_tertiary: '#707070',
-    accent_primary: '#10A37F',
-    accent_secondary: '#1AD8B1',
-    border_primary: '#2A2A2A',
-    border_secondary: '#404040',
+    text_secondary: '#B4B4B4',    // Softer secondary text
+    text_tertiary: '#7A7A7A',     // Enhanced tertiary contrast
+    accent_primary: '#00D4AA',    // Modern cyan-green
+    accent_secondary: '#00F5D4',  // Bright accent
+    border_primary: '#2A2A2D',    // Subtle borders with hint of blue
+    border_secondary: '#3A3A3D',  // Enhanced border visibility
+    // Modern additions
+    gradient_primary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    gradient_secondary: 'linear-gradient(135deg, #00D4AA 0%, #00F5D4 100%)',
+    glass_bg: 'rgba(255, 255, 255, 0.05)',
+    glass_border: 'rgba(255, 255, 255, 0.1)',
+    shadow_primary: '0 8px 32px rgba(0, 0, 0, 0.3)',
+    shadow_secondary: '0 4px 16px rgba(0, 0, 0, 0.2)',
   },
   light: {
+    // Clean, modern light theme
     bg_primary: '#FFFFFF',
-    bg_secondary: '#F5F5F5',
-    bg_tertiary: '#EBEBEB',
-    text_primary: '#0B0B0B',
-    text_secondary: '#505050',
-    text_tertiary: '#808080',
-    accent_primary: '#0FB98D',
-    accent_secondary: '#0D8F74',
-    border_primary: '#D4D4D4',
-    border_secondary: '#B0B0B0',
+    bg_secondary: '#FAFAFA',      // Softer off-white
+    bg_tertiary: '#F0F0F0',       // Light gray
+    text_primary: '#0A0A0A',      // Softer black
+    text_secondary: '#5A5A5A',    // Enhanced readability
+    text_tertiary: '#8A8A8A',     // Better contrast
+    accent_primary: '#00B894',    // Consistent green
+    accent_secondary: '#00CEC9',  // Teal accent
+    border_primary: '#E0E0E0',    // Subtle borders
+    border_secondary: '#D0D0D0',  // Clear dividers
+    // Modern additions
+    gradient_primary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    gradient_secondary: 'linear-gradient(135deg, #00B894 0%, #00CEC9 100%)',
+    glass_bg: 'rgba(255, 255, 255, 0.7)',
+    glass_border: 'rgba(255, 255, 255, 0.8)',
+    shadow_primary: '0 8px 32px rgba(0, 0, 0, 0.1)',
+    shadow_secondary: '0 4px 16px rgba(0, 0, 0, 0.05)',
   },
 };
 

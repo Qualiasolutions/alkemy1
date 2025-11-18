@@ -18,6 +18,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { hunyuanWorldService, type HunyuanWorldResult, type HunyuanWorldGenerationJob } from '@/services/hunyuanWorldService';
 import { useTheme } from '@/theme/ThemeContext';
 import type { ScriptAnalysis } from '@/types';
+import FullScreenWorkspace from '@/components/FullScreenWorkspace';
+import NavigationControls from '@/components/3d/NavigationControls';
 
 // Modern SVG Icons
 const WorldIcon = ({ className }: { className?: string }) => (
@@ -82,11 +84,29 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
     const [resolution, setResolution] = useState<'low' | 'standard' | 'high'>('standard');
     const [format, setFormat] = useState<'glb' | 'obj' | 'ply' | 'stl'>('glb');
     const [showGallery, setShowGallery] = useState(false);
+    const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
     const [serviceStatus, setServiceStatus] = useState<{
         available: boolean;
         apiStatus: 'online' | 'offline' | 'error';
         activeJobs: number;
     }>({ available: false, apiStatus: 'offline', activeJobs: 0 });
+
+    // 3D Navigation Controls State
+    const [navigationSettings, setNavigationSettings] = useState({
+        gridEnabled: false,
+        wireframeEnabled: false,
+        autoRotateEnabled: false,
+        ambientIntensity: 0.6,
+        directionalIntensity: 0.4
+    });
+
+    // 3D scene references for navigation controls
+    const sceneRef = useRef<any>(null);
+    const cameraRef = useRef<any>(null);
+    const rendererRef = useRef<any>(null);
+    const controlsRef = useRef<any>(null);
+    const directionalLightRef = useRef<any>(null);
+    const animationIdRef = useRef<number | null>(null);
 
     // Check service status on mount
     useEffect(() => {
@@ -201,6 +221,156 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
         }
     };
 
+    // 3D Navigation Control Handlers
+    const handleCameraPreset = useCallback((preset: 'front' | 'back' | 'top' | 'bottom' | 'left' | 'right' | 'isometric') => {
+        if (!cameraRef.current || !controlsRef.current || !sceneRef.current) return;
+
+        const camera = cameraRef.current;
+        const controls = controlsRef.current;
+        const scene = sceneRef.current;
+
+        // Get model bounds for proper positioning
+        const box = new THREE.Box3().setFromObject(scene);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDimension = Math.max(size.x, size.y, size.z);
+
+        const distance = maxDimension * 2;
+
+        switch (preset) {
+            case 'front':
+                camera.position.set(0, 0, distance);
+                controls.target.set(0, 0, 0);
+                break;
+            case 'back':
+                camera.position.set(0, 0, -distance);
+                controls.target.set(0, 0, 0);
+                break;
+            case 'top':
+                camera.position.set(0, distance, 0);
+                camera.lookAt(0, 0, 0);
+                controls.target.set(0, 0, 0);
+                break;
+            case 'bottom':
+                camera.position.set(0, -distance, 0);
+                camera.lookAt(0, 0, 0);
+                controls.target.set(0, 0, 0);
+                break;
+            case 'left':
+                camera.position.set(-distance, 0, 0);
+                controls.target.set(0, 0, 0);
+                break;
+            case 'right':
+                camera.position.set(distance, 0, 0);
+                controls.target.set(0, 0, 0);
+                break;
+            case 'isometric':
+                camera.position.set(distance * 0.7, distance * 0.7, distance * 0.7);
+                controls.target.set(0, 0, 0);
+                break;
+        }
+
+        controls.update();
+    }, []);
+
+    const handleLightingChange = useCallback((lighting: {
+        ambientIntensity: number;
+        directionalIntensity: number;
+        directionalPosition: [number, number, number];
+    }) => {
+        if (!sceneRef.current || !directionalLightRef.current) return;
+
+        const scene = sceneRef.current;
+        const directionalLight = directionalLightRef.current;
+
+        // Update ambient light
+        scene.traverse((child: any) => {
+            if (child instanceof THREE.AmbientLight) {
+                child.intensity = lighting.ambientIntensity;
+            }
+        });
+
+        // Update directional light
+        directionalLight.intensity = lighting.directionalIntensity;
+        directionalLight.position.set(...lighting.directionalPosition);
+
+        setNavigationSettings(prev => ({
+            ...prev,
+            ambientIntensity: lighting.ambientIntensity,
+            directionalIntensity: lighting.directionalIntensity
+        }));
+    }, []);
+
+    const handleGridToggle = useCallback(async (enabled: boolean) => {
+        if (!sceneRef.current) return;
+
+        const scene = sceneRef.current;
+
+        // Remove existing grid
+        const existingGrid = scene.getObjectByName('gridHelper');
+        if (existingGrid) {
+            scene.remove(existingGrid);
+        }
+
+        // Add new grid if enabled
+        if (enabled) {
+            const { GridHelper } = await import('three');
+            const gridHelper = new GridHelper(20, 20, 0x888888, 0xcccccc);
+            gridHelper.name = 'gridHelper';
+            scene.add(gridHelper);
+        }
+
+        setNavigationSettings(prev => ({ ...prev, gridEnabled: enabled }));
+    }, []);
+
+    const handleWireframeToggle = useCallback((enabled: boolean) => {
+        if (!sceneRef.current) return;
+
+        const scene = sceneRef.current;
+        scene.traverse((child: any) => {
+            if (child.isMesh) {
+                child.material.wireframe = enabled;
+            }
+        });
+
+        setNavigationSettings(prev => ({ ...prev, wireframeEnabled: enabled }));
+    }, []);
+
+    const handleAutoRotateToggle = useCallback((enabled: boolean) => {
+        if (!controlsRef.current) return;
+
+        controlsRef.current.autoRotate = enabled;
+        setNavigationSettings(prev => ({ ...prev, autoRotateEnabled: enabled }));
+    }, []);
+
+    const handleReset = useCallback(async () => {
+        if (!cameraRef.current || !controlsRef.current || !sceneRef.current) return;
+
+        // Reset to default position (isometric view)
+        handleCameraPreset('isometric');
+
+        // Reset lighting to defaults
+        handleLightingChange({
+            ambientIntensity: 0.6,
+            directionalIntensity: 0.4,
+            directionalPosition: [5, 5, 5]
+        });
+
+        // Reset display options
+        handleWireframeToggle(false);
+        await handleGridToggle(false);
+        handleAutoRotateToggle(false);
+    }, [handleCameraPreset, handleLightingChange, handleWireframeToggle, handleGridToggle, handleAutoRotateToggle]);
+
+    // Cleanup animation on unmount
+    useEffect(() => {
+        return () => {
+            if (animationIdRef.current) {
+                cancelAnimationFrame(animationIdRef.current);
+            }
+        };
+    }, []);
+
     // Load world in 3D viewer
     useEffect(() => {
         if (!activeWorld || !viewerRef.current) return;
@@ -227,14 +397,22 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                     const controls = new OrbitControls(camera, renderer.domElement);
                     controls.enableDamping = true;
                     controls.dampingFactor = 0.05;
+                    controls.autoRotate = navigationSettings.autoRotateEnabled;
 
-                    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+                    const ambientLight = new THREE.AmbientLight(0xffffff, navigationSettings.ambientIntensity);
+                    const directionalLight = new THREE.DirectionalLight(0xffffff, navigationSettings.directionalIntensity);
                     directionalLight.position.set(5, 5, 5);
 
                     const scene3D = new THREE.Scene();
                     scene3D.add(ambientLight);
                     scene3D.add(directionalLight);
+
+                    // Store references for navigation controls
+                    sceneRef.current = scene3D;
+                    cameraRef.current = camera;
+                    rendererRef.current = renderer;
+                    controlsRef.current = controls;
+                    directionalLightRef.current = directionalLight;
 
                     const loader = new GLTFLoader();
                     loader.load(activeWorld.modelUrl, (gltf) => {
@@ -249,8 +427,20 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                         controls.target.set(0, 0, 0);
                         controls.update();
 
+                        // Apply initial navigation settings
+                        if (navigationSettings.wireframeEnabled) {
+                            gltf.scene.traverse((child: any) => {
+                                if (child.isMesh) {
+                                    child.material.wireframe = true;
+                                }
+                            });
+                        }
+
+                        // Set initial camera position
+                        handleCameraPreset('isometric');
+
                         const animate = () => {
-                            requestAnimationFrame(animate);
+                            animationIdRef.current = requestAnimationFrame(animate);
                             controls.update();
                             renderer.render(scene3D, camera);
                         };
@@ -552,6 +742,23 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                 </div>
                             </div>
                         )}
+
+                        {/* 3D Navigation Controls - Show only when there's an active world */}
+                        {activeWorld && (
+                            <NavigationControls
+                                onCameraPreset={handleCameraPreset}
+                                onLightingChange={handleLightingChange}
+                                onGridToggle={handleGridToggle}
+                                onWireframeToggle={handleWireframeToggle}
+                                onAutoRotateToggle={handleAutoRotateToggle}
+                                onReset={handleReset}
+                                gridEnabled={navigationSettings.gridEnabled}
+                                wireframeEnabled={navigationSettings.wireframeEnabled}
+                                autoRotateEnabled={navigationSettings.autoRotateEnabled}
+                                ambientIntensity={navigationSettings.ambientIntensity}
+                                directionalIntensity={navigationSettings.directionalIntensity}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -600,6 +807,20 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
+                                                                setActiveWorld(world);
+                                                                setShowFullscreenViewer(true);
+                                                            }}
+                                                            className="p-1 rounded opacity-75 hover:opacity-100 transition-opacity"
+                                                            style={{ color: colors.accent_primary }}
+                                                            title="View in fullscreen"
+                                                        >
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 handleDownloadWorld(world);
                                                             }}
                                                             className="p-1 rounded opacity-75 hover:opacity-100 transition-opacity"
@@ -641,7 +862,39 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Full-screen 3D Viewer */}
+                <FullScreenWorkspace
+                    isOpen={showFullscreenViewer && activeWorld !== null}
+                    onClose={() => setShowFullscreenViewer(false)}
+                    title={`3D Viewer - ${activeWorld?.prompt || 'Untitled World'}`}
+                    showBackButton={true}
+                >
+                    <div className="w-full h-full p-8 flex items-center justify-center">
+                        <div
+                            ref={viewerRef}
+                            className="w-full h-full rounded-xl overflow-hidden shadow-2xl"
+                            style={{ background: colors.surface_card }}
+                        />
+                        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 bg-black/50 backdrop-blur-md rounded-full px-6 py-3">
+                            <button
+                                onClick={() => handleDownloadWorld(activeWorld!)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/10 transition-all"
+                                style={{ color: colors.accent_primary }}
+                            >
+                                <DownloadIcon className="w-5 h-5" />
+                                <span className="text-sm font-medium">Download</span>
+                            </button>
+                            <div className="w-px bg-white/20" />
+                            <div className="flex flex-col text-xs text-white/60">
+                                <span>Format: {activeWorld?.metadata.format.toUpperCase()}</span>
+                                <span>Vertices: {activeWorld?.metadata.vertices.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </FullScreenWorkspace>
             </div>
         </div>
     );
 }
+export default ThreeDWorldsTab;

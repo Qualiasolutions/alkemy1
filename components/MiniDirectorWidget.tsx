@@ -35,16 +35,22 @@ const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
 
 const ACCENT_HEX = '#10A37F';
 
-const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi' => {
+const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'FLUX.1.1' | 'FLUX.1 Kontext' | 'FLUX Ultra' => {
   const normalized = (model ?? '').toLowerCase();
   if (normalized.includes('imagen')) return 'Imagen';
   if (normalized.includes('nano') || normalized.includes('banana') || normalized.includes('gemini') || normalized.includes('flash')) {
     return 'Gemini Nano Banana';
   }
-  if (normalized.includes('kontext') || normalized.includes('max') || normalized.includes('multi')) {
-    return 'Flux Kontext Max Multi';
+  if (normalized.includes('1.1') || normalized.includes('pro')) {
+    return 'FLUX.1.1';
   }
-  return 'Flux';
+  if (normalized.includes('kontext') || normalized.includes('context')) {
+    return 'FLUX.1 Kontext';
+  }
+  if (normalized.includes('ultra')) {
+    return 'FLUX Ultra';
+  }
+  return 'FLUX.1.1'; // Default to newest model
 };
 
 const buildGenerationEntries = (urls: string[], errors: (string | null)[], aspectRatio: string): Generation[] => {

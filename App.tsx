@@ -897,9 +897,9 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   const handleSetMoodboardTemplates = (updater: React.SetStateAction<MoodboardTemplate[]>) => {
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        if (!prev) return null;
-        const nextTemplates = typeof updater === 'function' ? updater(prev.moodboardTemplates || []) : updater;
-        return { ...prev, moodboardTemplates: nextTemplates };
+        const currentAnalysis = prev ?? createEmptyScriptAnalysis();
+        const nextTemplates = typeof updater === 'function' ? updater(currentAnalysis.moodboardTemplates || []) : updater;
+        return { ...currentAnalysis, moodboardTemplates: nextTemplates };
     });
   };
 
@@ -1045,7 +1045,6 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
         return <MoodboardTab
                   moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
                   onUpdateMoodboardTemplates={handleSetMoodboardTemplates}
-                  scriptAnalyzed={!!scriptAnalysis}
                 />;
       case 'presentation':
         return <PresentationTab scriptAnalysis={scriptAnalysis} />;

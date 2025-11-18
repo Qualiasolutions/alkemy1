@@ -263,10 +263,22 @@ class MediaServiceImpl implements MediaService {
   }
 }
 
-// Export singleton instance
-export const mediaService: MediaService = new MediaServiceImpl();
+// Export singleton instance as a function to avoid TDZ errors
+// This ensures the instance is created only when accessed, not during module initialization
+let mediaServiceInstance: MediaService | null = null;
+
+function getMediaServiceInstance(): MediaService {
+  if (!mediaServiceInstance) {
+    mediaServiceInstance = new MediaServiceImpl();
+  }
+  return mediaServiceInstance;
+}
 
 // Export the appropriate service based on configuration
-export function getMediaService(): MediaService {
-  return isSupabaseConfigured() ? mediaService : null;
-};
+export function getMediaService(): MediaService | null {
+  return isSupabaseConfigured() ? getMediaServiceInstance() : null;
+}
+
+// Export singleton instance for direct access (backward compatibility)
+// Simplified to avoid TDZ issues with Object.defineProperty
+export const mediaService = new MediaServiceImpl();

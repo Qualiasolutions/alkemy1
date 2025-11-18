@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Modern UI Effects */
+@import './styles/modern-effects.css';
+
 @layer base {
   :root {
     /* Enhanced Dark Theme Colors */

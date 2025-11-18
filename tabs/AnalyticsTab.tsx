@@ -16,6 +16,10 @@ import {
     trackGenerationMetrics
 } from '@/services/analyticsService';
 import {
+    generateAnalyticsPDF,
+    generateComparisonPDF
+} from '@/services/pdfExportService';
+import {
     LineChart,
     Line,
     BarChart,
@@ -33,6 +37,7 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import Button from '@/components/Button';
+import ComparisonView from '@/components/analytics/ComparisonView';
 
 interface AnalyticsTabProps {
     scriptAnalysis: ScriptAnalysis | null;
@@ -44,10 +49,13 @@ export default function AnalyticsTab({ scriptAnalysis, projectId }: AnalyticsTab
 
     const [qualityReport, setQualityReport] = useState<CreativeQualityReport | null>(null);
     const [performanceMetrics, setPerformanceMetrics] = useState<TechnicalPerformanceMetrics | null>(null);
+    const [previousQualityReport, setPreviousQualityReport] = useState<CreativeQualityReport | null>(null);
+    const [previousMetrics, setPreviousMetrics] = useState<TechnicalPerformanceMetrics | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisProgress, setAnalysisProgress] = useState(0);
     const [analysisMessage, setAnalysisMessage] = useState('');
-    const [activeTab, setActiveTab] = useState<'quality' | 'performance'>('quality');
+    const [activeTab, setActiveTab] = useState<'quality' | 'performance' | 'comparison'>('quality');
+    const [showComparisonMode, setShowComparisonMode] = useState(false);
 
     // Load performance metrics on mount
     useEffect(() => {
@@ -74,6 +82,14 @@ export default function AnalyticsTab({ scriptAnalysis, projectId }: AnalyticsTab
     const handleAnalyzeQuality = async () => {
         if (!scriptAnalysis) return;
 
+        // Save current data as previous before new analysis
+        if (qualityReport) {
+            setPreviousQualityReport(qualityReport);
+        }
+        if (performanceMetrics) {
+            setPreviousMetrics(performanceMetrics);
+        }
+
         setIsAnalyzing(true);
         setAnalysisProgress(0);
         setAnalysisMessage('Initializing analysis...');
@@ -97,31 +113,80 @@ export default function AnalyticsTab({ scriptAnalysis, projectId }: AnalyticsTab
         }
     };
 
-    const handleExportReport = (format: 'pdf' | 'csv') => {
+    const handleToggleComparison = () => {
+        setShowComparisonMode(!showComparisonMode);
+        if (!showComparisonMode && !previousMetrics && !previousQualityReport) {
+            // Save current as baseline for comparison
+            setPreviousQualityReport(qualityReport);
+            setPreviousMetrics(performanceMetrics);
+        }
+    };
+
+    const handleExportReport = async (format: 'pdf' | 'csv' | 'comparison') => {
         if (!qualityReport && !performanceMetrics) {
             alert('No data to export');
             return;
         }
 
         if (format === 'csv' && performanceMetrics) {
-            // Simple CSV export
+            // Enhanced CSV export with more data
             const csvData = [
+                'Alkemy AI Studio - Analytics Report',
+                `Generated: ${new Date().toLocaleDateString()}`,
+                '',
+                'Performance Metrics',
                 'Metric,Value',
                 `Project ID,${performanceMetrics.projectId}`,
                 `Total Cost,$${performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`,
-                `Image Cost,$${performanceMetrics.apiCosts.imageGenerationCost.toFixed(2)}`,
-                `Video Cost,$${performanceMetrics.apiCosts.videoGenerationCost.toFixed(2)}`,
+                `Image Generation Cost,$${performanceMetrics.apiCosts.imageGenerationCost.toFixed(2)}`,
+                `Video Animation Cost,$${performanceMetrics.apiCosts.videoGenerationCost.toFixed(2)}`,
+                `Audio Generation Cost,$${performanceMetrics.apiCosts.audioGenerationCost.toFixed(2)}`,
                 `Success Rate,${performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}%`,
+                `Failed Generations,${performanceMetrics.efficiencyMetrics.failedGenerations}`,
                 `Last Updated,${performanceMetrics.lastUpdated}`
             ];
 
+            // Add render times
+            if (performanceMetrics.renderTimes.imageGeneration.length > 0) {
+                csvData.push('');
+                csvData.push('Render Times');
+                csvData.push('Model,Average Time (s),Generation Count');
+                performanceMetrics.renderTimes.imageGeneration.forEach(model => {
+                    csvData.push(`${model.model},${model.avgTime.toFixed(1)},${model.count}`);
+                });
+                if (performanceMetrics.renderTimes.videoAnimation.count > 0) {
+                    csvData.push(`Video Animation,${performanceMetrics.renderTimes.videoAnimation.avgTime.toFixed(1)},${performanceMetrics.renderTimes.videoAnimation.count}`);
+                }
+            }
+
             if (qualityReport) {
                 csvData.push('');
-                csvData.push('Quality Metrics,Score');
+                csvData.push('Quality Metrics');
+                csvData.push('Metric,Score');
                 csvData.push(`Overall Quality,${qualityReport.overallScore}`);
                 csvData.push(`Color Consistency,${qualityReport.colorConsistency}`);
                 csvData.push(`Lighting Coherence,${qualityReport.lightingCoherence}`);
                 csvData.push(`Look Bible Adherence,${qualityReport.lookBibleAdherence}`);
+
+                // Add scene breakdown
+                if (qualityReport.sceneReports.length > 0) {
+                    csvData.push('');
+                    csvData.push('Scene Breakdown');
+                    csvData.push('Scene,Overall,Color,Lighting,Look Bible');
+                    qualityReport.sceneReports.forEach(scene => {
+                        csvData.push(`${scene.sceneName},${scene.overallScore},${scene.colorConsistency},${scene.lightingCoherence},${scene.lookBibleAdherence}`);
+                    });
+                }
+
+                // Add improvement suggestions
+                if (qualityReport.improvementSuggestions.length > 0) {
+                    csvData.push('');
+                    csvData.push('Improvement Suggestions');
+                    csvData.push('Issue,Impact,Suggestion,Severity');
+                    qualityReport.improvementSuggestions.forEach(suggestion => {
+                        csvData.push(`"${suggestion.issue}","${suggestion.impact}","${suggestion.suggestion}",${suggestion.severity}`);
+                    });
+                }
             }
 
             const blob = new Blob([csvData.join('\n')], { type: 'text/csv' });
@@ -132,7 +197,65 @@ export default function AnalyticsTab({ scriptAnalysis, projectId }: AnalyticsTab
             a.click();
             URL.revokeObjectURL(url);
         } else if (format === 'pdf') {
-            alert('PDF export coming in Sprint 3!');
+            try {
+                setAnalysisMessage('Generating PDF report...');
+                const pdfBlob = await generateAnalyticsPDF(
+                    projectId,
+                    scriptAnalysis,
+                    qualityReport,
+                    performanceMetrics,
+                    {
+                        includeCharts: true,
+                        includeComparison: true,
+                        includeRecommendations: true,
+                        format: 'detailed'
+                    }
+                );
+
+                // Download the PDF
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `alkemy-analytics-${projectId}-${Date.now()}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                setAnalysisMessage('');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF report. Please try again.');
+                setAnalysisMessage('');
+            }
+        } else if (format === 'comparison' && previousMetrics) {
+            try {
+                setAnalysisMessage('Generating comparison PDF...');
+                const pdfBlob = await generateComparisonPDF(
+                    projectId,
+                    {
+                        qualityReport,
+                        performanceMetrics
+                    },
+                    {
+                        qualityReport: previousQualityReport,
+                        performanceMetrics: previousMetrics,
+                        date: new Date(previousMetrics.lastUpdated)
+                    }
+                );
+
+                // Download the PDF
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `alkemy-comparison-${projectId}-${Date.now()}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                setAnalysisMessage('');
+            } catch (error) {
+                console.error('Error generating comparison PDF:', error);
+                alert('Failed to generate comparison report. Please try again.');
+                setAnalysisMessage('');
+            }
         }
     };
 
@@ -162,7 +285,7 @@ export default function AnalyticsTab({ scriptAnalysis, projectId }: AnalyticsTab
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'wrap' }}>
                 <Button
                     onClick={handleAnalyzeQuality}
                     disabled={isAnalyzing}
@@ -177,30 +300,60 @@ export default function AnalyticsTab({ scriptAnalysis, projectId }: AnalyticsTab
                 </Button>
 
                 <Button
-                    onClick={() => handleExportReport('csv')}
+                    onClick={handleToggleComparison}
                     disabled={!qualityReport && !performanceMetrics}
                     style={{
-                        background: colors.bg_tertiary,
-                        color: colors.text_primary,
+                        background: showComparisonMode ? colors.accent_primary : colors.bg_tertiary,
+                        color: showComparisonMode ? 'white' : colors.text_primary,
                         padding: '12px 24px',
-                        fontSize: '16px'
+                        fontSize: '16px',
+                        border: showComparisonMode ? 'none' : `1px solid ${colors.border}`
                     }}
                 >
-                    Export CSV
+                    {showComparisonMode ? '✓ Comparison Mode' : 'Enable Comparison'}
                 </Button>
 
-                <Button
-                    onClick={() => handleExportReport('pdf')}
-                    disabled={!qualityReport && !performanceMetrics}
-                    style={{
-                        background: colors.bg_tertiary,
-                        color: colors.text_primary,
-                        padding: '12px 24px',
-                        fontSize: '16px'
-                    }}
-                >
-                    Export PDF
-                </Button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <Button
+                        onClick={() => handleExportReport('csv')}
+                        disabled={!qualityReport && !performanceMetrics}
+                        style={{
+                            background: colors.bg_tertiary,
+                            color: colors.text_primary,
+                            padding: '12px 20px',
+                            fontSize: '14px'
+                        }}
+                    >
+                        📊 Export CSV
+                    </Button>
+
+                    <Button
+                        onClick={() => handleExportReport('pdf')}
+                        disabled={!qualityReport && !performanceMetrics}
+                        style={{
+                            background: colors.bg_tertiary,
+                            color: colors.text_primary,
+                            padding: '12px 20px',
+                            fontSize: '14px'
+                        }}
+                    >
+                        📄 Export PDF
+                    </Button>
+
+                    {showComparisonMode && previousMetrics && (
+                        <Button
+                            onClick={() => handleExportReport('comparison')}
+                            style={{
+                                background: '#10b981',
+                                color: 'white',
+                                padding: '12px 20px',
+                                fontSize: '14px'
+                            }}
+                        >
+                            📈 Export Comparison
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Progress Message */}
@@ -273,23 +426,56 @@ export default function AnalyticsTab({ scriptAnalysis, projectId }: AnalyticsTab
                 >
                     Technical Performance
                 </button>
+                {showComparisonMode && (previousQualityReport || previousMetrics) && (
+                    <button
+                        onClick={() => setActiveTab('comparison')}
+                        style={{
+                            padding: '12px 24px',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: activeTab === 'comparison' ? `2px solid ${colors.accent_primary}` : '2px solid transparent',
+                            color: activeTab === 'comparison' ? colors.accent_primary : colors.text_secondary,
+                            fontSize: '16px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        📊 Comparison View
+                    </button>
+                )}
             </div>
 
             {/* Quality Tab Content */}
             {activeTab === 'quality' && (
-                <QualityReportView report={qualityReport} colors={colors} />
+                <QualityReportView report={qualityReport} colors={colors} showComparison={showComparisonMode} previousReport={previousQualityReport} />
             )}
 
             {/* Performance Tab Content */}
             {activeTab === 'performance' && (
-                <PerformanceMetricsView metrics={performanceMetrics} colors={colors} />
+                <PerformanceMetricsView metrics={performanceMetrics} colors={colors} showComparison={showComparisonMode} previousMetrics={previousMetrics} />
+            )}
+
+            {/* Comparison Tab Content */}
+            {activeTab === 'comparison' && showComparisonMode && (
+                <ComparisonView
+                    currentQuality={qualityReport}
+                    previousQuality={previousQualityReport}
+                    currentMetrics={performanceMetrics}
+                    previousMetrics={previousMetrics}
+                    colors={colors}
+                />
             )}
         </div>
     );
 }
 
 // Quality Report View Component
-function QualityReportView({ report, colors }: { report: CreativeQualityReport | null; colors: any }) {
+function QualityReportView({ report, colors, showComparison, previousReport }: {
+    report: CreativeQualityReport | null;
+    colors: any;
+    showComparison?: boolean;
+    previousReport?: CreativeQualityReport | null;
+}) {
     if (!report) {
         return (
             <div style={{ textAlign: 'center', padding: '48px' }}>
@@ -478,7 +664,12 @@ function QualityReportView({ report, colors }: { report: CreativeQualityReport |
 }
 
 // Performance Metrics View Component
-function PerformanceMetricsView({ metrics, colors }: { metrics: TechnicalPerformanceMetrics | null; colors: any }) {
+function PerformanceMetricsView({ metrics, colors, showComparison, previousMetrics }: {
+    metrics: TechnicalPerformanceMetrics | null;
+    colors: any;
+    showComparison?: boolean;
+    previousMetrics?: TechnicalPerformanceMetrics | null;
+}) {
     if (!metrics) {
         return (
             <div style={{ textAlign: 'center', padding: '48px' }}>

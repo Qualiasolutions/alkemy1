@@ -1,0 +1,46 @@
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_vx=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for this output (/usr/share/lmod/lmod/init/bash)
+Shell debugging restarted
++ unset __lmod_vx
++ echo ================================
+================================
++ echo 'Deploying Alkemy to Vercel Prod'
+Deploying Alkemy to Vercel Prod
++ echo ================================
+================================
++ echo ''
+
++ '[' '!' -d dist ']'
++ echo '✅ Build directory found'
+✅ Build directory found
++ echo ''
+
++ echo '🚀 Deploying to Vercel Production...'
+🚀 Deploying to Vercel Production...
++ echo ''
+
++ vercel deploy --prod --yes
+Vercel CLI 48.7.1
+Retrieving project…
+Deploying qualiasolutionscy/alkemy1
+Uploading [--------------------] (0.0B/1.5KB)
+Uploading [=========-----------] (751.0B/1.5KB)
+Uploading [====================] (1.5KB/1.5KB)
+Inspect: https://vercel.com/qualiasolutionscy/alkemy1/Bdwh2QjpRPewhbbsEKyBgHETjZXK [3s]
+Production: https://alkemy1-7m64dvn7c-qualiasolutionscy.vercel.app [3s]
+https://alkemy1-7m64dvn7c-qualiasolutionscy.vercel.appQueued
+Building
+Completing
++ '[' 0 -eq 0 ']'
++ echo ''
+
++ echo ================================
+================================
++ echo '✅ Deployment successful!'
+✅ Deployment successful!
++ echo ================================
+================================

@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TABS_CONFIG, TABS } from '../constants';
 import { ChevronDownIcon, ChevronsLeftIcon, ChevronsRightIcon, PlusIcon } from './icons/Icons';
 import Button from './Button';
+import { ModernCard } from './ui/modern-card';
+import { animationPresets } from './animations/motion-presets';
 import { useTheme } from '../theme/ThemeContext';
 
 interface SidebarProps {
@@ -27,10 +29,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
 
   return (
     <motion.nav
-      initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className={`relative group bg-[var(--color-background-primary)] border-r border-[var(--color-border-color)] sticky top-0 flex h-screen flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64 p-4' : 'w-20 p-3'}`}
+      {...animationPresets.sidebarSlide}
+      className={`relative group glass border-r border-[var(--color-border-color)] sticky top-0 flex h-screen flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-64 p-4' : 'w-20 p-3'}`}
+      style={{
+        background: colors.glass_bg,
+        backdropFilter: 'blur(10px)',
+        borderRight: `1px solid ${colors.glass_border}`
+      }}
     >
       {/* Subtle accent glow effects */}
       <div className="absolute top-20 left-0 w-24 h-24 rounded-full blur-3xl pointer-events-none bg-[var(--color-accent-secondary)]/8 opacity-50" />
@@ -81,13 +86,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                             <li key={tab.id} className="relative">
                               <motion.button
                                 onClick={() => setActiveTab(tab.id)}
-                                whileHover={{ x: 3 }}
-                                whileTap={{ scale: 0.98 }}
-                                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                                {...animationPresets.buttonPress}
+                                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover-lift ${
                                   isActive
-                                    ? 'bg-gradient-to-r from-[var(--color-accent-secondary)]/25 via-[var(--color-accent-secondary)]/15 to-[var(--color-accent-secondary)]/10 text-white shadow-lg shadow-[var(--color-accent-secondary)]/20'
-                                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-hover-background)] hover:text-[var(--color-text-primary)]'
+                                    ? 'text-white shadow-lg'
+                                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                                 }`}
+                                style={{
+                                  background: isActive ? colors.gradient_secondary : 'transparent',
+                                }}
                               >
                                 {isActive && (
                                   <motion.span

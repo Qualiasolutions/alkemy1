@@ -42,6 +42,21 @@ import {
     dismissWarning,
     generateContinuityReport,
 } from '../services/continuityService';
+import {
+    startQualityMonitoring,
+    stopQualityMonitoring,
+    getActiveAlerts,
+    getActiveSuggestions,
+    dismissAlert,
+    applySuggestion,
+    generateDirectorQualityReport,
+    QualityAlert,
+    QualitySuggestion
+} from '../services/qualityMonitoringService';
+import { ModernCard } from './ui/modern-card';
+import { animationPresets } from './animations/motion-presets';
+import { useTheme } from '../theme/ThemeContext';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type Author = 'user' | 'director';
 
@@ -79,16 +94,22 @@ const DEFAULT_SCRIPT_ANALYSIS: ScriptAnalysis = {
 const WELCOME_MESSAGE = 'Hi! I\'m your Director of Photography, and I\'ve just reviewed your project. I\'m here to help bring your vision to life.\n\nWhether you need help with camera angles, lighting setups, visual mood, or generating images for your characters and locations - just ask me naturally. I\'m here to collaborate with you.\n\nWhat would you like to discuss?';
 const WELCOME_MESSAGE_NO_CONTEXT = 'Hello! I\'m your Director of Photography. I\'m here to help you with cinematography, camera work, lighting, color grading, and visual storytelling.\n\nOnce you load or analyze a script, I\'ll have full context of your story. But I can already help you explore ideas, plan shots, or generate images.\n\nWhat\'s on your mind?';
 const ACCENT_HEX = '#dfec2d';
-const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'Flux' | 'Flux Kontext Max Multi' => {
+const resolveGenerationModel = (model?: string): 'Imagen' | 'Gemini Nano Banana' | 'FLUX.1.1' | 'FLUX.1 Kontext' | 'FLUX Ultra' => {
   const normalized = (model ?? '').toLowerCase();
   if (normalized.includes('imagen')) return 'Imagen';
   if (normalized.includes('nano') || normalized.includes('banana') || normalized.includes('gemini') || normalized.includes('flash')) {
     return 'Gemini Nano Banana';
   }
-  if (normalized.includes('kontext') || normalized.includes('max') || normalized.includes('multi')) {
-    return 'Flux Kontext Max Multi';
+  if (normalized.includes('1.1') || normalized.includes('pro')) {
+    return 'FLUX.1.1';
   }
-  return 'Flux';
+  if (normalized.includes('kontext') || normalized.includes('context')) {
+    return 'FLUX.1 Kontext';
+  }
+  if (normalized.includes('ultra')) {
+    return 'FLUX Ultra';
+  }
+  return 'FLUX.1.1'; // Default to newest model
 };
 
 const buildGenerationEntries = (urls: string[], errors: (string | null)[], aspectRatio: string): Generation[] => {
@@ -150,6 +171,12 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
   const [continuityIssues, setContinuityIssues] = useState<ContinuityIssue[]>([]);
   const [lastContinuityCheck, setLastContinuityCheck] = useState<number | null>(null);
 
+  // Quality monitoring state (Epic 6, Story 6.4)
+  const [qualityAlerts, setQualityAlerts] = useState<QualityAlert[]>([]);
+  const [qualitySuggestions, setQualitySuggestions] = useState<QualitySuggestion[]>([]);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [showQualityAlert, setShowQualityAlert] = useState(false);
+
   const analysisForChat = scriptAnalysis ?? DEFAULT_SCRIPT_ANALYSIS;
   const welcomeMessage = hasProjectContext ? WELCOME_MESSAGE : WELCOME_MESSAGE_NO_CONTEXT;
   const canResetChat = messages.some((message, index) => {
@@ -189,6 +216,47 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       textareaRef.current?.focus();
     }
   }, [isOpen]);
+
+  // Initialize quality monitoring when widget opens
+  useEffect(() => {
+    if (isOpen && scriptAnalysis && !isMonitoring) {
+      const projectId = scriptAnalysis.title || 'default';
+
+      // Start monitoring with callbacks for alerts and suggestions
+      startQualityMonitoring(
+        projectId,
+        scriptAnalysis,
+        (alert: QualityAlert) => {
+          setQualityAlerts(prev => [...prev, alert]);
+
+          // Show critical alerts immediately in chat
+          if (alert.severity === 'critical' && alert.actionRequired) {
+            setMessages(prev => [...prev, {
+              author: 'director',
+              text: `🚨 **Quality Alert**: ${alert.title}\n\n${alert.message}\n\n💡 **Suggestion**: ${alert.suggestion}`,
+              isCommand: false
+            }]);
+            setShowQualityAlert(true);
+          }
+        },
+        (suggestion: QualitySuggestion) => {
+          setQualitySuggestions(prev => [...prev, suggestion]);
+        }
+      );
+
+      setIsMonitoring(true);
+    } else if (!isOpen && isMonitoring) {
+      // Stop monitoring when widget closes
+      stopQualityMonitoring();
+      setIsMonitoring(false);
+    }
+
+    return () => {
+      if (isMonitoring) {
+        stopQualityMonitoring();
+      }
+    };
+  }, [isOpen, scriptAnalysis, isMonitoring]);
 
   // Initialize voice recognition on mount
   useEffect(() => {
@@ -518,6 +586,34 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
       return { type: 'continuity', subType: 'report' };
     }
 
+    // Check for quality monitoring commands (Story 6.4)
+    if (lowerInput.match(/check\s+quality|quality\s+check|quality\s+status|show\s+quality/i)) {
+      return { type: 'quality', subType: 'check' };
+    }
+    if (lowerInput.match(/quality\s+report|analytics\s+report|quality\s+analysis/i)) {
+      return { type: 'quality', subType: 'report' };
+    }
+    if (lowerInput.match(/quality\s+alerts?|show\s+alerts?|list\s+alerts?/i)) {
+      return { type: 'quality', subType: 'alerts' };
+    }
+    if (lowerInput.match(/quality\s+suggestions?|show\s+suggestions?|improvement\s+suggestions?/i)) {
+      return { type: 'quality', subType: 'suggestions' };
+    }
+    if (lowerInput.match(/dismiss\s+alert\s+(.+)|clear\s+alert\s+(.+)/i)) {
+      const match = lowerInput.match(/dismiss\s+alert\s+(.+)|clear\s+alert\s+(.+)/i);
+      if (match) {
+        const alertId = match[1] || match[2];
+        return { type: 'quality', subType: 'dismiss', alertId: alertId.trim() };
+      }
+    }
+    if (lowerInput.match(/apply\s+suggestion\s+(.+)|use\s+suggestion\s+(.+)/i)) {
+      const match = lowerInput.match(/apply\s+suggestion\s+(.+)|use\s+suggestion\s+(.+)/i);
+      if (match) {
+        const suggestionId = match[1] || match[2];
+        return { type: 'quality', subType: 'apply', suggestionId: suggestionId.trim() };
+      }
+    }
+
     // Check for generate command
     const generateMatch = lowerInput.match(/generate\s+(\d+)\s+(flux|imagen|kontext|max|multi)?\s*(?:images?|photos?)?\s*(?:of|for)?\s*(.+?)(?:\s+(\d+):(\d+))?$/i);
     if (generateMatch) {
@@ -626,6 +722,148 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
             success: true,
             message: report
           };
+        }
+      }
+
+      // Handle quality monitoring commands (Story 6.4)
+      if (command.type === 'quality') {
+        if (command.subType === 'check') {
+          // Get current quality status
+          const alerts = getActiveAlerts();
+          const suggestions = getActiveSuggestions();
+
+          if (!scriptAnalysis) {
+            return {
+              success: false,
+              message: 'No project loaded. Load a script to enable quality monitoring.'
+            };
+          }
+
+          // Generate quality report
+          const report = generateDirectorQualityReport(null, null);
+
+          let message = '📊 **Quality Status**\n\n';
+          message += report;
+
+          if (alerts.length > 0) {
+            message += '\n\n**Active Alerts:**\n';
+            alerts.slice(0, 3).forEach(alert => {
+              const emoji = alert.severity === 'critical' ? '🔴' :
+                           alert.severity === 'warning' ? '🟡' : '🔵';
+              message += `${emoji} ${alert.title}\n`;
+            });
+          }
+
+          if (suggestions.length > 0) {
+            message += '\n\n**Improvement Suggestions:**\n';
+            suggestions.slice(0, 3).forEach(s => {
+              message += `• ${s.suggestion}\n`;
+            });
+          }
+
+          return {
+            success: true,
+            message
+          };
+        }
+
+        if (command.subType === 'report') {
+          // Generate detailed quality report
+          const report = generateDirectorQualityReport(null, null);
+          return {
+            success: true,
+            message: report
+          };
+        }
+
+        if (command.subType === 'alerts') {
+          const alerts = getActiveAlerts();
+
+          if (alerts.length === 0) {
+            return {
+              success: true,
+              message: '✅ No active quality alerts. Your project is looking good!'
+            };
+          }
+
+          let message = `📋 **Active Quality Alerts** (${alerts.length})\n\n`;
+          alerts.forEach((alert, index) => {
+            const emoji = alert.severity === 'critical' ? '🔴' :
+                         alert.severity === 'warning' ? '🟡' : '🔵';
+            message += `**${index + 1}. ${emoji} ${alert.title}**\n`;
+            message += `   ${alert.message}\n`;
+            if (alert.suggestion) {
+              message += `   💡 ${alert.suggestion}\n`;
+            }
+            message += `   ID: ${alert.id}\n\n`;
+          });
+
+          message += '\nUse "dismiss alert [id]" to clear specific alerts.';
+
+          return {
+            success: true,
+            message
+          };
+        }
+
+        if (command.subType === 'suggestions') {
+          const suggestions = getActiveSuggestions();
+
+          if (suggestions.length === 0) {
+            return {
+              success: true,
+              message: 'No active improvement suggestions at this time.'
+            };
+          }
+
+          let message = `💡 **Quality Improvement Suggestions**\n\n`;
+          suggestions.forEach((s, index) => {
+            const impactEmoji = s.impact === 'high' ? '🔥' :
+                               s.impact === 'medium' ? '⭐' : '•';
+            message += `**${index + 1}. ${impactEmoji} ${s.category.toUpperCase()}**\n`;
+            message += `   ${s.suggestion}\n`;
+            if (s.autoApplicable) {
+              message += `   ✨ Can be applied automatically\n`;
+              message += `   ID: ${s.id}\n`;
+            }
+            message += '\n';
+          });
+
+          if (suggestions.some(s => s.autoApplicable)) {
+            message += 'Use "apply suggestion [id]" to apply automatic suggestions.';
+          }
+
+          return {
+            success: true,
+            message
+          };
+        }
+
+        if (command.subType === 'dismiss' && command.alertId) {
+          dismissAlert(command.alertId);
+          setQualityAlerts(prev => prev.filter(a => a.id !== command.alertId));
+
+          return {
+            success: true,
+            message: `✅ Alert dismissed: ${command.alertId}`
+          };
+        }
+
+        if (command.subType === 'apply' && command.suggestionId) {
+          const applied = await applySuggestion(command.suggestionId, analysisContext);
+
+          if (applied) {
+            setQualitySuggestions(prev => prev.filter(s => s.id !== command.suggestionId));
+            return {
+              success: true,
+              message: `✅ Suggestion applied successfully! Future generations will use the improved parameters.`
+            };
+          } else {
+            return {
+              success: false,
+              message: `Could not apply suggestion ${command.suggestionId}. It may not be auto-applicable.`
+            };
+          }
         }
       }
 
@@ -990,13 +1228,44 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
 
   return (
     <>
+      <style>{`
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+            transform: scale(1.05);
+          }
+          100% {
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            transform: scale(1);
+          }
+        }
+      `}</style>
       {/* Fixed position container for the chat widget */}
       <div className="fixed bottom-6 right-6 z-[60] pointer-events-none">
         <div className="pointer-events-auto">
           {isOpen ? (
-            <div className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#14171f] to-[#0d0f16] shadow-[0_50px_100px_rgba(3,7,18,0.9),0_0_80px_rgba(223,236,45,0.15)] backdrop-blur-2xl before:absolute before:inset-0 before:rounded-3xl before:p-[1px] before:bg-gradient-to-b before:from-[rgba(223,236,45,0.2)] before:via-transparent before:to-transparent before:-z-10">
+            <motion.div
+              {...animationPresets.modalAppear}
+              className="relative w-[440px] max-h-[calc(100vh-8rem)] overflow-hidden rounded-3xl glass shadow-2xl"
+              style={{
+                background: colors.glass_bg,
+                backdropFilter: 'blur(20px)',
+                border: `1px solid ${colors.glass_border}`,
+                boxShadow: colors.shadow_primary,
+              }}
+            >
               {/* Header */}
-              <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[rgba(223,236,45,0.08)] to-transparent px-6 py-4">
+              <header
+                className="flex items-center justify-between gap-3 border-b px-6 py-4"
+                style={{
+                  borderBottom: `1px solid ${colors.border_primary}`,
+                  background: colors.gradient_secondary,
+                }}
+              >
                 <div className="flex items-center gap-3">
                   <span
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(223,236,45,0.25)] to-[rgba(223,236,45,0.1)] shadow-[0_0_20px_rgba(223,236,45,0.3)] ${isSpeakingNow ? 'animate-pulse' : ''}`}
@@ -1390,16 +1659,43 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                   </div>
                 </form>
               </div>
-            </div>
+            </motion.div>
           ) : (
-            <Button
-              onClick={() => setIsOpen(true)}
-              variant="primary"
-              className="group !rounded-full !px-6 !py-3.5 !text-black shadow-[0_20px_40px_rgba(223,236,45,0.35)] hover:shadow-[0_25px_50px_rgba(223,236,45,0.4)] transition-all hover:scale-105"
-            >
-              <BrainIcon className="h-5 w-5 transition group-hover:scale-110 group-hover:rotate-12" />
-              <span className="font-semibold text-base">{widgetLabel}</span>
-            </Button>
+            <div style={{ position: 'relative' }}>
+              <Button
+                onClick={() => setIsOpen(true)}
+                variant="primary"
+                className="group !rounded-full !px-6 !py-3.5 !text-black shadow-[0_20px_40px_rgba(223,236,45,0.35)] hover:shadow-[0_25px_50px_rgba(223,236,45,0.4)] transition-all hover:scale-105"
+              >
+                <BrainIcon className="h-5 w-5 transition group-hover:scale-110 group-hover:rotate-12" />
+                <span className="font-semibold text-base">{widgetLabel}</span>
+              </Button>
+              {/* Quality Alert Badge */}
+              {qualityAlerts.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: qualityAlerts.some(a => a.severity === 'critical') ? '#ef4444' :
+                               qualityAlerts.some(a => a.severity === 'warning') ? '#f59e0b' : '#3b82f6',
+                    color: 'white',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    animation: qualityAlerts.some(a => a.severity === 'critical') ? 'pulse 1.5s infinite' : 'none'
+                  }}
+                >
+                  {qualityAlerts.length > 9 ? '9+' : qualityAlerts.length}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
