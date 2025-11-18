@@ -7,7 +7,7 @@
 
 import { supabase } from './supabase';
 import { Project, ScriptAnalysis, TimelineClip } from '../types';
-import { projectService } from './projectService';
+import { getProjectService } from './projectService';
 import { networkDetection } from './networkDetection';
 
 export interface SaveState {
@@ -275,6 +275,7 @@ class SaveManager {
     }
 
     // Save to database
+    const projectService = getProjectService();
     const { error } = await projectService.saveProjectData(
       this.currentProjectId,
       saveData
@@ -353,6 +354,7 @@ class SaveManager {
       // Check if remote has been updated since our last save
       if (this.lastSaved && new Date(remoteProject.updated_at) > this.lastSaved) {
         // Fetch full remote data for conflict resolution
+        const projectService = getProjectService();
         const { project } = await projectService.getProject(this.currentProjectId);
         this.conflictData = project;
         return true;
@@ -380,6 +382,7 @@ class SaveManager {
 
     try {
       // Get current project state
+      const projectService = getProjectService();
       const { project } = await projectService.getProject(this.currentProjectId);
       if (!project) return;
 
@@ -422,6 +425,7 @@ class SaveManager {
 
   private async fetchRemoteData() {
     if (!this.currentProjectId) return null;
+    const projectService = getProjectService();
     const { project } = await projectService.getProject(this.currentProjectId);
     return project;
   }
