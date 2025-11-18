@@ -603,7 +603,7 @@ const StillStudio: React.FC<{
     user?: any;
 }> = ({ frame, scene, onBack, onUpdateFrame, onEnterRefinement, moodboard, moodboardTemplates, characters, locations, currentProject, user }) => {
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion'>('Gemini Nano Banana');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion' | 'FLUX.1.1 Pro (FAL)' | 'FLUX.1 Kontext (FAL)' | 'FLUX Ultra (FAL)' | 'Seadream v4 (FAL)'>('Gemini Nano Banana');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -924,13 +924,17 @@ const StillStudio: React.FC<{
                         <label className="text-xs text-white/60 uppercase tracking-widest font-medium block">Model</label>
                         <select
                             value={model}
-                            onChange={e => setModel(e.target.value as 'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion')}
+                            onChange={e => setModel(e.target.value as any)}
                             className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                         >
-                            <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana</option>
-                            <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell</option>
-                            <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism</option>
-                            <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion</option>
+                            <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Google)</option>
+                            <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell (Free)</option>
+                            <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism (Free)</option>
+                            <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion (Free)</option>
+                            <option value="FLUX.1.1 Pro (FAL)" className="bg-[#0a0a0a]">FLUX 1.1 Pro (FAL)</option>
+                            <option value="FLUX.1 Kontext (FAL)" className="bg-[#0a0a0a]">FLUX Kontext (FAL)</option>
+                            <option value="FLUX Ultra (FAL)" className="bg-[#0a0a0a]">FLUX Ultra (FAL)</option>
+                            <option value="Seadream v4 (FAL)" className="bg-[#0a0a0a]">Seadream v4 (FAL - 4K)</option>
                         </select>
                     </div>
 

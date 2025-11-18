@@ -23,7 +23,7 @@ const FLUX_MODEL_CONFIG = {
         displayName: 'FLUX Ultra',
     },
     'Seadream v4': {
-        apiUrl: 'https://fal.run/fal-ai/seadream-v4',
+        apiUrl: 'https://fal.run/fal-ai/bytedance/seedream/v4/text-to-image',
         displayName: 'Seadream v4 - 4K Quality',
     }
 } as const;
