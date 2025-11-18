@@ -14,7 +14,7 @@
  */
 
 import { Client } from '@gradio/client';
-import { supabase } from './supabase';
+import { supabase } from '../../services/supabase';
 
 export interface HunyuanWorldOptions {
     prompt?: string;

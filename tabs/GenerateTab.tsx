@@ -23,7 +23,7 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
     const { isDark } = useTheme();
     const [mode, setMode] = useState<'image' | 'video'>('image');
     const [prompt, setPrompt] = useState('');
-    const [model, setModel] = useState<string>('FLUX Schnell');
+    const [model, setModel] = useState<string>('FLUX 1.1 Pro');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [generationCount, setGenerationCount] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -41,10 +41,13 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
 
     // Image models
     const imageModels = [
-        'FLUX Schnell',
-        'FLUX Realism',
-        'Stable Diffusion',
-        'Gemini Nano Banana',
+        'FLUX 1.1 Pro',           // BFL official
+        'FLUX Kontext',           // BFL context-aware
+        'FLUX 1.1 Pro Ultra',     // BFL maximum quality
+        'FLUX Schnell',           // Free via Pollinations
+        'FLUX Realism',           // Free via Pollinations
+        'Stable Diffusion',       // Free via Pollinations
+        'Gemini Nano Banana',     // Google fallback
     ];
 
     // Video models

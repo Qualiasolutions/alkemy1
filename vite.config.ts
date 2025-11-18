@@ -73,7 +73,8 @@ export default defineConfig(({ mode }) => {
   // Vercel automatically exposes environment variables at build time
   // Prioritize Vercel's env vars, fall back to local .env
   const geminiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '';
-  // FLUX_API_KEY removed - using free Pollinations for FLUX models
+  // Black Forest Labs FLUX API (Official)
+  const bflApiKey = (process.env.BFL_API_KEY || env.BFL_API_KEY || '').trim();
   const togetherKey = process.env.TOGETHER_AI_API_KEY || env.TOGETHER_AI_API_KEY || '';
   const wanKey = process.env.WAN_API_KEY || env.WAN_API_KEY || '';
   const lumaKey = process.env.LUMA_API_KEY || env.LUMA_API_KEY || '';
@@ -160,7 +161,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(geminiKey),
       'process.env.GEMINI_API_KEY': JSON.stringify(geminiKey),
-      // FLUX_API_KEY removed - using free Pollinations
+      'process.env.BFL_API_KEY': JSON.stringify(bflApiKey),
       'process.env.TOGETHER_AI_API_KEY': JSON.stringify(togetherKey),
       'process.env.WAN_API_KEY': JSON.stringify(wanKey),
       'process.env.LUMA_API_KEY': JSON.stringify(lumaKey),
@@ -173,6 +174,7 @@ export default defineConfig(({ mode }) => {
       'process.env.USE_FALLBACK_MODE': JSON.stringify(useFallbackMode),
       // Also expose via import.meta.env for better client-side access
       'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiKey),
+      'import.meta.env.VITE_BFL_API_KEY': JSON.stringify(bflApiKey),
       'import.meta.env.VITE_TOGETHER_AI_API_KEY': JSON.stringify(togetherKey),
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
       'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),

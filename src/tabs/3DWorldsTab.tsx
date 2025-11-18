@@ -15,11 +15,11 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { hunyuanWorldService, type HunyuanWorldResult, type HunyuanWorldGenerationJob } from '@/services/hunyuanWorldService';
-import { useTheme } from '@/theme/ThemeContext';
-import type { ScriptAnalysis } from '@/types';
-import FullScreenWorkspace from '@/components/FullScreenWorkspace';
-import NavigationControls from '@/components/3d/NavigationControls';
+import { hunyuanWorldService, type HunyuanWorldResult, type HunyuanWorldGenerationJob } from '../services/hunyuanWorldService';
+import { useTheme } from '../../theme/ThemeContext';
+import type { ScriptAnalysis } from '../../types';
+import FullScreenWorkspace from '../../components/FullScreenWorkspace';
+import NavigationControls from '../../components/3d/NavigationControls';
 
 // Modern SVG Icons
 const WorldIcon = ({ className }: { className?: string }) => (
@@ -222,12 +222,15 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
     };
 
     // 3D Navigation Control Handlers
-    const handleCameraPreset = useCallback((preset: 'front' | 'back' | 'top' | 'bottom' | 'left' | 'right' | 'isometric') => {
+    const handleCameraPreset = useCallback(async (preset: 'front' | 'back' | 'top' | 'bottom' | 'left' | 'right' | 'isometric') => {
         if (!cameraRef.current || !controlsRef.current || !sceneRef.current) return;
 
         const camera = cameraRef.current;
         const controls = controlsRef.current;
         const scene = sceneRef.current;
+
+        // Import THREE for vector calculations
+        const THREE = await import('three');
 
         // Get model bounds for proper positioning
         const box = new THREE.Box3().setFromObject(scene);
@@ -273,7 +276,7 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
         controls.update();
     }, []);
 
-    const handleLightingChange = useCallback((lighting: {
+    const handleLightingChange = useCallback(async (lighting: {
         ambientIntensity: number;
         directionalIntensity: number;
         directionalPosition: [number, number, number];
@@ -282,6 +285,9 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
 
         const scene = sceneRef.current;
         const directionalLight = directionalLightRef.current;
+
+        // Import THREE for type checking
+        const THREE = await import('three');
 
         // Update ambient light
         scene.traverse((child: any) => {
@@ -384,7 +390,8 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
             // Create Three.js viewer for GLB/GLTF models
             if (activeWorld.metadata.format === 'glb' || activeWorld.metadata.format === 'gltf') {
                 try {
-                    const { scene, GLTFLoader } = await import('three');
+                    const THREE = await import('three');
+                    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader');
                     const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls');
 
                     const renderer = new THREE.WebGLRenderer({ antialias: true });

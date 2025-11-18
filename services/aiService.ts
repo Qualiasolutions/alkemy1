@@ -11,6 +11,7 @@ import { API_COST_ESTIMATES } from './apiConstants';
 import { networkDetection } from './networkDetection';
 import { generateImageWithPollinations, isPollinationsAvailable, type PollinationsImageModel } from './pollinationsService';
 import { generateImageWithFlux, isFluxApiAvailable, type FluxModelVariant } from './fluxService';
+import { generateWithFlux11Pro, generateWithFluxKontext, generateWithFluxUltra, isBFLApiAvailable, aspectRatioToSizeFor11Pro, type BFLModel, isBFLModel } from '../src/services/bflService';
 import { ENHANCED_DIRECTOR_KNOWLEDGE } from './directorKnowledge';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
@@ -1217,8 +1218,97 @@ export async function generateVisual(
     // Check if this is a Pollinations.AI model (FREE!)
     const isPollinationsModel = model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'FLUX Anime' || model === 'Stable Diffusion';
 
-    // Check if this is a FAL.AI Flux model (paid, high quality)
-    const isFalModel = model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra';
+    // Check if this is a Black Forest Labs (BFL) FLUX model (official API, high quality)
+    const isBFLModelCheck = model === 'FLUX 1.1 Pro' || model === 'FLUX Kontext' || model === 'FLUX 1.1 Pro Ultra';
+
+    // Check if this is a FAL.AI Flux model (legacy, for LoRA support)
+    const isFalModel = model === 'FLUX.1.1 Pro (FAL)' || model === 'FLUX.1 Kontext (FAL)' || model === 'FLUX Ultra (FAL)';
+
+    if (isBFLModelCheck) {
+        // Route to Black Forest Labs official API
+        if (!isBFLApiAvailable()) {
+            console.warn("[generateVisual] BFL API key not available, falling back");
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+
+        console.log("[generateVisual] Using BFL API for model:", model);
+
+        try {
+            let bflResult;
+
+            if (model === 'FLUX Kontext') {
+                bflResult = await generateWithFluxKontext({
+                    prompt,
+                    aspect_ratio: aspect_ratio,
+                    prompt_upsampling: true, // Enable prompt enhancement
+                }, onProgress);
+            } else if (model === 'FLUX 1.1 Pro Ultra') {
+                const { width, height } = aspectRatioToSizeFor11Pro(aspect_ratio);
+                bflResult = await generateWithFluxUltra({
+                    prompt,
+                    width,
+                    height,
+                    prompt_upsampling: true,
+                }, onProgress);
+            } else {
+                const { width, height } = aspectRatioToSizeFor11Pro(aspect_ratio);
+                bflResult = await generateWithFlux11Pro({
+                    prompt,
+                    width,
+                    height,
+                    prompt_upsampling: true,
+                }, onProgress);
+            }
+
+            console.log("[generateVisual] BFL generation successful");
+
+            // Upload to Supabase if context available
+            if (context?.projectId && context?.userId) {
+                try {
+                    const base64Data = bflResult.imageUrl.split(',')[1]; // Extract base64 from data URL
+                    const fileName = `${model.replace(/\s+/g, '_').replace('.', '_')}_${aspect_ratio}_${seed}`;
+
+                    const { url: uploadedUrl, error } = await uploadImageToSupabase(
+                        base64Data,
+                        fileName,
+                        context.projectId,
+                        context.userId,
+                        USAGE_ACTIONS.IMAGE_GENERATION,
+                        undefined,
+                        context.projectId,
+                        {
+                            model: model,
+                            prompt: prompt.substring(0, 200),
+                            aspectRatio: aspect_ratio,
+                            sceneId: context.sceneId,
+                            frameId: context.frameId,
+                            provider: 'Black Forest Labs',
+                            bflId: bflResult.id,
+                            seed,
+                        }
+                    );
+
+                    if (error) {
+                        console.warn('[generateVisual] Supabase upload failed:', error);
+                        return { url: bflResult.imageUrl, fromFallback: false };
+                    }
+
+                    console.log('[generateVisual] BFL image uploaded to Supabase:', uploadedUrl);
+                    return { url: uploadedUrl, fromFallback: false };
+                } catch (uploadError) {
+                    console.warn('[generateVisual] Supabase upload failed, returning direct URL:', uploadError);
+                    return { url: bflResult.imageUrl, fromFallback: false };
+                }
+            }
+
+            return { url: bflResult.imageUrl, fromFallback: false };
+        } catch (error) {
+            console.error("[generateVisual] BFL generation failed:", error);
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+    }
 
     if (isFalModel) {
         // Route to FAL.AI service (paid, high quality)

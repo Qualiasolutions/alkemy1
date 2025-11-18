@@ -259,7 +259,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 }) => {
     const { isDark } = useTheme();
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX.1.1 Pro' | 'FLUX.1 Kontext' | 'FLUX Ultra'>('Gemini Nano Banana');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX 1.1 Pro' | 'FLUX Kontext' | 'FLUX 1.1 Pro Ultra' | 'FLUX.1.1 Pro (FAL)' | 'FLUX.1 Kontext (FAL)' | 'FLUX Ultra (FAL)'>('FLUX 1.1 Pro');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -307,7 +307,8 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
             // ===== CHARACTER IDENTITY INTEGRATION =====
             let characterIdentities: Array<{ loraUrl: string; scale: number }> | undefined = undefined;
 
-            if (isCharacter && character?.identity) {
+            // Only use character identity for FAL models that support LoRA
+            if (isCharacter && character?.identity && model.includes('(FAL)')) {
                 const identityStatus = getCharacterIdentityStatus(character.identity);
                 if (identityStatus === 'ready' && character.identity.technologyData?.falCharacterId) {
                     const referenceStrength = character.identity.technologyData.referenceStrength || 80;
@@ -589,10 +590,14 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         onChange={e => setModel(e.target.value as any)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                     >
+                        <option value="FLUX 1.1 Pro" className="bg-[#0a0a0a]">FLUX 1.1 Pro (BFL)</option>
+                        <option value="FLUX Kontext" className="bg-[#0a0a0a]">FLUX Kontext (BFL - Context)</option>
+                        <option value="FLUX 1.1 Pro Ultra" className="bg-[#0a0a0a]">FLUX Ultra (BFL - Max Quality)</option>
                         <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Google)</option>
-                        <option value="FLUX.1.1 Pro" className="bg-[#0a0a0a]">FLUX.1.1 Pro (FAL.AI)</option>
-                        <option value="FLUX.1 Kontext" className="bg-[#0a0a0a]">FLUX.1 Kontext (FAL.AI)</option>
-                        <option value="FLUX Ultra" className="bg-[#0a0a0a]">FLUX Ultra (FAL.AI)</option>
+                        <option disabled className="bg-[#0a0a0a]">──── LoRA Support ────</option>
+                        <option value="FLUX.1.1 Pro (FAL)" className="bg-[#0a0a0a]">FLUX 1.1 Pro (FAL+LoRA)</option>
+                        <option value="FLUX.1 Kontext (FAL)" className="bg-[#0a0a0a]">FLUX Kontext (FAL+LoRA)</option>
+                        <option value="FLUX Ultra (FAL)" className="bg-[#0a0a0a]">FLUX Ultra (FAL+LoRA)</option>
                     </select>
                 </div>
 
@@ -734,8 +739,8 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     </div>
                 )}
 
-                {/* Character Identity Status - Moved to bottom */}
-                {isCharacter && character && (
+                {/* Character Identity Status - Only show for FAL models with LoRA support */}
+                {isCharacter && character && model.includes('(FAL)') && (
                     <div className="mt-auto pt-4 border-t border-white/10">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1.5">
