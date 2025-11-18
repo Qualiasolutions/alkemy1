@@ -1,20 +1,23 @@
-const toTrimmed = (value: unknown): string => {
-  return typeof value === 'string' ? value.trim() : '';
-};
+// IMPORTANT: Using function declarations (not const arrow functions) to ensure proper hoisting
+// These functions are called at module-level (lines 19-24), so they must be hoisted to avoid TDZ errors
 
-const safeGetImportMetaEnv = (key: string): string => {
+function toTrimmed(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function safeGetImportMetaEnv(key: string): string {
   if (typeof import.meta !== 'undefined' && (import.meta as any)?.env) {
     return toTrimmed((import.meta as any).env[key]);
   }
   return '';
-};
+}
 
-const getProcessEnvValue = (key: string): string => {
+function getProcessEnvValue(key: string): string {
   if (typeof process !== 'undefined' && process.env) {
     return toTrimmed(process.env[key]);
   }
   return '';
-};
+}
 
 const envCandidates = [
   getProcessEnvValue('GEMINI_API_KEY'),
@@ -64,7 +67,7 @@ if (typeof window !== 'undefined') {
   }, 0);
 }
 
-const readFromLocalStorage = (): string => {
+function readFromLocalStorage(): string {
   if (typeof window === 'undefined') {
     return '';
   }
@@ -75,9 +78,9 @@ const readFromLocalStorage = (): string => {
     }
   }
   return '';
-};
+}
 
-const writeToLocalStorage = (value: string) => {
+function writeToLocalStorage(value: string): void {
   if (typeof window === 'undefined') {
     return;
   }
@@ -87,7 +90,7 @@ const writeToLocalStorage = (value: string) => {
     window.localStorage.setItem(LOCAL_STORAGE_KEYS[0], value);
   }
   window.dispatchEvent(new CustomEvent(GEMINI_STORAGE_EVENT, { detail: value }));
-};
+}
 
 export const getGeminiApiKey = (): string => {
   if (cachedGeminiKey) {
