@@ -259,7 +259,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 }) => {
     const { isDark } = useTheme();
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX Schnell' | 'FLUX Realism' | 'Stable Diffusion'>('Gemini Nano Banana');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX.1.1 Pro' | 'FLUX.1 Kontext' | 'FLUX Ultra'>('Gemini Nano Banana');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -589,10 +589,10 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         onChange={e => setModel(e.target.value as any)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                     >
-                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana</option>
-                        <option value="FLUX Schnell" className="bg-[#0a0a0a]">FLUX Schnell</option>
-                        <option value="FLUX Realism" className="bg-[#0a0a0a]">FLUX Realism</option>
-                        <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion</option>
+                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Google)</option>
+                        <option value="FLUX.1.1 Pro" className="bg-[#0a0a0a]">FLUX.1.1 Pro (FAL.AI)</option>
+                        <option value="FLUX.1 Kontext" className="bg-[#0a0a0a]">FLUX.1 Kontext (FAL.AI)</option>
+                        <option value="FLUX Ultra" className="bg-[#0a0a0a]">FLUX Ultra (FAL.AI)</option>
                     </select>
                 </div>
 

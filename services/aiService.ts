@@ -9,6 +9,7 @@ import { logAIUsage, USAGE_ACTIONS } from './usageService';
 import { trackGenerationMetrics, API_COST_ESTIMATES } from './analyticsService';
 import { networkDetection } from './networkDetection';
 import { generateImageWithPollinations, isPollinationsAvailable, type PollinationsImageModel } from './pollinationsService';
+import { generateImageWithFlux, isFluxApiAvailable, type FluxModelVariant } from './fluxService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 // FLUX_API_KEY removed - using free Pollinations instead
@@ -612,7 +613,8 @@ export const generateStillVariants = async (
         .then((result) => {
             // Track successful generation
             const duration = Date.now() - startTime;
-            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
+            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ||
+                                  model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra' ? API_COST_ESTIMATES.image.flux :
                                   model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
                                   model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
                                   API_COST_ESTIMATES.image.nanoBanana;
@@ -631,7 +633,8 @@ export const generateStillVariants = async (
         .catch((error) => {
             // Track failed generation
             const duration = Date.now() - startTime;
-            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
+            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ||
+                                  model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra' ? API_COST_ESTIMATES.image.flux :
                                   model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
                                   model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
                                   API_COST_ESTIMATES.image.nanoBanana;
@@ -1211,6 +1214,91 @@ export const generateVisual = async (
 
     // Check if this is a Pollinations.AI model (FREE!)
     const isPollinationsModel = model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'FLUX Anime' || model === 'Stable Diffusion';
+
+    // Check if this is a FAL.AI Flux model (paid, high quality)
+    const isFalModel = model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra';
+
+    if (isFalModel) {
+        // Route to FAL.AI service (paid, high quality)
+        if (!isFluxApiAvailable()) {
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+
+        console.log("[generateVisual] Using FAL.AI for model:", model);
+
+        try {
+            const falModel: FluxModelVariant = model === 'FLUX.1.1 Pro' ? 'FLUX.1.1' :
+                                           model === 'FLUX.1 Kontext' ? 'FLUX.1 Kontext' :
+                                           'FLUX Ultra';
+
+            // Convert aspect ratio to format expected by FAL.AI
+            const falAspectRatio = aspect_ratio;
+
+            const imageUrl = await generateImageWithFlux(
+                prompt,
+                falAspectRatio,
+                onProgress,
+                true, // raw mode for better quality
+                falModel
+            );
+
+            console.log("[generateVisual] FAL.AI generation successful:", imageUrl);
+
+            // Upload to Supabase if context is available
+            if (context?.projectId && context?.userId) {
+                try {
+                    // imageUrl is a URL from FAL.AI, download and upload to Supabase
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const base64Data = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const result = reader.result as string;
+                            resolve(result.split(',')[1]); // Remove data URL prefix
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+
+                    const fileName = `${model.replace(/\s+/g, '_').replace('.', '_')}_${aspect_ratio}_${seed}`;
+                    const { url: uploadedUrl, error } = await uploadImageToSupabase(
+                        base64Data,
+                        fileName,
+                        context.projectId,
+                        context.userId,
+                        USAGE_ACTIONS.IMAGE_GENERATION,
+                        undefined,
+                        context.projectId,
+                        {
+                            model: model,
+                            prompt: prompt.substring(0, 200),
+                            aspectRatio: aspect_ratio,
+                            sceneId: context.sceneId,
+                            frameId: context.frameId,
+                            seed,
+                        }
+                    );
+
+                    if (error) {
+                        console.warn('[generateVisual] Failed to upload to Supabase:', error);
+                        return { url: imageUrl, fromFallback: false };
+                    }
+
+                    console.log('[generateVisual] FAL.AI image uploaded to Supabase:', uploadedUrl);
+                    return { url: uploadedUrl, fromFallback: false };
+                } catch (uploadError) {
+                    console.warn('[generateVisual] Supabase upload failed, returning direct URL:', uploadError);
+                    return { url: imageUrl, fromFallback: false };
+                }
+            }
+
+            return { url: imageUrl, fromFallback: false };
+        } catch (error) {
+            console.error("[generateVisual] FAL.AI generation failed:", error);
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+    }
 
     if (isPollinationsModel) {
         // Route to Pollinations.AI service (100% FREE!)
