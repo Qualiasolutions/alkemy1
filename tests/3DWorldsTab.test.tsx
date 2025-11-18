@@ -99,19 +99,19 @@ const mockScriptAnalysis: ScriptAnalysis = {
 };
 
 describe('3D Worlds Tab', () => {
-  const mockHunyuanService = vi.mocked(hunyuanWorldService);
+  const mockHunyuanWorldService = vi.mocked(hunyuanWorldService);
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Default service status
-    mockHunyuanService.getServiceStatus.mockResolvedValue({
+    mockHunyuanWorldService.getServiceStatus.mockResolvedValue({
       available: true,
       apiStatus: 'online',
       activeJobs: 0
     });
 
-    mockHunyuanService.isAvailable.mockReturnValue(true);
+    mockHunyuanWorldService.isAvailable.mockReturnValue(true);
     mockHunyuanWorldService.generateWorld.mockResolvedValue({
       id: 'test-world-123',
       modelUrl: 'https://test.com/model.glb',
