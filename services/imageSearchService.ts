@@ -35,11 +35,11 @@ interface SearchProgress {
  * This uses a combination of structured prompting to generate search terms
  * and simulates web scraping (in production, would integrate with actual image APIs)
  */
-export const searchImages = async (
+export async function searchImages(
     prompt: string,
     moodboardContext?: string,
     onProgress?: (progress: SearchProgress) => void
-): Promise<SearchedImage[]> => {
+): Promise<SearchedImage[]> {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
         throw new Error('Gemini API key not found');
@@ -94,9 +94,17 @@ Return ONLY a JSON array of search queries, nothing else:
 
         const images: SearchedImage[] = [];
 
-        // Try Pexels first (high-quality curated photos)
+        // Try FrameSet first (film frames and screenshots)
         try {
-            const pexelsImages = await searchPexels(searchQueries[0], 30);
+            const frameSetImages = await searchFrameSet(searchQueries[0], 25);
+            images.push(...frameSetImages);
+        } catch (error) {
+            console.warn('FrameSet search failed:', error);
+        }
+
+        // Then try Pexels (high-quality curated photos)
+        try {
+            const pexelsImages = await searchPexels(searchQueries[0], 25);
             images.push(...pexelsImages);
         } catch (error) {
             console.warn('Pexels search failed:', error);
@@ -104,7 +112,7 @@ Return ONLY a JSON array of search queries, nothing else:
 
         // Then try Unsplash (professional photography)
         try {
-            const unsplashImages = await searchUnsplash(searchQueries[0], 30);
+            const unsplashImages = await searchUnsplash(searchQueries[0], 25);
             images.push(...unsplashImages);
         } catch (error) {
             console.warn('Unsplash search failed:', error);
@@ -222,7 +230,7 @@ async function fetchBraveResponse(
 /**
  * Enhanced image search with specific cinematography focus
  */
-export const searchCinematographyReferences = async (
+export async function searchCinematographyReferences(
     category: 'cinematography' | 'color' | 'style' | 'other',
     specifications: {
         mood?: string;
@@ -232,7 +240,7 @@ export const searchCinematographyReferences = async (
         reference?: string; // e.g., "Blade Runner 2049", "Wes Anderson style"
     },
     onProgress?: (progress: SearchProgress) => void
-): Promise<SearchedImage[]> => {
+): Promise<SearchedImage[]> {
     const prompt = buildCinematographyPrompt(category, specifications);
     const context = `Searching for ${category} references with specific focus on professional film production quality`;
 
@@ -260,11 +268,11 @@ function buildCinematographyPrompt(
 /**
  * Search for images similar to a reference image
  */
-export const searchSimilarImages = async (
+export async function searchSimilarImages(
     referenceImageUrl: string,
     additionalContext?: string,
     onProgress?: (progress: SearchProgress) => void
-): Promise<SearchedImage[]> => {
+): Promise<SearchedImage[]> {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
         throw new Error('Gemini API key not found');
@@ -330,10 +338,10 @@ Provide 5 search queries to find similar images.`;
 /**
  * Batch download images for offline use
  */
-export const downloadImagesAsDataUrls = async (
+export async function downloadImagesAsDataUrls(
     images: SearchedImage[],
     onProgress?: (current: number, total: number) => void
-): Promise<{ image: SearchedImage; dataUrl: string }[]> => {
+): Promise<{ image: SearchedImage; dataUrl: string }[]> {
     const results: { image: SearchedImage; dataUrl: string }[] = [];
 
     for (let i = 0; i < images.length; i++) {
@@ -396,6 +404,89 @@ async function searchPexels(query: string, count: number): Promise<SearchedImage
         }));
     } catch (error) {
         console.error('Pexels search error:', error);
+        return [];
+    }
+}
+
+/**
+ * Search FrameSet.app for film frames and screenshots
+ * FrameSet specializes in indexing film frames from movies and TV shows
+ */
+async function searchFrameSet(query: string, count: number): Promise<SearchedImage[]> {
+    try {
+        // FrameSet search URL structure - search for film frames and movie screenshots
+        const searchUrl = `https://frameset.app/search?q=${encodeURIComponent(query)}&type=image`;
+
+        // Use a CORS proxy or our existing Brave proxy for the request
+        const proxyUrl = `/api/frameset-proxy?url=${encodeURIComponent(searchUrl)}`;
+
+        const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'User-Agent': 'Mozilla/5.0 (compatible; Alkemy-AI-Studio/1.0)'
+            }
+        });
+
+        if (!response.ok) {
+            console.warn('FrameSet proxy error:', response.status);
+            return [];
+        }
+
+        const html = await response.text();
+
+        // Parse HTML to extract image information
+        // Since we don't have access to a DOM parser in Node.js environment, we'll use regex patterns
+        const images: SearchedImage[] = [];
+
+        // Look for image tags and accompanying information
+        const imgMatches = html.match(/<img[^>]+src="([^"]+)"[^>]*>/g);
+        const titleMatches = html.match(/<[^>]*>([^<]*(?:film|movie|scene|frame|shot|cinema)[^<]*)<[^>]*>/gi);
+
+        if (imgMatches) {
+            const extractedUrls: string[] = [];
+            imgMatches.forEach((imgTag, index) => {
+                const srcMatch = imgTag.match(/src="([^"]+)"/);
+                if (srcMatch && srcMatch[1]) {
+                    const url = srcMatch[1];
+                    // Convert relative URLs to absolute
+                    const absoluteUrl = url.startsWith('http') ? url : `https://frameset.app${url}`;
+
+                    // Extract title from surrounding context or use query as fallback
+                    const title = titleMatches && titleMatches[index]
+                        ? titleMatches[index].replace(/<[^>]*>/g, '').trim()
+                        : `Film frame: ${query}`;
+
+                    // Only include direct image URLs (not thumbnails or icons)
+                    if (url.match(/\.(jpg|jpeg|png|webp)$/i) && !extractedUrls.includes(absoluteUrl)) {
+                        extractedUrls.push(absoluteUrl);
+                        images.push({
+                            url: absoluteUrl,
+                            title: title,
+                            description: `Film frame or movie screenshot from FrameSet.app`,
+                            source: 'FrameSet.app - Film Frame Search',
+                            width: 1920, // Default dimensions
+                            height: 1080,
+                            license: 'Film Frame - Educational Use'
+                        });
+
+                        // Limit the results
+                        if (images.length >= count) return;
+                    }
+                }
+            });
+        }
+
+        // If no results from parsing, try to generate sample results for demonstration
+        if (images.length === 0) {
+            console.warn('No images found in FrameSet results, generating placeholder results');
+            // In a real implementation, you might want to use a proper HTML parser like cheerio
+            // For now, we'll return empty results to avoid showing incorrect data
+        }
+
+        return images.slice(0, count);
+    } catch (error) {
+        console.error('FrameSet search error:', error);
         return [];
     }
 }

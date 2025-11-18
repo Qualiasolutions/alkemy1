@@ -284,10 +284,49 @@ class SaveManager {
       throw error;
     }
 
-    // Update project metadata - note: has_unsaved_changes and last_manual_save columns may not exist
-    // If you see this warning, run the migration script: supabase/APPLY_MISSING_MIGRATIONS.sql
-    // This is expected for databases that haven't applied migration 005 yet
-    console.log('[SaveManager] Project metadata update skipped - columns not in database. Run supabase/APPLY_MISSING_MIGRATIONS.sql to add them.');
+    // Update project metadata using the new columns that were added in migration
+    const metadataUpdate: any = {};
+    if (Object.keys(changes).length > 0) {
+      metadataUpdate.has_unsaved_changes = false;
+      metadataUpdate.last_manual_save = new Date().toISOString();
+    }
+
+    // Only update version if there are actual changes to project data
+    const hasProjectDataChanges = ['scriptContent', 'scriptAnalysis', 'timelineClips', 'moodboardData']
+      .some(key => changes[key] !== undefined);
+
+    if (hasProjectDataChanges) {
+      metadataUpdate.version = (await this.getCurrentVersion()) + 1;
+    }
+
+    // Apply metadata updates if any
+    if (Object.keys(metadataUpdate).length > 0) {
+      const { error: metadataError } = await supabase
+        .from('projects')
+        .update(metadataUpdate)
+        .eq('id', this.currentProjectId);
+
+      if (metadataError) {
+        console.warn('[SaveManager] Failed to update project metadata:', metadataError);
+      }
+    }
+  }
+
+  private async getCurrentVersion(): Promise<number> {
+    if (!this.currentProjectId) return 1;
+
+    try {
+      const { data } = await supabase
+        .from('projects')
+        .select('version')
+        .eq('id', this.currentProjectId)
+        .single();
+
+      return data?.version || 1;
+    } catch (error) {
+      console.warn('[SaveManager] Failed to get current version:', error);
+      return 1;
+    }
   }
 
   private collectChanges(): Record<string, any> {

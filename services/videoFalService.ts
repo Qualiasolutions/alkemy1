@@ -55,19 +55,19 @@ export type VideoModelVariant = keyof typeof VIDEO_MODEL_CONFIG;
 
 export const VIDEO_MODEL_VARIANTS = Object.keys(VIDEO_MODEL_CONFIG) as VideoModelVariant[];
 
-export const isVideoModelVariant = (model: string): model is VideoModelVariant => {
+export function isVideoModelVariant(model: string): model is VideoModelVariant {
     return VIDEO_MODEL_VARIANTS.includes(model as VideoModelVariant);
 };
 
-export const getVideoModelDisplayName = (variant: VideoModelVariant): string => {
+export function getVideoModelDisplayName(variant: VideoModelVariant): string {
     return VIDEO_MODEL_CONFIG[variant]?.displayName ?? variant;
 };
 
-export const getVideoModelDescription = (variant: VideoModelVariant): string => {
+export function getVideoModelDescription(variant: VideoModelVariant): string {
     return VIDEO_MODEL_CONFIG[variant]?.description ?? '';
 };
 
-export const isRefinementOnlyModel = (variant: VideoModelVariant): boolean => {
+export function isRefinementOnlyModel(variant: VideoModelVariant): boolean {
     return VIDEO_MODEL_CONFIG[variant]?.refinementOnly ?? false;
 };
 
@@ -94,7 +94,7 @@ export interface VideoGenerationResult {
 /**
  * Check if FAL video API is available
  */
-export const isVideoFalApiAvailable = (): boolean => {
+export function isVideoFalApiAvailable(): boolean {
     return !!FAL_API_KEY && FAL_API_KEY.length > 0;
 };
 
@@ -108,7 +108,7 @@ export const isVideoFalApiAvailable = (): boolean => {
  * @param onProgress - Progress callback (0-100)
  * @returns URL of generated video
  */
-export const generateVideoWithFal = async (
+export async function generateVideoWithFal(
     prompt: string,
     variant: VideoModelVariant = 'Kling 2.5',
     referenceImageUrl?: string,
@@ -117,7 +117,7 @@ export const generateVideoWithFal = async (
     onProgress?: (progress: number) => void,
     seed?: number,
     cfgScale?: number
-): Promise<string> => {
+): Promise<string> {
     if (!isVideoFalApiAvailable()) {
         throw new Error('FAL API key is not configured. Please set FAL_API_KEY in environment variables.');
     }
@@ -262,26 +262,26 @@ export const generateVideoWithFal = async (
  * Generate video using Kling 2.5 specifically
  * Convenience wrapper for the most common use case
  */
-export const generateVideoWithKling = async (
+export async function generateVideoWithKling(
     prompt: string,
     referenceImageUrl?: string,
     duration: number = 5,
     aspectRatio: '16:9' | '9:16' | '1:1' = '16:9',
     onProgress?: (progress: number) => void
-): Promise<string> => {
+): Promise<string> {
     return generateVideoWithFal(prompt, 'Kling 2.5', referenceImageUrl, duration, aspectRatio, onProgress);
 };
 
 /**
  * Generate video using SeedDream v4 (refinement only - requires reference image)
  */
-export const refineVideoWithSeedDream = async (
+export async function refineVideoWithSeedDream(
     prompt: string,
     referenceImageUrl: string,
     duration: number = 4,
     aspectRatio: '16:9' | '9:16' | '1:1' = '16:9',
     onProgress?: (progress: number) => void
-): Promise<string> => {
+): Promise<string> {
     if (!referenceImageUrl) {
         throw new Error('SeedDream v4 requires a reference image for video refinement.');
     }

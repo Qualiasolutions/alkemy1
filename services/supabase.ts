@@ -31,7 +31,7 @@ export const supabaseAdmin = (supabaseUrl && supabaseServiceRoleKey)
     : null as any;
 
 // Helper function to check if Supabase is configured
-export const isSupabaseConfigured = (): boolean => {
+export function isSupabaseConfigured(): boolean {
     return !!(supabaseUrl && supabaseAnonKey);
 };
 

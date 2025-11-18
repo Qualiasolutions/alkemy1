@@ -24,13 +24,13 @@ const getVertexAIApiKey = (): string | null => {
 };
 
 // Check if Vertex AI is available
-export const isVertexAIAvailable = (): boolean => {
+export function isVertexAIAvailable(): boolean {
   const apiKey = getVertexAIApiKey();
   return !!apiKey && apiKey !== 'your_vertex_ai_api_key_here';
 };
 
 // Get Vertex AI client
-export const getVertexAIClient = (): GoogleGenAI | null => {
+export function getVertexAIClient(): GoogleGenAI | null {
   const apiKey = getVertexAIApiKey();
   if (!apiKey) {
     return null;

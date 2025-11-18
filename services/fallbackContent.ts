@@ -31,7 +31,7 @@ const fallbackVideos = [
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4'
 ];
 
-const hashString = (value: string): number => {
+function hashString(value: string): number {
     let hash = 0;
     for (let i = 0; i < value.length; i++) {
         hash = (hash << 5) - hash + value.charCodeAt(i);
@@ -40,7 +40,7 @@ const hashString = (value: string): number => {
     return Math.abs(hash);
 };
 
-const pickFrom = (collection: string[], seed: string): string => {
+function pickFrom(collection: string[], seed: string): string {
     if (collection.length === 0) {
         throw new Error('Fallback image collection is empty');
     }
@@ -79,7 +79,7 @@ export const getFallbackVideoBlobs = async (count: number, seed: string): Promis
 
 const sanitizeText = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
-const createMoodboardSection = (seed: string, notes: string, aspectRatio: string): MoodboardSection => {
+function createMoodboardSection(seed: string, notes: string, aspectRatio: string): MoodboardSection {
     const items: MoodboardItem[] = Array.from({ length: 3 }).map((_, index) => ({
         id: `${seed}-${index}`,
         url: getFallbackImageUrl(aspectRatio, `${seed}-${index}`),
@@ -98,7 +98,7 @@ const defaultMoodboard = (title: string): Moodboard => ({
     style: createMoodboardSection(`${title}-style`, 'Tailored, modern styling with hints of noir-inspired silhouettes.', '3:4'),
     other: createMoodboardSection(`${title}-other`, 'Supporting textures and atmospheric references for tone.', '16:9')
 });
-const defaultMoodboardTemplates = (title: string, moodboard: Moodboard): MoodboardTemplate[] => {
+function defaultMoodboardTemplates(title: string, moodboard: Moodboard): MoodboardTemplate[] {
     const aggregated = [
         ...moodboard.cinematography.items,
         ...moodboard.color.items,
@@ -117,7 +117,7 @@ const defaultMoodboardTemplates = (title: string, moodboard: Moodboard): Moodboa
 };
 
 
-const extractSceneHeadings = (lines: string[]): { index: number; heading: string }[] => {
+function extractSceneHeadings(lines: string[]): { index: number; heading: string }[] {
     const headingRegex = /^(INT\.?|EXT\.?|I\/E\.?|INT\/EXT\.?)[^a-zA-Z0-9]?/i;
     const headings: { index: number; heading: string }[] = [];
     lines.forEach((line, index) => {
@@ -128,7 +128,7 @@ const extractSceneHeadings = (lines: string[]): { index: number; heading: string
     return headings;
 };
 
-const parseSceneSummary = (lines: string[], start: number, end: number): string => {
+function parseSceneSummary(lines: string[], start: number, end: number): string {
     const slice = lines.slice(start + 1, end);
     const meaningfulLines = slice
         .map(line => line.trim())
@@ -137,7 +137,7 @@ const parseSceneSummary = (lines: string[], start: number, end: number): string 
     return summary || 'Fallback summary generated automatically due to limited script context.';
 };
 
-const deriveTimeOfDay = (heading: string): string => {
+function deriveTimeOfDay(heading: string): string {
     const upper = heading.toUpperCase();
     if (upper.includes('NIGHT')) return 'Night';
     if (upper.includes('EVENING')) return 'Evening';
@@ -147,12 +147,12 @@ const deriveTimeOfDay = (heading: string): string => {
     return 'Day';
 };
 
-const deriveLocationName = (heading: string): string => {
+function deriveLocationName(heading: string): string {
     const parts = heading.replace(/^(INT\.?|EXT\.?|I\/E\.?|INT\/EXT\.?)/i, '').split('-');
     return sanitizeText(parts[0] || heading).replace(/^[^a-zA-Z0-9]+/, '');
 };
 
-const buildFallbackFrames = (sceneId: string, summary: string, aspectSeed: string): Frame[] => {
+function buildFallbackFrames(sceneId: string, summary: string, aspectSeed: string): Frame[] {
     const keyMoments = summary.split(/\.|!/).map(t => t.trim()).filter(Boolean);
     const descriptions = keyMoments.length > 0 ? keyMoments : [summary];
     return descriptions.slice(0, 3).map((description, index) => ({
@@ -167,7 +167,7 @@ const buildFallbackFrames = (sceneId: string, summary: string, aspectSeed: strin
     }));
 };
 
-const extractCharacters = (lines: string[]): AnalyzedCharacter[] => {
+function extractCharacters(lines: string[]): AnalyzedCharacter[] {
     const pattern = /^[A-Z][A-Z0-9 '\-]{1,30}$/;
     const ignored = new Set(['INT', 'EXT', 'I/E', 'INT/EXT']);
     const candidates = new Set<string>();
@@ -188,7 +188,7 @@ const extractCharacters = (lines: string[]): AnalyzedCharacter[] => {
     }));
 };
 
-const extractLocations = (scenes: AnalyzedScene[]): AnalyzedLocation[] => {
+function extractLocations(scenes: AnalyzedScene[]): AnalyzedLocation[] {
     const uniqueNames = new Map<string, string>();
     scenes.forEach(scene => {
         const name = deriveLocationName(scene.setting);

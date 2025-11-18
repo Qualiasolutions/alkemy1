@@ -8,7 +8,7 @@ import { getFallbackVideoBlobs } from './fallbackContent';
 const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
 const truthyStrings = new Set(['true', '1', 'yes', 'on']);
 
-const resolveBooleanEnv = (...keys: string[]): boolean => {
+function resolveBooleanEnv(...keys: string[]): boolean {
     for (const key of keys) {
         const candidates = [
             typeof importMetaEnv[key] === 'string' ? importMetaEnv[key] : undefined,
@@ -26,7 +26,7 @@ const resolveBooleanEnv = (...keys: string[]): boolean => {
     return false;
 };
 
-const resolveWanApiKey = (): string => {
+function resolveWanApiKey(): string {
     try {
         const importMeta = typeof import.meta !== 'undefined' ? (import.meta as any) : undefined;
         const candidates = [
@@ -49,7 +49,7 @@ const WAN_API_KEY = resolveWanApiKey();
 const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
 const prefersLiveWan = (): boolean => !!WAN_API_KEY && !FORCE_DEMO_MODE;
 
-const shouldFallbackForWanError = (error: unknown): boolean => {
+function shouldFallbackForWanError(error: unknown): boolean {
     if (FORCE_DEMO_MODE) return true;
     if (!error) return false;
     const message = error instanceof Error ? error.message : String(error);
@@ -88,7 +88,7 @@ interface WanGenerationResponse {
 /**
  * Convert video File to base64 data URL for upload
  */
-const videoFileToBase64 = async (file: File): Promise<string> => {
+async function videoFileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -108,7 +108,7 @@ const videoFileToBase64 = async (file: File): Promise<string> => {
  * For now, we'll use data URL directly if API supports it
  * Otherwise, you may need to implement upload to cloud storage
  */
-const prepareVideoUrl = async (videoFile: File): Promise<string> => {
+async function prepareVideoUrl(videoFile: File): Promise<string> {
     // For Wan API, we'll try using data URL first
     // If the API doesn't support data URLs, you'll need to upload to cloud storage
     const dataUrl = await videoFileToBase64(videoFile);
@@ -124,7 +124,7 @@ const prepareVideoUrl = async (videoFile: File): Promise<string> => {
 /**
  * Convert image URL to base64 if needed
  */
-const prepareImageUrl = async (imageUrl: string): Promise<string> => {
+async function prepareImageUrl(imageUrl: string): Promise<string> {
     // If already a data URL, return as-is
     if (imageUrl.startsWith('data:')) {
         return imageUrl;
@@ -154,11 +154,11 @@ const prepareImageUrl = async (imageUrl: string): Promise<string> => {
 /**
  * Create a motion transfer generation request
  */
-const createGeneration = async (
+async function createGeneration(
     videoUrl: string,
     targetImageUrl: string,
     prompt: string = 'Transfer motion from video to character'
-): Promise<string> => {
+): Promise<string> {
     if (!WAN_API_KEY) {
         throw new Error('WAN_API_KEY is not configured. Please add it to your environment variables.');
     }
@@ -205,7 +205,7 @@ const createGeneration = async (
 /**
  * Check the status of a generation
  */
-const checkGenerationStatus = async (generationId: string): Promise<WanGenerationResponse> => {
+async function checkGenerationStatus(generationId: string): Promise<WanGenerationResponse> {
     if (!WAN_API_KEY) {
         throw new Error('WAN_API_KEY is not configured.');
     }

@@ -208,13 +208,13 @@ export const USAGE_ACTIONS = {
 } as const;
 
 // Helper function to log AI usage with cost estimation
-export const logAIUsage = async (
+export async function logAIUsage(
   userId: string,
   action: keyof typeof USAGE_ACTIONS,
   tokensUsed?: number,
   projectId?: string,
   metadata?: any
-): Promise<{ error: any }> => {
+): Promise<{ error: any }> {
   // Simple cost estimation (you can adjust these rates)
   const TOKEN_COSTS = {
     [USAGE_ACTIONS.SCRIPT_ANALYSIS]: 0.000001, // $0.001 per 1K tokens
@@ -241,6 +241,6 @@ export const logAIUsage = async (
 };
 
 // Export the appropriate service based on configuration
-export const getUsageService = (): UsageService => {
+export function getUsageService(): UsageService {
   return isSupabaseConfigured() ? usageService : null;
 };

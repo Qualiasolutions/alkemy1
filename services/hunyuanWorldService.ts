@@ -96,7 +96,7 @@ class HunyuanWorldService {
         params: any,
         onProgress?: (progress: number, status: string) => void,
         maxRetries = 3,
-        timeoutMs = 180000 // 3 minute timeout per attempt
+        timeoutMs = 300000 // 5 minute timeout per attempt
     ): Promise<any> {
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
@@ -129,7 +129,8 @@ class HunyuanWorldService {
                             if (message.type === 'status') {
                                 if (message.stage === 'pending') {
                                     const queueInfo = message.queue_position ? ` (position ${message.queue_position} in queue)` : '';
-                                    onProgress?.(20, `Waiting for GPU${queueInfo}...`);
+                                    const estimatedTime = message.queue_position ? ` (~${Math.ceil(message.queue_position * 2)} min estimated)` : '';
+                                    onProgress?.(20, `Waiting for GPU${queueInfo}${estimatedTime}...`);
                                 } else if (message.stage === 'processing') {
                                     onProgress?.(50, 'GPU allocated - generating 3D model...');
                                 } else if (message.stage === 'complete') {

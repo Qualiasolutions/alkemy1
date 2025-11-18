@@ -64,13 +64,13 @@ const aspectRatioToDimensions = (aspectRatio: string): { width: number; height: 
  * @param seed - Optional seed for reproducibility
  * @returns Promise resolving to image URL
  */
-export const generateImageWithPollinations = async (
+export async function generateImageWithPollinations(
     prompt: string,
     model: PollinationsImageModel,
     aspectRatio: string,
     onProgress?: (progress: number) => void,
     seed?: number
-): Promise<string> => {
+): Promise<string> {
     if (FORCE_DEMO_MODE) {
         console.warn('[Pollinations.AI] Demo mode active – returning placeholder image.');
         onProgress?.(100);
@@ -164,13 +164,13 @@ export function isPollinationsAvailable(): boolean {
 /**
  * Get display name for Pollinations.AI models
  */
-export const getPollinationsModelDisplayName = (model: PollinationsImageModel): string => {
+export function getPollinationsModelDisplayName(model: PollinationsImageModel): string {
     return model; // Model names are already display-friendly
 };
 
 /**
  * Get all available Pollinations models
  */
-export const getAvailablePollinationsModels = (): PollinationsImageModel[] => {
+export function getAvailablePollinationsModels(): PollinationsImageModel[] {
     return ['FLUX Schnell', 'FLUX Realism', 'FLUX Anime', 'Stable Diffusion'];
 };

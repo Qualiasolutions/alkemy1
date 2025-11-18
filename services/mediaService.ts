@@ -267,6 +267,6 @@ class MediaServiceImpl implements MediaService {
 export const mediaService: MediaService = new MediaServiceImpl();
 
 // Export the appropriate service based on configuration
-export const getMediaService = (): MediaService => {
+export function getMediaService(): MediaService {
   return isSupabaseConfigured() ? mediaService : null;
 };

@@ -26,13 +26,13 @@ const FLUX_MODEL_CONFIG = {
 
 export type FluxModelVariant = keyof typeof FLUX_MODEL_CONFIG;
 
-export const getFluxModelDisplayName = (variant: FluxModelVariant): string => {
+export function getFluxModelDisplayName(variant: FluxModelVariant): string {
     return FLUX_MODEL_CONFIG[variant]?.displayName ?? variant;
 };
 
 export const FLUX_MODEL_VARIANTS = Object.keys(FLUX_MODEL_CONFIG) as FluxModelVariant[];
 
-export const isFluxModelVariant = (model: string): model is FluxModelVariant => {
+export function isFluxModelVariant(model: string): model is FluxModelVariant {
     return FLUX_MODEL_VARIANTS.includes(model as FluxModelVariant);
 };
 
@@ -103,14 +103,14 @@ const getImageDimensions = (aspectRatio: string): { width: number; height: numbe
  * @param raw - Enable raw mode for more photorealistic results
  * @returns URL of generated image
  */
-export const generateImageWithFlux = async (
+export async function generateImageWithFlux(
     prompt: string,
     aspectRatio: string = '16:9',
     onProgress?: (progress: number) => void,
     raw: boolean = false,
     variant: FluxModelVariant = 'FLUX.1 Kontext',
     loras?: Array<{ path: string; scale: number }> // NEW: Character identity LoRAs
-): Promise<string> => {
+): Promise<string> {
     if (!isFluxApiAvailable()) {
         throw new Error('FLUX API key is not configured. Please set FLUX_API_KEY in environment variables.');
     }
@@ -223,14 +223,14 @@ export const generateImageWithFlux = async (
 /**
  * Generate multiple images in parallel with FLUX
  */
-export const generateMultipleImagesWithFlux = async (
+export async function generateMultipleImagesWithFlux(
     prompt: string,
     count: number,
     aspectRatio: string = '16:9',
     onProgress?: (index: number, progress: number) => void,
     raw: boolean = false,
     variant: FluxModelVariant = 'FLUX.1 Kontext'
-): Promise<string[]> => {
+): Promise<string[]> {
     const promises = Array.from({ length: count }, (_, index) =>
         generateImageWithFlux(
             prompt,

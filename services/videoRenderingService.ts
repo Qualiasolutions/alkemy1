@@ -5,7 +5,7 @@ import { TimelineClip } from '../types';
 let ffmpeg: FFmpeg | null = null;
 let isFFmpegLoaded = false;
 
-export const loadFFmpeg = async (onProgress?: (message: string) => void): Promise<void> => {
+export async function loadFFmpeg(onProgress?: (message: string) => void): Promise<void> {
     if (isFFmpegLoaded && ffmpeg) {
         return;
     }
@@ -55,7 +55,7 @@ export const loadFFmpeg = async (onProgress?: (message: string) => void): Promis
     }
 };
 
-export const renderTimelineToVideo = async (
+export async function renderTimelineToVideo(
     clips: TimelineClip[],
     settings: {
         resolution: '720p' | '1080p' | '4K';
@@ -65,7 +65,7 @@ export const renderTimelineToVideo = async (
         aspectRatio: '16:9' | '9:16' | '1:1' | '4:3';
     },
     onProgress?: (progress: number, message: string) => void
-): Promise<Blob> => {
+): Promise<Blob> {
     if (!ffmpeg || !isFFmpegLoaded) {
         await loadFFmpeg((msg) => onProgress?.(0, msg));
     }
@@ -189,6 +189,6 @@ export const renderTimelineToVideo = async (
     }
 };
 
-export const isFFmpegReady = (): boolean => {
+export function isFFmpegReady(): boolean {
     return isFFmpegLoaded && ffmpeg !== null;
 };

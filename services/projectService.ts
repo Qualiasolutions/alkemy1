@@ -376,6 +376,6 @@ export const localStorageProjectService: ProjectService = {
 };
 
 // Export the appropriate service based on configuration
-export const getProjectService = (): ProjectService => {
+export function getProjectService(): ProjectService {
   return isSupabaseConfigured() ? projectService : localStorageProjectService;
 };

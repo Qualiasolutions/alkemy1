@@ -487,12 +487,12 @@ async function image_url_to_base64(url: string): Promise<{ mimeType: string; dat
 const MAX_PROMPT_LENGTH = 800; // Nano Banana performs best with concise prompts
 const MAX_REFINEMENT_PROMPT_LENGTH = 400; // Refinement needs shorter prompts since it also processes reference image
 
-export const buildSafePrompt = (
+export function buildSafePrompt(
     prompt: string,
     hasVisualReferences: boolean, // Keep for signature compatibility, though unused in this version
     type: 'still' | 'video' = 'still',
     isRefinement: boolean = false // New parameter for refinement operations
-): { finalPrompt: string; wasAdjusted: boolean } => {
+): { finalPrompt: string; wasAdjusted: boolean } {
     // NO PREFIX - Let the raw prompt through to avoid triggering safety filters
     // Gemini's safety filters are overly aggressive with certain keywords
 
