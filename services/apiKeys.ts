@@ -28,11 +28,10 @@ const ENV_GEMINI_KEY = envCandidates.find((candidate) => candidate.length > 0) ?
 const LOCAL_STORAGE_KEYS = ['alkemy_gemini_api_key', 'geminiApiKey'];
 const GEMINI_STORAGE_EVENT = 'alkemy:gemini-key-changed';
 
-// Initialize cache with env key, will be overridden by localStorage on first getGeminiApiKey() call
-let cachedGeminiKey = ENV_GEMINI_KEY;
-
 // Eagerly load from localStorage on module initialization to prevent re-prompting
-const initializeCache = (): string => {
+// IMPORTANT: Using function declaration (not const arrow function) to ensure proper hoisting
+// This prevents TDZ (Temporal Dead Zone) errors in minified production bundles
+function initializeCache(): string {
   if (ENV_GEMINI_KEY) {
     return ENV_GEMINI_KEY; // Environment key takes priority
   }
@@ -46,10 +45,11 @@ const initializeCache = (): string => {
     }
   }
   return '';
-};
+}
 
 // Initialize cache immediately to prevent API key prompt on every load
-cachedGeminiKey = initializeCache();
+// IMPORTANT: Must be declared AFTER initializeCache function to avoid initialization errors
+let cachedGeminiKey = initializeCache();
 
 // Debug logging to help diagnose API key issues (deferred to avoid init errors)
 if (typeof window !== 'undefined') {
