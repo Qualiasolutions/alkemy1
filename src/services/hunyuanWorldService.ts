@@ -89,6 +89,7 @@ class HunyuanWorldService {
 
     /**
      * Call Gradio API with retry logic, timeout, and exponential backoff
+     * FIXED: Proper cleanup of intervals and timeouts to prevent race conditions
      */
     private async callGradioWithRetry(
         client: any,
@@ -96,31 +97,36 @@ class HunyuanWorldService {
         params: any,
         onProgress?: (progress: number, status: string) => void,
         maxRetries = 3,
-        timeoutMs = 300000 // 5 minute timeout per attempt
+        timeoutMs = 600000 // 10 minute timeout per attempt (increased from 5min)
     ): Promise<any> {
         for (let attempt = 0; attempt < maxRetries; attempt++) {
+            let heartbeatInterval: NodeJS.Timeout | null = null;
+            let timeoutHandle: NodeJS.Timeout | null = null;
+
             try {
                 // Use submit() instead of predict() for better queue visibility
                 const job = client.submit(endpoint, params);
 
-                // Create timeout promise
-                const timeoutPromise = new Promise<never>((_, reject) => {
-                    setTimeout(() => {
-                        reject(new Error('Generation timeout - GPU queue taking too long. Please try again.'));
-                    }, timeoutMs);
-                });
-
                 // Create generation promise with heartbeat detection
-                const generationPromise = (async () => {
+                const generationPromise = new Promise<any>(async (resolve, reject) => {
                     let result: any;
                     let lastMessageTime = Date.now();
-                    const heartbeatInterval = setInterval(() => {
+
+                    // Set up timeout
+                    timeoutHandle = setTimeout(() => {
+                        if (heartbeatInterval) clearInterval(heartbeatInterval);
+                        reject(new Error('Generation timeout - GPU queue is overloaded. Please try again later.'));
+                    }, timeoutMs);
+
+                    // Set up heartbeat detection (more lenient - 10 minutes)
+                    heartbeatInterval = setInterval(() => {
                         const timeSinceLastMessage = Date.now() - lastMessageTime;
-                        if (timeSinceLastMessage > 300000) { // 5 minutes without updates (increased from 60s)
-                            clearInterval(heartbeatInterval);
-                            throw new Error('Generation stalled - no updates from server for 5 minutes');
+                        if (timeSinceLastMessage > 600000) { // 10 minutes without updates
+                            if (heartbeatInterval) clearInterval(heartbeatInterval);
+                            if (timeoutHandle) clearTimeout(timeoutHandle);
+                            reject(new Error('Generation stalled - no server response for 10 minutes'));
                         }
-                    }, 30000); // Check every 30 seconds (reduced frequency)
+                    }, 60000); // Check every 60 seconds
 
                     try {
                         for await (const message of job) {
@@ -144,18 +150,28 @@ class HunyuanWorldService {
                                 break;
                             }
                         }
-                        clearInterval(heartbeatInterval);
-                        return result;
-                    } catch (error) {
-                        clearInterval(heartbeatInterval);
-                        throw error;
-                    }
-                })();
 
-                // Race between generation and timeout
-                return await Promise.race([generationPromise, timeoutPromise]);
+                        // Clean up
+                        if (heartbeatInterval) clearInterval(heartbeatInterval);
+                        if (timeoutHandle) clearTimeout(timeoutHandle);
+
+                        resolve(result);
+                    } catch (error) {
+                        // Clean up on error
+                        if (heartbeatInterval) clearInterval(heartbeatInterval);
+                        if (timeoutHandle) clearTimeout(timeoutHandle);
+                        reject(error);
+                    }
+                });
+
+                // Wait for generation to complete
+                return await generationPromise;
 
             } catch (error: any) {
+                // Ensure cleanup even if error occurs
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
+                if (timeoutHandle) clearTimeout(timeoutHandle);
+
                 const isLastAttempt = attempt === maxRetries - 1;
 
                 // Extract meaningful error message
@@ -171,13 +187,13 @@ class HunyuanWorldService {
                 console.error(`[HunyuanWorld] Attempt ${attempt + 1}/${maxRetries} failed:`, errorMessage);
 
                 if (isLastAttempt) {
-                    throw new Error(`${errorMessage}. The HunyuanWorld Space appears to be overloaded or down. Try again in a few minutes.`);
+                    throw new Error(`${errorMessage}. The HunyuanWorld Space is currently overloaded. Try again in a few minutes or use a different quality setting.`);
                 }
 
                 // Exponential backoff: 5s, 10s, 20s
                 const waitTime = 5000 * Math.pow(2, attempt);
                 console.log(`[HunyuanWorld] Retry ${attempt + 1}/${maxRetries} after ${waitTime}ms`);
-                onProgress?.(15, `Retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${maxRetries})`);
+                onProgress?.(15, `GPU busy - retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${maxRetries})`);
 
                 await new Promise(resolve => setTimeout(resolve, waitTime));
             }
@@ -433,16 +449,17 @@ class HunyuanWorldService {
 
     /**
      * Upload generated model to Supabase Storage
+     * FIXED: Use correct bucket name (project-media instead of projects)
      */
     private async uploadToSupabase(modelBlob: Blob, jobId: string, format: string): Promise<{
         modelUrl: string;
         thumbnailUrl: string;
     }> {
         try {
-            // Upload main model
+            // Upload main model to correct bucket
             const modelPath = `3d-models/${jobId}/model.${format}`;
             const { data: modelUpload, error: modelError } = await supabase.storage
-                .from('projects')
+                .from('project-media') // FIXED: Changed from 'projects' to 'project-media'
                 .upload(modelPath, modelBlob, {
                     contentType: this.getContentType(format),
                     upsert: true
@@ -454,7 +471,7 @@ class HunyuanWorldService {
 
             // Get public URL
             const { data: modelUrl } = supabase.storage
-                .from('projects')
+                .from('project-media') // FIXED: Changed from 'projects' to 'project-media'
                 .getPublicUrl(modelPath);
 
             // For now, use model URL as thumbnail (in future could generate actual thumbnail)
