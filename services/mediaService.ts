@@ -279,6 +279,11 @@ export function getMediaService(): MediaService | null {
   return isSupabaseConfigured() ? getMediaServiceInstance() : null;
 }
 
-// Export singleton instance for direct access (backward compatibility)
-// Simplified to avoid TDZ issues with Object.defineProperty
-export const mediaService = new MediaServiceImpl();
+// LAZY EXPORT: Use getter to prevent TDZ errors in minified builds
+let _mediaService: MediaService | undefined;
+export function getMediaServiceDirect(): MediaService {
+  if (!_mediaService) {
+    _mediaService = new MediaServiceImpl();
+  }
+  return _mediaService;
+}

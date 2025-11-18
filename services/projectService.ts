@@ -315,8 +315,14 @@ class ProjectServiceImpl implements ProjectService {
   }
 }
 
-// Export singleton instance
-export const projectService: ProjectService = new ProjectServiceImpl();
+// LAZY EXPORT: Use getter to prevent TDZ errors in minified builds
+let _projectService: ProjectService | undefined;
+function getProjectServiceInstance(): ProjectService {
+  if (!_projectService) {
+    _projectService = new ProjectServiceImpl();
+  }
+  return _projectService;
+}
 
 // Utility functions for localStorage fallback
 export const localStorageProjectService: ProjectService = {
@@ -377,5 +383,5 @@ export const localStorageProjectService: ProjectService = {
 
 // Export the appropriate service based on configuration
 export function getProjectService(): ProjectService {
-  return isSupabaseConfigured() ? projectService : localStorageProjectService;
+  return isSupabaseConfigured() ? getProjectServiceInstance() : localStorageProjectService;
 };

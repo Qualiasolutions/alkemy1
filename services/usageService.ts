@@ -175,8 +175,15 @@ class UsageServiceImpl implements UsageService {
   }
 }
 
-// Export singleton instance
-export const usageService: UsageService = new UsageServiceImpl();
+// LAZY EXPORT: Use getter to prevent TDZ errors in minified builds
+let _usageService: UsageService | undefined;
+function getUsageServiceInstance(): UsageService {
+  if (!_usageService) {
+    _usageService = new UsageServiceImpl();
+
+  }
+  return _usageService;
+}
 
 // Predefined action types for consistency
 export const USAGE_ACTIONS = {
@@ -229,7 +236,7 @@ export async function logAIUsage(
 
   const costUsd = tokensUsed ? (tokensUsed * (TOKEN_COSTS[action] || 0.000001)) : undefined;
 
-  return usageService.logUsage(userId, action, {
+  return getUsageServiceInstance().logUsage(userId, action, {
     projectId,
     tokensUsed,
     costUsd,
@@ -241,6 +248,6 @@ export async function logAIUsage(
 };
 
 // Export the appropriate service based on configuration
-export function getUsageService(): UsageService {
-  return isSupabaseConfigured() ? usageService : null;
+export function getUsageService(): UsageService | null {
+  return isSupabaseConfigured() ? getUsageServiceInstance() : null;
 };
