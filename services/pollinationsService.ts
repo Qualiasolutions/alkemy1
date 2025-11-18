@@ -8,7 +8,7 @@ import { getFallbackImageUrl } from './fallbackContent';
 const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
 const truthyStrings = new Set(['true', '1', 'yes', 'on']);
 
-const resolveBooleanEnv = (...keys: string[]): boolean => {
+function resolveBooleanEnv(...keys: string[]): boolean {
     for (const key of keys) {
         const candidates = [
             typeof importMetaEnv[key] === 'string' ? importMetaEnv[key] : undefined,
@@ -24,7 +24,7 @@ const resolveBooleanEnv = (...keys: string[]): boolean => {
         }
     }
     return false;
-};
+}
 
 const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
 
@@ -122,7 +122,7 @@ export const generateImageWithPollinations = async (
         onProgress?.(80);
 
         // Convert to blob and then to data URL for consistency
-        const blob = await response.blob();
+        const blob = await (response as Response).blob();
         const dataUrl = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string);
@@ -157,9 +157,9 @@ export const generateImageWithPollinations = async (
 /**
  * Check if Pollinations.AI is available (always true - no API key needed!)
  */
-export const isPollinationsAvailable = (): boolean => {
+export function isPollinationsAvailable(): boolean {
     return !FORCE_DEMO_MODE; // Always available unless in demo mode
-};
+}
 
 /**
  * Get display name for Pollinations.AI models

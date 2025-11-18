@@ -1,21 +1,26 @@
 /**
- * FLUX Image Generation Service
- * Integrates with FAL.AI FLUX API for high-quality image generation
+ * FLUX LoRA Training Service
+ * SPECIALIZED FOR CHARACTER IDENTITY TRAINING ONLY
+ * Integrates with FAL.AI for FLUX.1.1, FLUX.1 Kontext, and FLUX Ultra models
+ * Original Flux API removed - focused exclusively on LoRA training and character consistency
  */
 
 const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
 
-// Supported Flux/FAL model variants. Add new entries here to expose additional
-// hosted models without touching downstream business logic.
+// Supported Flux model variants for Fal.ai - SPECIALIZED FOR LoRA TRAINING ONLY
+// Original Flux API removed - now focusing exclusively on character identity training
 const FLUX_MODEL_CONFIG = {
-    'Flux': {
-        apiUrl: 'https://fal.run/fal-ai/flux-pro/v1.1-ultra',
-        displayName: 'FLUX Pro v1.1 Ultra',
+    'FLUX.1.1': {
+        apiUrl: 'https://fal.run/fal-ai/flux-1.1-pro',
+        displayName: 'FLUX.1.1 Pro',
     },
-    'Flux Kontext Max Multi': {
-        // High-fidelity context-aware model: https://docs.fal.ai/model-apis/al-ai/flux-pro/kontext/max/multi
-        apiUrl: 'https://fal.run/al-ai/flux-pro/kontext/max/multi',
-        displayName: 'Flux Kontext Max Multi',
+    'FLUX.1 Kontext': {
+        apiUrl: 'https://fal.run/fal-ai/flux-1-kontext',
+        displayName: 'FLUX.1 Kontext',
+    },
+    'FLUX Ultra': {
+        apiUrl: 'https://fal.run/fal-ai/flux-ultra',
+        displayName: 'FLUX Ultra',
     }
 } as const;
 
@@ -68,9 +73,9 @@ export interface FluxGenerationResult {
 /**
  * Check if FLUX API is available
  */
-export const isFluxApiAvailable = (): boolean => {
+export function isFluxApiAvailable(): boolean {
     return !!FLUX_API_KEY && FLUX_API_KEY.length > 0;
-};
+}
 
 /**
  * Convert aspect ratio string to width/height dimensions
@@ -103,7 +108,7 @@ export const generateImageWithFlux = async (
     aspectRatio: string = '16:9',
     onProgress?: (progress: number) => void,
     raw: boolean = false,
-    variant: FluxModelVariant = 'Flux',
+    variant: FluxModelVariant = 'FLUX.1 Kontext',
     loras?: Array<{ path: string; scale: number }> // NEW: Character identity LoRAs
 ): Promise<string> => {
     if (!isFluxApiAvailable()) {
@@ -114,7 +119,7 @@ export const generateImageWithFlux = async (
         throw new Error('Please enter a prompt to generate an image.');
     }
 
-    const modelConfig = FLUX_MODEL_CONFIG[variant] ?? FLUX_MODEL_CONFIG['Flux'];
+    const modelConfig = FLUX_MODEL_CONFIG[variant] ?? FLUX_MODEL_CONFIG['FLUX.1 Kontext'];
 
     console.log('[FLUX Service] Starting generation', {
         prompt: prompt.substring(0, 100),
@@ -224,7 +229,7 @@ export const generateMultipleImagesWithFlux = async (
     aspectRatio: string = '16:9',
     onProgress?: (index: number, progress: number) => void,
     raw: boolean = false,
-    variant: FluxModelVariant = 'Flux'
+    variant: FluxModelVariant = 'FLUX.1 Kontext'
 ): Promise<string[]> => {
     const promises = Array.from({ length: count }, (_, index) =>
         generateImageWithFlux(

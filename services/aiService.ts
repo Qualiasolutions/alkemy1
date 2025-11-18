@@ -6,7 +6,8 @@ import { getGeminiApiKey, clearGeminiApiKey, getApiKeyValidationError, isValidGe
 import { getMediaService } from './mediaService';
 import { logAIUsage, USAGE_ACTIONS } from './usageService';
 // Flux API removed - using free Pollinations models instead
-import { trackGenerationMetrics, API_COST_ESTIMATES } from './analyticsService';
+import { trackGenerationMetrics } from './analyticsService';
+import { API_COST_ESTIMATES } from './apiConstants';
 import { networkDetection } from './networkDetection';
 import { generateImageWithPollinations, isPollinationsAvailable, type PollinationsImageModel } from './pollinationsService';
 import { generateImageWithFlux, isFluxApiAvailable, type FluxModelVariant } from './fluxService';
@@ -26,7 +27,7 @@ let inFlightModelList: Promise<string[]> | null = null;
 const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
 const truthyStrings = new Set(['true', '1', 'yes', 'on']);
 
-const resolveBooleanEnv = (...keys: string[]): boolean => {
+function resolveBooleanEnv(...keys: string[]): boolean {
     for (const key of keys) {
         const candidates = [
             typeof importMetaEnv[key] === 'string' ? importMetaEnv[key] : undefined,
@@ -42,7 +43,7 @@ const resolveBooleanEnv = (...keys: string[]): boolean => {
         }
     }
     return false;
-};
+}
 
 const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
 
@@ -63,7 +64,7 @@ if (typeof window !== 'undefined') {
     }, 0);
 }
 
-const requireGeminiClient = (): GoogleGenAI => {
+function requireGeminiClient(): GoogleGenAI {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
         throw new Error('Gemini API key is not configured.');
@@ -80,9 +81,9 @@ const requireGeminiClient = (): GoogleGenAI => {
     }
 
     return new GoogleGenAI({ apiKey });
-};
+}
 
-const shouldUseFallbackForError = (error: unknown): boolean => {
+function shouldUseFallbackForError(error: unknown): boolean {
     if (FORCE_DEMO_MODE) return true;
     if (!error) return false;
     const message = error instanceof Error ? error.message : String(error);
@@ -111,13 +112,13 @@ const shouldUseFallbackForError = (error: unknown): boolean => {
         'unauthorized',
         'forbidden'
     ].some(fragment => normalized.includes(fragment));
-};
+}
 
-const prefersLiveGemini = (): boolean => {
+function prefersLiveGemini(): boolean {
     return !!getGeminiApiKey() && !FORCE_DEMO_MODE;
-};
+}
 
-const handleApiError = (error: unknown, model: string): Error => {
+function handleApiError(error: unknown, model: string): Error {
     console.error(`Error with ${model} API:`, error);
     let message = `An unknown error occurred with ${model}.`;
     if (error instanceof Error) {
@@ -153,9 +154,9 @@ const handleApiError = (error: unknown, model: string): Error => {
         }
     }
     return new Error(message);
-};
+}
 
-const isModelNotFoundError = (error: unknown): boolean => {
+function isModelNotFoundError(error: unknown): boolean {
     if (!error) return false;
 
     const unwrapError = (err: any): boolean => {
@@ -180,12 +181,12 @@ const isModelNotFoundError = (error: unknown): boolean => {
     return normalized.includes('not_found') ||
         normalized.includes('not found') ||
         normalized.includes('404');
-};
+}
 
 /**
  * Check if an error is retryable (503, network errors, etc.)
  */
-const isRetryableError = (error: unknown): boolean => {
+function isRetryableError(error: unknown): boolean {
     if (!error) return false;
     const message = error instanceof Error ? error.message : String(error);
     const normalized = message.toLowerCase();
@@ -197,7 +198,7 @@ const isRetryableError = (error: unknown): boolean => {
            normalized.includes('timeout') ||
            normalized.includes('econnreset') ||
            normalized.includes('enotfound');
-};
+}
 
 /**
  * Retry helper with exponential backoff for API calls
@@ -239,12 +240,12 @@ async function retryWithBackoff<T>(
     throw lastError;
 }
 
-const resetModelListCache = () => {
+function resetModelListCache(): void {
     cachedModelNames = null;
     inFlightModelList = null;
-};
+}
 
-const extractModelNames = (response: any): string[] => {
+function extractModelNames(response: any): string[] {
     if (!response) return [];
     const collections = Array.isArray(response) ? response : (response?.models ?? response?.data ?? []);
     if (!Array.isArray(collections)) return [];
@@ -256,7 +257,7 @@ const extractModelNames = (response: any): string[] => {
             return typeof name === 'string' ? name : '';
         })
         .filter((name): name is string => typeof name === 'string' && name.length > 0);
-};
+}
 
 const getAvailableGeminiModels = async (ai: GoogleGenAI): Promise<string[]> => {
     if (cachedModelNames) {
@@ -354,16 +355,16 @@ const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 /**
  * Validates if a base64 encoded image is within size limits
  */
-const validateImageSize = (base64Data: string, maxSizeBytes: number = MAX_IMAGE_SIZE_BYTES): { isValid: boolean; sizeBytes: number } => {
+function validateImageSize(base64Data: string, maxSizeBytes: number = MAX_IMAGE_SIZE_BYTES): { isValid: boolean; sizeBytes: number } {
     // Calculate approximate size from base64 (base64 adds ~33% overhead)
     const sizeBytes = Math.floor((base64Data.length * 3) / 4);
     return {
         isValid: sizeBytes <= maxSizeBytes,
         sizeBytes
     };
-};
+}
 
-const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; data: string }> => {
+async function image_url_to_base64(url: string): Promise<{ mimeType: string; data: string }> {
     // Handle data URLs directly
     if (url.startsWith('data:')) {
         const parts = url.split(',');
