@@ -5,13 +5,13 @@ import { fallbackScriptAnalysis, fallbackMoodboardDescription, fallbackDirectorR
 import { getGeminiApiKey, clearGeminiApiKey, getApiKeyValidationError, isValidGeminiApiKeyFormat } from './apiKeys';
 import { getMediaService } from './mediaService';
 import { logAIUsage, USAGE_ACTIONS } from './usageService';
-import { isFluxApiAvailable, generateImageWithFlux, isFluxModelVariant, getFluxModelDisplayName, type FluxModelVariant } from './fluxService';
+// Flux API removed - using free Pollinations models instead
 import { trackGenerationMetrics, API_COST_ESTIMATES } from './analyticsService';
 import { networkDetection } from './networkDetection';
 import { generateImageWithPollinations, isPollinationsAvailable, type PollinationsImageModel } from './pollinationsService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
-const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
+// FLUX_API_KEY removed - using free Pollinations instead
 const GEMINI_PRO_MODEL_CANDIDATES = [
     'gemini-2.5-pro',
     'gemini-2.5-flash-002',
@@ -52,7 +52,7 @@ if (typeof window !== 'undefined') {
             FORCE_DEMO_MODE,
             hasGeminiKey: !!getGeminiApiKey(),
             prefersLiveGemini: prefersLiveGemini(),
-            fluxApiKeyPresent: !!FLUX_API_KEY,
+            pollinationsAvailable: isPollinationsAvailable(),
             envVars: {
                 VITE_FORCE_DEMO_MODE: importMetaEnv.VITE_FORCE_DEMO_MODE,
                 FORCE_DEMO_MODE: typeof process !== 'undefined' ? process.env?.FORCE_DEMO_MODE : undefined,
@@ -138,7 +138,7 @@ const handleApiError = (error: unknown, model: string): Error => {
         } else if (error.message.includes('503') || errorLower.includes('unavailable') || errorLower.includes('overloaded')) {
             message = 'Service temporarily unavailable. The API is experiencing high load. Please wait a moment and try again.';
         } else if (errorLower.includes('safety') || errorLower.includes('prohibited_content')) {
-            message = 'Generation blocked by safety filters. The system will automatically retry with FLUX API if configured. Try simplifying your prompt or switching to a FLUX model manually.';
+            message = 'Generation blocked by safety filters. The system will automatically retry with Pollinations API (free). Try simplifying your prompt or switching to a Pollinations model manually.';
         } else if (error.message.includes('Requested entity was not found.')) {
             // This is a specific error for an invalid/not found API key.
             // Dispatch a global event to notify the UI to re-prompt for a key.
@@ -391,12 +391,64 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
             throw new Error(`HTTP error ${response.status} when fetching image.`);
         }
         const blob = await response.blob();
-        const mimeType = blob.type;
+        let mimeType = blob.type;
 
         // CRITICAL FIX: Ensure the fetched content is actually an image.
         // Some URLs might resolve with a 200 OK but return HTML or other content types.
         if (!mimeType || !mimeType.startsWith('image/')) {
             throw new Error(`The content from the URL is not a valid image. MIME type found: '${mimeType || 'unknown'}'. Please use a direct link to an image file.`);
+        }
+
+        // Convert unsupported image formats (AVIF, WEBP, etc.) to JPEG for Gemini API compatibility
+        // Gemini API supports: image/jpeg, image/png, image/gif, image/webp
+        const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        let processedBlob = blob;
+
+        if (!supportedFormats.includes(mimeType)) {
+            console.log(`[Image Conversion] Converting unsupported format ${mimeType} to JPEG`);
+
+            // Create an image element to load and convert the image
+            const img = new Image();
+            const imageUrl = URL.createObjectURL(blob);
+
+            try {
+                // Load image
+                await new Promise<void>((resolve, reject) => {
+                    img.onload = () => resolve();
+                    img.onerror = () => reject(new Error(`Failed to load image for conversion from ${mimeType}`));
+                    img.src = imageUrl;
+                });
+
+                // Create canvas and convert to JPEG
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+
+                if (!ctx) {
+                    throw new Error('Failed to get canvas context for image conversion');
+                }
+
+                ctx.drawImage(img, 0, 0);
+
+                // Convert to JPEG blob with high quality
+                processedBlob = await new Promise<Blob>((resolve, reject) => {
+                    canvas.toBlob(
+                        (blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error('Failed to convert image to JPEG'));
+                        },
+                        'image/jpeg',
+                        0.95 // High quality
+                    );
+                });
+
+                mimeType = 'image/jpeg';
+                console.log(`[Image Conversion] Successfully converted to JPEG`);
+            } finally {
+                // Clean up
+                URL.revokeObjectURL(imageUrl);
+            }
         }
 
         return new Promise((resolve, reject) => {
@@ -420,7 +472,7 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
                 resolve({ mimeType, data: base64data });
             };
             reader.onerror = (error) => reject(new Error(`FileReader error: ${error}`));
-            reader.readAsDataURL(blob);
+            reader.readAsDataURL(processedBlob);
         });
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
@@ -549,7 +601,7 @@ export const generateStillVariants = async (
             allReferenceImages,
             aspect_ratio,
             (progress) => { onProgress?.(index, progress); },
-            `${frame_id}-${index}-${aspect_ratio}`,
+            `${frame_id}-${index}-${aspect_ratio}-${Date.now()}-${Math.random().toString(36).substring(7)}`,
             {
                 ...context,
                 frameId: context?.frameId || `${frame_id}-${index}`,
@@ -648,6 +700,10 @@ export const animateFrame = async (
         console.warn('[API Action] animateFrame using fallback videos because live service is unavailable.');
         onProgress?.(100);
         const fallbackBlobs = getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url}`);
+        if (!fallbackBlobs || !Array.isArray(fallbackBlobs)) {
+            console.error('[animateFrame] getFallbackVideoBlobs returned invalid data');
+            return [];
+        }
         return fallbackBlobs.map(blob => URL.createObjectURL(blob));
     }
     console.log("[API Action] Animating frame with Veo", { prompt, hasLastFrame: !!last_frame_image_url, n });
@@ -811,6 +867,10 @@ export const animateFrame = async (
         if (shouldUseFallbackForError(error)) {
             console.warn('[API Action] animateFrame fallback triggered due to API failure.');
             const fallbackBlobs = getFallbackVideoBlobs(n, `fallback-animate-${prompt}-${reference_image_url ?? 'none'}`);
+            if (!fallbackBlobs || !Array.isArray(fallbackBlobs)) {
+                console.error('[animateFrame] getFallbackVideoBlobs returned invalid data (error fallback)');
+                return [];
+            }
             return fallbackBlobs.map(blob => URL.createObjectURL(blob));
         }
         throw handleApiError(error, 'Veo (Animate)');
@@ -1137,7 +1197,7 @@ export const generateVisual = async (
     }
 
     // Validate reference image count for multimodal models
-    const MAX_REFERENCE_IMAGES = 5;
+    const MAX_REFERENCE_IMAGES = 8; // Increased to match generateStillVariants
     if (reference_images.length > MAX_REFERENCE_IMAGES && model.includes('Gemini')) {
         console.warn(`[generateVisual] Too many reference images (${reference_images.length}). Maximum is ${MAX_REFERENCE_IMAGES}.`);
         throw new Error(
@@ -1221,12 +1281,10 @@ export const generateVisual = async (
         temperature = 0.7;  // Moderate variation
     }
 
-    const fluxVariant: FluxModelVariant | null = null; // Disabled - using Gemini/Together.AI
-    const shouldUseFluxApi = false; // Disabled - using Gemini/Together.AI
-
+    // Flux API removed - using free Pollinations for FLUX models instead
     const effectiveModel = normalizedModel;
 
-    if (!canUseGemini && !shouldUseFluxApi) {
+    if (!canUseGemini) {
         onProgress?.(100);
         return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
     }
@@ -1236,14 +1294,12 @@ export const generateVisual = async (
         normalizedModel,
         effectiveModel,
         hasReferenceImages: reference_images.length > 0,
-        willUseFluxApi: shouldUseFluxApi,
-        fluxApiAvailable: isFluxApiAvailable(),
-        fluxVariant: fluxVariant ?? undefined
+        pollinationsAvailable: isPollinationsAvailable()
     });
 
     try {
-        // === FLUX API PATH ===
-        if (shouldUseFluxApi && fluxVariant) {
+        // FLUX API PATH removed - using Pollinations for free FLUX models
+        if (false) { // Code path disabled
             console.log("[generateVisual] Using FLUX API via FAL.AI", {
                 hasCharacterIdentities: !!characterIdentities && characterIdentities.length > 0,
                 identityCount: characterIdentities?.length || 0
@@ -1383,13 +1439,16 @@ export const generateVisual = async (
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: parts,
+                contents: [{
+                    role: 'user',
+                    parts: parts
+                }],
                 config: {
                     responseModalities: ['IMAGE'],
                     ...(imageConfig ? { imageConfig } : {}),
-                    safetySettings: safetySettings,
-                    ...(temperature !== undefined ? { temperature } : {}),
+                    ...(temperature !== undefined ? { temperature } : {})
                 },
+                safetySettings: safetySettings,
             });
             
             onProgress?.(100);
@@ -1533,24 +1592,22 @@ export const generateVisual = async (
     } catch (error) {
         onProgress?.(100);
 
-        // Special handling for safety errors - try FLUX API as fallback if available
+        // Special handling for safety errors - try Pollinations as fallback (FREE)
         const errorMessage = error instanceof Error ? error.message : String(error);
         const isSafetyError = errorMessage.toLowerCase().includes('safety') ||
                              errorMessage.includes('PROHIBITED_CONTENT') ||
                              errorMessage.includes('HARM_CATEGORY');
 
-        if (isSafetyError && isFluxApiAvailable() && reference_images.length === 0) {
-            console.warn(`[generateVisual] Gemini blocked for safety. Retrying with FLUX API as fallback...`);
+        if (isSafetyError && isPollinationsAvailable() && reference_images.length === 0) {
+            console.warn(`[generateVisual] Gemini blocked for safety. Retrying with Pollinations API (FREE) as fallback...`);
             try {
-                const fluxUrl = await generateImageWithFlux(
+                const pollinationsUrl = await generateImageWithPollinations(
                     prompt,
-                    aspect_ratio,
-                    onProgress,
-                    true, // Enable raw mode
-                    'Flux Pro' // Use Flux Pro for best quality
+                    'flux', // Use FLUX Schnell (free)
+                    aspect_ratio
                 );
 
-                console.log('[generateVisual] FLUX API fallback successful after Gemini safety block');
+                console.log('[generateVisual] Pollinations API fallback successful after Gemini safety block');
 
                 // Log usage for analytics
                 if (context?.userId && context?.projectId) {
@@ -1560,21 +1617,21 @@ export const generateVisual = async (
                         undefined,
                         context.projectId,
                         {
-                            model: 'Flux Pro (Fallback)',
+                            model: 'FLUX Schnell (Pollinations - FREE Fallback)',
                             prompt: prompt.substring(0, 200),
                             aspectRatio: aspect_ratio,
                             wasGeminiFallback: true,
                             originalError: 'PROHIBITED_CONTENT',
                             sceneId: context.sceneId,
                             frameId: context.frameId,
-                            provider: 'FAL.AI'
+                            provider: 'Pollinations.ai'
                         }
                     );
                 }
 
-                return { url: fluxUrl, fromFallback: false };
-            } catch (fluxError) {
-                console.error('[generateVisual] FLUX API fallback also failed:', fluxError);
+                return { url: pollinationsUrl, fromFallback: false };
+            } catch (pollinationsError) {
+                console.error('[generateVisual] Pollinations API fallback also failed:', pollinationsError);
                 // Continue to normal error handling below
             }
         }
@@ -1628,7 +1685,12 @@ Example output: "A gritty, rain-slicked neo-noir aesthetic featuring high-contra
                 })
         );
         
-        const contents = { parts: [textPart, ...imageParts] };
+        const contents = [
+            {
+                role: 'user',
+                parts: [textPart, ...imageParts]
+            }
+        ];
         
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -2065,4 +2127,75 @@ export const generateFramesForScene = async (scene: AnalyzedScene, directorialNo
     } catch (error) {
         throw handleApiError(error, 'Gemini (Frames)');
     }
+};
+
+/**
+ * Analyze a video using Gemini AI to generate a descriptive prompt
+ * @param videoUrl - URL of the video to analyze
+ * @returns AI-generated description of the video content
+ */
+export const analyzeVideoWithGemini = async (videoUrl: string): Promise<string> => {
+    console.log('[AI Service] Analyzing video:', videoUrl);
+
+    try {
+        // Use the requireGeminiClient helper which properly validates API key
+        const genai = requireGeminiClient();
+
+        // Fetch video as blob for Gemini API
+        const videoResponse = await fetch(videoUrl);
+        const videoBlob = await videoResponse.blob();
+        const videoBase64 = await blobToBase64(videoBlob);
+
+        const prompt = `Analyze this video clip and provide a detailed cinematographic description. Focus on:
+- Camera movement and framing
+- Subject/action in the scene
+- Lighting and mood
+- Any notable visual elements or composition
+
+Provide a concise 2-3 sentence description suitable as a video prompt.`;
+
+        const result = await genai.models.generateContent({
+            model: 'gemini-2.5-flash-002',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: prompt },
+                        {
+                            inlineData: {
+                                mimeType: videoBlob.type || 'video/mp4',
+                                data: videoBase64.split(',')[1] // Remove data:video/mp4;base64, prefix
+                            }
+                        }
+                    ]
+                }
+            ]
+        });
+
+        const analysis = result.response.text();
+        console.log('[AI Service] Video analysis complete:', analysis);
+
+        // Note: Usage logging skipped as userId is not available in this context
+        // TODO: Consider passing userId as parameter if usage tracking needed
+
+        return analysis;
+
+    } catch (error) {
+        console.error('[AI Service] Video analysis failed:', error);
+
+        // Note: Error logging skipped as userId is not available
+
+        // Return fallback description instead of throwing
+        return 'Video analysis unavailable. Please add a manual description.';
+    }
+};
+
+// Helper function to convert blob to base64
+const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
 };
