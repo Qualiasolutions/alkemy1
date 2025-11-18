@@ -5,7 +5,14 @@
  * Original Flux API removed - focused exclusively on LoRA training and character consistency
  */
 
-const FLUX_API_KEY = (process.env.FLUX_API_KEY ?? '').trim();
+// FAL models use FAL_API_KEY, not FLUX_API_KEY
+const FLUX_API_KEY = (
+    import.meta.env.VITE_FAL_API_KEY ||
+    import.meta.env.FAL_API_KEY ||
+    process.env.FAL_API_KEY ||
+    process.env.VITE_FAL_API_KEY ||
+    ''
+).trim();
 
 // Supported Flux model variants for Fal.ai - SPECIALIZED FOR LoRA TRAINING ONLY
 // Original Flux API removed - now focusing exclusively on character identity training
