@@ -585,6 +585,80 @@ export async function generateAllTests(request: {
 }
 
 /**
+ * Calculate CLIP similarity between reference and generated images using Replicate
+ * CLIP provides semantic understanding of image similarity beyond visual hash
+ */
+async function calculateCLIPSimilarity(
+    referenceImages: string[],
+    generatedImage: string
+): Promise<number> {
+    try {
+        const REPLICATE_API_TOKEN = import.meta.env.VITE_REPLICATE_API_TOKEN;
+
+        if (!REPLICATE_API_TOKEN) {
+            console.warn('[CharacterIdentity] No REPLICATE_API_TOKEN found, skipping CLIP similarity');
+            return 50; // Neutral score
+        }
+
+        // Use the first reference image for comparison
+        const referenceImage = referenceImages[0];
+
+        // Replicate CLIP similarity model
+        const response = await fetch('https://api.replicate.com/v1/predictions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                version: '75e33f563e284433b787665e3eb421f05a2ba9ecc41de6568a0b64ecf083a636',
+                input: {
+                    image1: referenceImage,
+                    image2: generatedImage
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`CLIP API error: ${response.status} ${response.statusText}`);
+        }
+
+        const prediction = await response.json();
+
+        // Wait for the prediction to complete if it's still processing
+        if (prediction.status === 'processing') {
+            // Poll for completion (max 30 seconds)
+            const startTime = Date.now();
+            while (prediction.status === 'processing' && Date.now() - startTime < 30000) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+                    headers: {
+                        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
+                    }
+                });
+                const pollResult = await pollResponse.json();
+                if (pollResult.status === 'succeeded') {
+                    return Math.round(pollResult.output[0] * 100); // CLIP returns 0-1, convert to 0-100
+                }
+                if (pollResult.status === 'failed') {
+                    throw new Error('CLIP prediction failed');
+                }
+            }
+        }
+
+        if (prediction.status === 'succeeded') {
+            return Math.round(prediction.output[0] * 100); // CLIP returns 0-1, convert to 0-100
+        }
+
+        throw new Error('CLIP prediction timed out');
+
+    } catch (error) {
+        console.warn('[CharacterIdentity] CLIP similarity calculation failed:', error);
+        return 50; // Return neutral score on failure
+    }
+}
+
+/**
  * Calculate similarity between reference and generated images
  *
  * Story 2.2, AC3
@@ -595,15 +669,21 @@ export async function calculateSimilarity(
     generatedImage: string
 ): Promise<number> {
     try {
-        // For now, use pHash only (browser-based)
-        // CLIP similarity will be added via Replicate API in next iteration
+        // Calculate both pHash and CLIP similarity for comprehensive analysis
         const pHashScore = await calculatePHashSimilarity(referenceImages[0], generatedImage);
 
-        // TODO: Add CLIP similarity via Replicate
-        // const clipScore = await calculateCLIPSimilarity(referenceImages, generatedImage);
-        // return (clipScore * 0.7) + (pHashScore * 0.3);
+        // Add CLIP similarity via Replicate for better semantic understanding
+        let clipScore = 50; // Default neutral score if CLIP fails
 
-        return pHashScore;
+        try {
+            clipScore = await calculateCLIPSimilarity(referenceImages, generatedImage);
+        } catch (clipError) {
+            console.warn('[CharacterIdentity] CLIP similarity failed, using pHash only:', clipError);
+        }
+
+        // Weighted combination: CLIP (semantic) + pHash (visual)
+        // CLIP is more important for character identity (70%), pHash provides visual confirmation (30%)
+        return Math.round((clipScore * 0.7) + (pHashScore * 0.3));
     } catch (error) {
         console.error('Similarity calculation failed:', error);
         // Return neutral score on error

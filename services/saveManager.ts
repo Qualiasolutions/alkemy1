@@ -344,9 +344,13 @@ class SaveManager {
       const { project } = await projectService.getProject(this.currentProjectId);
       if (!project) return;
 
-      // Version functionality disabled - database doesn't have version column
-      // TODO: Implement version tracking if needed in future
-      console.log('[SaveManager] Version snapshot creation skipped - no version column in database');
+      // Version tracking requires database schema changes (add version column to projects table)
+      // FEATURE DEFERRED: Implementation would require:
+      // 1. Database migration to add projects.version column
+      // 2. Update projectService to support versioned saves
+      // 3. UI component for version history
+      // 4. Conflict resolution for concurrent edits
+      console.log('[SaveManager] Version tracking deferred - requires database schema migration');
 
     } catch (error) {
       console.error('[SaveManager] Failed to create version snapshot:', error);
