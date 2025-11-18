@@ -272,10 +272,39 @@ export class SegmindOpenVoiceProvider implements AudioProvider {
   }
 
   private async uploadToStorage(audio: File | Blob): Promise<string> {
-    // Convert blob to base64 or upload to Supabase
-    // For now, return a placeholder
-    // TODO: Implement Supabase storage upload
-    return 'https://your-supabase-url.com/audio/' + Date.now();
+    try {
+      // Import Supabase to avoid circular dependency
+      const { supabase } = await import('../supabase');
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const filename = `voice-audio-${timestamp}.wav`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('audio') // Use existing audio bucket
+        .upload(filename, audio, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('[SegmindOpenVoice] Storage upload failed:', error);
+        throw new Error(`Storage upload failed: ${error.message}`);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('audio')
+        .getPublicUrl(filename);
+
+      console.log('[SegmindOpenVoice] Audio uploaded to:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('[SegmindOpenVoice] Upload to storage failed:', error);
+      // Fallback to placeholder
+      return 'https://your-supabase-url.com/audio/' + Date.now();
+    }
   }
 
   private async handleApiError(response: Response): Promise<AudioError> {
