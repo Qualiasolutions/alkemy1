@@ -23,7 +23,7 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
     const { isDark } = useTheme();
     const [mode, setMode] = useState<'image' | 'video'>('image');
     const [prompt, setPrompt] = useState('');
-    const [model, setModel] = useState<string>('FLUX 1.1 Pro');
+    const [model, setModel] = useState<string>('FLUX Schnell');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [generationCount, setGenerationCount] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -39,14 +39,15 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
     const advancedToolsRef = useRef<HTMLDivElement>(null);
     const leftPanelRef = useRef<HTMLDivElement>(null);
 
-    // Image models
+    // Image models - Removed BFL models that have CORS issues
     const imageModels = [
-        'FLUX 1.1 Pro',           // BFL official
-        'FLUX Kontext',           // BFL context-aware
-        'FLUX 1.1 Pro Ultra',     // BFL maximum quality
         'FLUX Schnell',           // Free via Pollinations
         'FLUX Realism',           // Free via Pollinations
         'Stable Diffusion',       // Free via Pollinations
+        'FLUX.1.1 Pro (FAL)',     // FAL with LoRA support
+        'FLUX.1 Kontext (FAL)',   // FAL with LoRA support
+        'FLUX Ultra (FAL)',       // FAL with LoRA support
+        'Seadream v4 (FAL)',      // FAL 4K quality
         'Gemini Nano Banana',     // Google fallback
     ];
 

@@ -21,6 +21,10 @@ const FLUX_MODEL_CONFIG = {
     'FLUX Ultra': {
         apiUrl: 'https://fal.run/fal-ai/flux-ultra',
         displayName: 'FLUX Ultra',
+    },
+    'Seadream v4': {
+        apiUrl: 'https://fal.run/fal-ai/seadream-v4',
+        displayName: 'Seadream v4 - 4K Quality',
     }
 } as const;
 

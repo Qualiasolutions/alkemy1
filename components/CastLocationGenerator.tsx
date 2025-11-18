@@ -259,7 +259,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 }) => {
     const { isDark } = useTheme();
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX 1.1 Pro' | 'FLUX Kontext' | 'FLUX 1.1 Pro Ultra' | 'FLUX.1.1 Pro (FAL)' | 'FLUX.1 Kontext (FAL)' | 'FLUX Ultra (FAL)'>('FLUX 1.1 Pro');
+    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX.1.1 Pro (FAL)' | 'FLUX.1 Kontext (FAL)' | 'FLUX Ultra (FAL)' | 'Seadream v4 (FAL)'>('FLUX.1.1 Pro (FAL)');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -590,14 +590,11 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         onChange={e => setModel(e.target.value as any)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                     >
-                        <option value="FLUX 1.1 Pro" className="bg-[#0a0a0a]">FLUX 1.1 Pro (BFL)</option>
-                        <option value="FLUX Kontext" className="bg-[#0a0a0a]">FLUX Kontext (BFL - Context)</option>
-                        <option value="FLUX 1.1 Pro Ultra" className="bg-[#0a0a0a]">FLUX Ultra (BFL - Max Quality)</option>
                         <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Google)</option>
-                        <option disabled className="bg-[#0a0a0a]">──── LoRA Support ────</option>
                         <option value="FLUX.1.1 Pro (FAL)" className="bg-[#0a0a0a]">FLUX 1.1 Pro (FAL+LoRA)</option>
                         <option value="FLUX.1 Kontext (FAL)" className="bg-[#0a0a0a]">FLUX Kontext (FAL+LoRA)</option>
                         <option value="FLUX Ultra (FAL)" className="bg-[#0a0a0a]">FLUX Ultra (FAL+LoRA)</option>
+                        <option value="Seadream v4 (FAL)" className="bg-[#0a0a0a]">Seadream v4 (FAL - 4K)</option>
                     </select>
                 </div>
 
