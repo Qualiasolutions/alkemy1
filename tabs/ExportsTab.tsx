@@ -156,7 +156,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
       </header>
 
       {!isFFmpegInitialized && (
-        <div className={`bg-blue-900/20 border border-blue-700 text-blue-300 text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
+        <div className="bg-[var(--color-accent-primary)]/10 border text-sm rounded-lg p-3 flex items-start gap-3 mb-6" style={{ borderColor: 'var(--color-accent-primary)', color: 'var(--color-accent-primary)' }}>
           <AlertCircleIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
             <span className="font-semibold">
@@ -332,7 +332,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
                     <div>
                       <div className="w-full bg-zinc-800 rounded-full h-2 mb-1">
                         <div
-                          className="bg-teal-500 h-2 rounded-full transition-all duration-300"
+                          className="bg-[var(--color-accent-primary)] h-2 rounded-full transition-all duration-300"
                           style={{ width: `${job.progress}%` }}
                         />
                       </div>

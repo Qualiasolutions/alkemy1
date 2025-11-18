@@ -77,6 +77,8 @@ export interface Frame {
   // NEW: Character Identity Integration (Epic 2 - Workflow Integration)
   selectedCharacterIds?: string[]; // IDs of characters in this shot
   appliedIdentities?: { characterId: string; loraUrl: string; loraWeight?: number }[]; // Which identity LoRAs were applied
+  // Video Gallery State (for AnimateStudio)
+  selectedVideoIndex?: number; // Track which video is selected in the gallery
 }
 
 export interface TimelineClip {
@@ -106,6 +108,8 @@ export interface Generation {
   selectedCharacters?: string[];
   selectedLocation?: string;
   model?: string;
+  // AI-generated video analysis/description
+  analysisPrompt?: string;
 }
 
 export interface AnalyzedCharacter {
@@ -491,7 +495,7 @@ export type SFXProvider = 'elevenlabs' | 'audiocraft' | 'freesound';
 
 // Style Learning Types (Epic 1, Story 1.3)
 
-export type PatternType = 'shotType' | 'lensChoice' | 'lighting' | 'colorGrade' | 'cameraMovement';
+export type PatternType = 'shotTypes' | 'lensChoice' | 'lighting' | 'colorGrade' | 'cameraMovement';
 
 export interface StylePatterns {
   shotTypes: { [shotType: string]: number };

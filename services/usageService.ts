@@ -185,6 +185,7 @@ export const USAGE_ACTIONS = {
   FRAME_GENERATION: 'frame_generation',
   IMAGE_GENERATION: 'image_generation',
   VIDEO_GENERATION: 'video_generation',
+  VIDEO_ANALYSIS: 'video_analysis',
   IMAGE_UPSCALING: 'image_upscaling',
   VIDEO_UPSCALING: 'video_upscaling',
   MOTION_TRANSFER: 'motion_transfer',

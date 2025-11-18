@@ -363,14 +363,14 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                                 }}
                                 className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                                     isDragging
-                                        ? 'border-teal-500 bg-teal-500/10'
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
                                         : isDark
                                             ? 'border-gray-700 hover:border-gray-600 bg-gray-800/30'
                                             : 'border-gray-300 hover:border-gray-400 bg-gray-50'
                                 }`}
                             >
                                 <UploadIcon className={`w-12 h-12 mx-auto mb-3 ${
-                                    isDragging ? 'text-teal-500' : isDark ? 'text-gray-600' : 'text-gray-400'
+                                    isDragging ? 'text-[var(--color-accent-primary)]' : isDark ? 'text-gray-600' : 'text-gray-400'
                                 }`} />
                                 <p className={`font-semibold mb-1 ${
                                     isDark ? 'text-gray-300' : 'text-gray-700'
@@ -460,12 +460,12 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
 
                         {/* Info Box */}
                         <div className={`mt-4 p-3 rounded-lg text-xs ${
-                            isDark ? 'bg-teal-500/10 border border-teal-500/20' : 'bg-teal-50 border border-teal-200'
+                            isDark ? 'bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/20' : 'bg-[var(--color-accent-primary)]/20 border border-[var(--color-accent-primary)]/30'
                         }`}>
-                            <p className={`font-semibold mb-1 ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>
+                            <p className={`font-semibold mb-1 ${isDark ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-accent-primary)]'}`}>
                                 💡 Tips for best results:
                             </p>
-                            <ul className={`space-y-0.5 ml-4 list-disc ${isDark ? 'text-teal-300' : 'text-teal-600'}`}>
+                            <ul className={`space-y-0.5 ml-4 list-disc ${isDark ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-accent-primary)]'}`}>
                                 <li>Use different angles (front, profile, 3/4 view)</li>
                                 <li>Include varied expressions and lighting</li>
                                 <li>Use high-quality, well-lit photos</li>

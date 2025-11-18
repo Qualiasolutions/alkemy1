@@ -41,7 +41,7 @@ const GenerationContextPanel: React.FC<GenerationContextPanelProps> = ({
         return (
             <motion.button
                 onClick={() => setIsExpanded(true)}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-teal-500/50 transition-all"
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-[var(--color-accent-primary)]/50 transition-all"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
             >
@@ -86,8 +86,8 @@ const GenerationContextPanel: React.FC<GenerationContextPanelProps> = ({
             {/* Header */}
             <div className="px-5 py-4 border-b border-gray-700/50 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500/20 to-purple-500/20 flex items-center justify-center">
-                        <ImageIcon className="w-5 h-5 text-teal-400" />
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-accent-secondary)]/20 flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-[var(--color-accent-primary)]" />
                     </div>
                     <div>
                         <h4 className="text-sm font-bold text-white">Generation Context</h4>
@@ -192,7 +192,7 @@ const CharacterCard: React.FC<{
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="relative group flex items-center gap-3 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-teal-500/50 transition-all"
+            className="relative group flex items-center gap-3 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-[var(--color-accent-primary)]/50 transition-all"
         >
             {/* Character Image */}
             {character.imageUrl ? (
@@ -249,7 +249,7 @@ const LocationCard: React.FC<{
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="relative group flex items-center gap-3 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-teal-500/50 transition-all"
+            className="relative group flex items-center gap-3 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 hover:border-[var(--color-accent-primary)]/50 transition-all"
         >
             {/* Location Image */}
             {location.imageUrl ? (

@@ -223,7 +223,7 @@ export function CharacterIdentityTestPanel({
           <div className="mt-4">
             <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
               <div
-                className="h-full bg-teal-500 transition-all duration-300"
+                className="h-full bg-[var(--color-accent-primary)] transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -265,8 +265,8 @@ export function CharacterIdentityTestPanel({
                 className={`p-4 rounded-xl border text-left transition-all ${
                   existingTest
                     ? isDark
-                      ? 'bg-teal-500/10 border-teal-500/30 hover:bg-teal-500/20'
-                      : 'bg-teal-50 border-teal-200 hover:bg-teal-100'
+                      ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/30 hover:bg-[var(--color-accent-primary)]/20'
+                      : 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/30 hover:bg-[var(--color-accent-primary)]/20'
                     : isDark
                       ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
                       : 'bg-gray-50 border-gray-200 hover:bg-gray-100'

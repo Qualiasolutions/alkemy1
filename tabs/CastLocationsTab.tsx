@@ -2,17 +2,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, CharacterIdentity } from '../types';
 import Button from '../components/Button';
-import { UsersIcon, MapPinIcon, PlusIcon, ImagePlusIcon, Trash2Icon, ExpandIcon, CheckCircleIcon, AlertCircleIcon, UploadIcon } from '../components/icons/Icons';
+import { UsersIcon, MapPinIcon, PlusIcon, ImagePlusIcon, Trash2Icon, ExpandIcon, CheckCircleIcon, AlertCircleIcon, UploadIcon, Edit2Icon } from '../components/icons/Icons';
 import { useTheme } from '../theme/ThemeContext';
 import { motion } from 'framer-motion';
 import CharacterIdentityModal from '../components/CharacterIdentityModal';
 import { getCharacterIdentityStatus } from '../services/characterIdentityService';
 import CastLocationGenerator from '../components/CastLocationGenerator';
 
-// --- STANDALONE MODAL COMPONENT ---
+// --- STANDALONE MODAL COMPONENTS ---
 interface AddItemModalProps {
     type: 'character' | 'location';
     isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (e: React.FormEvent, name: string, description: string) => void;
+}
+
+interface EditItemModalProps {
+    type: 'character' | 'location';
+    isOpen: boolean;
+    currentName: string;
+    currentDescription: string;
     onClose: () => void;
     onSubmit: (e: React.FormEvent, name: string, description: string) => void;
 }
@@ -84,9 +93,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ type, isOpen, onClose, onSu
                                 placeholder={`e.g., ${type === 'character' ? 'John Smith' : 'City Streets'}`}
                                 className={`w-full px-4 py-3 rounded-xl border transition-all ${
                                     isDark
-                                        ? 'bg-[#0B0B0B] border-gray-800 text-white placeholder-gray-600 focus:border-teal-500 focus:bg-[#141414]'
-                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:bg-gray-50'
-                                } focus:outline-none focus:ring-2 focus:ring-teal-500/20`}
+                                        ? 'bg-[#0B0B0B] border-gray-800 text-white placeholder-gray-600 focus:border-[var(--color-accent-primary)] focus:bg-[#141414]'
+                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[var(--color-accent-primary)] focus:bg-gray-50'
+                                } focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20`}
                                 required
                                 autoFocus
                             />
@@ -105,9 +114,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ type, isOpen, onClose, onSu
                                 rows={4}
                                 className={`w-full px-4 py-3 rounded-xl border transition-all resize-none ${
                                     isDark
-                                        ? 'bg-[#0B0B0B] border-gray-800 text-white placeholder-gray-600 focus:border-teal-500 focus:bg-[#141414]'
-                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:bg-gray-50'
-                                } focus:outline-none focus:ring-2 focus:ring-teal-500/20`}
+                                        ? 'bg-[#0B0B0B] border-gray-800 text-white placeholder-gray-600 focus:border-[var(--color-accent-primary)] focus:bg-[#141414]'
+                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[var(--color-accent-primary)] focus:bg-gray-50'
+                                } focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20`}
                             />
                         </div>
                     </div>
@@ -126,6 +135,127 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ type, isOpen, onClose, onSu
                             className="!px-6 !py-2.5"
                         >
                             Add {type === 'character' ? 'Character' : 'Location'}
+                        </Button>
+                    </div>
+                </form>
+            </motion.div>
+        </motion.div>
+    );
+};
+
+const EditItemModal: React.FC<EditItemModalProps> = ({ type, isOpen, currentName, currentDescription, onClose, onSubmit }) => {
+    const { isDark } = useTheme();
+    const [name, setName] = useState(currentName);
+    const [description, setDescription] = useState(currentDescription);
+
+    useEffect(() => {
+        if (isOpen) {
+            setName(currentName);
+            setDescription(currentDescription);
+        }
+    }, [isOpen, currentName, currentDescription]);
+
+    if (!isOpen) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 20 }}
+                className={`w-full max-w-md rounded-2xl border overflow-hidden ${
+                    isDark
+                        ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border-gray-800'
+                        : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+                }`}
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className={`px-6 py-5 border-b ${
+                    isDark ? 'border-gray-800' : 'border-gray-200'
+                }`}>
+                    <h3 className={`text-xl font-bold ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                        Edit {type === 'character' ? 'Character' : 'Location'}
+                    </h3>
+                    <p className={`text-sm mt-1 ${
+                        isDark ? 'text-gray-500' : 'text-gray-600'
+                    }`}>
+                        Update the name and description
+                    </p>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={(e) => onSubmit(e, name, description)} className="p-6">
+                    <div className="space-y-5">
+                        <div>
+                            <label htmlFor="editItemName" className={`block text-sm font-semibold mb-2 ${
+                                isDark ? 'text-gray-300' : 'text-gray-700'
+                            }`}>
+                                Name *
+                            </label>
+                            <input
+                                id="editItemName"
+                                type="text"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                placeholder={`e.g., ${type === 'character' ? 'John Smith' : 'City Streets'}`}
+                                className={`w-full px-4 py-3 rounded-xl border transition-all ${
+                                    isDark
+                                        ? 'bg-[#0B0B0B] border-gray-800 text-white placeholder-gray-600 focus:border-[var(--color-accent-primary)] focus:bg-[#141414]'
+                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[var(--color-accent-primary)] focus:bg-gray-50'
+                                } focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20`}
+                                required
+                                autoFocus
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="editItemDescription" className={`block text-sm font-semibold mb-2 ${
+                                isDark ? 'text-gray-300' : 'text-gray-700'
+                            }`}>
+                                Description
+                            </label>
+                            <textarea
+                                id="editItemDescription"
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
+                                placeholder={`Describe the ${type === 'character' ? 'character\'s appearance and personality' : 'location\'s setting and atmosphere'}...`}
+                                className={`w-full px-4 py-3 rounded-xl border transition-all resize-none ${
+                                    isDark
+                                        ? 'bg-[#0B0B0B] border-gray-800 text-white placeholder-gray-600 focus:border-[var(--color-accent-primary)] focus:bg-[#141414]'
+                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[var(--color-accent-primary)] focus:bg-gray-50'
+                                } focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20`}
+                                rows={4}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 mt-6">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={onClose}
+                            className={`flex-1 py-3 ${
+                                isDark ? '!bg-gray-800 hover:!bg-gray-700' : '!bg-gray-100 hover:!bg-gray-200'
+                            }`}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            className="flex-1 py-3"
+                        >
+                            Save Changes
                         </Button>
                     </div>
                 </form>
@@ -163,8 +293,8 @@ const Card: React.FC<{
                 isDark
                     ? 'bg-gradient-to-br from-[#1A1A1A] to-[#0F0F0F] border border-gray-800/50'
                     : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200'
-            } hover:border-teal-500/50 transition-all hover:shadow-2xl ${
-                isDark ? 'hover:shadow-teal-500/20' : 'hover:shadow-teal-500/30'
+            } hover:border-[var(--color-accent-primary)]/50 transition-all hover:shadow-2xl ${
+                isDark ? 'hover:shadow-[var(--color-accent-primary)]/20' : 'hover:shadow-[var(--color-accent-primary)]/30'
             }`}
         >
             {/* Status Badges */}
@@ -228,7 +358,7 @@ const Card: React.FC<{
                             {/* Gradient Overlays */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                             <div className={`absolute inset-0 bg-gradient-to-br ${
-                                isDark ? 'from-teal-500/10 to-purple-500/10' : 'from-teal-400/20 to-purple-400/20'
+                                isDark ? 'from-[var(--color-accent-primary)]/10 to-[var(--color-accent-secondary)]/10' : 'from-[var(--color-accent-primary)]/20 to-[var(--color-accent-secondary)]/20'
                             } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                         </>
                     ) : (
@@ -277,8 +407,8 @@ const Card: React.FC<{
                             aria-label={`Attach image for ${item.name}`}
                             className={`p-2.5 rounded-xl backdrop-blur-md transition-all ${
                                 isDark
-                                    ? 'bg-black/70 text-gray-300 hover:bg-teal-500/90 hover:text-white'
-                                    : 'bg-white/90 text-gray-600 hover:bg-teal-500 hover:text-white'
+                                    ? 'bg-black/70 text-gray-300 hover:bg-[var(--color-accent-primary)]/90 hover:text-black'
+                                    : 'bg-white/90 text-gray-600 hover:bg-[var(--color-accent-primary)] hover:text-black'
                             }`}
                         >
                             <ImagePlusIcon className="w-4 h-4" />
@@ -321,22 +451,22 @@ const Card: React.FC<{
                             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
                                 variantCount > 0
                                     ? isDark
-                                        ? 'bg-teal-500/10 border border-teal-500/20'
-                                        : 'bg-teal-50 border border-teal-200'
+                                        ? 'bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/20'
+                                        : 'bg-[var(--color-accent-primary)]/20 border border-[var(--color-accent-primary)]/40'
                                     : isDark
                                         ? 'bg-gray-800/50 border border-gray-700'
                                         : 'bg-gray-100 border border-gray-200'
                             }`}>
                                 <span className={`text-[10px] font-bold ${
                                     variantCount > 0
-                                        ? 'text-teal-400'
+                                        ? 'text-[var(--color-accent-primary)]'
                                         : isDark ? 'text-gray-500' : 'text-gray-400'
                                 }`}>
                                     {variantCount}
                                 </span>
                                 <span className={`text-[10px] font-medium ${
                                     variantCount > 0
-                                        ? isDark ? 'text-teal-300' : 'text-teal-600'
+                                        ? 'text-[var(--color-accent-primary)]'
                                         : isDark ? 'text-gray-500' : 'text-gray-400'
                                 }`}>
                                     {variantCount === 1 ? 'variant' : 'variants'}
@@ -529,7 +659,7 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                 </div>
                 {/* Decorative Gradient */}
                 <div className={`absolute -top-8 -right-8 w-64 h-64 rounded-full blur-3xl opacity-20 pointer-events-none ${
-                    isDark ? 'bg-gradient-to-br from-teal-500 to-purple-500' : 'bg-gradient-to-br from-teal-400 to-purple-400'
+                    isDark ? 'bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)]' : 'bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)]'
                 }`} />
             </motion.header>
 
@@ -635,11 +765,11 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
                     <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-xl ${
                             isDark
-                                ? 'bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30'
-                                : 'bg-gradient-to-br from-teal-100 to-cyan-100 border border-teal-200'
+                                ? 'bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-accent-secondary)]/20 border border-[var(--color-accent-primary)]/30'
+                                : 'bg-gradient-to-br from-[var(--color-accent-primary)]/30 to-[var(--color-accent-secondary)]/30 border border-[var(--color-accent-primary)]/40'
                         }`}>
                             <MapPinIcon className={`w-6 h-6 ${
-                                isDark ? 'text-teal-400' : 'text-teal-600'
+                                isDark ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-accent-primary)]'
                             }`} />
                         </div>
                         <div>

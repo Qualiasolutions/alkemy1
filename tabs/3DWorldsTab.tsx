@@ -1,50 +1,34 @@
 /**
- * Enterprise 3D Worlds Tab
+ * Alkemy 3D Generator Tab
  *
- * Production-ready 3D world generation with:
- * - Advanced Gaussian Splatting
- * - Rapier3D physics
- * - Professional camera controls
- * - Multi-format export
- * - Real-time performance monitoring
+ * AI-powered 3D world generation for film production
+ * True AI-generated 3D models with professional quality output
+ *
+ * Features:
+ * - Simple, clean interface
+ * - Fast generation (1-3 minutes)
+ * - High-quality GLB/GLTF/OBJ/PLY/STL output
+ * - Real-time progress tracking
+ * - Cloud storage integration
+ * - Multiple export formats
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { advancedWorldService, type AdvancedWorld, type AdvancedWorldOptions } from '@/services/advancedWorldService';
+import { hunyuanWorldService, type HunyuanWorldResult, type HunyuanWorldGenerationJob } from '@/services/hunyuanWorldService';
 import { useTheme } from '@/theme/ThemeContext';
 import type { ScriptAnalysis } from '@/types';
 
-// Icon components - modern SVG icons
-const GalleryIcon = ({ className }: { className?: string }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-    </svg>
-);
-
-const SettingsIcon = ({ className }: { className?: string }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-);
-
-const StatsIcon = ({ className }: { className?: string }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-);
-
+// Modern SVG Icons
 const WorldIcon = ({ className }: { className?: string }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
 );
 
-const PlayIcon = ({ className }: { className?: string }) => (
+const GenerateIcon = ({ className }: { className?: string }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
     </svg>
 );
 
@@ -72,21 +56,9 @@ const CheckIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
-const CubeIcon = ({ className }: { className?: string }) => (
+const GalleryIcon = ({ className }: { className?: string }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-    </svg>
-);
-
-const LightIcon = ({ className }: { className?: string }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-    </svg>
-);
-
-const PhysicsIcon = ({ className }: { className?: string }) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
     </svg>
 );
 
@@ -96,129 +68,227 @@ interface ThreeDWorldsTabProps {
 
 export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
     const { colors } = useTheme();
-    const viewerContainerRef = useRef<HTMLDivElement>(null);
-    const animationFrameRef = useRef<number>();
+    const viewerRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [activeWorld, setActiveWorld] = useState<AdvancedWorld | null>(null);
-    const [worlds, setWorlds] = useState<AdvancedWorld[]>([]);
+    const [worlds, setWorlds] = useState<HunyuanWorldResult[]>([]);
+    const [activeWorld, setActiveWorld] = useState<HunyuanWorldResult | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generationProgress, setGenerationProgress] = useState(0);
-    const [generationStatus, setGenerationStatus] = useState('');
+    const [progress, setProgress] = useState(0);
+    const [status, setStatus] = useState('');
     const [prompt, setPrompt] = useState('');
-    const [quality, setQuality] = useState<'draft' | 'standard' | 'ultra'>('standard');
-    const [cameraType, setCameraType] = useState<'orbit' | 'first-person' | 'cinematic'>('orbit');
-    const [showStats, setShowStats] = useState(false);
+    const [abortController, setAbortController] = useState<AbortController | null>(null);
+    const [quality, setQuality] = useState<'turbo' | 'fast' | 'standard'>('fast');
+    const [resolution, setResolution] = useState<'low' | 'standard' | 'high'>('standard');
+    const [format, setFormat] = useState<'glb' | 'obj' | 'ply' | 'stl'>('glb');
     const [showGallery, setShowGallery] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
+    const [serviceStatus, setServiceStatus] = useState<{
+        available: boolean;
+        apiStatus: 'online' | 'offline' | 'error';
+        activeJobs: number;
+    }>({ available: false, apiStatus: 'offline', activeJobs: 0 });
 
-    // Feature toggles
-    const [features, setFeatures] = useState({
-        physics: true,
-        lighting: true,
-        shadows: true,
-        postprocessing: false,
-        collisions: true,
-        interactions: true
-    });
+    // Check service status on mount
+    useEffect(() => {
+        const checkStatus = async () => {
+            const status = await hunyuanWorldService.getServiceStatus();
+            setServiceStatus(status);
+        };
+        checkStatus();
+        const interval = setInterval(checkStatus, 30000); // Check every 30 seconds
+        return () => clearInterval(interval);
+    }, []);
 
-    // Performance settings
-    const [performance, setPerformance] = useState({
-        lod: true,
-        frustumCulling: true,
-        instancing: true,
-        targetFPS: 60
-    });
+    // Cancel generation
+    const handleCancelGeneration = () => {
+        if (abortController) {
+            abortController.abort();
+            setIsGenerating(false);
+            setStatus('Generation cancelled by user');
+            setAbortController(null);
+        }
+    };
 
+    // Generate world from prompt
     const handleGenerateWorld = async () => {
         if (!prompt.trim() || isGenerating) return;
 
+        const controller = new AbortController();
+        setAbortController(controller);
         setIsGenerating(true);
-        setGenerationProgress(0);
-        setGenerationStatus('Initializing advanced world generation...');
+        setProgress(0);
+        setStatus('Initializing Alkemy 3D Generator...');
 
         try {
-            const options: AdvancedWorldOptions = {
+            const world = await hunyuanWorldService.generateWorld({
                 prompt: prompt.trim(),
                 quality,
-                features: {
-                    ...features,
-                    postprocessing: false // Disable for now due to three-stdlib issues
-                },
-                camera: {
-                    type: cameraType,
-                    autoRotate: cameraType === 'orbit',
-                    fov: 75
-                },
-                performance,
-                onProgress: (progress, status) => {
-                    setGenerationProgress(progress);
-                    setGenerationStatus(status);
+                resolution,
+                format,
+                includeTextures: true,
+                onProgress: (progressValue, statusMessage) => {
+                    setProgress(progressValue);
+                    setStatus(statusMessage);
                 }
-            };
-
-            const world = await advancedWorldService.generateWorld(options);
+            });
 
             setWorlds(prev => [...prev, world]);
             setActiveWorld(world);
 
-            // Attach to container after generation
-            if (viewerContainerRef.current) {
-                viewerContainerRef.current.innerHTML = '';
-                viewerContainerRef.current.appendChild(world.renderer.domElement);
-            }
+            setStatus('✅ World generation complete!');
 
-            setGenerationStatus('World generation complete');
         } catch (error) {
             console.error('Failed to generate world:', error);
-            setGenerationStatus(`Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+            // Don't show error if user cancelled
+            if (controller.signal.aborted) {
+                return;
+            }
+
+            setStatus(`❌ ${errorMessage}`);
+
+            // Show helpful message for common issues
+            if (errorMessage.includes('timeout') || errorMessage.includes('stalled')) {
+                setStatus(`❌ ${errorMessage} The HunyuanWorld Space is experiencing delays. Try again later.`);
+            } else if (errorMessage.includes('GPU') || errorMessage.includes('busy') || errorMessage.includes('high load')) {
+                setStatus(`❌ ${errorMessage} Click "Generate" to retry.`);
+            }
         } finally {
             setIsGenerating(false);
+            setAbortController(null);
         }
     };
 
+    // Generate world from script scene
+    const handleGenerateFromScript = async () => {
+        if (!scriptAnalysis?.scenes.length) return;
+
+        const firstScene = scriptAnalysis.scenes[0];
+        const scenePrompt = `A 3D world representing: ${firstScene.description}. ${firstScene.location ? `Setting: ${firstScene.location}.` : ''} Mood: ${firstScene.mood || 'neutral'}. Style: Cinematic, detailed, realistic.`;
+
+        setPrompt(scenePrompt);
+        await handleGenerateWorld();
+    };
+
+    // Delete world
     const handleDeleteWorld = (worldId: string) => {
-        advancedWorldService.disposeWorld(worldId);
         setWorlds(prev => prev.filter(w => w.id !== worldId));
         if (activeWorld?.id === worldId) {
             setActiveWorld(null);
-            if (viewerContainerRef.current) {
-                viewerContainerRef.current.innerHTML = '';
-            }
         }
     };
 
-    const handleSwitchWorld = (world: AdvancedWorld) => {
-        setActiveWorld(world);
-        if (viewerContainerRef.current) {
-            viewerContainerRef.current.innerHTML = '';
-            viewerContainerRef.current.appendChild(world.renderer.domElement);
-        }
-    };
-
-    const handleExportWorld = async (format: 'gltf' | 'glb' | 'draco' | 'splat') => {
-        if (!activeWorld) return;
-
+    // Download world
+    const handleDownloadWorld = async (world: HunyuanWorldResult) => {
         try {
-            await advancedWorldService.exportWorld(activeWorld.id, format);
-            setGenerationStatus(`Exported as ${format.toUpperCase()}`);
+            const response = await fetch(world.modelUrl);
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `world-${world.id.substring(0, 8)}.${world.metadata.format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            setStatus(`Downloaded ${world.metadata.format.toUpperCase()} file`);
         } catch (error) {
-            console.error('Failed to export world:', error);
-            setGenerationStatus(`Export failed`);
+            console.error('Download failed:', error);
+            setStatus('Download failed');
         }
     };
 
-    const handleToggleStats = () => {
-        advancedWorldService.toggleStats();
-        setShowStats(!showStats);
-    };
-
+    // Load world in 3D viewer
     useEffect(() => {
-        return () => {
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
+        if (!activeWorld || !viewerRef.current) return;
+
+        const loadModel = async () => {
+            const viewer = viewerRef.current;
+            if (!viewer) return;
+
+            viewer.innerHTML = '';
+
+            // Create Three.js viewer for GLB/GLTF models
+            if (activeWorld.metadata.format === 'glb' || activeWorld.metadata.format === 'gltf') {
+                try {
+                    const { scene, GLTFLoader } = await import('three');
+                    const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls');
+
+                    const renderer = new THREE.WebGLRenderer({ antialias: true });
+                    const camera = new THREE.PerspectiveCamera(75, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
+
+                    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+                    renderer.setClearColor(0xf0f0f0);
+                    viewer.appendChild(renderer.domElement);
+
+                    const controls = new OrbitControls(camera, renderer.domElement);
+                    controls.enableDamping = true;
+                    controls.dampingFactor = 0.05;
+
+                    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+                    directionalLight.position.set(5, 5, 5);
+
+                    const scene3D = new THREE.Scene();
+                    scene3D.add(ambientLight);
+                    scene3D.add(directionalLight);
+
+                    const loader = new GLTFLoader();
+                    loader.load(activeWorld.modelUrl, (gltf) => {
+                        scene3D.add(gltf.scene);
+
+                        const box = new THREE.Box3().setFromObject(gltf.scene);
+                        const center = box.getCenter(new THREE.Vector3());
+                        const size = box.getSize(new THREE.Vector3());
+
+                        gltf.scene.position.sub(center);
+                        camera.position.set(size.x, size.y, size.z * 2);
+                        controls.target.set(0, 0, 0);
+                        controls.update();
+
+                        const animate = () => {
+                            requestAnimationFrame(animate);
+                            controls.update();
+                            renderer.render(scene3D, camera);
+                        };
+                        animate();
+                    });
+
+                } catch (error) {
+                    console.error('Failed to load 3D model:', error);
+                    viewer.innerHTML = `
+                        <div class="w-full h-full flex items-center justify-center text-center p-8">
+                            <div>
+                                <p class="text-lg font-semibold mb-2">3D Viewer Error</p>
+                                <p class="text-sm opacity-75">Could not load 3D model</p>
+                                <a href="${activeWorld.modelUrl}" download class="mt-4 inline-block px-4 py-2 bg-[var(--color-accent-primary)] text-black rounded hover:bg-[var(--color-accent-hover)]">
+                                    Download Model
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                // For other formats, show download link
+                viewer.innerHTML = `
+                    <div class="w-full h-full flex items-center justify-center text-center p-8">
+                        <div>
+                            <p class="text-lg font-semibold mb-2">3D Model Ready</p>
+                            <p class="text-sm opacity-75 mb-4">Format: ${activeWorld.metadata.format.toUpperCase()}</p>
+                            <a href="${activeWorld.modelUrl}" download class="inline-block px-4 py-2 bg-[var(--color-accent-primary)] text-black rounded hover:bg-[var(--color-accent-hover)]">
+                                Download ${activeWorld.metadata.format.toUpperCase()} File
+                            </a>
+                        </div>
+                    </div>
+                `;
             }
         };
-    }, []);
+
+        loadModel();
+    }, [activeWorld]);
 
     return (
         <div className="h-full flex flex-col" style={{ backgroundColor: colors.bg_primary }}>
@@ -229,224 +299,31 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                         <WorldIcon className="w-5 h-5" style={{ color: colors.bg_primary }} />
                     </div>
                     <h2 className="text-xl font-semibold" style={{ color: colors.text_primary }}>
-                        Enterprise 3D World Generator
+                        Alkemy 3D Generator
                     </h2>
+                    <div className="flex items-center gap-1">
+                        <div
+                            className="w-2 h-2 rounded-full"
+                            style={{
+                                backgroundColor: serviceStatus.available
+                                    ? colors.accent_primary
+                                    : '#ef4444'
+                            }}
+                        ></div>
+                        <span className="text-xs font-medium" style={{ color: colors.text_secondary }}>
+                            {serviceStatus.available ? 'Online' : 'Offline'}
+                            {serviceStatus.apiStatus === 'error' && ' (GPU Queue Busy)'}
+                        </span>
+                    </div>
                 </div>
                 <p style={{ color: colors.text_secondary }}>
-                    Advanced Gaussian Splatting with Rapier3D physics and real-time rendering
+                    AI-powered 3D world generation for professional film production
                 </p>
             </div>
 
-            {/* Top Toolbar */}
-            <div className="border-b px-6 py-3 flex justify-between items-center" style={{ borderColor: colors.border_primary }}>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setShowGallery(!showGallery)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                            showGallery ? 'ring-2' : ''
-                        }`}
-                        style={{
-                            backgroundColor: showGallery ? colors.accent_primary : colors.bg_secondary,
-                            color: showGallery ? colors.bg_primary : colors.text_primary,
-                            border: `1px solid ${colors.border_primary}`
-                        }}
-                    >
-                        <GalleryIcon className="w-4 h-4" />
-                        Gallery ({worlds.length})
-                    </button>
-                    <button
-                        onClick={() => setShowSettings(!showSettings)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                            showSettings ? 'ring-2' : ''
-                        }`}
-                        style={{
-                            backgroundColor: showSettings ? colors.accent_primary : colors.bg_secondary,
-                            color: showSettings ? colors.bg_primary : colors.text_primary,
-                            border: `1px solid ${colors.border_primary}`
-                        }}
-                    >
-                        <SettingsIcon className="w-4 h-4" />
-                        Settings
-                    </button>
-                    <button
-                        onClick={handleToggleStats}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                            showStats ? 'ring-2' : ''
-                        }`}
-                        style={{
-                            backgroundColor: showStats ? colors.accent_primary : colors.bg_secondary,
-                            color: showStats ? colors.bg_primary : colors.text_primary,
-                            border: `1px solid ${colors.border_primary}`
-                        }}
-                    >
-                        <StatsIcon className="w-4 h-4" />
-                        {showStats ? 'Hide' : 'Show'} Stats
-                    </button>
-                </div>
-
-                <div className="flex gap-4 text-xs" style={{ color: colors.text_tertiary }}>
-                    <span>Advanced Engine</span>
-                    <span>•</span>
-                    <span>Rapier3D Physics</span>
-                    <span>•</span>
-                    <span>Gaussian Splatting</span>
-                </div>
-            </div>
-
-            {/* Settings Panel */}
-            <AnimatePresence>
-                {showSettings && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="border-b px-6 py-4 space-y-4"
-                        style={{ borderColor: colors.border_primary }}
-                    >
-                        {/* Quality Settings */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
-                                Quality
-                            </label>
-                            <div className="flex gap-2">
-                                {(['draft', 'standard', 'ultra'] as const).map((q) => (
-                                    <button
-                                        key={q}
-                                        onClick={() => setQuality(q)}
-                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all capitalize ${
-                                            quality === q ? 'ring-2' : ''
-                                        }`}
-                                        style={{
-                                            backgroundColor: quality === q ? colors.accent_primary : colors.bg_secondary,
-                                            color: quality === q ? colors.bg_primary : colors.text_primary,
-                                            border: `1px solid ${colors.border_primary}`
-                                        }}
-                                    >
-                                        {q === 'draft' ? 'Fast' : q === 'standard' ? 'Balanced' : 'Ultra'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Camera Type */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
-                                Camera
-                            </label>
-                            <div className="flex gap-2">
-                                {(['orbit', 'first-person', 'cinematic'] as const).map((type) => (
-                                    <button
-                                        key={type}
-                                        onClick={() => setCameraType(type)}
-                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all capitalize ${
-                                            cameraType === type ? 'ring-2' : ''
-                                        }`}
-                                        style={{
-                                            backgroundColor: cameraType === type ? colors.accent_primary : colors.bg_secondary,
-                                            color: cameraType === type ? colors.bg_primary : colors.text_primary,
-                                            border: `1px solid ${colors.border_primary}`
-                                        }}
-                                    >
-                                        {type === 'orbit' ? 'Orbit' : type === 'first-person' ? 'First Person' : 'Cinematic'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Features */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
-                                Features
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {Object.entries({
-                                    physics: { icon: PhysicsIcon, label: 'Physics' },
-                                    lighting: { icon: LightIcon, label: 'Lighting' },
-                                    shadows: { icon: LightIcon, label: 'Shadows' },
-                                    postprocessing: { icon: CubeIcon, label: 'PostFX' },
-                                    collisions: { icon: CubeIcon, label: 'Collisions' },
-                                    interactions: { icon: CubeIcon, label: 'Interact' }
-                                }).map(([key, { icon: Icon, label }]) => (
-                                    <label
-                                        key={key}
-                                        className="flex items-center gap-2 cursor-pointer p-2 rounded-lg transition-all hover:bg-opacity-10"
-                                        style={{
-                                            color: features[key as keyof typeof features] ? colors.accent_primary : colors.text_secondary,
-                                            backgroundColor: features[key as keyof typeof features] ? `${colors.accent_primary}20` : 'transparent'
-                                        }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={features[key as keyof typeof features]}
-                                            onChange={(e) =>
-                                                setFeatures(prev => ({
-                                                    ...prev,
-                                                    [key]: e.target.checked
-                                                }))
-                                            }
-                                            disabled={isGenerating}
-                                            className="rounded"
-                                        />
-                                        <Icon className="w-4 h-4" />
-                                        <span className="text-xs font-medium">{label}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Performance */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
-                                Performance
-                            </label>
-                            <div className="flex gap-4 items-center">
-                                {[
-                                    { key: 'lod', label: 'LOD' },
-                                    { key: 'frustumCulling', label: 'Culling' },
-                                    { key: 'instancing', label: 'Instancing' }
-                                ].map(({ key, label }) => (
-                                    <label key={key} className="flex items-center gap-2 cursor-pointer" style={{ color: colors.text_secondary }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={performance[key as keyof typeof performance]}
-                                            onChange={(e) =>
-                                                setPerformance(prev => ({ ...prev, [key]: e.target.checked }))
-                                            }
-                                            className="rounded"
-                                        />
-                                        <span className="text-xs font-medium">{label}</span>
-                                    </label>
-                                ))}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium" style={{ color: colors.text_secondary }}>
-                                        Target FPS:
-                                    </span>
-                                    <select
-                                        value={performance.targetFPS}
-                                        onChange={(e) =>
-                                            setPerformance(prev => ({ ...prev, targetFPS: Number(e.target.value) }))
-                                        }
-                                        className="px-2 py-1 rounded text-sm font-medium"
-                                        style={{
-                                            backgroundColor: colors.bg_secondary,
-                                            color: colors.text_primary,
-                                            border: `1px solid ${colors.border_primary}`
-                                        }}
-                                    >
-                                        <option value={30}>30</option>
-                                        <option value={60}>60</option>
-                                        <option value={120}>120</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Input Section */}
-            <div className="border-b px-6 py-4 space-y-4" style={{ borderColor: colors.border_primary }}>
-                <div className="flex gap-4">
+            {/* Controls */}
+            <div className="border-b px-6 py-4" style={{ borderColor: colors.border_primary }}>
+                <div className="flex gap-4 items-end">
                     <div className="flex-1">
                         <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
                             World Description
@@ -465,54 +342,173 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                             disabled={isGenerating}
                         />
                     </div>
-                    <button
-                        onClick={handleGenerateWorld}
-                        disabled={!prompt.trim() || isGenerating}
-                        className="px-6 py-3 rounded-lg font-medium transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        style={{
-                            backgroundColor: colors.accent_primary,
-                            color: colors.bg_primary
-                        }}
-                    >
-                        {isGenerating ? (
-                            <>
-                                <LoadingIcon className="w-4 h-4 animate-spin" />
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <PlayIcon className="w-4 h-4" />
-                                Generate World
-                            </>
-                        )}
-                    </button>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
+                            Quality
+                        </label>
+                        <select
+                            value={quality}
+                            onChange={(e) => setQuality(e.target.value as any)}
+                            className="px-4 py-3 rounded-lg font-medium"
+                            style={{
+                                backgroundColor: colors.bg_secondary,
+                                color: colors.text_primary,
+                                border: `1px solid ${colors.border_primary}`
+                            }}
+                            disabled={isGenerating}
+                        >
+                            <option value="turbo">Turbo (15 steps)</option>
+                            <option value="fast">Fast (25 steps)</option>
+                            <option value="standard">Standard (30 steps)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
+                            Resolution
+                        </label>
+                        <select
+                            value={resolution}
+                            onChange={(e) => setResolution(e.target.value as any)}
+                            className="px-4 py-3 rounded-lg font-medium"
+                            style={{
+                                backgroundColor: colors.bg_secondary,
+                                color: colors.text_primary,
+                                border: `1px solid ${colors.border_primary}`
+                            }}
+                            disabled={isGenerating}
+                        >
+                            <option value="low">Low (128)</option>
+                            <option value="standard">Standard (256)</option>
+                            <option value="high">High (512)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: colors.text_secondary }}>
+                            Format
+                        </label>
+                        <select
+                            value={format}
+                            onChange={(e) => setFormat(e.target.value as any)}
+                            className="px-4 py-3 rounded-lg font-medium"
+                            style={{
+                                backgroundColor: colors.bg_secondary,
+                                color: colors.text_primary,
+                                border: `1px solid ${colors.border_primary}`
+                            }}
+                            disabled={isGenerating}
+                        >
+                            <option value="glb">GLB</option>
+                            <option value="obj">OBJ</option>
+                            <option value="ply">PLY</option>
+                            <option value="stl">STL</option>
+                        </select>
+                    </div>
+
+                    {isGenerating ? (
+                        <button
+                            onClick={handleCancelGeneration}
+                            className="px-6 py-3 rounded-lg font-medium transition-all hover:scale-[1.02] flex items-center gap-2"
+                            style={{
+                                backgroundColor: '#ef4444',
+                                color: 'white'
+                            }}
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                            Cancel
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleGenerateWorld}
+                            disabled={!prompt.trim() || !serviceStatus.available}
+                            className="px-6 py-3 rounded-lg font-medium transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            style={{
+                                backgroundColor: colors.accent_primary,
+                                color: colors.bg_primary
+                            }}
+                        >
+                            <GenerateIcon className="w-4 h-4" />
+                            Generate
+                        </button>
+                    )}
                 </div>
 
-                {/* Generation Progress */}
+                {/* Quick Actions */}
+                {scriptAnalysis?.scenes.length > 0 && (
+                    <div className="mt-4 flex gap-2">
+                        <button
+                            onClick={handleGenerateFromScript}
+                            disabled={isGenerating}
+                            className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-[1.02] disabled:opacity-50"
+                            style={{
+                                backgroundColor: colors.bg_secondary,
+                                color: colors.text_primary,
+                                border: `1px solid ${colors.border_primary}`
+                            }}
+                        >
+                            Generate from Script Scene
+                        </button>
+                    </div>
+                )}
+
+                {/* Progress */}
                 <AnimatePresence>
-                    {isGenerating && (
+                    {(isGenerating || status) && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
                         >
-                            <div className="w-full h-2 rounded-full overflow-hidden mb-2" style={{ backgroundColor: colors.bg_tertiary }}>
-                                <motion.div
-                                    className="h-full"
-                                    style={{
-                                        backgroundColor: colors.accent_primary,
-                                        width: `${generationProgress}%`
-                                    }}
-                                    animate={{ width: `${generationProgress}%` }}
-                                    transition={{ duration: 0.3 }}
-                                />
-                            </div>
+                            {isGenerating && (
+                                <div className="w-full h-2 rounded-full overflow-hidden mb-2" style={{ backgroundColor: colors.bg_tertiary }}>
+                                    <motion.div
+                                        className="h-full"
+                                        style={{
+                                            backgroundColor: colors.accent_primary,
+                                            width: `${progress}%`
+                                        }}
+                                        animate={{ width: `${progress}%` }}
+                                        transition={{ duration: 0.3 }}
+                                    />
+                                </div>
+                            )}
                             <p className="text-sm font-medium" style={{ color: colors.text_secondary }}>
-                                {generationStatus}
+                                {status}
                             </p>
                         </motion.div>
                     )}
                 </AnimatePresence>
+            </div>
+
+            {/* Toolbar */}
+            <div className="border-b px-6 py-3 flex justify-between items-center" style={{ borderColor: colors.border_primary }}>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setShowGallery(!showGallery)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                            showGallery ? 'ring-2' : ''
+                        }`}
+                        style={{
+                            backgroundColor: showGallery ? colors.accent_primary : colors.bg_secondary,
+                            color: showGallery ? colors.bg_primary : colors.text_primary,
+                            border: `1px solid ${colors.border_primary}`
+                        }}
+                    >
+                        <GalleryIcon className="w-4 h-4" />
+                        Gallery ({worlds.length})
+                    </button>
+                </div>
+
+                <div className="flex gap-4 text-xs" style={{ color: colors.text_tertiary }}>
+                    <span>Alkemy 3D</span>
+                    <span>•</span>
+                    <span>Professional Quality</span>
+                    <span>•</span>
+                    <span>AI-Powered</span>
+                </div>
             </div>
 
             {/* Main Content */}
@@ -520,35 +516,13 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                 {/* 3D Viewer */}
                 <div className="flex-1 p-6">
                     <div
-                        ref={viewerContainerRef}
+                        ref={viewerRef}
                         className="w-full h-full rounded-lg overflow-hidden relative"
                         style={{
                             backgroundColor: colors.bg_secondary,
                             border: `1px solid ${colors.border_primary}`
                         }}
                     >
-                        {activeWorld && (
-                            <div
-                                className="absolute top-4 left-4 px-3 py-2 rounded-lg text-sm z-10 font-medium"
-                                style={{
-                                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                                    color: 'white',
-                                    pointerEvents: 'none',
-                                    backdropFilter: 'blur(8px)'
-                                }}
-                            >
-                                <p className="font-semibold mb-1">Controls:</p>
-                                <p className="text-xs opacity-90">
-                                    {cameraType === 'orbit' ? 'Left Click - Rotate | Right Click - Pan | Scroll - Zoom' :
-                                     cameraType === 'first-person' ? 'WASD - Move | Mouse - Look' :
-                                     'Cinematic mode - Automatic camera'}
-                                </p>
-                                {features.interactions && (
-                                    <p className="text-xs opacity-90 mt-1">Click objects to interact</p>
-                                )}
-                            </div>
-                        )}
-
                         {!activeWorld && (
                             <div className="w-full h-full flex items-center justify-center" style={{ color: colors.text_tertiary }}>
                                 <div className="text-center max-w-md">
@@ -556,19 +530,19 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                         <WorldIcon className="w-8 h-8" style={{ color: colors.accent_primary }} />
                                     </div>
                                     <h3 className="text-xl font-semibold mb-2" style={{ color: colors.text_primary }}>
-                                        Enterprise 3D World Generator
+                                        Alkemy 3D Generator
                                     </h3>
                                     <p className="text-sm mb-6" style={{ color: colors.text_secondary }}>
-                                        Powered by advanced Gaussian Splatting and Rapier3D physics
+                                        Professional AI-powered 3D world generation for film production
                                     </p>
                                     <div className="flex justify-center gap-6 text-xs font-medium" style={{ color: colors.text_tertiary }}>
                                         <div className="flex items-center gap-1">
                                             <CheckIcon className="w-3 h-3" style={{ color: colors.accent_primary }} />
-                                            Photorealistic
+                                            AI-Powered
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <CheckIcon className="w-3 h-3" style={{ color: colors.accent_primary }} />
-                                            Physics-Based
+                                            High Quality
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <CheckIcon className="w-3 h-3" style={{ color: colors.accent_primary }} />
@@ -606,7 +580,6 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                         {worlds.map((world) => (
                                             <div
                                                 key={world.id}
-                                                onClick={() => handleSwitchWorld(world)}
                                                 className={`p-3 rounded-lg cursor-pointer transition-all ${
                                                     activeWorld?.id === world.id ? 'ring-2' : 'hover:scale-[1.02]'
                                                 }`}
@@ -617,31 +590,47 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                                     borderColor: colors.accent_primary,
                                                     border: activeWorld?.id === world.id ? '2px solid' : '1px solid'
                                                 }}
+                                                onClick={() => setActiveWorld(world)}
                                             >
                                                 <div className="flex justify-between items-start mb-2">
                                                     <h4 className="font-medium text-sm truncate" style={{ color: colors.text_primary }}>
-                                                        World {world.id.split('_').pop()?.substring(0, 8)}
+                                                        {world.metadata.prompt.substring(0, 30)}...
                                                     </h4>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteWorld(world.id);
-                                                        }}
-                                                        className="p-1 rounded opacity-75 hover:opacity-100 transition-opacity"
-                                                        style={{ color: '#ef4444' }}
-                                                    >
-                                                        <TrashIcon className="w-3 h-3" />
-                                                    </button>
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDownloadWorld(world);
+                                                            }}
+                                                            className="p-1 rounded opacity-75 hover:opacity-100 transition-opacity"
+                                                            style={{ color: colors.accent_primary }}
+                                                        >
+                                                            <DownloadIcon className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteWorld(world.id);
+                                                            }}
+                                                            className="p-1 rounded opacity-75 hover:opacity-100 transition-opacity"
+                                                            style={{ color: '#ef4444' }}
+                                                        >
+                                                            <TrashIcon className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="text-xs space-y-1">
                                                     <p style={{ color: colors.text_secondary }}>
-                                                        Quality: <span className="capitalize">{quality}</span>
+                                                        Quality: <span className="capitalize">{world.metadata.quality}</span>
                                                     </p>
                                                     <p style={{ color: colors.text_secondary }}>
-                                                        Splats: {world.metadata.splatCount.toLocaleString()}
+                                                        Vertices: {world.metadata.vertices.toLocaleString()}
+                                                    </p>
+                                                    <p style={{ color: colors.text_secondary }}>
+                                                        Format: {world.metadata.format.toUpperCase()}
                                                     </p>
                                                     <p style={{ color: colors.text_tertiary }}>
-                                                        {new Date(world.metadata.lastUpdated).toLocaleTimeString()}
+                                                        {new Date(world.metadata.createdAt).toLocaleTimeString()}
                                                     </p>
                                                 </div>
                                             </div>
@@ -649,33 +638,6 @@ export function ThreeDWorldsTab({ scriptAnalysis }: ThreeDWorldsTabProps) {
                                     </div>
                                 )}
                             </div>
-
-                            {/* Export Options */}
-                            {activeWorld && (
-                                <div className="p-4 border-t" style={{ borderColor: colors.border_primary }}>
-                                    <h4 className="font-semibold mb-3 text-sm flex items-center gap-2" style={{ color: colors.text_primary }}>
-                                        <DownloadIcon className="w-4 h-4" />
-                                        Export World
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {(['glb', 'gltf', 'draco', 'splat'] as const).map((format) => (
-                                            <button
-                                                key={format}
-                                                onClick={() => handleExportWorld(format)}
-                                                className="w-full px-3 py-2 rounded-lg text-sm font-medium transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
-                                                style={{
-                                                    backgroundColor: colors.bg_secondary,
-                                                    color: colors.text_primary,
-                                                    border: `1px solid ${colors.border_primary}`
-                                                }}
-                                            >
-                                                <DownloadIcon className="w-3 h-3" />
-                                                Export as {format.toUpperCase()}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

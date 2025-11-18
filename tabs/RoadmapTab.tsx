@@ -287,11 +287,7 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
         <div className="flex h-[calc(100vh-200px)] gap-6">
             {/* Canvas */}
             <div
-                className="flex-1 relative rounded-2xl border overflow-hidden cursor-grab active:cursor-grabbing"
-                style={{
-                    backgroundColor: isDark ? '#0B0B0B' : '#FFFFFF',
-                    borderColor: isDark ? '#2A2A2A' : '#E5E5E5',
-                }}
+                className="flex-1 relative rounded-2xl border border-white/10 overflow-hidden cursor-grab active:cursor-grabbing bg-[#0a0a0a]"
                 onDoubleClick={handleCanvasDoubleClick}
                 onMouseDown={handleCanvasMouseDown}
             >
@@ -309,7 +305,7 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                             >
                                 <polygon
                                     points="0 0, 10 3, 0 6"
-                                    fill={isDark ? '#10B981' : '#059669'}
+                                    fill="#dfec2d"
                                 />
                             </marker>
                         </defs>
@@ -340,39 +336,38 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                     left: block.position.x,
                                     top: block.position.y,
                                     zIndex: draggingBlock === block.id ? 100 : (selectedBlock === block.id ? 10 : 2),
-                                    backgroundColor: isDark ? '#161616' : '#FFFFFF',
                                     borderColor: block.color,
                                 }}
-                                className={`w-64 p-4 rounded-xl border-2 shadow-lg transition-all select-none ${
+                                className={`w-64 p-4 rounded-xl border-2 shadow-lg transition-all select-none bg-[#161616] ${
                                     draggingBlock === block.id ? 'cursor-grabbing shadow-2xl' : 'cursor-grab'
                                 } ${
                                     selectedBlock === block.id ? 'ring-2 ring-#dfec2d shadow-2xl' : ''
                                 } ${
-                                    connectMode && connectionStart === block.id ? 'ring-2 ring-blue-400 animate-pulse' : ''
+                                    connectMode && connectionStart === block.id ? 'ring-2 ring-#dfec2d animate-pulse' : ''
                                 } ${
-                                    connectMode && connectionStart && connectionStart !== block.id ? 'ring-2 ring-blue-200 opacity-80' : ''
+                                    connectMode && connectionStart && connectionStart !== block.id ? 'ring-2 ring-#dfec2d/50 opacity-80' : ''
                                 }`}
                                 onMouseDown={(e) => handleBlockMouseDown(e, block.id)}
                             >
                                 <div className="flex items-start justify-between gap-2 mb-2">
                                     <span className="text-2xl">{BLOCK_TYPES.find(t => t.id === block.type)?.icon}</span>
                                     <div className="flex-1">
-                                        <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                        <h3 className="font-semibold text-white">
                                             {block.title}
                                         </h3>
-                                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        <p className="text-xs text-gray-400">
                                             {BLOCK_TYPES.find(t => t.id === block.type)?.label}
                                         </p>
                                     </div>
                                 </div>
                                 {block.description && (
-                                    <p className={`text-sm mt-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    <p className="text-sm mt-2 text-gray-300">
                                         {block.description}
                                     </p>
                                 )}
                                 {block.connections.length > 0 && (
-                                    <div className={`mt-2 pt-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                                        <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                                    <div className="mt-2 pt-2 border-t border-gray-700">
+                                        <p className="text-xs text-gray-500">
                                             {block.connections.length} connection{block.connections.length !== 1 ? 's' : ''}
                                         </p>
                                     </div>
@@ -387,11 +382,7 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                             <motion.div
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`px-6 py-3 rounded-xl shadow-2xl border-2 ${
-                                    isDark
-                                        ? 'bg-[var(--color-accent-secondary)]/90 border-[var(--color-accent-secondary)] text-white'
-                                        : 'bg-[var(--color-accent-secondary)]/90 border-[var(--color-accent-secondary)] text-gray-900'
-                                } backdrop-blur-sm`}
+                                className="px-6 py-3 rounded-xl shadow-2xl border-2 bg-[#dfec2d]/90 border-[#dfec2d] text-black backdrop-blur-sm"
                             >
                                 <p className="font-medium">
                                     {connectionStart
@@ -406,13 +397,13 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                     {blocks.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center">
-                                <p className={`text-lg mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <p className="text-lg mb-4 text-gray-400">
                                     🎯 Double-click anywhere to add a block
                                 </p>
-                                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                                <p className="text-sm text-gray-500">
                                     or use the "Add Block" button →
                                 </p>
-                                <p className={`text-xs mt-3 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                                <p className="text-xs mt-3 text-gray-600">
                                     💡 Tip: Click and drag blocks to move them freely
                                 </p>
                             </div>
@@ -423,26 +414,16 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                     <div className="absolute bottom-4 right-4 flex gap-2">
                         <button
                             onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-                            className={`p-2 rounded-lg shadow-lg border ${
-                                isDark
-                                    ? 'bg-[#161616] border-[#2A2A2A] text-white hover:bg-[#1F1F1F]'
-                                    : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
-                            }`}
+                            className="p-2 rounded-lg shadow-lg border bg-[#161616] border-white/10 text-white hover:bg-[#1F1F1F]"
                         >
                             <ZoomOutIcon className="w-5 h-5" />
                         </button>
-                        <div className={`px-4 py-2 rounded-lg shadow-lg border flex items-center ${
-                            isDark ? 'bg-[#161616] border-[#2A2A2A] text-white' : 'bg-white border-gray-300 text-gray-900'
-                        }`}>
+                        <div className="px-4 py-2 rounded-lg shadow-lg border flex items-center bg-[#161616] border-white/10 text-white">
                             {Math.round(zoom * 100)}%
                         </div>
                         <button
                             onClick={() => setZoom(Math.min(2, zoom + 0.1))}
-                            className={`p-2 rounded-lg shadow-lg border ${
-                                isDark
-                                    ? 'bg-[#161616] border-[#2A2A2A] text-white hover:bg-[#1F1F1F]'
-                                    : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
-                            }`}
+                            className="p-2 rounded-lg shadow-lg border bg-[#161616] border-white/10 text-white hover:bg-[#1F1F1F]"
                         >
                             <ZoomInIcon className="w-5 h-5" />
                         </button>
@@ -451,11 +432,7 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                 setZoom(1);
                                 setPan({ x: 0, y: 0 });
                             }}
-                            className={`px-3 py-2 rounded-lg shadow-lg border text-xs font-medium ${
-                                isDark
-                                    ? 'bg-[#161616] border-[#2A2A2A] text-white hover:bg-[#1F1F1F]'
-                                    : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
-                            }`}
+                            className="px-3 py-2 rounded-lg shadow-lg border text-xs font-medium bg-[#161616] border-white/10 text-white hover:bg-[#1F1F1F]"
                         >
                             Reset
                         </button>
@@ -466,11 +443,8 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
             {/* Sidebar */}
             <div className="w-80 space-y-4 overflow-y-auto">
                 {/* Toolbar */}
-                <div className="rounded-2xl border p-4 space-y-3" style={{
-                    backgroundColor: isDark ? '#161616' : '#FFFFFF',
-                    borderColor: isDark ? '#2A2A2A' : '#E5E5E5',
-                }}>
-                    <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Tools</h3>
+                <div className="rounded-2xl border border-white/10 p-4 space-y-3 bg-[#161616]">
+                    <h3 className="font-semibold text-white">Tools</h3>
                     <Button
                         variant="primary"
                         onClick={() => setIsAddingBlock(!isAddingBlock)}
@@ -491,12 +465,12 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                         {connectMode ? 'Cancel Connection' : 'Connect Blocks'}
                     </Button>
                     {connectMode && (
-                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <p className="text-xs text-gray-400">
                             {connectionStart ? 'Click on second block to connect' : 'Click on first block to start'}
                         </p>
                     )}
 
-                    <div className="pt-2 border-t" style={{ borderColor: isDark ? '#2A2A2A' : '#E5E5E5' }}>
+                    <div className="pt-2 border-t border-white/10">
                         <div className="flex gap-2">
                             <Button
                                 variant="secondary"
@@ -533,27 +507,19 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="rounded-2xl border p-4 space-y-2"
-                            style={{
-                                backgroundColor: isDark ? '#161616' : '#FFFFFF',
-                                borderColor: isDark ? '#2A2A2A' : '#E5E5E5',
-                            }}
+                            className="rounded-2xl border border-white/10 p-4 space-y-2 bg-[#161616]"
                         >
-                            <h4 className={`font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            <h4 className="font-semibold mb-3 text-white">
                                 Select Block Type
                             </h4>
                             {BLOCK_TYPES.map(type => (
                                 <button
                                     key={type.id}
                                     onClick={() => handleAddBlock(type.id as any)}
-                                    className={`w-full text-left p-3 rounded-lg border transition ${
-                                        isDark
-                                            ? 'bg-[#0B0B0B] border-[#2A2A2A] hover:border-#dfec2d/50'
-                                            : 'bg-white border-gray-300 hover:border-#dfec2d/50'
-                                    }`}
+                                    className="w-full text-left p-3 rounded-lg border transition bg-[#0B0B0B] border-white/10 hover:border-#dfec2d/50"
                                 >
                                     <span className="text-xl mr-3">{type.icon}</span>
-                                    <span className={isDark ? 'text-white' : 'text-gray-900'}>{type.label}</span>
+                                    <span className="text-white">{type.label}</span>
                                 </button>
                             ))}
                         </motion.div>
@@ -565,62 +531,46 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-2xl border p-4 space-y-4"
-                        style={{
-                            backgroundColor: isDark ? '#161616' : '#FFFFFF',
-                            borderColor: isDark ? '#2A2A2A' : '#E5E5E5',
-                        }}
+                        className="rounded-2xl border border-white/10 p-4 space-y-4 bg-[#161616]"
                     >
                         <div className="flex items-center justify-between">
-                            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            <h3 className="font-semibold text-white">
                                 Edit Block
                             </h3>
                             <button
                                 onClick={() => handleDeleteBlock(selectedBlockData.id)}
-                                className={`p-2 rounded-lg transition ${
-                                    isDark
-                                        ? 'hover:bg-red-500/10 text-red-400'
-                                        : 'hover:bg-red-50 text-red-600'
-                                }`}
+                                className="p-2 rounded-lg transition hover:bg-red-500/10 text-red-400"
                             >
                                 <TrashIcon className="w-4 h-4" />
                             </button>
                         </div>
 
                         <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            <label className="block text-sm font-medium mb-2 text-gray-300">
                                 Title
                             </label>
                             <input
                                 type="text"
                                 value={selectedBlockData.title}
                                 onChange={(e) => handleUpdateBlock(selectedBlockData.id, { title: e.target.value })}
-                                className={`w-full px-3 py-2 rounded-lg border ${
-                                    isDark
-                                        ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                }`}
+                                className="w-full px-3 py-2 rounded-lg border bg-[#0B0B0B] border-white/10 text-white"
                             />
                         </div>
 
                         <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            <label className="block text-sm font-medium mb-2 text-gray-300">
                                 Description
                             </label>
                             <textarea
                                 value={selectedBlockData.description}
                                 onChange={(e) => handleUpdateBlock(selectedBlockData.id, { description: e.target.value })}
                                 rows={3}
-                                className={`w-full px-3 py-2 rounded-lg border ${
-                                    isDark
-                                        ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                }`}
+                                className="w-full px-3 py-2 rounded-lg border bg-[#0B0B0B] border-white/10 text-white"
                             />
                         </div>
 
                         <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            <label className="block text-sm font-medium mb-2 text-gray-300">
                                 Color
                             </label>
                             <div className="grid grid-cols-4 gap-2">
@@ -642,7 +592,7 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
 
                         {selectedBlockData.connections.length > 0 && (
                             <div>
-                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <label className="block text-sm font-medium mb-2 text-gray-300">
                                     Connections ({selectedBlockData.connections.length})
                                 </label>
                                 <div className="space-y-2">
@@ -652,20 +602,14 @@ const RoadmapTab: React.FC<RoadmapTabProps> = ({ blocks, onUpdateBlocks }) => {
                                         return (
                                             <div
                                                 key={connId}
-                                                className={`flex items-center justify-between p-2 rounded-lg border ${
-                                                    isDark ? 'bg-[#0B0B0B] border-[#2A2A2A]' : 'bg-gray-50 border-gray-300'
-                                                }`}
+                                                className="flex items-center justify-between p-2 rounded-lg border bg-[#0B0B0B] border-white/10"
                                             >
-                                                <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                                <span className="text-sm text-white">
                                                     {BLOCK_TYPES.find(t => t.id === connectedBlock.type)?.icon} {connectedBlock.title}
                                                 </span>
                                                 <button
                                                     onClick={() => handleDisconnect(selectedBlockData.id, connId)}
-                                                    className={`text-xs px-2 py-1 rounded ${
-                                                        isDark
-                                                            ? 'text-red-400 hover:bg-red-500/10'
-                                                            : 'text-red-600 hover:bg-red-50'
-                                                    }`}
+                                                    className="text-xs px-2 py-1 rounded text-red-400 hover:bg-red-500/10"
                                                 >
                                                     Remove
                                                 </button>

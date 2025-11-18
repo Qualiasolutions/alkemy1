@@ -19,12 +19,11 @@ import CastLocationsTab from './tabs/CastLocationsTab';
 import CompositingTab from './tabs/SceneAssemblerTab';
 import FramesTab from './tabs/FramesTab.simple';
 import WanTransferTab from './tabs/WanTransferTab';
-import PostProductionTab from './tabs/PostProductionTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
-import AnalyticsTab from './tabs/AnalyticsTab';
 import { ProjectRoadmapTab } from './tabs/ProjectRoadmapTab';
 import { ThreeDWorldsTab } from './tabs/3DWorldsTab';
+import GenerateTab from './tabs/GenerateTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
 import { analyzeScript } from './services/aiService';
 import { commandHistory } from './services/commandHistory';
@@ -1072,6 +1071,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                   currentProject={currentProject}
                   user={user}
                 />;
+      case 'generate':
+        return <GenerateTab user={user} />;
       case 'timeline':
         return <FramesTab
                   clips={timelineClips}
@@ -1083,12 +1084,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
                 />;
       case 'wan_transfer':
         return <WanTransferTab scriptAnalysis={scriptAnalysis} />;
-      case 'post_production':
-        return <PostProductionTab />;
       case 'exports':
         return <ExportsTab timelineClips={timelineClips} />;
-      case 'analytics':
-        return <AnalyticsTab scriptAnalysis={scriptAnalysis} projectId={currentProject?.id || 'temp'} />;
       case 'project_roadmap':
         return <ProjectRoadmapTab />;
       case 'roadmap':

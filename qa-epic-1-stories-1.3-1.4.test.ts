@@ -39,37 +39,37 @@ describe('Epic 1 Story 1.3: Style Learning & Personalization', () => {
   });
 
   describe('AC6: Privacy Controls (Opt-in System)', () => {
-    it('should default to style learning disabled', () => {
-      expect(isStyleLearningEnabled()).toBe(false);
+    it('should default to style learning disabled', async () => {
+      expect(await isStyleLearningEnabled()).toBe(false);
     });
 
-    it('should allow enabling style learning', () => {
-      setStyleLearningEnabled(true);
-      expect(isStyleLearningEnabled()).toBe(true);
+    it('should allow enabling style learning', async () => {
+      await setStyleLearningEnabled(true);
+      expect(await isStyleLearningEnabled()).toBe(true);
     });
 
-    it('should allow disabling style learning', () => {
-      setStyleLearningEnabled(true);
-      setStyleLearningEnabled(false);
-      expect(isStyleLearningEnabled()).toBe(false);
+    it('should allow disabling style learning', async () => {
+      await setStyleLearningEnabled(true);
+      await setStyleLearningEnabled(false);
+      expect(await isStyleLearningEnabled()).toBe(false);
     });
 
-    it('should track if opt-in prompt has been shown', () => {
-      expect(hasShownOptInPrompt()).toBe(false);
-      setOptInPromptShown();
-      expect(hasShownOptInPrompt()).toBe(true);
+    it('should track if opt-in prompt has been shown', async () => {
+      expect(await hasShownOptInPrompt()).toBe(false);
+      await setOptInPromptShown();
+      expect(await hasShownOptInPrompt()).toBe(true);
     });
   });
 
   describe('AC1: Creative Pattern Tracking', () => {
-    beforeEach(() => {
-      setStyleLearningEnabled(true);
+    beforeEach(async () => {
+      await setStyleLearningEnabled(true);
     });
 
     it('should track shot type patterns', async () => {
-      await trackPattern('shotType', 'close-up');
-      await trackPattern('shotType', 'close-up');
-      await trackPattern('shotType', 'wide-shot');
+      await trackPattern('shotTypes', 'close-up');
+      await trackPattern('shotTypes', 'close-up');
+      await trackPattern('shotTypes', 'wide-shot');
 
       const profile = await getStyleProfile();
       expect(profile.patterns.shotTypes['close-up']).toBe(2);
@@ -99,7 +99,7 @@ describe('Epic 1 Story 1.3: Style Learning & Personalization', () => {
 
     it('should not track patterns when style learning is disabled', async () => {
       setStyleLearningEnabled(false);
-      await trackPattern('shotType', 'close-up');
+      await trackPattern('shotTypes', 'close-up');
 
       const profile = await getStyleProfile().catch(() => null);
       expect(profile).toBeNull();
@@ -108,10 +108,10 @@ describe('Epic 1 Story 1.3: Style Learning & Personalization', () => {
 
   describe('AC3: Style-Adapted Suggestions', () => {
     beforeEach(async () => {
-      setStyleLearningEnabled(true);
+      await setStyleLearningEnabled(true);
       // Track enough patterns to get suggestions (>10 shots)
       for (let i = 0; i < 12; i++) {
-        await trackPattern('shotType', 'close-up');
+        await trackPattern('shotTypes', 'close-up');
         await trackPattern('lensChoice', '50mm', { shotType: 'close-up' });
         await trackPattern('lighting', 'natural');
       }
@@ -129,10 +129,10 @@ describe('Epic 1 Story 1.3: Style Learning & Personalization', () => {
     });
 
     it('should return null when insufficient data (<10 shots)', async () => {
-      resetStyleProfile();
-      setStyleLearningEnabled(true);
+      await resetStyleProfile();
+      await setStyleLearningEnabled(true);
 
-      await trackPattern('shotType', 'close-up');
+      await trackPattern('shotTypes', 'close-up');
       const suggestion = await getStyleSuggestion({ shotType: 'close-up' });
 
       expect(suggestion).toBeNull();
@@ -141,8 +141,8 @@ describe('Epic 1 Story 1.3: Style Learning & Personalization', () => {
 
   describe('AC5: Style Profile Management', () => {
     beforeEach(async () => {
-      setStyleLearningEnabled(true);
-      await trackPattern('shotType', 'close-up');
+      await setStyleLearningEnabled(true);
+      await trackPattern('shotTypes', 'close-up');
       await trackPattern('lighting', 'natural');
     });
 
@@ -166,8 +166,9 @@ describe('Epic 1 Story 1.3: Style Learning & Personalization', () => {
 
   describe('AC4: Style Learning Indicator', () => {
     beforeEach(async () => {
-      setStyleLearningEnabled(true);
-      await trackPattern('shotType', 'close-up');
+      await resetStyleProfile(); // Clear profile first for test isolation
+      await setStyleLearningEnabled(true);
+      await trackPattern('shotTypes', 'close-up');
     });
 
     it('should provide summary stats for badge', async () => {
@@ -178,7 +179,7 @@ describe('Epic 1 Story 1.3: Style Learning & Personalization', () => {
     });
 
     it('should return null when style learning disabled', async () => {
-      setStyleLearningEnabled(false);
+      await setStyleLearningEnabled(false);
       const summary = await getStyleLearningSummary();
 
       expect(summary).toBeNull();

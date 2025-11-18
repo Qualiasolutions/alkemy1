@@ -732,7 +732,7 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
               else if (description.includes('wide shot') || description.includes('establishing')) shotType = 'wide-shot';
 
               if (shotType) {
-                trackPattern('shotType', shotType).catch(err =>
+                trackPattern('shotTypes', shotType).catch(err =>
                   console.warn('Failed to track shot type pattern:', err)
                 );
               }
@@ -1233,8 +1233,8 @@ const DirectorWidget: React.FC<DirectorWidgetProps> = ({ scriptAnalysis, setScri
                                   issue.severity === 'critical'
                                     ? 'border-red-500/30 bg-red-500/10 text-red-300'
                                     : issue.severity === 'warning'
-                                      ? 'border-#dfec2d/30 bg-#dfec2d/10 text-lime-300'
-                                      : 'border-blue-500/30 bg-blue-500/10 text-blue-300'
+                                      ? 'border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 text-lime-300'
+                                      : 'border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
                                 }`}
                               >
                                 <div className="flex items-start justify-between gap-2">

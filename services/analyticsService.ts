@@ -30,7 +30,8 @@ export const API_COST_ESTIMATES = {
         music: 0.25,
         dialogue: 0.05,
         effects: 0.10
-    }
+    },
+    GEMINI_FLASH_VIDEO_ANALYSIS: 0.001  // Gemini Flash for video analysis
 };
 
 // Quality Level Thresholds

@@ -49,7 +49,7 @@ const UserMenu: React.FC<UserMenuProps> = ({
         switch (user.subscription_tier) {
             case 'pro':
                 return (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-400">
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)]">
                         PRO
                     </span>
                 );

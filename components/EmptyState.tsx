@@ -45,7 +45,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     title: title || 'No Script Yet',
                     description: description || 'Upload or paste your screenplay to begin. Alkemy will analyze it and break it down into production-ready scenes with character, location, and shot information.',
                     actionLabel: actionLabel || 'Upload Script',
-                    illustrationColor: isDark ? 'from-teal-500/20 to-teal-600/10' : 'from-teal-500/30 to-teal-600/20'
+                    illustrationColor: isDark ? 'from-[var(--color-accent-primary)]/20 to-[var(--color-accent-primary)]/10' : 'from-[var(--color-accent-primary)]/30 to-[var(--color-accent-primary)]/20'
                 };
             case 'moodboard':
                 return {
@@ -61,7 +61,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     title: title || 'No Characters Generated',
                     description: description || 'Generate character portraits based on your script analysis. These will be used as reference for shot generation to maintain visual consistency.',
                     actionLabel: actionLabel || 'Generate Characters',
-                    illustrationColor: isDark ? 'from-blue-500/20 to-cyan-600/10' : 'from-blue-500/30 to-cyan-600/20'
+                    illustrationColor: isDark ? 'from-[var(--color-accent-primary)]/20 to-[var(--color-accent-secondary)]/10' : 'from-[var(--color-accent-primary)]/30 to-[var(--color-accent-secondary)]/20'
                 };
             case 'shots':
                 return {
@@ -77,7 +77,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     title: title || 'Timeline is Empty',
                     description: description || 'Transfer your upscaled video shots to the timeline to assemble your final production. You can trim, reorder, and export your complete video sequence.',
                     actionLabel: actionLabel || 'Go to Compositing',
-                    illustrationColor: isDark ? 'from-green-500/20 to-#b3e617/10' : 'from-green-500/30 to-#b3e617/20'
+                    illustrationColor: isDark ? 'from-[var(--color-accent-primary)]/20 to-[var(--color-accent-secondary)]/10' : 'from-[var(--color-accent-primary)]/30 to-[var(--color-accent-secondary)]/20'
                 };
             default:
                 return {
@@ -118,7 +118,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     <div className={`relative w-32 h-32 rounded-full border-2 ${
                         isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-white/50 border-gray-300'
                     } backdrop-blur-sm flex items-center justify-center ${
-                        isDark ? 'text-teal-400' : 'text-teal-600'
+                        isDark ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-accent-primary)]'
                     }`}>
                         <motion.div
                             initial={{ scale: 0.8, opacity: 0 }}

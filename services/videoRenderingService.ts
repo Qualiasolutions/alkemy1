@@ -23,19 +23,35 @@ export const loadFFmpeg = async (onProgress?: (message: string) => void): Promis
             onProgress?.(`Rendering: ${(progress * 100).toFixed(1)}% (${time}s)`);
         });
 
+        // Try CDN first, then fallback to local if available
         const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
         onProgress?.('Loading FFmpeg core...');
-        await ffmpeg.load({
-            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
+
+        try {
+            await ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+        } catch (cdnError) {
+            console.warn('Failed to load FFmpeg from CDN, trying fallback...', cdnError);
+            // Try alternative CDN
+            const altBaseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+            await ffmpeg.load({
+                coreURL: await toBlobURL(`${altBaseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${altBaseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+        }
 
         isFFmpegLoaded = true;
         onProgress?.('FFmpeg ready!');
     } catch (error) {
         console.error('Failed to load FFmpeg:', error);
-        throw new Error(`FFmpeg initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Don't throw - just mark as failed and provide fallback
+        isFFmpegLoaded = false;
+        ffmpeg = null;
+        // Return gracefully instead of throwing
+        onProgress?.('FFmpeg unavailable - video rendering disabled');
     }
 };
 
@@ -54,8 +70,10 @@ export const renderTimelineToVideo = async (
         await loadFFmpeg((msg) => onProgress?.(0, msg));
     }
 
-    if (!ffmpeg) {
-        throw new Error('FFmpeg not initialized');
+    if (!ffmpeg || !isFFmpegLoaded) {
+        // Return empty blob with error message instead of throwing
+        console.warn('FFmpeg not available - video rendering is disabled');
+        throw new Error('Video rendering is currently unavailable. Please try again later or contact support.');
     }
 
     onProgress?.(5, 'Preparing video clips...');

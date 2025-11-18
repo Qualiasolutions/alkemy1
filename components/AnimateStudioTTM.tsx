@@ -300,7 +300,7 @@ export default function AnimateStudioTTM({
                 <button
                   onClick={() => handleGenerateVideo(animationMethod)}
                   disabled={isGenerating}
-                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
+                  className="w-full py-3 bg-gradient-to-r from-[var(--color-accent-secondary)] to-[var(--color-accent-primary)] hover:from-[var(--color-accent-primary)] hover:to-[var(--color-accent-hover)] text-black rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
                 >
                   {isGenerating ? (
                     <>
@@ -330,7 +330,7 @@ export default function AnimateStudioTTM({
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-2">
                         <div
-                          className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+                          className="bg-gradient-to-r from-[var(--color-accent-secondary)] to-[var(--color-accent-primary)] h-2 rounded-full transition-all duration-300"
                           style={{ width: `${generationProgress}%` }}
                         />
                       </div>

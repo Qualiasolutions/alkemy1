@@ -415,7 +415,7 @@ export default function TTMGenerationPanel({
               onClick={() => setMotionType(MotionType.CAMERA)}
               className={`px-4 py-2 rounded-lg flex-1 ${
                 motionType === MotionType.CAMERA
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[var(--color-accent-primary)] text-black'
                   : 'bg-gray-700 text-gray-400'
               }`}
             >
@@ -570,7 +570,7 @@ export default function TTMGenerationPanel({
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
               <div
-                className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-[var(--color-accent-secondary)] to-[var(--color-accent-primary)] h-2 rounded-full transition-all duration-300"
                 style={{ width: `${generationProgress * 100}%` }}
               />
             </div>
@@ -636,10 +636,10 @@ export default function TTMGenerationPanel({
       <button
         onClick={handleGenerate}
         disabled={isGenerating || !isTTMAvailable}
-        className={`mt-6 w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+        className={`mt-6 w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] focus:ring-offset-2 focus:ring-offset-gray-800 ${
           isGenerating || !isTTMAvailable
             ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-            : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
+            : 'bg-gradient-to-r from-[var(--color-accent-secondary)] to-[var(--color-accent-primary)] text-black hover:from-[var(--color-accent-primary)] hover:to-[var(--color-accent-hover)]'
         }`}
         aria-describedby="generate-button-description"
         aria-busy={isGenerating}

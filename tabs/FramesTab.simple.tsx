@@ -565,7 +565,7 @@ const FramesTab: React.FC<FramesTabProps> = ({
                 {videoLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                     <div className="text-center">
-                      <div className="w-8 h-8 border-4 border-t-transparent border-teal-500 rounded-full animate-spin mx-auto mb-2" />
+                      <div className="w-8 h-8 border-4 border-t-transparent border-[var(--color-accent-primary)] rounded-full animate-spin mx-auto mb-2" />
                       <p className="text-xs text-zinc-400">Loading video...</p>
                     </div>
                   </div>
@@ -776,14 +776,14 @@ const FramesTab: React.FC<FramesTabProps> = ({
 
                           {/* Trim Handles */}
                           <div
-                            className="absolute left-0 top-0 bottom-0 w-2 bg-green-500/50 cursor-ew-resize hover:bg-green-500 transition-colors"
+                            className="absolute left-0 top-0 bottom-0 w-2 bg-[var(--color-accent-secondary)]/50 cursor-ew-resize hover:bg-[var(--color-accent-secondary)] transition-colors"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleTrimStart(clip.timelineId, 'start');
                             }}
                           />
                           <div
-                            className="absolute right-0 top-0 bottom-0 w-2 bg-blue-500/50 cursor-ew-resize hover:bg-blue-500 transition-colors"
+                            className="absolute right-0 top-0 bottom-0 w-2 bg-[var(--color-accent-primary)]/50 cursor-ew-resize hover:bg-[var(--color-accent-primary)] transition-colors"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleTrimStart(clip.timelineId, 'end');

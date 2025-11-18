@@ -5,7 +5,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { gaussianSplatService, type GaussianWorld } from '@/services/gaussianSplatService';
+// Service was removed - component stubbed out for now
+type GaussianWorld = {
+    id: string;
+    loaded: boolean;
+};
 import { useTheme } from '@/theme/ThemeContext';
 
 interface GaussianSplatViewerProps {
@@ -52,77 +56,20 @@ export function GaussianSplatViewer({
         let mounted = true;
 
         const loadScene = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                setLoadProgress(0);
-
-                const world = await gaussianSplatService.createGaussianWorld(
-                    containerRef.current!,
-                    sourceUrl || '',
-                    metadata,
-                    (progress) => {
-                        if (mounted) {
-                            setLoadProgress(Math.round(progress));
-                            onProgress?.(progress);
-                        }
-                    }
-                );
-
-                if (mounted) {
-                    worldRef.current = world;
-                    setIsLoading(false);
-                    onLoad?.(world);
-                }
-            } catch (err) {
-                if (mounted) {
-                    const errorMsg = err instanceof Error ? err.message : 'Failed to load gaussian splat';
-                    setError(errorMsg);
-                    setIsLoading(false);
-                    onError?.(err as Error);
-                }
+            // Gaussian splat service removed - feature temporarily disabled
+            if (mounted) {
+                setError('3D Gaussian Splat viewing is temporarily unavailable');
+                setIsLoading(false);
+                onError?.(new Error('GaussianSplatService not available'));
             }
         };
 
         const loadFile = async () => {
-            if (!sourceFile || !containerRef.current) return;
-
-            try {
-                setIsLoading(true);
-                setError(null);
-                setLoadProgress(0);
-
-                const viewer = await gaussianSplatService.createViewer(containerRef.current);
-                await gaussianSplatService.loadSplatFile(viewer, sourceFile, {
-                    onProgress: (progress) => {
-                        if (mounted) {
-                            setLoadProgress(Math.round(progress));
-                            onProgress?.(progress);
-                        }
-                    }
-                });
-
-                if (mounted) {
-                    const world: GaussianWorld = {
-                        viewer,
-                        sceneId: `file_${Date.now()}`,
-                        metadata: {
-                            ...metadata,
-                            title: sourceFile.name,
-                            format: 'gaussian-splat'
-                        }
-                    };
-                    worldRef.current = world;
-                    setIsLoading(false);
-                    onLoad?.(world);
-                }
-            } catch (err) {
-                if (mounted) {
-                    const errorMsg = err instanceof Error ? err.message : 'Failed to load file';
-                    setError(errorMsg);
-                    setIsLoading(false);
-                    onError?.(err as Error);
-                }
+            // Gaussian splat service removed - feature temporarily disabled
+            if (mounted) {
+                setError('3D Gaussian Splat file loading is temporarily unavailable');
+                setIsLoading(false);
+                onError?.(new Error('GaussianSplatService not available'));
             }
         };
 
@@ -134,10 +81,8 @@ export function GaussianSplatViewer({
 
         return () => {
             mounted = false;
-            if (worldRef.current) {
-                gaussianSplatService.disposeViewer(worldRef.current.sceneId);
-                worldRef.current = null;
-            }
+            // Service cleanup removed - no longer needed
+            worldRef.current = null;
         };
     }, [sourceUrl, sourceFile]);
 
@@ -154,26 +99,13 @@ export function GaussianSplatViewer({
     };
 
     const handleScreenshot = async () => {
-        if (!worldRef.current) return;
-
-        try {
-            const dataUrl = await gaussianSplatService.takeScreenshot(worldRef.current.viewer);
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = `gaussian-splat-${Date.now()}.png`;
-            link.click();
-        } catch (err) {
-            console.error('Failed to take screenshot:', err);
-        }
+        // Screenshot feature disabled - service not available
+        console.warn('Screenshot feature temporarily unavailable');
     };
 
     const handleResetCamera = () => {
-        if (!worldRef.current) return;
-
-        gaussianSplatService.setCameraState(worldRef.current.viewer, {
-            position: [-1, -4, 6],
-            fov: 75
-        });
+        // Camera reset disabled - service not available
+        console.warn('Camera reset feature temporarily unavailable');
     };
 
     return (

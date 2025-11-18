@@ -269,6 +269,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     const [generationCount, setGenerationCount] = useState(4);
     const [refinementBase, setRefinementBase] = useState<Generation | null>(null);
     const [loraImages, setLoraImages] = useState<string[]>([]);
+    const [selectedMoodboardId, setSelectedMoodboardId] = useState<string>('none');
 
     // Check if this is a character (not a location)
     const isCharacter = item.type === 'character';
@@ -334,6 +335,21 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                 });
             };
 
+            // Get the selected moodboard template or use the default moodboard
+            const selectedMoodboardTemplate = selectedMoodboardId !== 'none'
+                ? moodboardTemplates.find(t => t.id === selectedMoodboardId)
+                : undefined;
+
+            // Convert selected template to moodboard format if needed
+            const effectiveMoodboard = selectedMoodboardTemplate
+                ? {
+                    cinematography: { notes: selectedMoodboardTemplate.title, items: selectedMoodboardTemplate.items, aiDescription: selectedMoodboardTemplate.aiSummary },
+                    color: { notes: '', items: [], aiDescription: '' },
+                    style: { notes: '', items: [], aiDescription: '' },
+                    other: { notes: '', items: [], aiDescription: '' }
+                }
+                : moodboard;
+
             const { urls, errors } = await generateStillVariants(
                 item.data.id,
                 model,
@@ -342,7 +358,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                 [],
                 aspectRatio,
                 N_GENERATIONS,
-                moodboard,
+                effectiveMoodboard,
                 moodboardTemplates,
                 isCharacter ? [character!.name] : undefined,
                 !isCharacter ? (item.data as AnalyzedLocation).name : undefined,
@@ -541,6 +557,28 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         <h2 className="text-lg font-bold text-white truncate">{item.data.name}</h2>
                         <p className="text-xs text-white/60 capitalize">{item.type} Generation</p>
                     </div>
+                </div>
+
+                {/* Moodboard Selector */}
+                <div>
+                    <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Moodboard</label>
+                    <select
+                        value={selectedMoodboardId}
+                        onChange={e => setSelectedMoodboardId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
+                    >
+                        <option value="none" className="bg-[#0a0a0a]">No Moodboard (Default)</option>
+                        {moodboardTemplates.map(template => (
+                            <option key={template.id} value={template.id} className="bg-[#0a0a0a]">
+                                {template.title}
+                            </option>
+                        ))}
+                    </select>
+                    {selectedMoodboardId !== 'none' && (
+                        <p className="text-xs text-white/40 mt-1">
+                            ✨ Selected moodboard will influence generation style
+                        </p>
+                    )}
                 </div>
 
                 {/* Model Selector */}

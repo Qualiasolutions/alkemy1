@@ -153,10 +153,16 @@ export async function getStyleProfile(userId?: string): Promise<StyleProfile> {
     return styleProfileCache;
   }
 
-  // Create new profile
+  // Create new profile (fresh copy of patterns to avoid shared object mutation)
   const newProfile: StyleProfile = {
     userId: userId || (await getCurrentUserId()) || 'local-user',
-    patterns: DEFAULT_PATTERNS,
+    patterns: {
+      shotTypes: {},
+      lensChoices: {},
+      lighting: {},
+      colorGrade: {},
+      cameraMovement: {},
+    },
     totalProjects: 0,
     totalShots: 0,
     lastUpdated: new Date().toISOString(),
@@ -231,6 +237,10 @@ export async function trackPattern(
     // Update patterns
     if (patternType === 'lensChoice' && context?.shotType) {
       // Lens choices are nested by shot type
+      // Initialize lensChoices object if not present (defensive)
+      if (!profile.patterns.lensChoices) {
+        profile.patterns.lensChoices = {};
+      }
       if (!profile.patterns.lensChoices[context.shotType]) {
         profile.patterns.lensChoices[context.shotType] = {};
       }
@@ -239,6 +249,10 @@ export async function trackPattern(
     } else {
       // Other patterns are flat dictionaries
       const patternCategory = profile.patterns[patternType];
+      if (!patternCategory) {
+        console.warn(`Pattern category '${patternType}' not found in profile, skipping tracking`);
+        return;
+      }
       const count = patternCategory[value] || 0;
       patternCategory[value] = count + 1;
     }
@@ -290,8 +304,8 @@ export async function getStyleSuggestion(context: {
       }
     }
 
-    // Suggest lighting based on scene emotion
-    if (context.sceneEmotion && profile.patterns.lighting) {
+    // Suggest lighting based on scene emotion or lighting context
+    if ((context.sceneEmotion || context.lighting) && profile.patterns.lighting) {
       const lightingTypes = Object.entries(profile.patterns.lighting)
         .sort(([, a], [, b]) => b - a);
 
@@ -329,7 +343,13 @@ export async function resetStyleProfile(): Promise<void> {
 
   const newProfile: StyleProfile = {
     userId,
-    patterns: DEFAULT_PATTERNS,
+    patterns: {
+      shotTypes: {},
+      lensChoices: {},
+      lighting: {},
+      colorGrade: {},
+      cameraMovement: {},
+    },
     totalProjects: 0,
     totalShots: 0,
     lastUpdated: new Date().toISOString(),

@@ -191,15 +191,15 @@ const EnhancedListDisplay: React.FC<EnhancedListDisplayProps> = ({
     const { isDark } = useTheme();
 
     const colorClasses = {
-        teal: 'from-[#dfec2d]/10 to-[var(--color-accent-secondary)]/10',
-        purple: 'from-[#dfec2d]/10 to-[#b3e617]/10',
-        blue: 'from-[var(--color-accent-secondary)]/10 to-[#dfec2d]/10',
+        teal: 'from-[var(--color-accent-primary)]/10 to-[var(--color-accent-secondary)]/10',
+        purple: 'from-[var(--color-accent-primary)]/10 to-[var(--color-accent-secondary)]/10',
+        blue: 'from-[var(--color-accent-primary)]/10 to-[var(--color-accent-secondary)]/10',
     };
 
     const iconColorClasses = {
-        teal: 'text-[#dfec2d]',
-        purple: 'text-[#dfec2d]',
-        blue: 'text-[var(--color-accent-secondary)]',
+        teal: 'text-[var(--color-accent-primary)]',
+        purple: 'text-[var(--color-accent-primary)]',
+        blue: 'text-[var(--color-accent-primary)]',
     };
 
     return (
@@ -533,7 +533,7 @@ const ScriptTab: React.FC<ScriptTabProps> = ({ scriptContent, analysis, onScript
                             delay: 2
                         }}
                         className={`absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full blur-3xl ${
-                            isDark ? 'bg-gradient-to-br from-blue-500/12 to-indigo-500/8' : 'bg-gradient-to-br from-blue-400/18 to-indigo-400/12'
+                            isDark ? 'bg-gradient-to-br from-[var(--color-accent-primary)]/12 to-[var(--color-accent-secondary)]/8' : 'bg-gradient-to-br from-[var(--color-accent-primary)]/18 to-[var(--color-accent-secondary)]/12'
                         }`}
                     />
 

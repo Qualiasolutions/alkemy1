@@ -39,8 +39,8 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
             ? 'bg-gradient-to-r from-lime-950/98 via-lime-900/98 to-lime-900/98 border-#b3e617/60 text-lime-100 shadow-[0_8px_32px_rgba(223,236,45,0.3)]'
             : 'bg-gradient-to-r from-lime-50 via-lime-100 to-lime-100 border-#dfec2d/70 text-lime-900 shadow-[0_8px_32px_rgba(223,236,45,0.25)]',
         info: isDark
-            ? 'bg-gradient-to-r from-[var(--color-accent-secondary)]/98 via-[var(--color-accent-secondary)]/90 to-sky-900/98 border-[var(--color-accent-secondary)]/60 text-[var(--color-accent-secondary)] shadow-[0_8px_32px_rgba(59,130,246,0.3)]'
-            : 'bg-gradient-to-r from-[var(--color-accent-secondary)]/50 via-[var(--color-accent-secondary)]/70 to-sky-100 border-[var(--color-accent-secondary)]/70 text-[var(--color-accent-secondary)] shadow-[0_8px_32px_rgba(37,99,235,0.25)]'
+            ? 'bg-gradient-to-r from-[var(--color-accent-primary)]/20 via-[var(--color-accent-secondary)]/20 to-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)]/60 text-[var(--color-accent-primary)] shadow-[0_8px_32px_rgba(223,236,45,0.3)]'
+            : 'bg-gradient-to-r from-[var(--color-accent-primary)]/30 via-[var(--color-accent-secondary)]/30 to-[var(--color-accent-primary)]/30 border-[var(--color-accent-primary)]/70 text-[var(--color-accent-primary)] shadow-[0_8px_32px_rgba(223,236,45,0.25)]'
     };
 
     return (
@@ -86,7 +86,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
                             ? 'bg-gradient-to-r from-red-500 to-rose-500'
                             : toast.type === 'warning'
                             ? 'bg-gradient-to-r from-#dfec2d to-#dfec2d'
-                            : 'bg-gradient-to-r from-blue-500 to-sky-500'
+                            : 'bg-gradient-to-r from-[var(--color-accent-secondary)] to-[var(--color-accent-primary)]'
                     }`}
                 />
             </motion.div>

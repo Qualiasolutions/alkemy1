@@ -74,9 +74,9 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
   };
 
   const getStatusColor = () => {
-    if (saveState.isSaving) return 'text-blue-500';
+    if (saveState.isSaving) return 'text-[var(--color-accent-primary)]';
     if (saveState.saveError) return 'text-red-500';
-    if (saveState.hasUnsavedChanges) return 'text-#dfec2d';
+    if (saveState.hasUnsavedChanges) return 'text-[var(--color-accent-primary)]';
     return 'text-green-500';
   };
 
@@ -125,7 +125,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
 
             {saveState.hasUnsavedChanges && (
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-#dfec2d rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-[var(--color-accent-primary)] rounded-full animate-pulse" />
                 <span className="text-xs text-gray-400">
                   {saveState.pendingChanges.size} pending
                 </span>
@@ -232,7 +232,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
               className="bg-gray-900 border border-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl"
             >
               <div className="flex items-start gap-3 mb-4">
-                <AlertTriangleIcon className="w-6 h-6 text-#dfec2d flex-shrink-0 mt-0.5" />
+                <AlertTriangleIcon className="w-6 h-6 text-[var(--color-accent-primary)] flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="text-lg font-bold text-white">Conflicting Changes Detected</h3>
                   <p className="text-sm text-gray-400 mt-1">
@@ -294,10 +294,10 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="fixed top-20 right-6 bg-#dfec2d/10 border border-#dfec2d/50 rounded-full px-3 py-1 flex items-center gap-2"
+          className="fixed top-20 right-6 bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/50 rounded-full px-3 py-1 flex items-center gap-2"
         >
-          <div className="w-2 h-2 bg-#dfec2d rounded-full animate-pulse" />
-          <span className="text-xs text-#dfec2d font-medium">Unsaved</span>
+          <div className="w-2 h-2 bg-[var(--color-accent-primary)] rounded-full animate-pulse" />
+          <span className="text-xs text-[var(--color-accent-primary)] font-medium">Unsaved</span>
         </motion.div>
       )}
     </>

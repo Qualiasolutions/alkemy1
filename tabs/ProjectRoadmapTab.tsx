@@ -331,6 +331,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
   }
 
   function getEpicColorClass(color: string) {
+    // Use accent primary/secondary colors for consistency with brand
     const colorMap: Record<string, string> = {
       emerald: 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20',
       purple: 'bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20',
@@ -361,7 +362,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-              <Rocket className="w-8 h-8 text-purple-400" />
+              <Rocket className="w-8 h-8 text-[#10A37F]" />
               Alkemy AI Studio Roadmap
             </h1>
             <p className="text-gray-400 mt-1">
@@ -373,7 +374,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
               onClick={() => setViewMode('roadmap')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 viewMode === 'roadmap'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-[#10A37F] text-white'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
@@ -383,7 +384,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
               onClick={() => setViewMode('epics')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 viewMode === 'epics'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-[#10A37F] text-white'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
@@ -393,7 +394,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
               onClick={() => setViewMode('sprints')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 viewMode === 'sprints'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-[#10A37F] text-white'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
@@ -407,7 +408,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <Sparkles className="w-8 h-8 text-emerald-400" />
+                <Sparkles className="w-8 h-8 text-[#10A37F]" />
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">{completedEpics}/8</div>
                   <div className="text-xs text-gray-400">Epics Complete</div>
@@ -419,7 +420,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <Target className="w-8 h-8 text-purple-400" />
+                <Target className="w-8 h-8 text-[#10A37F]" />
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">{totalStories}/{totalPlannedStories}</div>
                   <div className="text-xs text-gray-400">Stories Done</div>
@@ -431,7 +432,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <Zap className="w-8 h-8 text-yellow-400" />
+                <Zap className="w-8 h-8 text-[#F5A524]" />
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">Sprint 4</div>
                   <div className="text-xs text-gray-400">Current Sprint</div>
@@ -443,7 +444,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <Calendar className="w-8 h-8 text-blue-400" />
+                <Calendar className="w-8 h-8 text-[#0E8C6D]" />
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">90</div>
                   <div className="text-xs text-gray-400">Days Remaining</div>
@@ -455,7 +456,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <TrendingUp className="w-8 h-8 text-green-400" />
+                <TrendingUp className="w-8 h-8 text-[#10A37F]" />
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">38%</div>
                   <div className="text-xs text-gray-400">Overall Progress</div>
@@ -526,7 +527,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                             <ul className="space-y-1 mt-3">
                               {sprint.goals.slice(0, 3).map((goal, idx) => (
                                 <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
-                                  <span className="text-purple-400 mt-1">•</span>
+                                  <span className="text-[#10A37F] mt-1">•</span>
                                   <span>{goal}</span>
                                 </li>
                               ))}
@@ -602,7 +603,8 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                             href={epic.deployment_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-400 hover:underline break-all"
+                            className="text-xs hover:underline break-all"
+                            style={{ color: 'var(--color-accent-primary)' }}
                           >
                             {epic.deployment_url}
                           </a>
@@ -630,17 +632,17 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Current Sprint Highlight */}
             {SPRINT_DATA.filter(s => s.current).map(sprint => (
-              <Card key={sprint.id} className="lg:col-span-2 bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border-purple-500/30">
+              <Card key={sprint.id} className="lg:col-span-2 bg-gradient-to-r from-[#10A37F]/20 to-[#0E8C6D]/20 border-[#10A37F]/30">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-2xl text-white flex items-center gap-2">
-                        <Play className="w-6 h-6 text-purple-400" />
+                        <Play className="w-6 h-6 text-[#10A37F]" />
                         Current Sprint: {sprint.name}
                       </CardTitle>
                       <p className="text-gray-400 mt-1">Sprint {sprint.number} • {sprint.duration}</p>
                     </div>
-                    <Badge variant="secondary" className="bg-purple-600 text-white">
+                    <Badge variant="secondary" className="bg-[#10A37F] text-white">
                       ACTIVE
                     </Badge>
                   </div>
@@ -676,8 +678,8 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
             {SPRINT_DATA.filter(s => !s.current).map(sprint => (
               <Card
                 key={sprint.id}
-                className={`bg-gray-800/50 border-gray-700 transition-all ${
-                  selectedSprint === sprint.number ? 'ring-2 ring-purple-500' : ''
+                className={`bg-gray-800/50 border-gray-700 transition-all cursor-pointer ${
+                  selectedSprint === sprint.number ? 'ring-2 ring-[#10A37F]' : ''
                 }`}
                 onClick={() => setSelectedSprint(sprint.number)}
               >
@@ -711,7 +713,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                     <ul className="space-y-1">
                       {sprint.goals.slice(0, 3).map((goal, idx) => (
                         <li key={idx} className="text-xs text-gray-300 flex items-start gap-2">
-                          <span className="text-purple-400">•</span>
+                          <span className="text-[#10A37F]">•</span>
                           <span>{goal}</span>
                         </li>
                       ))}
@@ -738,7 +740,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
           <div className="flex gap-2">
             <button
               onClick={() => window.open('/docs/PROJECT_ROADMAP_CURRENT.md', '_blank')}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-[#10A37F] text-white rounded-lg hover:bg-[#0E8C6D] transition-colors flex items-center gap-2"
             >
               <FileText className="w-4 h-4" />
               View Full Roadmap

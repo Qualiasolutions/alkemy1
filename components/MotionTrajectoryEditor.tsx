@@ -562,7 +562,7 @@ export default function MotionTrajectoryEditor({
       {isImageLoading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
           <div className="text-center">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <div className="w-8 h-8 border-2 border-[var(--color-accent-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
             <p className="text-white text-sm">Loading image...</p>
           </div>
         </div>

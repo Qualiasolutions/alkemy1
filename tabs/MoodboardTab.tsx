@@ -408,10 +408,10 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
 
   if (!scriptAnalyzed) {
     return (
-      <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300/40 bg-white/40 text-center text-slate-500 dark:border-slate-700/60 dark:bg-white/5 dark:text-slate-400">
-        <ImageIcon className="mb-4 h-10 w-10" />
-        <p className="max-w-md text-lg font-medium">Analyze a script first to unlock the Moodboard studio.</p>
-        <p className="max-w-sm text-sm opacity-80">Once the script is processed, you can craft visual templates that influence every generation.</p>
+      <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300/40 bg-white/40 text-center dark:border-slate-700/60 dark:bg-white/5">
+        <ImageIcon className="mb-4 h-10 w-10 text-white" />
+        <p className="max-w-md text-lg font-medium text-white">Analyze a script first to unlock the Moodboard studio.</p>
+        <p className="max-w-sm text-sm text-white opacity-80">Once the script is processed, you can craft visual templates that influence every generation.</p>
       </div>
     );
   }

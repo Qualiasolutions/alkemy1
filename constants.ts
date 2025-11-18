@@ -18,7 +18,7 @@ export const THEME_COLORS = {
 
 export const TABS_CONFIG = [
   {
-    name: 'Development',
+    name: 'PRODUCTION',
     tabs: [
       { id: 'script', name: 'Script', icon: '/script.svg' },
       { id: 'moodboard', name: 'Moodboard', icon: '/moodboard.svg' },
@@ -29,13 +29,12 @@ export const TABS_CONFIG = [
     ],
   },
   {
-    name: 'Production',
+    name: 'TOOLS',
     tabs: [
+      { id: 'generate', name: 'Generate', icon: '/compositing.svg' },
       { id: 'timeline', name: 'Timeline', icon: '/timeline.svg' },
       { id: 'wan_transfer', name: 'Wan Transfer', icon: '/wan_transfer.svg' },
-      { id: 'post_production', name: 'Post-Production', icon: '/post_production.svg' },
       { id: 'exports', name: 'Exports', icon: '/exports.svg' },
-      { id: 'analytics', name: 'Analytics', icon: '/analytics.svg' },
       { id: 'project_roadmap', name: 'Project Roadmap', icon: '/analytics.svg' }, // Renamed from BMAD Status
     ],
   },
