@@ -92,7 +92,7 @@ function writeToLocalStorage(value: string): void {
   window.dispatchEvent(new CustomEvent(GEMINI_STORAGE_EVENT, { detail: value }));
 }
 
-export const getGeminiApiKey = (): string => {
+export function getGeminiApiKey(): string {
   if (cachedGeminiKey) {
     return cachedGeminiKey;
   }
@@ -102,20 +102,20 @@ export const getGeminiApiKey = (): string => {
     return cachedGeminiKey;
   }
   return '';
-};
+}
 
-export const setGeminiApiKey = (value: string) => {
+export function setGeminiApiKey(value: string): void {
   const trimmed = toTrimmed(value);
   cachedGeminiKey = trimmed || ENV_GEMINI_KEY;
   writeToLocalStorage(trimmed);
-};
+}
 
-export const clearGeminiApiKey = () => {
+export function clearGeminiApiKey(): void {
   cachedGeminiKey = ENV_GEMINI_KEY;
   writeToLocalStorage('');
-};
+}
 
-export const onGeminiApiKeyChange = (callback: (value: string) => void): (() => void) => {
+export function onGeminiApiKeyChange(callback: (value: string) => void): (() => void) {
   const handler = (event: Event) => {
     const detail = (event as CustomEvent<string>).detail ?? readFromLocalStorage();
     cachedGeminiKey = detail || ENV_GEMINI_KEY;
@@ -131,14 +131,14 @@ export const onGeminiApiKeyChange = (callback: (value: string) => void): (() => 
       window.removeEventListener(GEMINI_STORAGE_EVENT, handler as EventListener);
     }
   };
-};
+}
 
 /**
  * Validates if the API key format is compatible with Google AI API
  * AI Studio keys (starting with "AQ.") are NOT compatible with programmatic API access
  * Valid API keys should start with "AIza"
  */
-export const isValidGeminiApiKeyFormat = (key: string): boolean => {
+export function isValidGeminiApiKeyFormat(key: string): boolean {
   const trimmed = toTrimmed(key);
   if (!trimmed) return false;
 
@@ -156,20 +156,22 @@ export const isValidGeminiApiKeyFormat = (key: string): boolean => {
   // Warn about unexpected format but don't block (might be a new format)
   console.warn('[API Keys] Unexpected API key format. Expected format: AIzaSy... (39 characters). Key starts with:', trimmed.substring(0, 6));
   return trimmed.length > 20; // Minimum length check
-};
+}
 
-export const hasGeminiApiKey = (): boolean => {
+export function hasGeminiApiKey(): boolean {
   return getGeminiApiKey().length > 0;
-};
+}
 
-export const hasValidGeminiApiKey = (): boolean => {
+export function hasValidGeminiApiKey(): boolean {
   const key = getGeminiApiKey();
   return isValidGeminiApiKeyFormat(key);
-};
+}
 
-export const hasEnvGeminiApiKey = (): boolean => ENV_GEMINI_KEY.length > 0;
+export function hasEnvGeminiApiKey(): boolean {
+  return ENV_GEMINI_KEY.length > 0;
+}
 
-export const getApiKeyValidationError = (): string | null => {
+export function getApiKeyValidationError(): string | null {
   const key = getGeminiApiKey();
   if (!key) {
     return 'No API key configured. Please add a Google AI API key.';
@@ -181,4 +183,4 @@ export const getApiKeyValidationError = (): string | null => {
     return 'API key format appears invalid. Google AI API keys should start with "AIza" and be 39 characters long. Please verify your key at https://aistudio.google.com/apikey';
   }
   return null;
-};
+}

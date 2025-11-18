@@ -259,7 +259,7 @@ function extractModelNames(response: any): string[] {
         .filter((name): name is string => typeof name === 'string' && name.length > 0);
 }
 
-const getAvailableGeminiModels = async (ai: GoogleGenAI): Promise<string[]> => {
+async function getAvailableGeminiModels(ai: GoogleGenAI): Promise<string[]> {
     if (cachedModelNames) {
         return cachedModelNames;
     }
@@ -282,9 +282,9 @@ const getAvailableGeminiModels = async (ai: GoogleGenAI): Promise<string[]> => {
         });
 
     return inFlightModelList;
-};
+}
 
-const expandModelIdVariants = (id: string): string[] => {
+function expandModelIdVariants(id: string): string[] {
     if (!id) return [];
     const clean = id.replace(/^models\//, '');
     const variants = new Set<string>();
@@ -294,9 +294,9 @@ const expandModelIdVariants = (id: string): string[] => {
         variants.add(id);
     }
     return Array.from(variants);
-};
+}
 
-const buildModelAttemptList = async (ai: GoogleGenAI, preferred: string[]): Promise<string[]> => {
+async function buildModelAttemptList(ai: GoogleGenAI, preferred: string[]): Promise<string[]> {
     const availableModels = await getAvailableGeminiModels(ai);
     const availableSet = new Set(availableModels);
     const attempts: string[] = [];
@@ -345,7 +345,7 @@ const buildModelAttemptList = async (ai: GoogleGenAI, preferred: string[]): Prom
     }
 
     return attempts;
-};
+}
 
 
 // --- Helper Functions ---
@@ -482,7 +482,7 @@ async function image_url_to_base64(url: string): Promise<{ mimeType: string; dat
         // Re-throw a more user-friendly error.
         throw new Error(`Could not process a reference image from URL: ${url}. ${errorMessage}. Please ensure the URL is valid, publicly accessible, and links directly to an image.`);
     }
-};
+}
 
 const MAX_PROMPT_LENGTH = 800; // Nano Banana performs best with concise prompts
 const MAX_REFINEMENT_PROMPT_LENGTH = 400; // Refinement needs shorter prompts since it also processes reference image
@@ -518,9 +518,9 @@ export const buildSafePrompt = (
 
     // Return the prompt as-is (no prefix to avoid safety triggers)
     return { finalPrompt: adjustedPrompt, wasAdjusted };
-};
+}
 
-export const generateStillVariants = async (
+export async function generateStillVariants(
     frame_id: string,
     model: string,
     prompt: string,
@@ -546,7 +546,7 @@ export const generateStillVariants = async (
         selectedLocation: string;
         model: string;
     }
-}> => {
+}> {
     console.log("[API Action] generateStillVariants", { frame_id, model, prompt, reference_images, n, aspect_ratio, moodboard, characterNames, locationName });
     
     const prioritizedImages = reference_images;
@@ -684,10 +684,10 @@ export const generateStillVariants = async (
             model: model
         }
     };
-};
+}
 
 
-export const animateFrame = async (
+export async function animateFrame(
     prompt: string,
     reference_image_url: string,
     last_frame_image_url?: string | null,
@@ -696,7 +696,7 @@ export const animateFrame = async (
     onProgress?: (progress: number) => void,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string },
     temperature?: number  // NEW: Allow different temperatures for variation
-): Promise<string[]> => {
+): Promise<string[]> {
     const startTime = Date.now();
     const model = 'veo-3.1-fast-generate-preview';
 
@@ -879,14 +879,14 @@ export const animateFrame = async (
         }
         throw handleApiError(error, 'Veo (Animate)');
     }
-};
+}
 
-export const refineVariant = async (
+export async function refineVariant(
     prompt: string,
     base_image_url: string,
     aspect_ratio: string,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
-): Promise<string> => {
+): Promise<string> {
     console.log("[API Action] refineVariant", {
         prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
         promptLength: prompt.length,
@@ -991,13 +991,13 @@ export const refineVariant = async (
         }
         throw error;
     }
-};
+}
 
 
-export const upscaleImage = (
+export function upscaleImage(
     image_url: string,
     onProgress: (progress: number) => void
-): Promise<{ image_url: string }> => {
+): Promise<{ image_url: string }> {
     console.log("[API Action] upscaleImage (simulated)", { image_url });
 
     return new Promise((resolve) => {
@@ -1014,12 +1014,12 @@ export const upscaleImage = (
             }
         }, 300); // Simulate a 3-second upscale process
     });
-};
+}
 
-export const upscaleVideo = (
+export function upscaleVideo(
     video_url: string,
     onProgress: (progress: number) => void
-): Promise<{ video_url: string }> => {
+): Promise<{ video_url: string }> {
     console.log("[API Action] upscaleVideo (simulated)", { video_url });
 
     return new Promise((resolve) => {
@@ -1036,18 +1036,18 @@ export const upscaleVideo = (
             }
         }, 500); // Simulate a 10-second upscale process
     });
-};
+}
 
 /**
  * Transfer motion from reference video to target avatar
  * This function now uses the real Wan API for motion transfer
  * @deprecated - Use transferMotionWan from wanService.ts directly for better control
  */
-export const transferMotion = async (
+export async function transferMotion(
     referenceVideo: File,
     targetAvatarImageUrl: string,
     onProgress: (progress: number) => void
-): Promise<string> => {
+): Promise<string> {
     console.log("[API Action] transferMotion - delegating to Wan API", {
         videoName: referenceVideo.name,
         avatarUrl: targetAvatarImageUrl.substring(0, 50) + '...'
@@ -1056,7 +1056,7 @@ export const transferMotion = async (
     // Import dynamically to avoid circular dependencies
     const { transferMotionWan } = await import('./wanService');
     return transferMotionWan(referenceVideo, targetAvatarImageUrl, onProgress);
-};
+}
 
 interface VisualGenerationResult {
     url: string;
@@ -1064,13 +1064,13 @@ interface VisualGenerationResult {
 }
 
 // Helper function to upload base64 image to Supabase Storage
-const uploadImageToSupabase = async (
+async function uploadImageToSupabase(
     base64Data: string,
     fileName: string,
     projectId: string | null,
     userId: string | null,
     metadata?: any
-): Promise<{ url: string; assetId: string | null; error: any }> => {
+): Promise<{ url: string; assetId: string | null; error: any }> {
     const mediaService = getMediaService();
     if (!mediaService || !projectId || !userId) {
         return { url: base64Data, assetId: null, error: null };
@@ -1112,16 +1112,16 @@ const uploadImageToSupabase = async (
         console.error('Error uploading image to Supabase Storage:', error);
         return { url: base64Data, assetId: null, error };
     }
-};
+}
 
 // Helper function to upload video blob to Supabase Storage
-const uploadVideoToSupabase = async (
+async function uploadVideoToSupabase(
     videoBlob: Blob,
     fileName: string,
     projectId: string | null,
     userId: string | null,
     metadata?: any
-): Promise<{ url: string; assetId: string | null; error: any }> => {
+): Promise<{ url: string; assetId: string | null; error: any }> {
     const mediaService = getMediaService();
     if (!mediaService || !projectId || !userId) {
         // Return blob URL if Supabase is not available
@@ -1161,9 +1161,9 @@ const uploadVideoToSupabase = async (
         console.error('Error uploading video to Supabase Storage:', error);
         return { url: URL.createObjectURL(videoBlob), assetId: null, error };
     }
-};
+}
 
-export const generateVisual = async (
+export async function generateVisual(
     prompt: string,
     model: string,
     reference_images: string[],
@@ -1172,7 +1172,7 @@ export const generateVisual = async (
     seed: string = `${model}-${prompt}`,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string },
     characterIdentities?: Array<{ loraUrl: string; scale?: number }> // NEW: Character identity LoRAs
-): Promise<VisualGenerationResult> => {
+): Promise<VisualGenerationResult> {
     console.log("[generateVisual] Starting generation", {
         model,
         promptLength: prompt.length,
@@ -1731,9 +1731,9 @@ export const generateVisual = async (
         }
         throw handleApiError(error, effectiveModel);
     }
-};
+}
 
-export const generateMoodboardDescription = async (section: MoodboardSection): Promise<string> => {
+export async function generateMoodboardDescription(section: MoodboardSection): Promise<string> {
     if (!prefersLiveGemini()) {
         return fallbackMoodboardDescription(section);
     }
@@ -1794,26 +1794,26 @@ Example output: "A gritty, rain-slicked neo-noir aesthetic featuring high-contra
         }
         throw handleApiError(error, 'Gemini');
     }
-};
+}
 
 import { ENHANCED_DIRECTOR_KNOWLEDGE } from './directorKnowledge';
 
 type DirectorConversationMessage = { author: 'user' | 'director'; text: string };
 
-const sanitizeConversationHistory = (history: DirectorConversationMessage[]): DirectorConversationMessage[] => {
+function sanitizeConversationHistory(history: DirectorConversationMessage[]): DirectorConversationMessage[] {
     return history
         .filter((entry) => entry && typeof entry.text === 'string' && entry.text.trim().length > 0)
         .slice(-8);
-};
+}
 
-const buildConversationContents = (history: DirectorConversationMessage[]) => {
+function buildConversationContents(history: DirectorConversationMessage[]) {
     return history.map((entry) => ({
         role: entry.author === 'user' ? 'user' : 'model',
         parts: [{ text: entry.text.trim() }]
     }));
-};
+}
 
-const extractCandidateText = async (response: any): Promise<string> => {
+async function extractCandidateText(response: any): Promise<string> {
     if (!response) return '';
 
     const candidates = response.candidates ?? [];
@@ -1836,13 +1836,13 @@ const extractCandidateText = async (response: any): Promise<string> => {
     }
 
     return '';
-};
+}
 
-export const askTheDirector = async (
+export async function askTheDirector(
     analysis: ScriptAnalysis,
     query: string,
     history: DirectorConversationMessage[] = []
-): Promise<string> => {
+): Promise<string> {
     if (!prefersLiveGemini()) {
         return fallbackDirectorResponse(analysis, query);
     }
@@ -1973,16 +1973,16 @@ Remember to stay concise (2-4 sentences or tight bullet points) and redirect cas
         }
         throw handleApiError(error, 'Gemini (Director)');
     }
-};
+}
 
 
 // --- Existing AI Services adapted for new spec ---
 
-export const analyzeScript = async (
+export async function analyzeScript(
     scriptContent: string,
     onProgress?: (message: string) => void,
     context?: { projectId?: string; userId?: string }
-): Promise<ScriptAnalysis> => {
+): Promise<ScriptAnalysis> {
      if (!prefersLiveGemini()) {
         console.warn('[API Action] analyzeScript using fallback parser because live service is unavailable.');
         return fallbackScriptAnalysis(scriptContent);
@@ -2115,9 +2115,9 @@ export const analyzeScript = async (
         }
         throw handleApiError(error, 'Gemini (Analysis)');
     }
-};
+}
 
-export const generateFramesForScene = async (scene: AnalyzedScene, directorialNotes?: string): Promise<Partial<Frame>[]> => {
+export async function generateFramesForScene(scene: AnalyzedScene, directorialNotes?: string): Promise<Partial<Frame>[]> {
     if (!prefersLiveGemini()) {
         console.warn('[API Action] generateFramesForScene using fallback frame templates.');
         return [
@@ -2216,14 +2216,14 @@ export const generateFramesForScene = async (scene: AnalyzedScene, directorialNo
     } catch (error) {
         throw handleApiError(error, 'Gemini (Frames)');
     }
-};
+}
 
 /**
  * Analyze a video using Gemini AI to generate a descriptive prompt
  * @param videoUrl - URL of the video to analyze
  * @returns AI-generated description of the video content
  */
-export const analyzeVideoWithGemini = async (videoUrl: string): Promise<string> => {
+export async function analyzeVideoWithGemini(videoUrl: string): Promise<string> {
     console.log('[AI Service] Analyzing video:', videoUrl);
 
     try {
@@ -2277,14 +2277,14 @@ Provide a concise 2-3 sentence description suitable as a video prompt.`;
         // Return fallback description instead of throwing
         return 'Video analysis unavailable. Please add a manual description.';
     }
-};
+}
 
 // Helper function to convert blob to base64
-const blobToBase64 = (blob: Blob): Promise<string> => {
+function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(blob);
     });
-};
+}
