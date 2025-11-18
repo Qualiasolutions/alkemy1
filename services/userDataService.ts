@@ -240,7 +240,7 @@ class UserDataService {
     if (!encryptedKey) return undefined;
 
     // In production, decrypt the key
-    return this.decryptKey(encryptedKey);
+    return await this.decryptKey(encryptedKey);
   }
 
   /**
@@ -353,7 +353,7 @@ class UserDataService {
     await this.withRetry(async () => {
       const { key, value } = operation.data;
       const dbField = this.getDbField(key);
-      const dbValue = key === 'apiKeys' ? this.encryptKeys(value) : value;
+      const dbValue = key === 'apiKeys' ? await this.encryptKeys(value) : value;
 
       const { error } = await supabase
         .from('user_preferences')
@@ -375,7 +375,7 @@ class UserDataService {
    */
   private async processBatchUpdate(userId: string, operation: any): Promise<void> {
     await this.withRetry(async () => {
-      const dbData = this.toDbFormat(operation.data);
+      const dbData = await this.toDbFormat(operation.data);
 
       const { error } = await supabase
         .from('user_preferences')
@@ -609,7 +609,7 @@ class UserDataService {
     return fieldMap[key] || key;
   }
 
-  private toDbFormat(preferences: Partial<UserPreferences>): Record<string, any> {
+  private async toDbFormat(preferences: Partial<UserPreferences>): Promise<Record<string, any>> {
     const dbData: Record<string, any> = {};
 
     if (preferences.uiState) dbData.ui_state = preferences.uiState;
@@ -620,38 +620,118 @@ class UserDataService {
     if (preferences.styleOptInShown !== undefined) {
       dbData.style_opt_in_shown = preferences.styleOptInShown;
     }
-    if (preferences.apiKeys) dbData.api_keys = this.encryptKeys(preferences.apiKeys);
+    if (preferences.apiKeys) dbData.api_keys = await this.encryptKeys(preferences.apiKeys);
 
     return dbData;
   }
 
-  private encryptKey(key: string): string {
-    // TODO: Implement proper encryption
-    // For now, just base64 encode (NOT SECURE - replace with real encryption)
-    if (typeof window !== 'undefined' && window.btoa) {
-      return window.btoa(key);
+  private async getEncryptionKey(): Promise<CryptoKey> {
+    // Get or create encryption key from localStorage
+    const keyData = localStorage.getItem('encryption_key');
+
+    if (keyData) {
+      // Import existing key
+      const keyBuffer = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
+      return await crypto.subtle.importKey(
+        'raw',
+        keyBuffer,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt', 'decrypt']
+      );
     }
+
+    // Generate new key
+    const key = await crypto.subtle.generateKey(
+      { name: 'AES-GCM', length: 256 },
+      true,
+      ['encrypt', 'decrypt']
+    );
+
+    // Export and store key
+    const exportedKey = await crypto.subtle.exportKey('raw', key);
+    const keyString = btoa(String.fromCharCode(...new Uint8Array(exportedKey)));
+    localStorage.setItem('encryption_key', keyString);
+
     return key;
   }
 
-  private decryptKey(encryptedKey: string): string {
-    // TODO: Implement proper decryption
-    // For now, just base64 decode (NOT SECURE - replace with real decryption)
-    if (typeof window !== 'undefined' && window.atob) {
-      try {
-        return window.atob(encryptedKey);
-      } catch {
-        return encryptedKey;
+  private async encryptKey(key: string): Promise<string> {
+    try {
+      // Fallback to base64 if Web Crypto not available
+      if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
+        console.warn('[UserService] Web Crypto not available, falling back to base64 encoding');
+        return typeof window !== 'undefined' && window.btoa ? window.btoa(key) : key;
       }
+
+      const encryptionKey = await this.getEncryptionKey();
+      const encoder = new TextEncoder();
+      const data = encoder.encode(key);
+
+      // Generate random IV
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+
+      // Encrypt
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        encryptionKey,
+        data
+      );
+
+      // Combine IV + encrypted data
+      const combined = new Uint8Array(iv.length + new Uint8Array(encrypted).length);
+      combined.set(iv);
+      combined.set(new Uint8Array(encrypted), iv.length);
+
+      return btoa(String.fromCharCode(...combined));
+    } catch (error) {
+      console.warn('[UserService] Encryption failed, falling back to base64:', error);
+      return typeof window !== 'undefined' && window.btoa ? window.btoa(key) : key;
     }
-    return encryptedKey;
   }
 
-  private encryptKeys(keys: UserPreferences['apiKeys']): UserPreferences['apiKeys'] {
+  private async decryptKey(encryptedKey: string): Promise<string> {
+    try {
+      // Fallback to base64 if Web Crypto not available
+      if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
+        console.warn('[UserService] Web Crypto not available, falling back to base64 decoding');
+        if (typeof window !== 'undefined' && window.atob) {
+          try {
+            return window.atob(encryptedKey);
+          } catch {
+            return encryptedKey;
+          }
+        }
+        return encryptedKey;
+      }
+
+      const encryptionKey = await this.getEncryptionKey();
+      const combined = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0));
+
+      // Extract IV (first 12 bytes)
+      const iv = combined.slice(0, 12);
+      const data = combined.slice(12);
+
+      // Decrypt
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        encryptionKey,
+        data
+      );
+
+      const decoder = new TextDecoder();
+      return decoder.decode(decrypted);
+    } catch (error) {
+      console.warn('[UserService] Decryption failed, returning original:', error);
+      return encryptedKey;
+    }
+  }
+
+  private async encryptKeys(keys: UserPreferences['apiKeys']): Promise<UserPreferences['apiKeys']> {
     const encrypted: UserPreferences['apiKeys'] = {};
     for (const [provider, key] of Object.entries(keys)) {
       if (key) {
-        encrypted[provider as keyof UserPreferences['apiKeys']] = this.encryptKey(key);
+        encrypted[provider as keyof UserPreferences['apiKeys']] = await this.encryptKey(key);
       }
     }
     return encrypted;
