@@ -133,7 +133,7 @@ export interface AnalyzedLocation {
   refinedGenerationUrls?: string[];
   upscaledImageUrl?: string | null;
   // NEW: 3D World Integration (Epic 3 - Infrastructure Ready)
-  worldId?: string; // ID of linked 3D world from advancedWorldService
+  worldId?: string; // ID of linked 3D world from hunyuanWorldService
   worldMetadata?: {
     worldUrl?: string;
     cameraPresets?: Array<{ name: string; position: any; rotation: any }>;

@@ -201,9 +201,9 @@ alkemy/
 │   ├── apiKeys.ts               # API key management (localStorage + env vars)
 │   ├── fluxService.ts           # Flux image generation
 │   ├── wanService.ts            # Wan 2.2 motion transfer
+│   ├── hunyuanWorldService.ts   # Hunyuan3D-2 free 3D world generation (Epic 3)
 │   ├── worldLabsService.ts      # 3D world generation (procedural)
 │   ├── proceduralWorldService.ts # Legacy 3D world service
-│   ├── gaussianSplatService.ts  # Gaussian Splatting support
 │   ├── imageSearchService.ts    # Multi-source image search (Brave/Pexels/Unsplash)
 │   ├── videoRenderingService.ts # FFmpeg.wasm video rendering
 │   ├── commandHistory.ts        # Undo/redo command pattern
@@ -478,8 +478,9 @@ QueuedVideo → RenderingVideo → AnimatedVideoReady → UpscalingVideo → Ups
 | Veo 3.1            | Video animation              | REST API (Gemini)| `services/aiService.ts`                       | Pay-per-generation | **Active**           |
 | Flux (BFL)         | Image generation (alt)       | REST API         | `services/fluxService.ts`                     | Pay-per-generation | **Active**           |
 | Wan 2.2            | Motion transfer              | REST API         | `services/wanService.ts`                      | Pay-per-generation | **Experimental**     |
-| Luma AI            | 3D world generation          | REST API         | `services/3dWorldService.ts`, `api/luma-proxy.ts` | Expensive (not recommended) | **Legacy**   |
-| Replicate          | Emu3-Gen world generation    | REST API         | `services/emuWorldService.ts`, `api/replicate-proxy.ts` | Expensive ($0.35+) | **Legacy** |
+| Hunyuan3D-2        | Free 3D world generation     | HuggingFace Gradio | `services/hunyuanWorldService.ts` | FREE (may have GPU queue delays) | **Active** |
+| Luma AI            | 3D world generation (old)    | REST API         | `services/3dWorldService.ts` (DELETED) | Expensive | **Removed**   |
+| Replicate/Emu3     | 3D world generation (old)    | REST API         | `services/emuWorldService.ts` (DELETED) | Expensive ($0.35+) | **Removed** |
 | Brave Search       | Web image search             | REST API         | `services/imageSearchService.ts`, `api/brave-proxy.ts` | Pay-per-query | **Active**     |
 | Pexels             | Curated photo search         | REST API         | `services/imageSearchService.ts`              | Free               | **Active**           |
 | Unsplash           | Professional photography     | REST API         | `services/imageSearchService.ts`              | Free               | **Active**           |
