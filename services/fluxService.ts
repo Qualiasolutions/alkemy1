@@ -1,37 +1,51 @@
 /**
  * FLUX LoRA Training Service
  * SPECIALIZED FOR CHARACTER IDENTITY TRAINING ONLY
- * Integrates with FAL.AI for FLUX.1.1, FLUX.1 Kontext, and FLUX Ultra models
- * Original Flux API removed - focused exclusively on LoRA training and character consistency
+ * Integrates with FAL.AI for FLUX Pro models
+ * UPDATED 2025-11-19: Fixed API endpoints to match FAL.AI actual URLs
  */
 
 // FAL models use FAL_API_KEY, not FLUX_API_KEY
+// Fixed environment variable resolution - check FAL_API_KEY first, then VITE_FAL_API_KEY
 const FLUX_API_KEY = (
-    import.meta.env.VITE_FAL_API_KEY ||
     import.meta.env.FAL_API_KEY ||
-    process.env.FAL_API_KEY ||
-    process.env.VITE_FAL_API_KEY ||
+    import.meta.env.VITE_FAL_API_KEY ||
     ''
-).trim();
+).trim().replace(/\n/g, ''); // Remove literal newline characters
 
-// Supported Flux model variants for Fal.ai - SPECIALIZED FOR LoRA TRAINING ONLY
-// Original Flux API removed - now focusing exclusively on character identity training
+// Debug logging for environment variable resolution
+console.log('[FLUX Service] Environment Variables:', {
+    FAL_API_KEY: !!import.meta.env.FAL_API_KEY,
+    FAL_API_KEY_Length: import.meta.env.FAL_API_KEY?.length,
+    VITE_FAL_API_KEY: !!import.meta.env.VITE_FAL_API_KEY,
+    VITE_FAL_API_KEY_Length: import.meta.env.VITE_FAL_API_KEY?.length,
+    RESOLVED_KEY: !!FLUX_API_KEY,
+    RESOLVED_KEY_Length: FLUX_API_KEY?.length,
+    ENV_Source: 'import.meta.env'
+});
+
+// Supported Flux model variants for Fal.ai - CORRECTED ENDPOINTS (2025-11-19)
+// Previous endpoints were incorrect and returned 404 errors
 const FLUX_MODEL_CONFIG = {
-    'FLUX.1.1': {
-        apiUrl: 'https://fal.run/fal-ai/flux-1.1-pro',
+    'FLUX Pro': {
+        apiUrl: 'https://fal.run/fal-ai/flux-pro',
+        displayName: 'FLUX Pro',
+    },
+    'FLUX.1.1 Pro': {
+        apiUrl: 'https://fal.run/fal-ai/flux-pro/v1.1',
         displayName: 'FLUX.1.1 Pro',
     },
-    'FLUX.1 Kontext': {
-        apiUrl: 'https://fal.run/fal-ai/flux-1-kontext',
-        displayName: 'FLUX.1 Kontext',
-    },
     'FLUX Ultra': {
-        apiUrl: 'https://fal.run/fal-ai/flux-ultra',
+        apiUrl: 'https://fal.run/fal-ai/flux-pro/v1.1-ultra',
         displayName: 'FLUX Ultra',
     },
-    'Seadream v4': {
-        apiUrl: 'https://fal.run/fal-ai/bytedance/seedream/v4/text-to-image',
-        displayName: 'Seadream v4 - 4K Quality',
+    'FLUX Dev': {
+        apiUrl: 'https://fal.run/fal-ai/flux/dev',
+        displayName: 'FLUX Dev',
+    },
+    'FLUX LoRA': {
+        apiUrl: 'https://fal.run/fal-ai/flux-lora',
+        displayName: 'FLUX LoRA',
     }
 } as const;
 
@@ -59,11 +73,11 @@ export interface FluxGenerationParams {
     enable_safety_checker?: boolean;
     output_format?: 'jpeg' | 'png';
     aspect_ratio?: string;
-    raw?: boolean; // Enable "raw" mode for more photographic results
+    raw?: boolean;
     loras?: Array<{
-        path: string; // LoRA model URL
-        scale: number; // Strength (0-1)
-    }>; // NEW: Character identity LoRA models
+        path: string;
+        scale: number;
+    }>;
 }
 
 export interface FluxGenerationResult {
@@ -81,17 +95,12 @@ export interface FluxGenerationResult {
     prompt: string;
 }
 
-/**
- * Check if FLUX API is available
- */
 export function isFluxApiAvailable(): boolean {
-    return !!FLUX_API_KEY && FLUX_API_KEY.length > 0;
+    const available = !!FLUX_API_KEY && FLUX_API_KEY.length > 0;
+    console.log('[FLUX Service] API Available:', available, 'Key length:', FLUX_API_KEY?.length);
+    return available;
 }
 
-/**
- * Convert aspect ratio string to width/height dimensions
- * FLUX supports up to 1440px on longest side for optimal quality
- */
 const getImageDimensions = (aspectRatio: string): { width: number; height: number } => {
     const aspectMap: Record<string, { width: number; height: number }> = {
         '1:1': { width: 1024, height: 1024 },
@@ -106,37 +115,35 @@ const getImageDimensions = (aspectRatio: string): { width: number; height: numbe
     return aspectMap[aspectRatio] || aspectMap['16:9'];
 };
 
-/**
- * Generate image using FLUX API via FAL.AI
- * @param prompt - Text prompt for image generation
- * @param aspectRatio - Aspect ratio (e.g., "16:9", "1:1")
- * @param onProgress - Progress callback (0-100)
- * @param raw - Enable raw mode for more photorealistic results
- * @returns URL of generated image
- */
 export async function generateImageWithFlux(
     prompt: string,
     aspectRatio: string = '16:9',
     onProgress?: (progress: number) => void,
     raw: boolean = false,
-    variant: FluxModelVariant = 'FLUX.1 Kontext',
-    loras?: Array<{ path: string; scale: number }> // NEW: Character identity LoRAs
+    variant: FluxModelVariant = 'FLUX.1.1 Pro',
+    loras?: Array<{ path: string; scale: number }>
 ): Promise<string> {
     if (!isFluxApiAvailable()) {
-        throw new Error('FLUX API key is not configured. Please set FLUX_API_KEY in environment variables.');
+        throw new Error('FAL API key is not configured. Please set FAL_API_KEY or VITE_FAL_API_KEY in environment variables.');
     }
 
     if (!prompt || !prompt.trim()) {
         throw new Error('Please enter a prompt to generate an image.');
     }
 
-    const modelConfig = FLUX_MODEL_CONFIG[variant] ?? FLUX_MODEL_CONFIG['FLUX.1 Kontext'];
+    const modelConfig = FLUX_MODEL_CONFIG[variant];
+    
+    if (!modelConfig) {
+        console.error('[FLUX Service] Invalid model variant:', variant, 'Available:', FLUX_MODEL_VARIANTS);
+        throw new Error('Invalid FLUX model variant: ' + variant);
+    }
 
     console.log('[FLUX Service] Starting generation', {
         prompt: prompt.substring(0, 100),
         aspectRatio,
         raw,
         modelVariant: variant,
+        apiUrl: modelConfig.apiUrl,
         hasLoras: !!loras && loras.length > 0,
         loraCount: loras?.length || 0,
         timestamp: new Date().toISOString()
@@ -150,21 +157,22 @@ export async function generateImageWithFlux(
         const requestBody: FluxGenerationParams = {
             prompt: prompt.trim(),
             image_size: dimensions,
-            num_inference_steps: 28, // Good balance of quality and speed
-            guidance_scale: 3.5, // FLUX Pro uses lower guidance scale
+            num_inference_steps: 28,
+            guidance_scale: 3.5,
             num_images: 1,
             enable_safety_checker: true,
             output_format: 'jpeg',
-            raw: raw, // Enable raw mode for more photographic results
+            raw: raw,
         };
 
-        // Add LoRA parameters if character identity is provided
         if (loras && loras.length > 0) {
             requestBody.loras = loras;
             console.log('[FLUX Service] Using character identity LoRAs:', loras.map(l => ({ path: l.path.substring(0, 50) + '...', scale: l.scale })));
         }
 
         onProgress?.(30);
+
+        console.log('[FLUX Service] Making API request to:', modelConfig.apiUrl);
 
         const response = await fetch(modelConfig.apiUrl, {
             method: 'POST',
@@ -182,18 +190,21 @@ export async function generateImageWithFlux(
             console.error('[FLUX Service] API Error:', {
                 status: response.status,
                 statusText: response.statusText,
+                url: modelConfig.apiUrl,
                 error: errorText
             });
 
             if (response.status === 401) {
-                throw new Error('FLUX API authentication failed. Please check your API key.');
+                throw new Error('FAL API authentication failed. Please check your API key configuration.');
+            } else if (response.status === 404) {
+                throw new Error('FAL API endpoint not found: ' + modelConfig.apiUrl + '. This model may not be available.');
             } else if (response.status === 429) {
-                throw new Error('FLUX API rate limit exceeded. Please try again later.');
+                throw new Error('FAL API rate limit exceeded. Please try again later.');
             } else if (response.status === 400) {
-                throw new Error(`FLUX API request error: ${errorText}. Please check your prompt.`);
+                throw new Error('FAL API request error: ' + errorText + '. Please check your prompt.');
             }
 
-            throw new Error(`Fal.ai service temporarily unavailable due to Egress Excess overloading the backend. Please try again in a few minutes. Technical details: ${response.status} - ${errorText}`);
+            throw new Error('FAL API error (' + response.status + '): ' + errorText);
         }
 
         const result: FluxGenerationResult = await response.json();
@@ -201,7 +212,7 @@ export async function generateImageWithFlux(
         onProgress?.(90);
 
         if (!result.images || result.images.length === 0) {
-            throw new Error('FLUX API returned no images. This may be due to content safety filters or an invalid prompt.');
+            throw new Error('FAL API returned no images. This may be due to content safety filters or an invalid prompt.');
         }
 
         const imageUrl = result.images[0].url;
@@ -209,7 +220,7 @@ export async function generateImageWithFlux(
         console.log('[FLUX Service] Generation successful', {
             imageUrl: imageUrl.substring(0, 50) + '...',
             dimensions: `${result.images[0].width}x${result.images[0].height}`,
-            inferenceTime: result.timings.inference,
+            inferenceTime: result.timings?.inference,
             seed: result.seed,
             hasNsfwConcepts: result.has_nsfw_concepts[0],
             modelVariant: variant
@@ -227,20 +238,17 @@ export async function generateImageWithFlux(
         }
 
         console.error('[FLUX Service] Unexpected error:', error);
-        throw new Error(`FLUX generation failed (${variant}): ${String(error)}`);
+        throw new Error('FLUX generation failed (' + variant + '): ' + String(error));
     }
 };
 
-/**
- * Generate multiple images in parallel with FLUX
- */
 export async function generateMultipleImagesWithFlux(
     prompt: string,
     count: number,
     aspectRatio: string = '16:9',
     onProgress?: (index: number, progress: number) => void,
     raw: boolean = false,
-    variant: FluxModelVariant = 'FLUX.1 Kontext'
+    variant: FluxModelVariant = 'FLUX.1.1 Pro'
 ): Promise<string[]> {
     const promises = Array.from({ length: count }, (_, index) =>
         generateImageWithFlux(

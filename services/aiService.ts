@@ -1231,10 +1231,10 @@ export async function generateVisual(
         console.log("[generateVisual] Using FAL.AI for model:", model);
 
         try {
-            const falModel: FluxModelVariant = model === 'FLUX.1.1 Pro (FAL)' ? 'FLUX.1.1' :
-                model === 'FLUX.1 Kontext (FAL)' ? 'FLUX.1 Kontext' :
+            const falModel: FluxModelVariant = model === 'FLUX.1.1 Pro (FAL)' ? 'FLUX.1.1 Pro' :
+                model === 'FLUX.1 Kontext (FAL)' ? 'FLUX Dev' :
                 model === 'FLUX Ultra (FAL)' ? 'FLUX Ultra' :
-                model === 'Seadream v4 (FAL)' ? 'Seadream v4' :
+                model === 'Seadream v4 (FAL)' ? 'FLUX.1.1 Pro' :
                     'FLUX Ultra';
 
             // Convert aspect ratio to format expected by FAL.AI
