@@ -24,7 +24,7 @@ const createTemplate = (count: number): MoodboardTemplate => ({
 });
 
 // Format AI output to remove ** markdown and apply custom formatting
-const formatAIOutput = (text: string): React.ReactNode[] => {
+const formatAIOutput = (text: string, isDark: boolean): React.ReactNode[] => {
   if (!text) return [];
 
   return text.split('\n\n').filter(p => p.trim()).map((paragraph, i) => {
@@ -37,7 +37,9 @@ const formatAIOutput = (text: string): React.ReactNode[] => {
 
     if (isHeading) {
       return (
-        <h5 key={i} className="text-base font-bold text-teal-400 mb-2">
+        <h5 key={i} className={`text-base font-bold mb-2 ${
+          isDark ? 'text-teal-400' : 'text-teal-600'
+        }`}>
           {cleaned}
         </h5>
       );
@@ -46,14 +48,18 @@ const formatAIOutput = (text: string): React.ReactNode[] => {
     // Check if it's a list item
     if (cleaned.match(/^[-•]\s/)) {
       return (
-        <li key={i} className="text-sm leading-relaxed text-gray-300 ml-4">
+        <li key={i} className={`text-sm leading-relaxed ml-4 ${
+          isDark ? 'text-gray-300' : 'text-gray-600'
+        }`}>
           {cleaned.replace(/^[-•]\s*/, '')}
         </li>
       );
     }
 
     return (
-      <p key={i} className="text-sm leading-relaxed text-gray-300">
+      <p key={i} className={`text-sm leading-relaxed ${
+        isDark ? 'text-gray-300' : 'text-gray-600'
+      }`}>
         {cleaned}
       </p>
     );
@@ -64,15 +70,26 @@ const formatAIOutput = (text: string): React.ReactNode[] => {
 interface AIOutputPanelProps {
   summary: string | undefined;
   isGenerating: boolean;
+  isDark: boolean;
 }
 
-const AIOutputPanel: React.FC<AIOutputPanelProps> = ({ summary, isGenerating }) => {
+const AIOutputPanel: React.FC<AIOutputPanelProps> = ({ summary, isGenerating, isDark }) => {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden sticky top-4">
+    <div className={`rounded-xl overflow-hidden sticky top-4 border backdrop-blur-sm ${
+      isDark
+        ? 'bg-gray-900/50 border-gray-800'
+        : 'bg-white/70 border-gray-200'
+    }`}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2">
-        <SparklesIcon className={`w-4 h-4 text-gray-400 ${isGenerating ? 'animate-spin' : ''}`} />
-        <h4 className="text-sm font-medium text-gray-200">AI Analysis</h4>
+      <div className={`px-4 py-3 border-b flex items-center gap-2 ${
+        isDark ? 'border-gray-800' : 'border-gray-200'
+      }`}>
+        <SparklesIcon className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''} ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`} />
+        <h4 className={`text-sm font-medium ${
+          isDark ? 'text-gray-200' : 'text-gray-700'
+        }`}>AI Analysis</h4>
       </div>
 
       {/* Content */}
@@ -82,20 +99,26 @@ const AIOutputPanel: React.FC<AIOutputPanelProps> = ({ summary, isGenerating }) 
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-2 bg-gray-800 rounded animate-pulse"
+                className={`h-2 rounded animate-pulse ${
+                  isDark ? 'bg-gray-800' : 'bg-gray-200'
+                }`}
                 style={{ animationDelay: `${i * 0.1}s` }}
               />
             ))}
           </div>
         ) : summary ? (
-          <div className="text-sm text-gray-300 leading-relaxed space-y-2">
+          <div className={`text-sm leading-relaxed space-y-2 ${
+            isDark ? 'text-gray-300' : 'text-gray-600'
+          }`}>
             {summary.split('\n').filter(p => p.trim()).map((paragraph, i) => (
               <p key={i}>{paragraph.replace(/\*\*/g, '')}</p>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <SparklesIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
+          <div className={`text-center py-8 ${
+            isDark ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            <SparklesIcon className={`w-8 h-8 mx-auto mb-2 opacity-30`} />
             <p className="text-xs">Add {AUTO_GENERATE_THRESHOLD}+ images for AI analysis</p>
           </div>
         )}
@@ -110,7 +133,7 @@ type MoodboardTabProps = {
 };
 
 const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdateMoodboardTemplates }) => {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
   // State
   const [activeId, setActiveId] = useState<string | null>(
@@ -518,7 +541,11 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                 type="text"
                 value={activeMoodboard.title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                className="w-full text-xl font-bold bg-transparent border-b border-gray-700 text-white focus:outline-none focus:border-[#dfec2d] transition-colors px-0"
+                className={`w-full text-xl font-bold bg-transparent border-b transition-colors px-0 focus:outline-none ${
+                  isDark
+                    ? 'border-gray-700 text-white focus:border-teal-400'
+                    : 'border-gray-300 text-gray-900 focus:border-teal-600'
+                }`}
                 placeholder="Moodboard Title"
               />
 
@@ -526,7 +553,11 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
               <textarea
                 value={activeMoodboard.description || ''}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-200 focus:outline-none focus:border-[#dfec2d] transition-all resize-none text-sm"
+                className={`w-full px-3 py-2 rounded-lg border transition-all resize-none text-sm focus:outline-none ${
+                  isDark
+                    ? 'bg-gray-900 border-gray-700 text-gray-200 focus:border-teal-400'
+                    : 'bg-white border-gray-300 text-gray-700 focus:border-teal-600'
+                }`}
                 placeholder="Add notes about this moodboard..."
                 rows={2}
               />
@@ -534,7 +565,9 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
               {/* Image Grid */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-gray-200">
+                  <h3 className={`text-sm font-medium ${
+                    isDark ? 'text-gray-200' : 'text-gray-700'
+                  }`}>
                     Images ({activeMoodboard.items.length}/{MAX_ITEMS})
                   </h3>
                 </div>
@@ -547,15 +580,23 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                       dragActive
-                        ? 'border-[#dfec2d] bg-[#dfec2d]/5'
-                        : 'border-gray-700 hover:border-gray-600'
+                        ? `${isDark ? 'border-teal-400 bg-teal-400/5' : 'border-teal-600 bg-teal-600/5'}`
+                        : `${isDark ? 'border-gray-700 hover:border-gray-600' : 'border-gray-300 hover:border-gray-400'}`
                     }`}
                   >
-                    <UploadCloudIcon className={`w-12 h-12 mx-auto mb-3 ${dragActive ? 'text-[#dfec2d]' : 'text-gray-600'}`} />
-                    <h4 className="text-sm font-medium mb-2 text-gray-200">
+                    <UploadCloudIcon className={`w-12 h-12 mx-auto mb-3 ${
+                      dragActive
+                        ? (isDark ? 'text-teal-400' : 'text-teal-600')
+                        : (isDark ? 'text-gray-600' : 'text-gray-400')
+                    }`} />
+                    <h4 className={`text-sm font-medium mb-2 ${
+                      isDark ? 'text-gray-200' : 'text-gray-700'
+                    }`}>
                       Drop images here
                     </h4>
-                    <p className="text-xs mb-3 text-gray-400">
+                    <p className={`text-xs mb-3 ${
+                      isDark ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
                       or click to browse
                     </p>
                     <Button
@@ -581,7 +622,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
                     className={`grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 ${
-                      dragActive ? 'ring-2 ring-[#dfec2d]' : ''
+                      dragActive ? (isDark ? 'ring-2 ring-teal-400' : 'ring-2 ring-teal-600') : ''
                     }`}
                   >
                     {activeMoodboard.items.map((item) => {
@@ -601,7 +642,9 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
 
                           {/* Cover badge */}
                           {isCover && (
-                            <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-[#dfec2d] text-black text-[10px] font-semibold">
+                            <div className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              isDark ? 'bg-teal-400 text-black' : 'bg-teal-600 text-white'
+                            }`}>
                               Cover
                             </div>
                           )}
@@ -624,10 +667,16 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     {activeMoodboard.items.length < MAX_ITEMS && (
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="aspect-square rounded-lg border-2 border-dashed border-gray-700 hover:border-gray-600 flex items-center justify-center transition-colors"
+                        className={`aspect-square rounded-lg border-2 border-dashed flex items-center justify-center transition-colors ${
+                          isDark
+                            ? 'border-gray-700 hover:border-gray-600'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
                       >
                         <div className="text-center">
-                          <PlusIcon className="w-6 h-6 mx-auto text-gray-600" />
+                          <PlusIcon className={`w-6 h-6 mx-auto ${
+                            isDark ? 'text-gray-600' : 'text-gray-400'
+                          }`} />
                         </div>
                       </button>
                     )}
@@ -641,6 +690,7 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
               <AIOutputPanel
                 summary={activeMoodboard.aiSummary}
                 isGenerating={isGeneratingSummary}
+                isDark={isDark}
               />
             </div>
           </div>
@@ -670,14 +720,16 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className={`relative max-w-6xl w-full max-h-[90vh] overflow-auto rounded-3xl ${
-                isDark ? 'bg-[#1A1A1A]' : 'bg-white'
+              className={`relative max-w-6xl w-full max-h-[90vh] overflow-auto rounded-3xl backdrop-blur-sm border ${
+                isDark
+                  ? 'bg-gray-900/95 border-gray-800'
+                  : 'bg-white/95 border-gray-200'
               } shadow-2xl`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className={`sticky top-0 z-10 px-6 py-4 border-b ${
-                isDark ? 'border-gray-800 bg-[#1A1A1A]' : 'border-gray-200 bg-white'
+                isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
               }`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -700,11 +752,11 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     placeholder="Search for reference images..."
-                    className={`flex-1 px-4 py-3 rounded-xl ${
+                    className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 ${
                       isDark
-                        ? 'bg-[#0F0F0F] border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-300 text-gray-900'
-                    } border focus:outline-none focus:ring-2 focus:ring-[#dfec2d]`}
+                        ? 'bg-gray-800 border-gray-700 text-white focus:ring-teal-400/50'
+                        : 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-teal-600/50'
+                    }`}
                   />
                   <Button
                     variant="primary"
@@ -724,7 +776,9 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                     </div>
                     <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
                       <motion.div
-                        className="h-full bg-[#dfec2d]"
+                        className={`h-full ${
+                            isDark ? 'bg-teal-400' : 'bg-teal-600'
+                          }`}
                         initial={{ width: 0 }}
                         animate={{ width: `${searchProgress.progress}%` }}
                       />
@@ -746,7 +800,9 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                             key={result.url}
                             whileHover={{ scale: 1.05 }}
                             className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer ${
-                              isSelected ? 'ring-4 ring-[#dfec2d]' : 'ring-1 ring-gray-700'
+                              isSelected
+                                ? (isDark ? 'ring-4 ring-teal-400' : 'ring-4 ring-teal-600')
+                                : (isDark ? 'ring-1 ring-gray-700' : 'ring-1 ring-gray-300')
                             }`}
                             onClick={() => {
                               const newSelected = new Set(selectedImages);
@@ -764,8 +820,12 @@ const MoodboardTab: React.FC<MoodboardTabProps> = ({ moodboardTemplates, onUpdat
                               className="w-full h-full object-cover"
                             />
                             {isSelected && (
-                              <div className="absolute inset-0 bg-[#dfec2d]/20 flex items-center justify-center">
-                                <CheckCircleIcon className="w-8 h-8 text-[#dfec2d]" />
+                              <div className={`absolute inset-0 flex items-center justify-center ${
+                                  isDark ? 'bg-teal-400/20' : 'bg-teal-600/20'
+                                }`}>
+                                <CheckCircleIcon className={`w-8 h-8 ${
+                                    isDark ? 'text-teal-400' : 'text-teal-600'
+                                  }`} />
                               </div>
                             )}
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
