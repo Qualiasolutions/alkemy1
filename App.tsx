@@ -44,6 +44,7 @@ import { saveManager } from './services/saveManager';
 import { userDataService, useUserPreferences } from './services/userDataService';
 
 // Import the new auth pages
+import HomePage from './pages/HomePage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 // import GenerationPage from './pages/GenerationPage'; // Commented out - separate Epic 2 demo page
@@ -1394,7 +1395,8 @@ const AppWithProviders: React.FC = () => {
       {supabaseConfigured ? (
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<AppContentWithAuth />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/app" element={<AppContentWithAuth />} />
             {/* <Route path="/generation" element={<GenerationPage />} /> */}
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
@@ -1402,7 +1404,8 @@ const AppWithProviders: React.FC = () => {
         </AuthProvider>
       ) : (
         <Routes>
-          <Route path="/" element={<AppContentWithoutAuth />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/app" element={<AppContentWithoutAuth />} />
           {/* <Route path="/generation" element={<GenerationPage />} /> */}
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
