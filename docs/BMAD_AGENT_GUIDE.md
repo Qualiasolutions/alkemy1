@@ -478,6 +478,7 @@ fix(STORY-X.Y): ...    → in_progress
 
 ---
 
-**Last Updated**: 2025-01-17
-**Version**: 1.0.0
-**Maintained By**: BMAD Team
+**Last Updated**: 2025-01-19
+**Version**: 2.0.0
+**Maintained By**: BMAD Team / Qualia Solutions
+**Production URL**: https://alkemy1-q9ayq39cj-qualiasolutionscy.vercel.app

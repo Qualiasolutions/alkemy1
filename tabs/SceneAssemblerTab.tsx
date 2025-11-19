@@ -928,7 +928,7 @@ const StillStudio: React.FC<{
                             onChange={e => setModel(e.target.value as any)}
                             className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                         >
-                            <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Google)</option>                            <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion (Free)</option>
+                            <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Google)</option>
                             <option value="FLUX.1.1 Pro (FAL)" className="bg-[#0a0a0a]">FLUX 1.1 Pro (FAL)</option>
                             <option value="FLUX.1 Kontext (FAL)" className="bg-[#0a0a0a]">FLUX Kontext (FAL)</option>
                             <option value="FLUX Ultra (FAL)" className="bg-[#0a0a0a]">FLUX Ultra (FAL)</option>
