@@ -110,6 +110,8 @@ export interface Generation {
   model?: string;
   // AI-generated video analysis/description
   analysisPrompt?: string;
+  // Image type tracking for better provenance
+  type?: 'uploaded' | 'generated' | 'refined' | 'reference' | 'lora-training';
 }
 
 export interface AnalyzedCharacter {

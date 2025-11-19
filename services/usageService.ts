@@ -217,7 +217,7 @@ export const USAGE_ACTIONS = {
 // Helper function to log AI usage with cost estimation
 export async function logAIUsage(
   userId: string,
-  action: keyof typeof USAGE_ACTIONS,
+  action: typeof USAGE_ACTIONS[keyof typeof USAGE_ACTIONS],
   tokensUsed?: number,
   projectId?: string,
   metadata?: any

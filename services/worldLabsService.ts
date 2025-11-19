@@ -227,7 +227,7 @@ Return a JSON object with this structure:
             ? [
                 { text: systemPrompt },
                 { inlineData: { mimeType: 'image/jpeg', data: imageData } }
-              ]
+            ]
             : systemPrompt;
 
         const result = await genAI.models.generateContent({
@@ -580,6 +580,41 @@ Return a JSON object with this structure:
             });
             this.worlds.delete(worldId);
         }
+    }
+
+    /**
+     * Bridge to Unreal Engine
+     * Simulates a live link connection to UE5 for camera control and visualization
+     */
+    async exportToUnreal(worldId: string): Promise<{ status: string; connectionString: string }> {
+        const world = this.worlds.get(worldId);
+        if (!world) throw new Error('World not found');
+
+        // Simulate connection delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        return {
+            status: 'connected',
+            connectionString: `alkemy-bridge://${worldId}?host=localhost&port=8890`
+        };
+    }
+
+    /**
+     * Train Environment LoRA
+     * Generates a style LoRA from the current world's visuals
+     */
+    async trainEnvironmentLoRA(worldId: string, screenshots: string[]): Promise<{ loraId: string; status: string }> {
+        if (screenshots.length < 5) {
+            throw new Error('Need at least 5 screenshots to train a LoRA');
+        }
+
+        // Simulate training process
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        return {
+            loraId: `lora_env_${worldId.split('_')[1]}`,
+            status: 'training_queued'
+        };
     }
 }
 

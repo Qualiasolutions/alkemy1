@@ -621,8 +621,8 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     const handleIdentitySuccess = (characterId: string, identity: CharacterIdentity) => {
         setCharacters(prev => prev.map(c => {
             if (c.id === characterId) {
-                // Set the first reference image as the main character image if no image exists
-                const imageUrl = c.imageUrl || (identity.referenceImages && identity.referenceImages.length > 0 ? identity.referenceImages[0] : undefined);
+                // Prioritize LoRA reference image as the main character image when identity is trained
+                const imageUrl = (identity.referenceImages && identity.referenceImages.length > 0 ? identity.referenceImages[0] : undefined) || c.imageUrl;
                 return { ...c, identity, imageUrl };
             }
             return c;

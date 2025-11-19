@@ -13,6 +13,7 @@ import { generateImageWithPollinations, isPollinationsAvailable, type Pollinatio
 import { generateImageWithFlux, isFluxApiAvailable, type FluxModelVariant } from './fluxService';
 // BFL service removed due to CORS issues - using FAL models only
 import { ENHANCED_DIRECTOR_KNOWLEDGE } from './directorKnowledge';
+import { generateTextToVideoWithHF } from './huggingFaceService';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 // FLUX_API_KEY removed - using free Pollinations instead
@@ -1231,9 +1232,9 @@ export async function generateVisual(
         try {
             const falModel: FluxModelVariant = model === 'FLUX.1.1 Pro (FAL)' ? 'FLUX.1.1 Pro' :
                 model === 'FLUX.1 Kontext (FAL)' ? 'FLUX Dev' :
-                model === 'FLUX Ultra (FAL)' ? 'FLUX Ultra' :
-                model === 'Seadream v4 (FAL)' ? 'FLUX.1.1 Pro' :
-                    'FLUX Ultra';
+                    model === 'FLUX Ultra (FAL)' ? 'FLUX Ultra' :
+                        model === 'Seadream v4 (FAL)' ? 'FLUX.1.1 Pro' :
+                            'FLUX Ultra';
 
             // Convert aspect ratio to format expected by FAL.AI
             const falAspectRatio = aspect_ratio;
@@ -2288,4 +2289,38 @@ function blobToBase64(blob: Blob): Promise<string> {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
     });
+}
+
+/**
+ * Generate video from text using HuggingFace (FREE)
+ */
+export async function generateVideoFromText(
+    prompt: string,
+    onProgress?: (progress: number) => void,
+    context?: { projectId?: string; userId?: string }
+): Promise<string> {
+    console.log('[AI Service] Text-to-video with HuggingFace (FREE)');
+
+    try {
+        const videoUrl = await generateTextToVideoWithHF(prompt, onProgress);
+
+        if (context?.userId && context?.projectId) {
+            await logAIUsage(
+                context.userId,
+                USAGE_ACTIONS.VIDEO_GENERATION,
+                undefined,
+                context.projectId,
+                {
+                    model: 'HuggingFace text-to-video',
+                    prompt: prompt.substring(0, 200),
+                    provider: 'HuggingFace (FREE)'
+                }
+            );
+        }
+
+        return videoUrl;
+    } catch (error) {
+        console.error('[AI Service] Text-to-video failed:', error);
+        throw error;
+    }
 }

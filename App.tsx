@@ -22,7 +22,7 @@ import WanTransferTab from './tabs/WanTransferTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
 import { ProjectRoadmapTab } from './tabs/ProjectRoadmapTab';
-import ThreeDWorldsTab from './src/tabs/3DWorldsTab';
+import ThreeDWorldsTab from './src/tabs/3DWorldsTabEnhanced';
 
 import GenerateTab from './tabs/GenerateTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';

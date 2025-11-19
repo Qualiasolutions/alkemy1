@@ -77,7 +77,8 @@ const RefineStudio: React.FC<{
                         id: `gen-${Date.now()}`,
                         url: refinedImageUrl,
                         aspectRatio,
-                        isLoading: false
+                        isLoading: false,
+                        type: 'refined'
                     }]
                 }));
             } else {
@@ -94,7 +95,26 @@ const RefineStudio: React.FC<{
 
     const handleSetMainAndClose = () => {
         if (currentImage) {
-            onUpdateItem(prev => ({ ...prev, imageUrl: currentImage }));
+            onUpdateItem(prev => {
+                // Ensure the image is in generations array (safety check for race conditions)
+                const hasImage = prev.generations?.some(g => g.url === currentImage);
+                const updatedGenerations = hasImage ? prev.generations : [
+                    ...(prev.generations || []),
+                    {
+                        id: `gen-${Date.now()}`,
+                        url: currentImage,
+                        aspectRatio,
+                        isLoading: false,
+                        type: 'refined'
+                    }
+                ];
+
+                return {
+                    ...prev,
+                    imageUrl: currentImage,
+                    generations: updatedGenerations
+                };
+            });
             onClose();
         }
     };
@@ -259,14 +279,14 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
 }) => {
     const { isDark } = useTheme();
     const [detailedPrompt, setDetailedPrompt] = useState('');
-    const [model, setModel] = useState<'Gemini Nano Banana' | 'FLUX.1.1 Pro (FAL)' | 'FLUX.1 Kontext (FAL)' | 'FLUX Ultra (FAL)' | 'Seadream v4 (FAL)'>('FLUX.1.1 Pro (FAL)');
+    const [model, setModel] = useState<string>('Gemini Nano Banana'); // Default model
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [attachedImages, setAttachedImages] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [viewingGeneration, setViewingGeneration] = useState<Generation | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [generationCount, setGenerationCount] = useState(4);
+    const [generationCount, setGenerationCount] = useState(1);
     const [refinementBase, setRefinementBase] = useState<Generation | null>(null);
     const [loraImages, setLoraImages] = useState<string[]>([]);
     const [selectedMoodboardId, setSelectedMoodboardId] = useState<string>('none');
@@ -381,7 +401,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     const loaderId = loadingGenerations[i].id;
                     const index = currentGenerations.findIndex(g => g.id === loaderId);
                     if (index !== -1) {
-                        currentGenerations[index] = { ...currentGenerations[index], url: url || null, isLoading: false, error: error || undefined };
+                        currentGenerations[index] = { ...currentGenerations[index], url: url || null, isLoading: false, error: error || undefined, type: 'generated' };
                     }
                 });
                 return { ...prevItem, generations: currentGenerations.filter(g => g.url || g.isLoading || g.error) };
@@ -411,26 +431,35 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
     const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const files = Array.from(e.target.files);
-            const isFluxMulti = false; // Removed Flux Multi - use Flux or Flux Schnell instead
 
-            // For Flux Multi, allow multiple files; for other models, only take the first one
-            const filesToProcess = isFluxMulti ? files : [files[0]];
-
-            filesToProcess.forEach(file => {
+            // Process all uploaded files
+            files.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const result = event.target?.result as string;
-                    if (isFluxMulti) {
-                        // Add to existing images for Flux Multi
-                        setAttachedImages(prev => {
-                            const updated = [...prev, result];
-                            // Limit to 10 images maximum for performance
-                            return updated.slice(-10);
-                        });
-                    } else {
-                        // Replace single image for other models
-                        setAttachedImages([result]);
-                    }
+
+                    // Add to attached images for generation prompt
+                    setAttachedImages(prev => {
+                        const updated = [...prev, result];
+                        // Limit to 10 images maximum for performance
+                        return updated.slice(-10);
+                    });
+
+                    // Persist to character/location identity reference images
+                    onUpdateItem(prev => {
+                        const currentRefs = prev.identity?.referenceImages || [];
+                        const updatedRefs = [...currentRefs, result].slice(-12); // Keep max 12 for LoRA
+
+                        return {
+                            ...prev,
+                            identity: {
+                                ...prev.identity,
+                                status: prev.identity?.status || 'none',
+                                referenceImages: updatedRefs,
+                                technologyData: prev.identity?.technologyData
+                            }
+                        };
+                    });
                 };
                 reader.readAsDataURL(file);
             });
@@ -590,11 +619,12 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         onChange={e => setModel(e.target.value as any)}
                         className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
                     >
-                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana (Google)</option>
-                        <option value="FLUX.1.1 Pro (FAL)" className="bg-[#0a0a0a]">FLUX 1.1 Pro (FAL+LoRA)</option>
-                        <option value="FLUX.1 Kontext (FAL)" className="bg-[#0a0a0a]">FLUX Kontext (FAL+LoRA)</option>
-                        <option value="FLUX Ultra (FAL)" className="bg-[#0a0a0a]">FLUX Ultra (FAL+LoRA)</option>
-                        <option value="Seadream v4 (FAL)" className="bg-[#0a0a0a]">Seadream v4 (FAL - 4K)</option>
+                        <option value="Gemini Nano Banana" className="bg-[#0a0a0a]">Nano Banana</option>
+                        <option value="FLUX 1.1" className="bg-[#0a0a0a]">FLUX 1.1</option>
+                        <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion</option>
+                        <option value="FLUX.1 Kontext (BFL)" className="bg-[#0a0a0a]">FLUX Kontext (BFL)</option>
+                        <option value="FLUX Ultra (BFL)" className="bg-[#0a0a0a]">FLUX Ultra (BFL)</option>
+                        <option value="Seadream v4 (FAL)" className="bg-[#0a0a0a]">Seadream v4 (FAL)</option>
                     </select>
                 </div>
 
@@ -614,21 +644,6 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     </select>
                 </div>
 
-                {/* Generation Count Selector */}
-                <div>
-                    <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">Images to Generate</label>
-                    <select
-                        value={generationCount}
-                        onChange={e => setGenerationCount(Number(e.target.value))}
-                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:bg-white/10 hover:border-white/20 transition-all focus:ring-2 focus:ring-[#dfec2d] focus:outline-none"
-                        disabled={isGenerating}
-                    >
-                        <option value={1} className="bg-[#0a0a0a]">1 Image</option>
-                        <option value={2} className="bg-[#0a0a0a]">2 Images</option>
-                        <option value={3} className="bg-[#0a0a0a]">3 Images</option>
-                        <option value={4} className="bg-[#0a0a0a]">4 Images</option>
-                    </select>
-                </div>
 
                 {/* Main Image Preview - Prominent display with correct aspect ratio */}
                 {item.data.imageUrl && (
@@ -654,6 +669,50 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                     </div>
                 )}
 
+                {/* Reference Images Section - Persistent upload area */}
+                <div>
+                    <label className="text-xs text-white/60 uppercase tracking-widest font-medium block mb-2">
+                        Reference Images
+                        <span className="text-[#dfec2d] ml-1">NEW</span>
+                    </label>
+                    <div className="space-y-2">
+                        {/* Display existing reference images if any */}
+                        {item.data.identity?.referenceImages && item.data.identity.referenceImages.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2">
+                                {item.data.identity.referenceImages.slice(0, 6).map((imgUrl, idx) => (
+                                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-[#dfec2d]/30">
+                                        <img src={imgUrl} alt={`Reference ${idx + 1}`} className="w-full h-full object-cover" />
+                                        <div className="absolute bottom-1 left-1 bg-[#dfec2d]/80 text-black text-[10px] px-1 rounded font-bold">
+                                            REF {idx + 1}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Upload button for reference images */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            multiple={true}
+                            onChange={handleFileAttach}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full py-2 px-3 bg-white/5 hover:bg-white/10 border border-dashed border-white/20 hover:border-[#dfec2d]/50 rounded-lg text-sm text-white/60 hover:text-white transition-all flex items-center justify-center gap-2"
+                        >
+                            <ImagePlusIcon className="w-4 h-4" />
+                            Upload Reference Images
+                        </button>
+                        <p className="text-[10px] text-white/40">
+                            Upload images of this {item.type} for consistent generation
+                        </p>
+                    </div>
+                </div>
+
                 {/* Prompt Input - Optimized height for viewport fit */}
                 <div className="flex flex-col gap-3">
                     <label className="text-xs text-white/60 uppercase tracking-widest font-medium">Prompt</label>
@@ -662,26 +721,9 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                             value={detailedPrompt}
                             onChange={(e) => setDetailedPrompt(e.target.value)}
                             placeholder={`Describe ${item.data.name}...`}
-                            className="w-full h-32 pr-12 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#dfec2d] focus:border-transparent focus:bg-white/10 transition-all resize-none"
+                            className="w-full h-32 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#dfec2d] focus:border-transparent focus:bg-white/10 transition-all resize-none"
                             rows={6}
                         />
-                        {/* Compact attachment button in top-right corner */}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            multiple={isFluxMulti}
-                            onChange={handleFileAttach}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="absolute top-3 right-3 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                            title={isFluxMulti ? 'Attach multiple reference images' : 'Attach reference image'}
-                        >
-                            <PaperclipIcon className="w-4 h-4" />
-                        </button>
                     </div>
                 </div>
 

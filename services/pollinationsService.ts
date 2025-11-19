@@ -69,7 +69,8 @@ export async function generateImageWithPollinations(
     model: PollinationsImageModel,
     aspectRatio: string,
     onProgress?: (progress: number) => void,
-    seed?: number
+    seed?: number,
+    loraOptions?: { path: string; scale?: number }
 ): Promise<string> {
     if (FORCE_DEMO_MODE) {
         console.warn('[Pollinations.AI] Demo mode active – returning placeholder image.');
@@ -105,6 +106,16 @@ export async function generateImageWithPollinations(
         if (seed !== undefined) {
             params.append('seed', seed.toString());
         }
+
+        if (loraOptions?.path) {
+            params.append('lora', loraOptions.path);
+            if (loraOptions.scale) {
+                params.append('lora_scale', loraOptions.scale.toString());
+            }
+        }
+
+        // Add LoRA support if provided in the prompt or context (we'll need to update the function signature next)
+        // For now, we'll assume the prompt might contain magic LoRA syntax or we'll add a specific param later.
 
         const imageUrl = `${API_BASE_URL}/${encodedPrompt}?${params.toString()}`;
 
