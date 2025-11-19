@@ -32,6 +32,7 @@ import Button from './components/Button';
 import { DEMO_PROJECT_DATA, DEMO_SCRIPT } from './data/demoProject';
 import Toast, { ToastMessage } from './components/Toast';
 import ProjectSelectorModal from './components/ProjectSelectorModal';
+import SaveStatusIndicator from './components/SaveStatusIndicator';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { hasGeminiApiKey, hasEnvGeminiApiKey, onGeminiApiKeyChange, clearGeminiApiKey, setGeminiApiKey } from './services/apiKeys';
 import { isSupabaseConfigured } from './services/supabase';
@@ -371,17 +372,17 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
         saveManager.updateOptimistic(field, value);
       });
 
-      // For immediate save (e.g., manual save button)
-      if (projectData === undefined) {
-        // This is an auto-save, let SaveManager handle debouncing
-        return;
-      } else {
+      // Check if this is a manual save (projectData provided) or auto-save (no projectData)
+      if (projectData !== undefined) {
         // This is a manual save, save immediately
         const success = await saveManager.saveNow({ showNotification: false });
         if (!success) {
           showToast('Failed to save project to cloud', 'error');
+        } else {
+          showToast('Project saved successfully', 'success');
         }
       }
+      // If projectData is undefined (auto-save), SaveManager will handle debounced saving automatically
     } else if (!isAuthenticated) {
       // Only use localStorage for anonymous/non-authenticated users
       console.warn('[LocalStorage] Using localStorage for anonymous user - please sign in to save to cloud');
@@ -1354,6 +1355,14 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
       <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
       <Toast toast={toast} onClose={() => setToast(null)} />
+
+      {/* Save Status Indicator - Shows auto-save status */}
+      {supabaseEnabled && isAuthenticated && (
+        <SaveStatusIndicator
+          projectId={currentProject?.id || null}
+          userId={user?.id || null}
+        />
+      )}
 
       {/* Auth Modal - Only render if Supabase is configured */}
       {isSupabaseConfigured() && (
