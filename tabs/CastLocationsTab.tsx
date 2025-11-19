@@ -474,6 +474,42 @@ const Card: React.FC<{
                             </div>
                         </div>
 
+                        {/* Train Character Button (only for characters) */}
+                        {character && onPrepareIdentity && (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={(e) => { e.stopPropagation(); onPrepareIdentity(); }}
+                                className={`w-full mt-3 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
+                                    identityStatus === 'ready'
+                                        ? isDark
+                                            ? 'bg-[#dfec2d]/20 text-[#dfec2d] border border-[#dfec2d]/30 hover:bg-[#dfec2d]/30'
+                                            : 'bg-[#dfec2d]/30 text-[#dfec2d] border border-[#dfec2d]/40 hover:bg-[#dfec2d]/40'
+                                        : identityStatus === 'preparing'
+                                        ? isDark
+                                            ? 'bg-[#dfec2d]/20 text-[#dfec2d] border border-[#dfec2d]/30'
+                                            : 'bg-[#dfec2d]/30 text-[#dfec2d] border border-[#dfec2d]/40'
+                                        : identityStatus === 'error'
+                                        ? isDark
+                                            ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                                            : 'bg-red-500/30 text-red-500 border border-red-500/40 hover:bg-red-500/40'
+                                        : isDark
+                                            ? 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20'
+                                            : 'bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/30 hover:bg-[var(--color-accent-primary)]/30'
+                                }`}
+                            >
+                                {identityStatus === 'ready' && <CheckCircleIcon className="w-4 h-4" />}
+                                {identityStatus === 'error' && <AlertCircleIcon className="w-4 h-4" />}
+                                {identityStatus === 'preparing' && (
+                                    <svg className="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                )}
+                                {!identityStatus || identityStatus === 'none' ? 'Train Character' : identityStatus === 'ready' ? 'Retrain Identity' : identityStatus === 'preparing' ? 'Training...' : 'Fix Identity'}
+                            </motion.button>
+                        )}
+
                     </div>
                 </div>
             </div>
@@ -583,7 +619,14 @@ const CastLocationsTab: React.FC<CastLocationsTabProps> = ({ characters, setChar
     };
 
     const handleIdentitySuccess = (characterId: string, identity: CharacterIdentity) => {
-        setCharacters(prev => prev.map(c => c.id === characterId ? { ...c, identity } : c));
+        setCharacters(prev => prev.map(c => {
+            if (c.id === characterId) {
+                // Set the first reference image as the main character image if no image exists
+                const imageUrl = c.imageUrl || (identity.referenceImages && identity.referenceImages.length > 0 ? identity.referenceImages[0] : undefined);
+                return { ...c, identity, imageUrl };
+            }
+            return c;
+        }));
         setIdentityModalCharacter(null);
         setIdentityModalLoraImages([]);
     };
