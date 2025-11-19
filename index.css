@@ -1,9 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Import Modern UI Effects */
 @import './styles/modern-effects.css';
+
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -12,9 +10,9 @@
     --color-background-secondary: #111111;
     --color-surface-card: #171717;
     --color-surface-elevated: #1F1F1F;
-    --color-accent-primary: #dfec2d;
-    --color-accent-secondary: #b3e617;
-    --color-accent-hover: #d4ff5c;
+    --color-accent-primary: #6366F1;
+    --color-accent-secondary: #818CF8;
+    --color-accent-hover: #818CF8;
     --color-text-primary: #FAFAFA;
     --color-text-secondary: #A8A8A8;
     --color-text-tertiary: #737373;
@@ -23,7 +21,7 @@
     --color-divider-color: #1A1A1A;
     --color-hover-background: #1C1C1C;
     --color-active-background: #222222;
-    --color-success: #dfec2d;
+    --color-success: #10B981;
     --color-warning: #F59E0B;
     --color-error: #EF4444;
     --color-info: #3B82F6;
@@ -33,7 +31,7 @@
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
-    --shadow-glow: 0 0 20px rgba(200, 255, 47, 0.3);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
   }
 
   [data-theme='light'] {
@@ -42,9 +40,9 @@
     --color-background-secondary: #F8F9FA;
     --color-surface-card: #F3F4F6;
     --color-surface-elevated: #FFFFFF;
-    --color-accent-primary: #b3e617;
-    --color-accent-secondary: #9ec915;
-    --color-accent-hover: #dfec2d;
+    --color-accent-primary: #4F46E5;
+    --color-accent-secondary: #6366F1;
+    --color-accent-hover: #6366F1;
     --color-text-primary: #111827;
     --color-text-secondary: #374151;
     --color-text-tertiary: #1F2937;
@@ -53,7 +51,7 @@
     --color-divider-color: #E5E7EB;
     --color-hover-background: #F9FAFB;
     --color-active-background: #F3F4F6;
-    --color-success: #b3e617;
+    --color-success: #059669;
     --color-warning: #F59E0B;
     --color-error: #DC2626;
     --color-info: #2563EB;
@@ -77,15 +75,35 @@
     text-rendering: optimizeLegibility;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-weight: 600;
     letter-spacing: -0.015em;
   }
 
-  h1 { font-size: 2.25rem; line-height: 1.1; }
-  h2 { font-size: 1.875rem; line-height: 1.15; }
-  h3 { font-size: 1.5rem; line-height: 1.2; }
-  h4 { font-size: 1.25rem; line-height: 1.3; }
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.1;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 1.15;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
@@ -108,32 +126,86 @@
 }
 
 @layer utilities {
+
   /* Text colors */
-  .text-theme-primary { color: var(--color-text-primary); }
-  .text-theme-secondary { color: var(--color-text-secondary); }
-  .text-theme-tertiary { color: var(--color-text-tertiary); }
-  .text-theme-accent { color: var(--color-accent-primary); }
-  .text-theme-error { color: var(--color-error); }
-  .text-theme-success { color: var(--color-success); }
+  .text-theme-primary {
+    color: var(--color-text-primary);
+  }
+
+  .text-theme-secondary {
+    color: var(--color-text-secondary);
+  }
+
+  .text-theme-tertiary {
+    color: var(--color-text-tertiary);
+  }
+
+  .text-theme-accent {
+    color: var(--color-accent-primary);
+  }
+
+  .text-theme-error {
+    color: var(--color-error);
+  }
+
+  .text-theme-success {
+    color: var(--color-success);
+  }
 
   /* Background colors */
-  .bg-theme-surface { background-color: var(--color-surface-card); }
-  .bg-theme-elevated { background-color: var(--color-surface-elevated); }
-  .bg-theme-background { background-color: var(--color-background-primary); }
-  .bg-theme-hover { background-color: var(--color-hover-background); }
-  .bg-theme-active { background-color: var(--color-active-background); }
+  .bg-theme-surface {
+    background-color: var(--color-surface-card);
+  }
+
+  .bg-theme-elevated {
+    background-color: var(--color-surface-elevated);
+  }
+
+  .bg-theme-background {
+    background-color: var(--color-background-primary);
+  }
+
+  .bg-theme-hover {
+    background-color: var(--color-hover-background);
+  }
+
+  .bg-theme-active {
+    background-color: var(--color-active-background);
+  }
 
   /* Border colors */
-  .border-theme-default { border-color: var(--color-border-color); }
-  .border-theme-subtle { border-color: var(--color-border-subtle); }
-  .border-theme-accent { border-color: var(--color-accent-primary); }
+  .border-theme-default {
+    border-color: var(--color-border-color);
+  }
+
+  .border-theme-subtle {
+    border-color: var(--color-border-subtle);
+  }
+
+  .border-theme-accent {
+    border-color: var(--color-accent-primary);
+  }
 
   /* Shadows */
-  .shadow-theme-sm { box-shadow: var(--shadow-sm); }
-  .shadow-theme-md { box-shadow: var(--shadow-md); }
-  .shadow-theme-lg { box-shadow: var(--shadow-lg); }
-  .shadow-theme-xl { box-shadow: var(--shadow-xl); }
-  .shadow-theme-glow { box-shadow: var(--shadow-glow); }
+  .shadow-theme-sm {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-theme-md {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-theme-lg {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shadow-theme-xl {
+    box-shadow: var(--shadow-xl);
+  }
+
+  .shadow-theme-glow {
+    box-shadow: var(--shadow-glow);
+  }
 
   /* Focus states */
   .focus-ring-theme-accent:focus {
@@ -156,19 +228,22 @@
 
   /* Shimmer effect for loading */
   .shimmer {
-    background: linear-gradient(
-      90deg,
-      var(--color-surface-card) 0%,
-      var(--color-hover-background) 50%,
-      var(--color-surface-card) 100%
-    );
+    background: linear-gradient(90deg,
+        var(--color-surface-card) 0%,
+        var(--color-hover-background) 50%,
+        var(--color-surface-card) 100%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
 
   @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
   }
 
   /* Ripple animation used by interactive button ripple effect */
@@ -186,10 +261,13 @@
 
   /* Soft pulse animation for gradient orbs */
   @keyframes pulse-soft {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 0.3;
       transform: scale(1);
     }
+
     50% {
       opacity: 0.5;
       transform: scale(1.05);

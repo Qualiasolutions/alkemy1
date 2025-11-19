@@ -22,7 +22,8 @@ import WanTransferTab from './tabs/WanTransferTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
 import { ProjectRoadmapTab } from './tabs/ProjectRoadmapTab';
-import { ThreeDWorldsTab } from './src/tabs/3DWorldsTab';
+import ThreeDWorldsTab from './src/tabs/3DWorldsTab';
+
 import GenerateTab from './tabs/GenerateTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
 import { analyzeScript } from './services/aiService';
@@ -50,140 +51,140 @@ import HomePage from './pages/HomePage';
 
 const PROJECT_STORAGE_KEY = 'alkemy_ai_studio_project_data_v2'; // v2 to avoid conflicts with old state structure
 const isSupabaseProjectId = (id?: string | null): boolean => {
-    if (!id) return false;
-    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id);
+  if (!id) return false;
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id);
 };
 
 const getVideoDuration = (url: string): Promise<number> => {
-    return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => {
-            // DO NOT revoke blob URLs here - they need to persist for video playback
-            // Only revoke if it's a temporary blob URL created specifically for duration check
-            // In this case, we keep blob URLs alive for timeline playback
-            resolve(video.duration);
-        };
-        video.onerror = () => {
-            console.warn(`Could not load video metadata for ${url}. Defaulting duration to 5s.`);
-            resolve(5); // Default duration on error
-        };
-        video.src = url;
-    });
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      // DO NOT revoke blob URLs here - they need to persist for video playback
+      // Only revoke if it's a temporary blob URL created specifically for duration check
+      // In this case, we keep blob URLs alive for timeline playback
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      console.warn(`Could not load video metadata for ${url}. Defaulting duration to 5s.`);
+      resolve(5); // Default duration on error
+    };
+    video.src = url;
+  });
 };
 
 const createEmptyScriptAnalysis = (): ScriptAnalysis => ({
-    title: 'Untitled Project', logline: '', summary: '',
-    scenes: [], characters: [], locations: [],
-    props: [], styling: [], setDressing: [], makeupAndHair: [], sound: [],
-    moodboardTemplates: []
+  title: 'Untitled Project', logline: '', summary: '',
+  scenes: [], characters: [], locations: [],
+  props: [], styling: [], setDressing: [], makeupAndHair: [], sound: [],
+  moodboardTemplates: []
 });
 const createDefaultMoodboardTemplates = (): MoodboardTemplate[] => ([
-    {
-        id: `moodboard-${Date.now()}`,
-        title: 'Master Moodboard',
-        description: 'Upload up to 20 hero references. These visuals influence look & feel across the project.',
-        items: [],
-        createdAt: new Date().toISOString()
-    }
+  {
+    id: `moodboard-${Date.now()}`,
+    title: 'Master Moodboard',
+    description: 'Upload up to 20 hero references. These visuals influence look & feel across the project.',
+    items: [],
+    createdAt: new Date().toISOString()
+  }
 ]);
 
 
 
 const ApiKeyPrompt: React.FC<{ onKeySelected: () => void; isDark?: boolean }> = ({ onKeySelected, isDark = true }) => {
-    const [manualKey, setManualKey] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isSelecting, setIsSelecting] = useState(false);
+  const [manualKey, setManualKey] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
 
-    const handleSelectKey = async () => {
-        if (!window.aistudio?.openSelectKey) {
-            setError('API key selection utility is not available in this environment. Paste your key below instead.');
-            return;
-        }
-        try {
-            setIsSelecting(true);
-            await window.aistudio.openSelectKey();
-            onKeySelected();
-        } catch (selectError) {
-            console.warn('Failed to launch AI Studio key selector', selectError);
-            setError('Unable to open the AI Studio key selector. Paste your key below instead.');
-        } finally {
-            setIsSelecting(false);
-        }
-    };
+  const handleSelectKey = async () => {
+    if (!window.aistudio?.openSelectKey) {
+      setError('API key selection utility is not available in this environment. Paste your key below instead.');
+      return;
+    }
+    try {
+      setIsSelecting(true);
+      await window.aistudio.openSelectKey();
+      onKeySelected();
+    } catch (selectError) {
+      console.warn('Failed to launch AI Studio key selector', selectError);
+      setError('Unable to open the AI Studio key selector. Paste your key below instead.');
+    } finally {
+      setIsSelecting(false);
+    }
+  };
 
-    const handleManualSubmit = (event: React.FormEvent) => {
-        event.preventDefault();
-        const trimmed = manualKey.trim();
-        if (!trimmed) {
-            setError('Enter a valid Gemini API key.');
-            return;
-        }
-        setGeminiApiKey(trimmed);
-        setError(null);
-        onKeySelected();
-    };
+  const handleManualSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmed = manualKey.trim();
+    if (!trimmed) {
+      setError('Enter a valid Gemini API key.');
+      return;
+    }
+    setGeminiApiKey(trimmed);
+    setError(null);
+    onKeySelected();
+  };
 
-    return (
-        <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                className={`${isDark ? 'bg-[#161616] border-[#2A2A2A]' : 'bg-white border-[#D4D4D4]'} border rounded-2xl p-10 text-center max-w-xl shadow-2xl space-y-6`}
-            >
-                <div className="space-y-2">
-                    <h2 className="text-3xl font-bold">Alkemy AI Studio</h2>
-                    <p className={`text-lg ${isDark ? 'text-[#A0A0A0]' : 'text-[#505050]'}`}>
-                        Choose how you would like to provide your Gemini API key. This key powers all generative features in the studio.
-                    </p>
-                </div>
-
-                <div className="space-y-3">
-                    <Button onClick={handleSelectKey} variant="primary" className="w-full !py-3 !text-base" disabled={isSelecting}>
-                        {isSelecting ? 'Opening AI Studio…' : 'Select Key via AI Studio'}
-                    </Button>
-                    <p className={`text-sm ${isDark ? 'text-[#808080]' : 'text-[#606060]'}`}>
-                        Requires running inside Google AI Studio with key selector support.
-                    </p>
-                </div>
-
-                <div className="relative">
-                    <div className={`w-full h-px ${isDark ? 'bg-[#2A2A2A]' : 'bg-[#E5E5E5]'}`} />
-                    <span className={`absolute left-1/2 -translate-x-1/2 -top-3 px-3 text-xs uppercase ${isDark ? 'bg-[#161616] text-[#808080]' : 'bg-white text-[#606060]'}`}>or</span>
-                </div>
-
-                <form onSubmit={handleManualSubmit} className="space-y-3 text-left">
-                    <label className={`block text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                        Paste Gemini API key
-                    </label>
-                    <input
-                        value={manualKey}
-                        onChange={(event) => {
-                            setManualKey(event.target.value);
-                            if (error) setError(null);
-                        }}
-                        placeholder="AIza..."
-                        className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-[#dfec2d]/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-[#dfec2d]/40'}`}
-                        autoComplete="off"
-                        spellCheck={false}
-                    />
-                    <Button type="submit" variant="secondary" className="w-full !py-2.5">Use This Key</Button>
-                </form>
-
-                {error && (
-                    <div className={`text-sm ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</div>
-                )}
-
-                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                    By using this service, you agree to the Gemini API's terms and pricing. Learn more at{' '}
-                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-[#dfec2d]' : 'text-[#dfec2d]'} hover:underline`}>
-                        ai.google.dev/gemini-api/docs/billing
-                    </a>.
-                </p>
-            </motion.div>
+  return (
+    <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#FFFFFF]'}`}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className={`${isDark ? 'bg-[#161616] border-[#2A2A2A]' : 'bg-white border-[#D4D4D4]'} border rounded-2xl p-10 text-center max-w-xl shadow-2xl space-y-6`}
+      >
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold">Alkemy AI Studio</h2>
+          <p className={`text-lg ${isDark ? 'text-[#A0A0A0]' : 'text-[#505050]'}`}>
+            Choose how you would like to provide your Gemini API key. This key powers all generative features in the studio.
+          </p>
         </div>
-    );
+
+        <div className="space-y-3">
+          <Button onClick={handleSelectKey} variant="primary" className="w-full !py-3 !text-base" disabled={isSelecting}>
+            {isSelecting ? 'Opening AI Studio…' : 'Select Key via AI Studio'}
+          </Button>
+          <p className={`text-sm ${isDark ? 'text-[#808080]' : 'text-[#606060]'}`}>
+            Requires running inside Google AI Studio with key selector support.
+          </p>
+        </div>
+
+        <div className="relative">
+          <div className={`w-full h-px ${isDark ? 'bg-[#2A2A2A]' : 'bg-[#E5E5E5]'}`} />
+          <span className={`absolute left-1/2 -translate-x-1/2 -top-3 px-3 text-xs uppercase ${isDark ? 'bg-[#161616] text-[#808080]' : 'bg-white text-[#606060]'}`}>or</span>
+        </div>
+
+        <form onSubmit={handleManualSubmit} className="space-y-3 text-left">
+          <label className={`block text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+            Paste Gemini API key
+          </label>
+          <input
+            value={manualKey}
+            onChange={(event) => {
+              setManualKey(event.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="AIza..."
+            className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 ${isDark ? 'bg-[#0B0B0B] border-[#2A2A2A] text-white focus:ring-[#dfec2d]/40' : 'bg-white border-[#D4D4D4] text-black focus:ring-[#dfec2d]/40'}`}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <Button type="submit" variant="secondary" className="w-full !py-2.5">Use This Key</Button>
+        </form>
+
+        {error && (
+          <div className={`text-sm ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</div>
+        )}
+
+        <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+          By using this service, you agree to the Gemini API's terms and pricing. Learn more at{' '}
+          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-[#dfec2d]' : 'text-[#dfec2d]'} hover:underline`}>
+            ai.google.dev/gemini-api/docs/billing
+          </a>.
+        </p>
+      </motion.div>
+    </div>
+  );
 };
 
 
@@ -280,8 +281,8 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   // Define showToast FIRST before any callbacks that depend on it
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-      setToast({ id: `toast-${Date.now()}`, message, type });
-      setTimeout(() => setToast(null), 3000);
+    setToast({ id: `toast-${Date.now()}`, message, type });
+    setTimeout(() => setToast(null), 3000);
   }, []);
 
   // --- Project Loading Functions ---
@@ -485,36 +486,36 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     return tempProject;
   }, [supabaseEnabled, isAuthenticated, user, projectService, loadUserProjects, usageService, showToast]);
 
-  const setScriptContent = (content: string | null) => setProjectState((p: any) => ({...p, scriptContent: content}));
+  const setScriptContent = (content: string | null) => setProjectState((p: any) => ({ ...p, scriptContent: content }));
   // FIX: Updated setScriptAnalysis to handle functional updates, resolving multiple type errors.
-  const setScriptAnalysis = (updater: React.SetStateAction<ScriptAnalysis | null>) => setProjectState((p: any) => ({...p, scriptAnalysis: typeof updater === 'function' ? updater(p.scriptAnalysis) : updater}));
-  const setTimelineClips = (updater: React.SetStateAction<TimelineClip[]>) => setProjectState((p: any) => ({...p, timelineClips: typeof updater === 'function' ? updater(p.timelineClips) : updater}));
-  const setRoadmapBlocks = (updater: React.SetStateAction<RoadmapBlock[]>) => setProjectState((p: any) => ({...p, roadmapBlocks: typeof updater === 'function' ? updater(p.roadmapBlocks || []) : updater}));
+  const setScriptAnalysis = (updater: React.SetStateAction<ScriptAnalysis | null>) => setProjectState((p: any) => ({ ...p, scriptAnalysis: typeof updater === 'function' ? updater(p.scriptAnalysis) : updater }));
+  const setTimelineClips = (updater: React.SetStateAction<TimelineClip[]>) => setProjectState((p: any) => ({ ...p, timelineClips: typeof updater === 'function' ? updater(p.timelineClips) : updater }));
+  const setRoadmapBlocks = (updater: React.SetStateAction<RoadmapBlock[]>) => setProjectState((p: any) => ({ ...p, roadmapBlocks: typeof updater === 'function' ? updater(p.roadmapBlocks || []) : updater }));
 
   // --- API Key Management ---
   useEffect(() => {
-      const unsubscribe = onGeminiApiKeyChange((value) => {
-          setIsKeyReady(value.length > 0);
-          if (value.length > 0) {
-              setIsCheckingKey(false);
-          }
-      });
-      return unsubscribe;
+    const unsubscribe = onGeminiApiKeyChange((value) => {
+      setIsKeyReady(value.length > 0);
+      if (value.length > 0) {
+        setIsCheckingKey(false);
+      }
+    });
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
-      const handleKeyError = () => {
-          if (envHasGeminiKey) {
-              showToast("The server-configured Gemini API key appears invalid. Please update the Vercel environment variable.", 'error');
-              return;
-          }
-          clearGeminiApiKey();
-          setIsKeyReady(false);
-          setIsCheckingKey(false);
-          showToast("Your API key seems invalid. Please select another.", 'error');
-      };
-      window.addEventListener('invalid-api-key', handleKeyError);
-      return () => window.removeEventListener('invalid-api-key', handleKeyError);
+    const handleKeyError = () => {
+      if (envHasGeminiKey) {
+        showToast("The server-configured Gemini API key appears invalid. Please update the Vercel environment variable.", 'error');
+        return;
+      }
+      clearGeminiApiKey();
+      setIsKeyReady(false);
+      setIsCheckingKey(false);
+      showToast("Your API key seems invalid. Please select another.", 'error');
+    };
+    window.addEventListener('invalid-api-key', handleKeyError);
+    return () => window.removeEventListener('invalid-api-key', handleKeyError);
   }, [envHasGeminiKey, showToast]);
 
   // --- Saving UI state (sidebar/tab) on change ---
@@ -527,7 +528,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
       });
     }
   }, [activeTab, isSidebarExpanded, user?.id]);
-  
+
   // Convert blob URL to base64 for persistence
   const blobUrlToBase64 = async (blobUrl: string): Promise<string | null> => {
     try {
@@ -570,26 +571,26 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     const stateCopy = JSON.parse(JSON.stringify(projectState));
 
     if (stateCopy.scriptAnalysis) {
-        // Strip generated variants from characters and locations, keeping the main imageUrl
-        stateCopy.scriptAnalysis.characters?.forEach((c: AnalyzedCharacter) => {
-            delete c.generations;
-            delete c.refinedGenerationUrls;
-        });
-        stateCopy.scriptAnalysis.locations?.forEach((l: AnalyzedLocation) => {
-            delete l.generations;
-            delete l.refinedGenerationUrls;
-        });
+      // Strip generated variants from characters and locations, keeping the main imageUrl
+      stateCopy.scriptAnalysis.characters?.forEach((c: AnalyzedCharacter) => {
+        delete c.generations;
+        delete c.refinedGenerationUrls;
+      });
+      stateCopy.scriptAnalysis.locations?.forEach((l: AnalyzedLocation) => {
+        delete l.generations;
+        delete l.refinedGenerationUrls;
+      });
 
-        // Strip generated variants from frames, keeping only the final selected media
-        stateCopy.scriptAnalysis.scenes?.forEach((scene: AnalyzedScene) => {
-            if (scene.frames) {
-                scene.frames.forEach((frame: Frame) => {
-                    delete frame.generations;
-                    delete frame.refinedGenerationUrls;
-                    delete frame.videoGenerations;
-                });
-            }
-        });
+      // Strip generated variants from frames, keeping only the final selected media
+      stateCopy.scriptAnalysis.scenes?.forEach((scene: AnalyzedScene) => {
+        if (scene.frames) {
+          scene.frames.forEach((frame: Frame) => {
+            delete frame.generations;
+            delete frame.refinedGenerationUrls;
+            delete frame.videoGenerations;
+          });
+        }
+      });
     }
 
     // Convert blob URLs to base64 for timeline clips
@@ -621,7 +622,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   const handleNewProject = useCallback(async (skipConfirm: boolean = false) => {
     const hasExistingProject = scriptContent || scriptAnalysis;
     if (!skipConfirm && hasExistingProject && !window.confirm("Are you sure you want to start a new project? Your current project will be cleared from this browser's storage.")) {
-        return;
+      return;
     }
 
     await createNewProject('Untitled Project');
@@ -635,173 +636,173 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   // Download project as JSON file
   const handleDownloadProject = async () => {
-      try {
-        const dataToSave = await getSerializableState();
-        const json = JSON.stringify(dataToSave, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const projectTitle = scriptAnalysis?.title || 'Untitled_Project';
-        const sanitizedTitle = projectTitle.replace(/[^a-zA-Z0-9_-]/g, '_');
-        link.download = `${sanitizedTitle}_${new Date().toISOString().split('T')[0]}.alkemy.json`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        showToast("Project downloaded successfully!");
-      } catch(e) {
-          console.error("Failed to download project", e);
-          showToast("Failed to download project.", 'error');
-      }
+    try {
+      const dataToSave = await getSerializableState();
+      const json = JSON.stringify(dataToSave, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const projectTitle = scriptAnalysis?.title || 'Untitled_Project';
+      const sanitizedTitle = projectTitle.replace(/[^a-zA-Z0-9_-]/g, '_');
+      link.download = `${sanitizedTitle}_${new Date().toISOString().split('T')[0]}.alkemy.json`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast("Project downloaded successfully!");
+    } catch (e) {
+      console.error("Failed to download project", e);
+      showToast("Failed to download project.", 'error');
+    }
   };
 
   // Load project from JSON file
   const handleLoadProject = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-      if (!file.name.endsWith('.alkemy.json')) {
-          showToast("Please select a valid .alkemy.json file.", 'error');
-          return;
-      }
+    if (!file.name.endsWith('.alkemy.json')) {
+      showToast("Please select a valid .alkemy.json file.", 'error');
+      return;
+    }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-          try {
-              const loadedData = JSON.parse(e.target?.result as string);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const loadedData = JSON.parse(e.target?.result as string);
 
-              if (window.confirm(`Load project "${loadedData.scriptAnalysis?.title || 'Untitled'}"? Your current project will be replaced.`)) {
-                  // Convert base64 back to blob URLs for timeline clips
-                  if (loadedData.timelineClips && loadedData.timelineClips.length > 0) {
-                    loadedData.timelineClips = loadedData.timelineClips.map((clip: any) => {
-                      if (clip._isBlobConverted && clip.url && clip.url.startsWith('data:')) {
-                        return { ...clip, url: base64ToBlobUrl(clip.url), _isBlobConverted: undefined };
-                      }
-                      return clip;
-                    });
-                  }
-
-                  if (loadedData.scriptAnalysis && !loadedData.scriptAnalysis.moodboardTemplates) {
-                      loadedData.scriptAnalysis.moodboardTemplates = createDefaultMoodboardTemplates();
-                  }
-                  setProjectState(loadedData);
-
-                  // Don't save to localStorage here - let auto-save handle it with proper serialization
-                  // This prevents saving blob URLs (which are created above) instead of base64
-
-                  // Clear command history when loading a new project
-                  commandHistory.clear();
-
-                  showToast("Project loaded successfully!");
-                  setActiveTab('script');
+        if (window.confirm(`Load project "${loadedData.scriptAnalysis?.title || 'Untitled'}"? Your current project will be replaced.`)) {
+          // Convert base64 back to blob URLs for timeline clips
+          if (loadedData.timelineClips && loadedData.timelineClips.length > 0) {
+            loadedData.timelineClips = loadedData.timelineClips.map((clip: any) => {
+              if (clip._isBlobConverted && clip.url && clip.url.startsWith('data:')) {
+                return { ...clip, url: base64ToBlobUrl(clip.url), _isBlobConverted: undefined };
               }
-          } catch(error) {
-              console.error("Failed to load project", error);
-              showToast("Failed to load project. File may be corrupted.", 'error');
+              return clip;
+            });
           }
-      };
-      reader.onerror = () => showToast("Failed to read file.", 'error');
-      reader.readAsText(file);
 
-      // Reset input so same file can be loaded again
-      if (event.target) event.target.value = '';
+          if (loadedData.scriptAnalysis && !loadedData.scriptAnalysis.moodboardTemplates) {
+            loadedData.scriptAnalysis.moodboardTemplates = createDefaultMoodboardTemplates();
+          }
+          setProjectState(loadedData);
+
+          // Don't save to localStorage here - let auto-save handle it with proper serialization
+          // This prevents saving blob URLs (which are created above) instead of base64
+
+          // Clear command history when loading a new project
+          commandHistory.clear();
+
+          showToast("Project loaded successfully!");
+          setActiveTab('script');
+        }
+      } catch (error) {
+        console.error("Failed to load project", error);
+        showToast("Failed to load project. File may be corrupted.", 'error');
+      }
+    };
+    reader.onerror = () => showToast("Failed to read file.", 'error');
+    reader.readAsText(file);
+
+    // Reset input so same file can be loaded again
+    if (event.target) event.target.value = '';
   };
 
   // Trigger load project from WelcomeScreen
   const handleLoadProjectFromWelcome = () => {
-      loadProjectInputRef.current?.click();
+    loadProjectInputRef.current?.click();
   };
 
   // Load demo project (creates a temporary project with demo data)
   const handleTryDemo = async () => {
-      const demoData = DEMO_PROJECT_DATA();
-      const demoState = {
-          scriptContent: DEMO_SCRIPT,
-          scriptAnalysis: demoData,
-          timelineClips: [],
-          ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
+    const demoData = DEMO_PROJECT_DATA();
+    const demoState = {
+      scriptContent: DEMO_SCRIPT,
+      scriptAnalysis: demoData,
+      timelineClips: [],
+      ui: { leftWidth: 280, rightWidth: 300, timelineHeight: 220, zoom: 1, playhead: 0 }
+    };
+
+    if (supabaseEnabled && isAuthenticated && user) {
+      // Create actual project in database with demo data
+      try {
+        const { project, error } = await projectService.createProject(user.id, 'Demo: The Inheritance');
+        if (error) throw error;
+
+        setCurrentProject(project);
+        setProjectState(demoState);
+
+        // Save demo data to the project
+        await projectService.saveProjectData(project.id, demoState);
+
+        // Refresh project list
+        await loadUserProjects();
+
+        console.log('[Database] Demo project created in database');
+        showToast("Demo project loaded! Explore all features with sample data.", 'success');
+      } catch (error) {
+        console.error('Failed to create demo project:', error);
+        showToast('Failed to create demo project', 'error');
+      }
+    } else {
+      // Anonymous users get temporary demo project
+      const tempDemoProject = {
+        id: `demo-${Date.now()}`,
+        user_id: 'anonymous',
+        title: 'Demo: The Inheritance',
+        script_content: DEMO_SCRIPT,
+        script_analysis: demoData,
+        timeline_clips: [],
+        moodboard_data: null,
+        project_settings: {},
+        is_public: false,
+        shared_with: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_accessed_at: new Date().toISOString(),
       };
 
-      if (supabaseEnabled && isAuthenticated && user) {
-        // Create actual project in database with demo data
-        try {
-          const { project, error } = await projectService.createProject(user.id, 'Demo: The Inheritance');
-          if (error) throw error;
+      setCurrentProject(tempDemoProject);
+      setProjectState(demoState);
+      setActiveTab('script');
 
-          setCurrentProject(project);
-          setProjectState(demoState);
-
-          // Save demo data to the project
-          await projectService.saveProjectData(project.id, demoState);
-
-          // Refresh project list
-          await loadUserProjects();
-
-          console.log('[Database] Demo project created in database');
-          showToast("Demo project loaded! Explore all features with sample data.", 'success');
-        } catch (error) {
-          console.error('Failed to create demo project:', error);
-          showToast('Failed to create demo project', 'error');
-        }
-      } else {
-        // Anonymous users get temporary demo project
-        const tempDemoProject = {
-          id: `demo-${Date.now()}`,
-          user_id: 'anonymous',
-          title: 'Demo: The Inheritance',
-          script_content: DEMO_SCRIPT,
-          script_analysis: demoData,
-          timeline_clips: [],
-          moodboard_data: null,
-          project_settings: {},
-          is_public: false,
-          shared_with: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_accessed_at: new Date().toISOString(),
-        };
-
-        setCurrentProject(tempDemoProject);
-        setProjectState(demoState);
-        setActiveTab('script');
-
-        console.log('[Temporary] Demo project loaded (will not persist). Sign in to save!');
-        showToast("Demo project loaded! Sign in to save your changes.", 'warning');
-      }
+      console.log('[Temporary] Demo project loaded (will not persist). Sign in to save!');
+      showToast("Demo project loaded! Sign in to save your changes.", 'warning');
+    }
   };
 
   // Auto-save to database or localStorage every 2 minutes
   useEffect(() => {
-      const autoSaveInterval = setInterval(async () => {
-          try {
-              await saveProject();
-              console.log(`[Auto-save] Project saved to ${supabaseEnabled && isAuthenticated ? 'database' : 'localStorage'}`);
-          } catch(e) {
-              console.error('[Auto-save] Failed:', e);
-              if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-                console.warn('[Auto-save] Storage quota exceeded');
-              }
-          }
-      }, 120000); // 2 minutes
+    const autoSaveInterval = setInterval(async () => {
+      try {
+        await saveProject();
+        console.log(`[Auto-save] Project saved to ${supabaseEnabled && isAuthenticated ? 'database' : 'localStorage'}`);
+      } catch (e) {
+        console.error('[Auto-save] Failed:', e);
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          console.warn('[Auto-save] Storage quota exceeded');
+        }
+      }
+    }, 120000); // 2 minutes
 
-      return () => clearInterval(autoSaveInterval);
+    return () => clearInterval(autoSaveInterval);
   }, [saveProject, supabaseEnabled, isAuthenticated]);
 
   // Keyboard shortcuts for power users
   useKeyboardShortcuts({
-      onNewProject: () => handleNewProject(false),
-      onSaveProject: handleSaveProject,
-      onLoadProject: () => {
-        if (isAuthenticated) {
-          setShowProjectSelector(true);
-        }
-      },
-      onTabSwitch: (tabIndex: number) => {
-          if (tabIndex < TABS.length) {
-              setActiveTab(TABS[tabIndex].id);
-          }
+    onNewProject: () => handleNewProject(false),
+    onSaveProject: handleSaveProject,
+    onLoadProject: () => {
+      if (isAuthenticated) {
+        setShowProjectSelector(true);
       }
+    },
+    onTabSwitch: (tabIndex: number) => {
+      if (tabIndex < TABS.length) {
+        setActiveTab(TABS[tabIndex].id);
+      }
+    }
   });
 
   // Show welcome screen if no project exists
@@ -825,81 +826,81 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     setScriptAnalysis(null);
     setAnalysisMessage('Analyzing script...');
     try {
-        const analysisResult = await analyzeScript(scriptContent, (message) => {
-            setAnalysisMessage(message);
-        });
-        
-        const initialMoodboard: Moodboard = {
-          cinematography: { notes: '', items: [] },
-          color: { notes: '', items: [] },
-          style: { notes: '', items: [] },
-          other: { notes: '', items: [] },
-        };
-        const initialTemplates = analysisResult.moodboardTemplates && analysisResult.moodboardTemplates.length > 0
-          ? analysisResult.moodboardTemplates
-          : createDefaultMoodboardTemplates();
+      const analysisResult = await analyzeScript(scriptContent, (message) => {
+        setAnalysisMessage(message);
+      });
 
-        setScriptAnalysis({ ...analysisResult, moodboard: initialMoodboard, moodboardTemplates: initialTemplates });
+      const initialMoodboard: Moodboard = {
+        cinematography: { notes: '', items: [] },
+        color: { notes: '', items: [] },
+        style: { notes: '', items: [] },
+        other: { notes: '', items: [] },
+      };
+      const initialTemplates = analysisResult.moodboardTemplates && analysisResult.moodboardTemplates.length > 0
+        ? analysisResult.moodboardTemplates
+        : createDefaultMoodboardTemplates();
+
+      setScriptAnalysis({ ...analysisResult, moodboard: initialMoodboard, moodboardTemplates: initialTemplates });
 
     } catch (error) {
-        console.error('Failed to analyze script:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        setAnalysisError(errorMessage);
-        setScriptAnalysis(null);
+      console.error('Failed to analyze script:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setAnalysisError(errorMessage);
+      setScriptAnalysis(null);
     } finally {
-        setIsAnalyzing(false);
+      setIsAnalyzing(false);
     }
   }, [scriptContent]);
 
   const handleAddScene = () => {
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        const currentAnalysis = prev ?? createEmptyScriptAnalysis();
-        const newSceneNumber = currentAnalysis.scenes.length + 1;
-        const newScene: AnalyzedScene = {
-          id: `scene-${Date.now()}`,
-          sceneNumber: newSceneNumber,
-          setting: `New Scene ${newSceneNumber}`,
-          summary: 'A new scene added by the user.',
-          frames: [],
-          wardrobeByCharacter: {},
-          setDressingItems: [],
-        };
-        return {
-            ...currentAnalysis,
-            scenes: [...currentAnalysis.scenes, newScene],
-        };
+      const currentAnalysis = prev ?? createEmptyScriptAnalysis();
+      const newSceneNumber = currentAnalysis.scenes.length + 1;
+      const newScene: AnalyzedScene = {
+        id: `scene-${Date.now()}`,
+        sceneNumber: newSceneNumber,
+        setting: `New Scene ${newSceneNumber}`,
+        summary: 'A new scene added by the user.',
+        frames: [],
+        wardrobeByCharacter: {},
+        setDressingItems: [],
+      };
+      return {
+        ...currentAnalysis,
+        scenes: [...currentAnalysis.scenes, newScene],
+      };
     });
   };
 
   const handleSetCharacters = (updater: React.SetStateAction<AnalyzedCharacter[]>) => {
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        const currentAnalysis = prev ?? createEmptyScriptAnalysis();
-        const newCharacters = typeof updater === 'function' ? updater(currentAnalysis.characters) : updater;
-        return { ...currentAnalysis, characters: newCharacters };
+      const currentAnalysis = prev ?? createEmptyScriptAnalysis();
+      const newCharacters = typeof updater === 'function' ? updater(currentAnalysis.characters) : updater;
+      return { ...currentAnalysis, characters: newCharacters };
     });
   };
 
   const handleSetLocations = (updater: React.SetStateAction<AnalyzedLocation[]>) => {
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        const currentAnalysis = prev ?? createEmptyScriptAnalysis();
-        const newLocations = typeof updater === 'function' ? updater(currentAnalysis.locations) : updater;
-        return { ...currentAnalysis, locations: newLocations };
+      const currentAnalysis = prev ?? createEmptyScriptAnalysis();
+      const newLocations = typeof updater === 'function' ? updater(currentAnalysis.locations) : updater;
+      return { ...currentAnalysis, locations: newLocations };
     });
   };
-  
+
   const handleSetMoodboard = (updater: React.SetStateAction<Moodboard | undefined>) => {
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        if (!prev) return null;
-        const newMoodboard = typeof updater === 'function' ? updater(prev.moodboard) : updater;
-        return { ...prev, moodboard: newMoodboard };
+      if (!prev) return null;
+      const newMoodboard = typeof updater === 'function' ? updater(prev.moodboard) : updater;
+      return { ...prev, moodboard: newMoodboard };
     });
   };
 
   const handleSetMoodboardTemplates = (updater: React.SetStateAction<MoodboardTemplate[]>) => {
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        const currentAnalysis = prev ?? createEmptyScriptAnalysis();
-        const nextTemplates = typeof updater === 'function' ? updater(currentAnalysis.moodboardTemplates || []) : updater;
-        return { ...currentAnalysis, moodboardTemplates: nextTemplates };
+      const currentAnalysis = prev ?? createEmptyScriptAnalysis();
+      const nextTemplates = typeof updater === 'function' ? updater(currentAnalysis.moodboardTemplates || []) : updater;
+      return { ...currentAnalysis, moodboardTemplates: nextTemplates };
     });
   };
 
@@ -908,34 +909,34 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
     const url = frame.media?.video_upscaled_url;
     if (!url) {
-        console.error("Frame has no upscaled video URL to transfer.");
-        return;
+      console.error("Frame has no upscaled video URL to transfer.");
+      return;
     }
 
     const duration = await getVideoDuration(url);
     const newClip: TimelineClip = {
-        id: frame.id,
-        timelineId: `clip-${frame.id}-${Date.now()}`,
-        sceneNumber: scene.sceneNumber,
-        shot_number: frame.shot_number,
-        description: frame.description,
-        url: url,
-        sourceDuration: duration,
-        trimStart: 0,
-        trimEnd: duration,
+      id: frame.id,
+      timelineId: `clip-${frame.id}-${Date.now()}`,
+      sceneNumber: scene.sceneNumber,
+      shot_number: frame.shot_number,
+      description: frame.description,
+      url: url,
+      sourceDuration: duration,
+      trimStart: 0,
+      trimEnd: duration,
     };
 
     setTimelineClips((prev: TimelineClip[]) => [...prev, newClip]);
 
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        if (!prev) return null;
-        return {
-            ...prev,
-            scenes: prev.scenes.map(s => s.id === scene.id
-                ? { ...s, frames: (s.frames || []).map(f => f.id === frame.id ? { ...f, transferredToTimeline: true } : f) }
-                : s
-            )
-        };
+      if (!prev) return null;
+      return {
+        ...prev,
+        scenes: prev.scenes.map(s => s.id === scene.id
+          ? { ...s, frames: (s.frames || []).map(f => f.id === frame.id ? { ...f, transferredToTimeline: true } : f) }
+          : s
+        )
+      };
     });
   }, []);
 
@@ -944,77 +945,77 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
     const clipsToTransfer: { frame: Frame; scene: AnalyzedScene }[] = [];
     scriptAnalysis.scenes.forEach(scene => {
-        (scene.frames || []).forEach(frame => {
-            if (frame.status === FrameStatus.UpscaledVideoReady && !frame.transferredToTimeline && frame.media?.video_upscaled_url) {
-                clipsToTransfer.push({ frame, scene });
-            }
-        });
+      (scene.frames || []).forEach(frame => {
+        if (frame.status === FrameStatus.UpscaledVideoReady && !frame.transferredToTimeline && frame.media?.video_upscaled_url) {
+          clipsToTransfer.push({ frame, scene });
+        }
+      });
     });
 
     if (clipsToTransfer.length === 0) {
-        alert("No new upscaled video shots to transfer.");
-        return;
+      alert("No new upscaled video shots to transfer.");
+      return;
     }
 
     const newTimelineClips: TimelineClip[] = [];
     const transferredFrameIds: { [sceneId: string]: string[] } = {};
 
     for (const { frame, scene } of clipsToTransfer) {
-        const duration = await getVideoDuration(frame.media!.video_upscaled_url!);
-        newTimelineClips.push({
-            id: frame.id,
-            timelineId: `clip-${frame.id}-${Date.now()}`,
-            sceneNumber: scene.sceneNumber,
-            shot_number: frame.shot_number,
-            description: frame.description,
-            url: frame.media!.video_upscaled_url!,
-            sourceDuration: duration,
-            trimStart: 0,
-            trimEnd: duration,
-        });
+      const duration = await getVideoDuration(frame.media!.video_upscaled_url!);
+      newTimelineClips.push({
+        id: frame.id,
+        timelineId: `clip-${frame.id}-${Date.now()}`,
+        sceneNumber: scene.sceneNumber,
+        shot_number: frame.shot_number,
+        description: frame.description,
+        url: frame.media!.video_upscaled_url!,
+        sourceDuration: duration,
+        trimStart: 0,
+        trimEnd: duration,
+      });
 
-        if (!transferredFrameIds[scene.id]) {
-            transferredFrameIds[scene.id] = [];
-        }
-        transferredFrameIds[scene.id].push(frame.id);
+      if (!transferredFrameIds[scene.id]) {
+        transferredFrameIds[scene.id] = [];
+      }
+      transferredFrameIds[scene.id].push(frame.id);
     }
 
     setTimelineClips((prev: TimelineClip[]) => [...prev, ...newTimelineClips]);
 
     setScriptAnalysis((prev: ScriptAnalysis | null) => {
-        if (!prev) return null;
-        return {
-            ...prev,
-            scenes: prev.scenes.map(scene => {
-                if (transferredFrameIds[scene.id]) {
-                    return {
-                        ...scene,
-                        frames: (scene.frames || []).map(frame =>
-                            transferredFrameIds[scene.id].includes(frame.id)
-                                ? { ...frame, transferredToTimeline: true }
-                                : frame
-                        )
-                    };
-                }
-                return scene;
-            })
-        };
+      if (!prev) return null;
+      return {
+        ...prev,
+        scenes: prev.scenes.map(scene => {
+          if (transferredFrameIds[scene.id]) {
+            return {
+              ...scene,
+              frames: (scene.frames || []).map(frame =>
+                transferredFrameIds[scene.id].includes(frame.id)
+                  ? { ...frame, transferredToTimeline: true }
+                  : frame
+              )
+            };
+          }
+          return scene;
+        })
+      };
     });
   }, [scriptAnalysis]);
-  
+
   const handleAddNewVideoClip = useCallback(async (file: File) => {
     const url = URL.createObjectURL(file);
     const duration = await getVideoDuration(url);
     const newClip: TimelineClip = {
-        id: `external-${Date.now()}`,
-        timelineId: `clip-external-${Date.now()}`,
-        sceneNumber: null,
-        shot_number: null,
-        description: file.name,
-        url: url,
-        sourceDuration: duration,
-        trimStart: 0,
-        trimEnd: duration,
+      id: `external-${Date.now()}`,
+      timelineId: `clip-external-${Date.now()}`,
+      sceneNumber: null,
+      shot_number: null,
+      description: file.name,
+      url: url,
+      sourceDuration: duration,
+      trimStart: 0,
+      trimEnd: duration,
     };
     setTimelineClips((prev: TimelineClip[]) => [...prev, newClip]);
   }, []);
@@ -1033,54 +1034,54 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
     switch (activeTab) {
       case 'script':
         return <ScriptTab
-                  scriptContent={scriptContent}
-                  analysis={scriptAnalysis}
-                  onScriptUpdate={handleScriptUpdate}
-                  isAnalyzing={isAnalyzing}
-                  analysisError={analysisError}
-                  analysisMessage={analysisMessage}
-                  onAnalyze={handleAnalyze}
-                />;
+          scriptContent={scriptContent}
+          analysis={scriptAnalysis}
+          onScriptUpdate={handleScriptUpdate}
+          isAnalyzing={isAnalyzing}
+          analysisError={analysisError}
+          analysisMessage={analysisMessage}
+          onAnalyze={handleAnalyze}
+        />;
       case 'moodboard':
         return <MoodboardTab
-                  moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
-                  onUpdateMoodboardTemplates={handleSetMoodboardTemplates}
-                />;
+          moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
+          onUpdateMoodboardTemplates={handleSetMoodboardTemplates}
+        />;
       case 'presentation':
         return <PresentationTab scriptAnalysis={scriptAnalysis} />;
       case 'cast_locations':
         return <CastLocationsTab
-                  characters={scriptAnalysis?.characters || []}
-                  setCharacters={handleSetCharacters}
-                  locations={scriptAnalysis?.locations || []}
-                  setLocations={handleSetLocations}
-                  moodboard={scriptAnalysis?.moodboard}
-                  moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
-                />;
+          characters={scriptAnalysis?.characters || []}
+          setCharacters={handleSetCharacters}
+          locations={scriptAnalysis?.locations || []}
+          setLocations={handleSetLocations}
+          moodboard={scriptAnalysis?.moodboard}
+          moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
+        />;
       case '3d_worlds':
         return <ThreeDWorldsTab scriptAnalysis={scriptAnalysis} />;
       case 'compositing':
         return <CompositingTab
-                  scriptAnalysis={scriptAnalysis}
-                  onUpdateAnalysis={setScriptAnalysis}
-                  onAddScene={handleAddScene}
-                  onTransferToTimeline={handleTransferToTimeline}
-                  onTransferAllToTimeline={handleTransferAllToTimeline}
-                  onBack={() => setActiveTab('script')}
-                  currentProject={currentProject}
-                  user={user}
-                />;
+          scriptAnalysis={scriptAnalysis}
+          onUpdateAnalysis={setScriptAnalysis}
+          onAddScene={handleAddScene}
+          onTransferToTimeline={handleTransferToTimeline}
+          onTransferAllToTimeline={handleTransferAllToTimeline}
+          onBack={() => setActiveTab('script')}
+          currentProject={currentProject}
+          user={user}
+        />;
       case 'generate':
         return <GenerateTab user={user} />;
       case 'timeline':
         return <FramesTab
-                  clips={timelineClips}
-                  onUpdateClips={setTimelineClips}
-                  onAddNewVideoClip={handleAddNewVideoClip}
-                  projectState={projectState}
-                  onUpdateProjectState={setProjectState}
-                  onSave={handleSaveProject}
-                />;
+          clips={timelineClips}
+          onUpdateClips={setTimelineClips}
+          onAddNewVideoClip={handleAddNewVideoClip}
+          projectState={projectState}
+          onUpdateProjectState={setProjectState}
+          onSave={handleSaveProject}
+        />;
       case 'wan_transfer':
         return <WanTransferTab scriptAnalysis={scriptAnalysis} />;
       case 'exports':
@@ -1091,14 +1092,14 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
         return <RoadmapTab blocks={roadmapBlocks || []} onUpdateBlocks={setRoadmapBlocks} />;
       default:
         return <ScriptTab
-                  scriptContent={scriptContent}
-                  analysis={scriptAnalysis}
-                  onScriptUpdate={handleScriptUpdate}
-                  isAnalyzing={isAnalyzing}
-                  analysisError={analysisError}
-                  analysisMessage={analysisMessage}
-                  onAnalyze={handleAnalyze}
-                />;
+          scriptContent={scriptContent}
+          analysis={scriptAnalysis}
+          onScriptUpdate={handleScriptUpdate}
+          isAnalyzing={isAnalyzing}
+          analysisError={analysisError}
+          analysisMessage={analysisMessage}
+          onAnalyze={handleAnalyze}
+        />;
     }
   };
 
@@ -1109,13 +1110,13 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   if (authLoading) {
     return (
-        <div className="flex items-center justify-center h-screen bg-[#0B0B0B]">
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 border-4 border-t-transparent border-[#dfec2d] rounded-full"
-            />
-        </div>
+      <div className="flex items-center justify-center h-screen bg-[#0B0B0B]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-t-transparent border-[#dfec2d] rounded-full"
+        />
+      </div>
     );
   }
 
@@ -1157,13 +1158,13 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
 
   if (isCheckingKey) {
     return (
-        <div className="flex items-center justify-center h-screen bg-[#0B0B0B]">
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-12 h-12 border-4 border-t-transparent border-[#dfec2d] rounded-full"
-            />
-        </div>
+      <div className="flex items-center justify-center h-screen bg-[#0B0B0B]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-t-transparent border-[#dfec2d] rounded-full"
+        />
+      </div>
     );
   }
 
@@ -1239,147 +1240,147 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
   }
 
 
-const activeTabMeta = TABS.find(tab => tab.id === activeTab);
-const activePhase = TABS_CONFIG.find(section => section.tabs.some(tab => tab.id === activeTab))?.name ?? 'Workspace';
+  const activeTabMeta = TABS.find(tab => tab.id === activeTab);
+  const activePhase = TABS_CONFIG.find(section => section.tabs.some(tab => tab.id === activeTab))?.name ?? 'Workspace';
 
-return (
-  <div className="relative flex min-h-screen overflow-hidden bg-[var(--color-background-primary)]">
-    <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[#dfec2d]/10 blur-3xl" />
-    <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-[#dfec2d]/10 blur-3xl" />
+  return (
+    <div className="relative flex min-h-screen overflow-hidden bg-[var(--color-background-primary)]">
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[#dfec2d]/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-[-10%] h-[420px] w-[420px] rounded-full bg-[#dfec2d]/10 blur-3xl" />
 
-    <Sidebar
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      isSidebarExpanded={isSidebarExpanded}
-      setIsSidebarExpanded={setIsSidebarExpanded}
-      onNewProject={handleNewProject}
-    />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isSidebarExpanded={isSidebarExpanded}
+        setIsSidebarExpanded={setIsSidebarExpanded}
+        onNewProject={handleNewProject}
+      />
 
-    <div className="relative flex flex-1 flex-col">
-      <motion.header
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="sticky top-0 z-30 border-b border-[var(--color-border-color)] bg-[var(--color-background-primary)]/95 backdrop-blur-xl text-[var(--color-text-primary)] shadow-lg shadow-black/10"
-      >
-        <div className="flex items-center justify-between gap-6 px-8 py-5">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">{activeTabMeta?.name ?? 'Alkemy AI Studio'}</h1>
-              {scriptAnalysis?.title && (
-                <span className="rounded-full px-3 py-1 text-xs font-medium border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)]">
-                  {scriptAnalysis.title}
-                </span>
+      <div className="relative flex flex-1 flex-col">
+        <motion.header
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+          className="sticky top-0 z-30 border-b border-[var(--color-border-color)] bg-[var(--color-background-primary)]/95 backdrop-blur-xl text-[var(--color-text-primary)] shadow-lg shadow-black/10"
+        >
+          <div className="flex items-center justify-between gap-6 px-8 py-5">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">{activeTabMeta?.name ?? 'Alkemy AI Studio'}</h1>
+                {scriptAnalysis?.title && (
+                  <span className="rounded-full px-3 py-1 text-xs font-medium border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)]">
+                    {scriptAnalysis.title}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs uppercase tracking-[0.4em] text-[var(--color-text-tertiary)]">{activePhase}</p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 rounded-full px-4 py-2 bg-[var(--color-surface-card)] text-[var(--color-text-secondary)]">
+                <motion.span
+                  animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="inline-flex h-2 w-2 rounded-full bg-[#dfec2d] shadow-[0_0_12px_rgba(223,236,45,0.8)]"
+                />
+                <span className="text-xs font-medium uppercase tracking-[0.3em]">Live Sync</span>
+              </div>
+
+              <motion.button
+                onClick={() => setActiveTab('roadmap')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.96 }}
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-[#dfec2d]/40 hover:text-[var(--color-text-primary)] hover:shadow-lg hover:shadow-[#dfec2d]/20"
+                title="Roadmap"
+              >
+                <RoadmapIcon className="h-5 w-5" />
+              </motion.button>
+
+              <motion.button
+                onClick={toggleTheme}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.96 }}
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-[#dfec2d]/40 hover:text-[var(--color-text-primary)] hover:shadow-lg hover:shadow-[#dfec2d]/20"
+              >
+                {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+                <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
+              </motion.button>
+
+              {/* User Menu or Sign In - Only show if Supabase is configured */}
+              {isSupabaseConfigured() && (
+                isAuthenticated ? (
+                  <UserMenu
+                    onProfileClick={() => console.log('Profile clicked')}
+                    onSettingsClick={() => console.log('Settings clicked')}
+                    onProjectsClick={() => setShowProjectSelector(true)}
+                  />
+                ) : (
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setAuthModalMode('login');
+                      setShowAuthModal(true);
+                    }}
+                    className="!py-2"
+                  >
+                    Sign In
+                  </Button>
+                )
               )}
             </div>
-            <p className="text-xs uppercase tracking-[0.4em] text-[var(--color-text-tertiary)]">{activePhase}</p>
           </div>
+        </motion.header>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 rounded-full px-4 py-2 bg-[var(--color-surface-card)] text-[var(--color-text-secondary)]">
-              <motion.span
-                animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                className="inline-flex h-2 w-2 rounded-full bg-[#dfec2d] shadow-[0_0_12px_rgba(223,236,45,0.8)]"
-              />
-              <span className="text-xs font-medium uppercase tracking-[0.3em]">Live Sync</span>
-            </div>
-
-            <motion.button
-              onClick={() => setActiveTab('roadmap')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-[#dfec2d]/40 hover:text-[var(--color-text-primary)] hover:shadow-lg hover:shadow-[#dfec2d]/20"
-              title="Roadmap"
-            >
-              <RoadmapIcon className="h-5 w-5" />
-            </motion.button>
-
-            <motion.button
-              onClick={toggleTheme}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all border border-[var(--color-border-color)] bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] hover:border-[#dfec2d]/40 hover:text-[var(--color-text-primary)] hover:shadow-lg hover:shadow-[#dfec2d]/20"
-            >
-              {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-              <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
-            </motion.button>
-
-            {/* User Menu or Sign In - Only show if Supabase is configured */}
-            {isSupabaseConfigured() && (
-              isAuthenticated ? (
-                <UserMenu
-                  onProfileClick={() => console.log('Profile clicked')}
-                  onSettingsClick={() => console.log('Settings clicked')}
-                  onProjectsClick={() => setShowProjectSelector(true)}
-                />
-              ) : (
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    setAuthModalMode('login');
-                    setShowAuthModal(true);
-                  }}
-                  className="!py-2"
+        <main className="relative flex-1 overflow-hidden bg-[var(--color-background-secondary)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(223,236,45,0.06),_transparent_55%)]" />
+          <div className="relative h-full w-full overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1920px] px-8 py-10 min-h-full">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 24, scale: 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -18, scale: 0.985 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className="text-[var(--color-text-primary)]"
                 >
-                  Sign In
-                </Button>
-              )
-            )}
+                  {renderContent()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
-      </motion.header>
+        </main>
+      </div>
 
-      <main className="relative flex-1 overflow-hidden bg-[var(--color-background-secondary)]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(223,236,45,0.06),_transparent_55%)]" />
-        <div className="relative h-full w-full overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1920px] px-8 py-10 min-h-full">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 24, scale: 0.985 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -18, scale: 0.985 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="text-[var(--color-text-primary)]"
-              >
-                {renderContent()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-      </main>
-    </div>
+      <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
-    <DirectorWidget scriptAnalysis={scriptAnalysis} setScriptAnalysis={setScriptAnalysis} />
-    <Toast toast={toast} onClose={() => setToast(null)} />
+      {/* Auth Modal - Only render if Supabase is configured */}
+      {isSupabaseConfigured() && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode={authModalMode}
+          onSuccess={async () => {
+            setShowAuthModal(false);
+            showToast('Successfully signed in!', 'success');
+            // If user doesn't have an active project, create one
+            if (!hasActiveProject) {
+              await createNewProject('Untitled Project');
+            }
+          }}
+        />
+      )}
 
-    {/* Auth Modal - Only render if Supabase is configured */}
-    {isSupabaseConfigured() && (
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        initialMode={authModalMode}
-        onSuccess={async () => {
-          setShowAuthModal(false);
-          showToast('Successfully signed in!', 'success');
-          // If user doesn't have an active project, create one
-          if (!hasActiveProject) {
-            await createNewProject('Untitled Project');
-          }
-        }}
+      {/* Project Selector Modal */}
+      <ProjectSelectorModal
+        isOpen={showProjectSelector}
+        onClose={() => setShowProjectSelector(false)}
+        onSelectProject={loadProject}
+        currentProjectId={currentProject?.id}
       />
-    )}
-
-    {/* Project Selector Modal */}
-    <ProjectSelectorModal
-      isOpen={showProjectSelector}
-      onClose={() => setShowProjectSelector(false)}
-      onSelectProject={loadProject}
-      currentProjectId={currentProject?.id}
-    />
-  </div>
-);
+    </div>
+  );
 };
 
 // Simplified - no protected routes needed
