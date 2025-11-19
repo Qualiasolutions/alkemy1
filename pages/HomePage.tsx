@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,13 @@ const HomePage = () => {
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login');
+
+  // Auto-redirect to /app if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && supabaseConfigured) {
+      navigate('/app');
+    }
+  }, [isAuthenticated, supabaseConfigured, navigate]);
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
@@ -35,7 +42,7 @@ const HomePage = () => {
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
-    navigate('/app');
+    // Don't navigate immediately - let the useEffect handle it after auth state updates
   };
 
   return (
