@@ -441,13 +441,37 @@ async function createTrainingZip(
             onProgress?.(35 + (i / imageUrls.length) * 10, `Packaging image ${i + 1}/${imageUrls.length}...`);
 
             try {
-                // Download image as blob
-                const response = await fetch(imageUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to download image: ${response.status}`);
-                }
+                // First attempt: direct download with CORS mode
+                let response: Response;
+                let blob: Blob;
 
-                const blob = await response.blob();
+                try {
+                    response = await fetch(imageUrl, {
+                        mode: 'cors',
+                        credentials: 'omit',  // Don't send cookies for public buckets
+                        headers: {
+                            'Accept': 'image/jpeg,image/png,image/webp,image/*'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Direct fetch failed: ${response.status}`);
+                    }
+
+                    blob = await response.blob();
+                } catch (directError) {
+                    // Fallback: use image proxy for CORS bypass
+                    console.warn(`[Character Identity] Direct download failed for image ${i + 1}, using proxy...`, directError);
+
+                    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                    const proxyResponse = await fetch(proxyUrl);
+
+                    if (!proxyResponse.ok) {
+                        throw new Error(`Proxy download also failed: ${proxyResponse.status}`);
+                    }
+
+                    blob = await proxyResponse.blob();
+                }
 
                 // Extract file extension from URL or blob type
                 const urlExt = imageUrl.split('.').pop()?.split('?')[0];

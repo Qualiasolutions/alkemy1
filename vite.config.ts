@@ -96,6 +96,31 @@ export default defineConfig(({ mode }) => {
   const supabaseUrl = (process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '').trim();
   const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '').trim();
 
+  // Log configuration status (without exposing keys)
+  console.log('[Vite Config] API Keys Status:', {
+    GEMINI: !!geminiKey,
+    BFL: !!bflApiKey,
+    FAL: !!falKey,
+    TOGETHER: !!togetherKey,
+    WAN: !!wanKey,
+    LUMA: !!lumaKey,
+    HUNYUAN: !!hunyuanApiKey,
+    SUPABASE_URL: !!supabaseUrl,
+    SUPABASE_ANON_KEY: !!supabaseAnonKey,
+    mode: mode
+  });
+
+  // Warn if critical keys are missing
+  if (!falKey && mode === 'production') {
+    console.warn('[Vite Config] WARNING: FAL_API_KEY not set - Character Identity training will fail');
+  }
+  if (!geminiKey && mode === 'production') {
+    console.warn('[Vite Config] WARNING: GEMINI_API_KEY not set - Script analysis will fail');
+  }
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('[Vite Config] WARNING: Supabase configuration missing - Authentication and persistence will fail');
+  }
+
   // Explicitly set demo mode to false (only enable via env var if needed)
   const forceDemoMode = process.env.FORCE_DEMO_MODE || env.FORCE_DEMO_MODE || 'false';
   const useFallbackMode = process.env.USE_FALLBACK_MODE || env.USE_FALLBACK_MODE || 'false';

@@ -31,13 +31,13 @@ export const THEMES: Record<ThemeMode, ThemePalette> = {
     text_primary: '#FFFFFF',
     text_secondary: '#B4B4B4',    // Softer secondary text
     text_tertiary: '#7A7A7A',     // Enhanced tertiary contrast
-    accent_primary: '#00D4AA',    // Modern cyan-green
-    accent_secondary: '#00F5D4',  // Bright accent
+    accent_primary: '#dfec2d',    // Yellow accent
+    accent_secondary: '#dfec2d',  // Yellow accent
     border_primary: '#2A2A2D',    // Subtle borders with hint of blue
     border_secondary: '#3A3A3D',  // Enhanced border visibility
     // Modern additions
     gradient_primary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    gradient_secondary: 'linear-gradient(135deg, #00D4AA 0%, #00F5D4 100%)',
+    gradient_secondary: '#dfec2d',
     glass_bg: 'rgba(255, 255, 255, 0.05)',
     glass_border: 'rgba(255, 255, 255, 0.1)',
     shadow_primary: '0 8px 32px rgba(0, 0, 0, 0.3)',
@@ -51,13 +51,13 @@ export const THEMES: Record<ThemeMode, ThemePalette> = {
     text_primary: '#0A0A0A',      // Softer black
     text_secondary: '#5A5A5A',    // Enhanced readability
     text_tertiary: '#8A8A8A',     // Better contrast
-    accent_primary: '#00B894',    // Consistent green
-    accent_secondary: '#00CEC9',  // Teal accent
+    accent_primary: '#dfec2d',    // Yellow accent
+    accent_secondary: '#dfec2d',  // Yellow accent
     border_primary: '#E0E0E0',    // Subtle borders
     border_secondary: '#D0D0D0',  // Clear dividers
     // Modern additions
     gradient_primary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    gradient_secondary: 'linear-gradient(135deg, #00B894 0%, #00CEC9 100%)',
+    gradient_secondary: '#dfec2d',
     glass_bg: 'rgba(255, 255, 255, 0.7)',
     glass_border: 'rgba(255, 255, 255, 0.8)',
     shadow_primary: '0 8px 32px rgba(0, 0, 0, 0.1)',

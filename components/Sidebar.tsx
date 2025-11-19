@@ -89,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                                 {...animationPresets.buttonPress}
                                 className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover-lift ${
                                   isActive
-                                    ? 'text-white shadow-lg'
+                                    ? 'text-black shadow-lg'
                                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                                 }`}
                                 style={{
@@ -99,11 +99,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isSidebarExp
                                 {isActive && (
                                   <motion.span
                                     layoutId="sidebar-active-pill"
-                                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-[var(--color-accent-secondary)]/25 via-[var(--color-accent-secondary)]/15 to-[var(--color-accent-secondary)]/10 border-l-2 border-[var(--color-accent-secondary)]"
+                                    className="absolute inset-0 rounded-xl"
                                     transition={{ type: 'spring', stiffness: 420, damping: 38 }}
                                   />
                                 )}
-                                <span className={`w-5 h-5 flex-shrink-0 relative z-10 ${isActive ? 'text-[var(--color-accent-secondary)]' : ''}`}>
+                                <span className={`w-5 h-5 flex-shrink-0 relative z-10 ${isActive ? 'text-black' : ''}`}>
                                   <img src={tab.icon} alt={tab.name} className="w-full h-full" />
                                 </span>
                                 <span className="whitespace-nowrap relative z-10">{tab.name}</span>

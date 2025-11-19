@@ -1,7 +1,7 @@
 /**
  * FAL.AI Video Generation Service
  * Integrates with FAL.AI API for high-quality video generation
- * Supports: Kling 2.5, SeedDream v4
+ * Supports: Kling 2.1 Pro, SeedDream v4, WAN 2.1
  */
 
 import { getFallbackVideoBlobs } from './fallbackContent';
@@ -132,7 +132,7 @@ export function isVideoFalApiAvailable(): boolean {
 /**
  * Generate video using FAL.AI API
  * @param prompt - Text prompt for video generation
- * @param variant - Video model variant (Kling 2.5, SeedDream v4)
+ * @param variant - Video model variant (Kling 2.1 Pro, SeedDream v4, WAN 2.1)
  * @param referenceImageUrl - Optional reference image for image-to-video
  * @param duration - Video duration in seconds
  * @param aspectRatio - Video aspect ratio
@@ -141,7 +141,7 @@ export function isVideoFalApiAvailable(): boolean {
  */
 export async function generateVideoWithFal(
     prompt: string,
-    variant: VideoModelVariant = 'Kling 2.5',
+    variant: VideoModelVariant = 'Kling 2.1 Pro',
     referenceImageUrl?: string,
     duration: number = 5,
     aspectRatio: '16:9' | '9:16' | '1:1' = '16:9',
@@ -196,7 +196,7 @@ export async function generateVideoWithFal(
         };
 
         // Add model-specific parameters
-        if (variant === 'Kling 2.5') {
+        if (variant.includes('Kling')) {
             requestBody.duration = clampedDuration;
             if (referenceImageUrl) {
                 requestBody.image_url = referenceImageUrl;
