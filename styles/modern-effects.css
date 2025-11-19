@@ -27,7 +27,7 @@
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #00D4AA 0%, #00F5D4 100%);
+  background: #dfec2d;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -35,11 +35,11 @@
 
 /* Enhanced Shadows */
 .shadow-glow {
-  box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+  box-shadow: 0 0 20px rgba(223, 236, 45, 0.3);
 }
 
 .shadow-glow-accent {
-  box-shadow: 0 0 20px rgba(0, 245, 212, 0.3);
+  box-shadow: 0 0 20px rgba(223, 236, 45, 0.3);
 }
 
 .shadow-depth {
@@ -97,7 +97,7 @@
 
 .focus-ring:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.3);
+  box-shadow: 0 0 0 3px rgba(223, 236, 45, 0.3);
 }
 
 /* Modern Loading Animation */

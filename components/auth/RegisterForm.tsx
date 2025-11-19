@@ -194,7 +194,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="text-sm text-green-600 bg-green-50 dark:bg-green-950/30 p-3 rounded-lg"
+                        className="text-sm text-[#dfec2d] bg-[#dfec2d]/10 dark:bg-[#dfec2d]/5/30 p-3 rounded-lg"
                     >
                         {successMessage}
                     </motion.div>

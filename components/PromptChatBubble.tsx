@@ -179,7 +179,7 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
                         message.type === 'user'
                           ? 'bg-gradient-to-r from-[#dfec2d] to-[#b3e617] text-black font-medium'
                           : message.text.includes('✨')
-                          ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                          ? 'bg-[#dfec2d]/100/20 text-[#dfec2d] border border-[#dfec2d]/30'
                           : 'bg-red-500/20 text-red-300 border border-red-500/30'
                       }`}
                     >

@@ -305,7 +305,7 @@ const Card: React.FC<{
                     animate={{ scale: 1, opacity: 1 }}
                     className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${
                         hasImage
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            ? 'bg-[#dfec2d]/100/20 text-[#dfec2d] border border-[#dfec2d]/30'
                             : 'bg-gray-500/20 text-gray-500 border border-gray-500/30'
                     }`}
                 >
@@ -438,11 +438,11 @@ const Card: React.FC<{
                                 <motion.div
                                     animate={hasImage ? { scale: [1, 1.2, 1] } : {}}
                                     transition={{ duration: 2, repeat: Infinity }}
-                                    className={`w-2 h-2 rounded-full ${hasImage ? 'bg-green-500' : 'bg-gray-500'}`}
+                                    className={`w-2 h-2 rounded-full ${hasImage ? 'bg-[#dfec2d]/100' : 'bg-gray-500'}`}
                                 />
                                 <span className={`text-xs font-medium ${
                                     hasImage
-                                        ? 'text-green-400'
+                                        ? 'text-[#dfec2d]'
                                         : isDark ? 'text-gray-500' : 'text-gray-400'
                                 }`}>
                                     {hasImage ? 'Image Set' : 'No Image'}

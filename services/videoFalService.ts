@@ -43,21 +43,30 @@ console.log('[Video FAL Service] Environment Variables:', {
 // Updated 2025-11-19: Fixed endpoints to match Fal.ai API v2.1
 const VIDEO_MODEL_CONFIG = {
     'Kling 2.1 Pro': {
-        apiUrl: 'https://fal.run/fal-ai/kling-video/v2.1/pro/text-to-video',
+        apiUrl: 'https://fal.run/fal-ai/kling-video/v2.1/pro/image-to-video',
         imageToVideoUrl: 'https://fal.run/fal-ai/kling-video/v2.1/pro/image-to-video',
         displayName: 'Kling 2.1 Pro',
         description: 'Professional-grade cinematic video generation with enhanced motion',
         supportsImageToVideo: true,
-        supportsTextToVideo: true,
+        supportsTextToVideo: false, // Pro tier is image-to-video only
         maxDuration: 10, // seconds
     },
     'Kling 2.1 Standard': {
-        apiUrl: 'https://fal.run/fal-ai/kling-video/v2.1/standard/text-to-video',
+        apiUrl: 'https://fal.run/fal-ai/kling-video/v2.1/standard/image-to-video',
         imageToVideoUrl: 'https://fal.run/fal-ai/kling-video/v2.1/standard/image-to-video',
         displayName: 'Kling 2.1 Standard',
         description: 'Cost-efficient high-quality video generation',
         supportsImageToVideo: true,
-        supportsTextToVideo: true,
+        supportsTextToVideo: false, // Standard tier is image-to-video only
+        maxDuration: 10, // seconds
+    },
+    'Kling 2.1 Master': {
+        apiUrl: 'https://fal.run/fal-ai/kling-video/v2.1/master/text-to-video',
+        imageToVideoUrl: 'https://fal.run/fal-ai/kling-video/v2.1/master/image-to-video',
+        displayName: 'Kling 2.1 Master',
+        description: 'Premium tier with both text-to-video and image-to-video support',
+        supportsImageToVideo: true,
+        supportsTextToVideo: true, // Only Master tier supports text-to-video
         maxDuration: 10, // seconds
     },
     'WAN 2.1': {
@@ -213,6 +222,26 @@ export async function generateVideoWithFal(
             // SeedDream requires reference image
             if (!referenceImageUrl) {
                 throw new Error('SeedDream v4 requires a reference image.');
+            }
+            requestBody.image_url = referenceImageUrl;
+            requestBody.duration = clampedDuration;
+            if (seed !== undefined) {
+                requestBody.seed = seed;
+            }
+        } else if (variant === 'WAN 2.1') {
+            // WAN requires reference image
+            if (!referenceImageUrl) {
+                throw new Error('WAN 2.1 requires a reference image for video generation.');
+            }
+            requestBody.image_url = referenceImageUrl;
+            requestBody.duration = clampedDuration;
+            if (seed !== undefined) {
+                requestBody.seed = seed;
+            }
+        } else if (variant === 'Veo 2') {
+            // Veo 2 requires reference image
+            if (!referenceImageUrl) {
+                throw new Error('Veo 2 requires a reference image for video generation.');
             }
             requestBody.image_url = referenceImageUrl;
             requestBody.duration = clampedDuration;

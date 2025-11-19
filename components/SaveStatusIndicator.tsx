@@ -77,7 +77,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
     if (saveState.isSaving) return 'text-[var(--color-accent-primary)]';
     if (saveState.saveError) return 'text-red-500';
     if (saveState.hasUnsavedChanges) return 'text-[var(--color-accent-primary)]';
-    return 'text-green-500';
+    return 'text-[#dfec2d]';
   };
 
   const getStatusIcon = () => {

@@ -97,7 +97,7 @@ const ResetPasswordPage: React.FC = () => {
                             style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
                         >
                             <svg
-                                className="w-8 h-8 text-green-500"
+                                className="w-8 h-8 text-[#dfec2d]"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"

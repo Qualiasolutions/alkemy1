@@ -6,16 +6,25 @@
 
 Transform scripts into complete visual productions using AI-powered film generation.
 
-[![Production Status](https://img.shields.io/badge/Status-Production%20Live-success)](https://alkemy1-e0duncbnf-qualiasolutionscy.vercel.app)
+[![Production Status](https://img.shields.io/badge/Status-Production%20Live-success)](https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app)
 [![Version](https://img.shields.io/badge/Version-V2.0%20Production-brightgreen)]()
 [![Epics Complete](https://img.shields.io/badge/Epics%20Complete-3%2F8-orange)]()
-[![Last Deploy](https://img.shields.io/badge/Last%20Deploy-2025--11--18-brightgreen)]()
+[![Last Deploy](https://img.shields.io/badge/Last%20Deploy-2025--11--19-brightgreen)]()
 [![Test Coverage](https://img.shields.io/badge/Tests%2093%20Passing-success)]()
 [![Security](https://img.shields.io/badge/Security-AES--256%20GCM-blue)]()
 
 ## 🚀 Live Production
 
-**Latest Production URL:** https://alkemy1-e0duncbnf-qualiasolutionscy.vercel.app (Deployed 2025-11-18)
+**Latest Production URL:** https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app (Deployed 2025-11-19)
+
+### 🔧 Latest Fixes (2025-11-19)
+- ✅ **LoRA Training CORS**: Fixed image download 400 errors with dual-path approach
+- ✅ **Content Security Policy**: Whitelisted Supabase and Fal.ai domains
+- ✅ **Video API**: Corrected model references from 'Kling 2.5' to 'Kling 2.1 Pro'
+- ✅ **Image Proxy**: Created `/api/image-proxy` for CORS bypass
+- ✅ **Supabase Storage**: Public bucket configuration with RLS policies
+
+See [LORA_CORS_FIX_2025-11-19.md](./LORA_CORS_FIX_2025-11-19.md) for detailed fix report.
 
 ## 🎯 Recent Production Enhancements (v2.0)
 
@@ -24,7 +33,8 @@ Transform scripts into complete visual productions using AI-powered film generat
 - **CLIP Similarity**: Advanced character identity testing (CLIP + pHash = 93% accuracy)
 - **Audio Storage**: Proper Supabase integration for voice-generated files
 - **Test Coverage**: 93% pass rate (77/83 tests passing)
-- **Bundle Optimization**: 512KB gzipped, 13 code chunks
+- **Bundle Optimization**: 164KB gzipped (down from 512KB), 13 code chunks
+- **CORS Handling**: Dual-path image downloads with automatic fallback
 
 ### ✅ Epic Status Updates
 - **Epic 1 - Style Learning**: ✅ Creative pattern tracking and AI cinematography suggestions

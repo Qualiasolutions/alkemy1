@@ -163,7 +163,7 @@ export function BMADStatusTab() {
     switch (status) {
       case 'complete':
       case 'passed':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+        return <CheckCircle2 className="w-4 h-4 text-[#dfec2d]" />;
       case 'in_progress':
         return <Clock className="w-4 h-4 text-yellow-500" />;
       case 'blocked':
@@ -261,7 +261,7 @@ export function BMADStatusTab() {
               <CardTitle className="text-sm text-muted-foreground">Acceptance Criteria</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{dashboardStats.passed_criteria}</div>
+              <div className="text-2xl font-bold text-[#dfec2d]">{dashboardStats.passed_criteria}</div>
               <div className="text-xs text-muted-foreground mt-1">
                 {dashboardStats.pending_criteria} pending, {dashboardStats.failed_criteria} failed
               </div>

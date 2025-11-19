@@ -177,7 +177,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
       )}
 
       {isFFmpegInitialized && timelineClips.length > 0 && (
-        <div className={`bg-green-900/20 border border-green-700 text-green-300 text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
+        <div className={`bg-[#dfec2d]/10/20 border border-[#dfec2d] text-[#dfec2d] text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
           <CheckIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
             <span className="font-semibold">Ready to Export:</span> {timelineClips.length} clip{timelineClips.length !== 1 ? 's' : ''} loaded from timeline. FFmpeg.wasm is initialized and ready for rendering.
@@ -294,7 +294,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
                     job.status === 'processing'
                       ? 'border-teal-500/50'
                       : job.status === 'completed'
-                      ? 'border-green-500/50'
+                      ? 'border-[#dfec2d]/50'
                       : job.status === 'failed'
                       ? 'border-red-500/50'
                       : 'border-zinc-700'
@@ -344,7 +344,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
                   )}
 
                   {job.status === 'completed' && (
-                    <div className="flex items-center gap-2 text-xs text-green-400">
+                    <div className="flex items-center gap-2 text-xs text-[#dfec2d]">
                       <CheckIcon className="w-4 h-4" />
                       <span>Render complete • {((job.endTime! - job.startTime!) / 1000).toFixed(1)}s</span>
                     </div>

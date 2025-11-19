@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/Button';
 import { generateVisual, animateFrame, refineVariant, upscaleImage } from '../services/aiService';
-import { generateVideoWithKling, refineVideoWithWAN } from '../services/videoFalService';
+import { generateVideoWithKling, refineVideoWithWAN, generateVideoWithVeo2 } from '../services/videoFalService';
 import { generateVideoFromTextWan, generateVideoFromImageWan } from '../services/wanService';
 import { AlkemyLoadingIcon, ImagePlusIcon, FilmIcon, DownloadIcon, XIcon, PaperclipIcon, SparklesIcon, FourKIcon, Trash2Icon, ExpandIcon } from '../components/icons/Icons';
 import { useTheme } from '../theme/ThemeContext';
@@ -25,7 +25,7 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
     const { isDark } = useTheme();
     const [mode, setMode] = useState<'image' | 'video'>('image');
     const [prompt, setPrompt] = useState('');
-    const [model, setModel] = useState<string>('FLUX Schnell');
+    const [model, setModel] = useState<string>('FLUX.1.1 Pro (FAL)');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [generationCount, setGenerationCount] = useState(1);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -43,8 +43,6 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
 
     // Image models - Removed BFL models that have CORS issues
     const imageModels = [
-        'FLUX Schnell',           // Free via Pollinations
-        'Stable Diffusion',       // Free via Pollinations
         'FLUX.1.1 Pro (FAL)',     // FAL with LoRA support
         'FLUX.1 Kontext (FAL)',   // FAL with LoRA support
         'FLUX Ultra (FAL)',       // FAL with LoRA support
@@ -55,9 +53,10 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
     // Video models
     const videoModels = [
         'Veo 3.1 Fast',
-        'Kling 2.5',
-        'SeedDream v4',
-        'WAN Video',
+        'Kling 2.1 Master',
+        'Kling 2.1 Pro',
+        'WAN 2.1',
+        'Veo 2',
     ];
 
     const aspectRatios = ['16:9', '9:16', '1:1', '4:3', '3:4'];
@@ -140,9 +139,27 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
                 let referenceImageUrl = attachedImage;
 
                 try {
-                    if (model === 'Kling 2.5') {
-                        // Kling 2.5 supports both text-to-video and image-to-video
-                        console.log('[Video Generation] Using Kling 2.5...');
+                    if (model === 'Kling 2.1 Master' || model === 'Kling 2.1 Pro') {
+                        // Kling models - Master supports text-to-video, Pro is image-to-video only
+                        console.log(`[Video Generation] Using ${model}...`);
+
+                        // Pro tier requires a reference image
+                        if (model === 'Kling 2.1 Pro' && !referenceImageUrl) {
+                            // Generate reference image first
+                            setProgress(10);
+                            const imageResult = await generateVisual(
+                                `A single cinematic frame: ${prompt}. Professional photography, detailed, high quality.`,
+                                'FLUX.1.1 Pro (FAL)',
+                                [],
+                                aspectRatio,
+                                (prog) => setProgress(10 + Math.floor(prog * 0.3)),
+                                `video-frame-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                                undefined,
+                                undefined
+                            );
+                            referenceImageUrl = imageResult.url;
+                        }
+
                         videoUrl = await generateVideoWithKling(
                             prompt,
                             referenceImageUrl,
@@ -150,15 +167,15 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
                             aspectRatio as '16:9' | '9:16' | '1:1',
                             (prog) => setProgress(prog)
                         );
-                    } else if (model === 'SeedDream v4') {
-                        // SeedDream v4 requires a reference image
-                        console.log('[Video Generation] Using SeedDream v4...');
+                    } else if (model === 'WAN 2.1' || model === 'Veo 2') {
+                        // WAN 2.1 and Veo 2 require reference images
+                        console.log(`[Video Generation] Using ${model}...`);
                         if (!referenceImageUrl) {
                             // Generate reference image first
                             setProgress(10);
                             const imageResult = await generateVisual(
                                 `A single cinematic frame: ${prompt}. Professional photography, detailed, high quality.`,
-                                'FLUX Schnell',
+                                'FLUX.1.1 Pro (FAL)',
                                 [],
                                 aspectRatio,
                                 (prog) => setProgress(10 + Math.floor(prog * 0.3)),
@@ -169,13 +186,25 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
                             referenceImageUrl = imageResult.url;
                         }
                         setProgress(40);
-                        videoUrl = await refineVideoWithWAN(
-                            prompt,
-                            referenceImageUrl,
-                            4, // duration
-                            aspectRatio as '16:9' | '9:16' | '1:1',
-                            (prog) => setProgress(prog)
-                        );
+
+                        if (model === 'WAN 2.1') {
+                            videoUrl = await refineVideoWithWAN(
+                                prompt,
+                                referenceImageUrl,
+                                4, // duration
+                                aspectRatio as '16:9' | '9:16' | '1:1',
+                                (prog) => setProgress(prog)
+                            );
+                        } else {
+                            // Veo 2
+                            videoUrl = await generateVideoWithVeo2(
+                                prompt,
+                                referenceImageUrl,
+                                5, // duration
+                                aspectRatio as '16:9' | '9:16' | '1:1',
+                                (prog) => setProgress(prog)
+                            );
+                        }
                     } else if (model === 'WAN Video') {
                         // WAN supports both text-to-video and image-to-video
                         console.log('[Video Generation] Using WAN Video...');
@@ -204,7 +233,7 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
 
                             const imageResult = await generateVisual(
                                 `A single cinematic frame: ${prompt}. Professional photography, detailed, high quality.`,
-                                'FLUX Schnell',
+                                'FLUX.1.1 Pro (FAL)',
                                 [],
                                 aspectRatio,
                                 (prog) => setProgress(10 + Math.floor(prog * 0.3)),

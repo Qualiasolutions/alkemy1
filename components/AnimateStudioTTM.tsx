@@ -405,7 +405,7 @@ export default function AnimateStudioTTM({
                   className="w-full h-auto rounded-lg shadow-2xl"
                 />
                 <div className="mt-4 text-center">
-                  <p className="text-green-400 flex items-center justify-center space-x-2">
+                  <p className="text-[#dfec2d] flex items-center justify-center space-x-2">
                     <CheckIcon className="w-4 h-4" />
                     <span>Animation complete!</span>
                   </p>

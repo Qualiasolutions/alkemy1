@@ -619,8 +619,7 @@ export async function generateStillVariants(
                 const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ||
                     model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra' ? API_COST_ESTIMATES.image.flux :
                     model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                        model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
-                            API_COST_ESTIMATES.image.nanoBanana;
+                        API_COST_ESTIMATES.image.nanoBanana;
 
                 trackGenerationMetrics(
                     context?.projectId || 'temp',
@@ -639,8 +638,7 @@ export async function generateStillVariants(
                 const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ||
                     model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra' ? API_COST_ESTIMATES.image.flux :
                     model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                        model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
-                            API_COST_ESTIMATES.image.nanoBanana;
+                        API_COST_ESTIMATES.image.nanoBanana;
 
                 trackGenerationMetrics(
                     context?.projectId || 'temp',
@@ -1216,7 +1214,7 @@ export async function generateVisual(
     const canUsePollinations = isPollinationsAvailable();
 
     // Check if this is a Pollinations.AI model (FREE!)
-    const isPollinationsModel = model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'FLUX Anime' || model === 'Stable Diffusion';
+    const isPollinationsModel = false; // All free models removed
 
     // Check if this is a FAL.AI Flux model (with LoRA support)
     const isFalModel = model === 'FLUX.1.1 Pro (FAL)' || model === 'FLUX.1 Kontext (FAL)' || model === 'FLUX Ultra (FAL)' || model === 'Seadream v4 (FAL)';
@@ -1696,7 +1694,7 @@ export async function generateVisual(
             try {
                 const pollinationsUrl = await generateImageWithPollinations(
                     prompt,
-                    'flux', // Use FLUX Schnell (free)
+                    'fal-ai/flux-pro/v1.1', // Use FLUX.1.1 Pro (paid)
                     aspect_ratio
                 );
 
@@ -1710,7 +1708,7 @@ export async function generateVisual(
                         undefined,
                         context.projectId,
                         {
-                            model: 'FLUX Schnell (Pollinations - FREE Fallback)',
+                            model: 'FLUX.1.1 Pro (FAL - Paid Fallback)',
                             prompt: prompt.substring(0, 200),
                             aspectRatio: aspect_ratio,
                             wasGeminiFallback: true,

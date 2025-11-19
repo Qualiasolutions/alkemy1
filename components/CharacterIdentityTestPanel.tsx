@@ -148,7 +148,7 @@ export function CharacterIdentityTestPanel({
   };
 
   const getScoreBadgeClass = (score: number): string => {
-    if (score >= 85) return 'bg-green-500/20 text-green-400 border-green-500/30';
+    if (score >= 85) return 'bg-[#dfec2d]/100/20 text-[#dfec2d] border-[#dfec2d]/30';
     if (score >= 70) return 'bg-#dfec2d/20 text-#dfec2d border-#dfec2d/30';
     return 'bg-red-500/20 text-red-400 border-red-500/30';
   };
@@ -276,7 +276,7 @@ export function CharacterIdentityTestPanel({
                   <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {config.label}
                   </span>
-                  {existingTest && <CheckCircleIcon className="w-4 h-4 text-green-500" />}
+                  {existingTest && <CheckCircleIcon className="w-4 h-4 text-[#dfec2d]" />}
                 </div>
                 <p className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   {config.description}

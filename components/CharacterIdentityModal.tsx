@@ -405,7 +405,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                                         transition={{ delay: index * 0.05 }}
                                         className={`relative group rounded-lg overflow-hidden aspect-square border-2 ${
                                             img.isValid
-                                                ? 'border-green-500/30'
+                                                ? 'border-[#dfec2d]/30'
                                                 : 'border-red-500/50'
                                         }`}
                                     >
@@ -418,7 +418,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                                         {/* Status Indicator */}
                                         <div className={`absolute top-1 left-1 p-1 rounded-full ${
                                             img.isValid
-                                                ? 'bg-green-500/90'
+                                                ? 'bg-[#dfec2d]/100/90'
                                                 : 'bg-red-500/90'
                                         }`}>
                                             {img.isValid ? (
@@ -519,7 +519,7 @@ const CharacterIdentityModal: React.FC<CharacterIdentityModalProps> = ({
                 }`}>
                     <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                         {validImageCount >= 6 && validImageCount <= 12 ? (
-                            <span className="text-green-500 font-semibold">✓ Ready to proceed</span>
+                            <span className="text-[#dfec2d] font-semibold">✓ Ready to proceed</span>
                         ) : validImageCount > 12 ? (
                             <span className="text-red-500">Remove {validImageCount - 12} image(s)</span>
                         ) : (

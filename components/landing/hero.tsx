@@ -68,7 +68,7 @@ export function Hero() {
            <div className="absolute top-8 right-8 w-64 p-4 rounded-lg glass-panel border border-white/10 space-y-3 transform transition-transform group-hover:-translate-y-2 duration-500">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                  <span>Director Agent</span>
-                 <span className="w-2 h-2 rounded-full bg-green-500" />
+                 <span className="w-2 h-2 rounded-full bg-[#dfec2d]/100" />
               </div>
               <div className="space-y-2">
                  <div className="p-2 rounded bg-white/5 text-xs text-white/80">

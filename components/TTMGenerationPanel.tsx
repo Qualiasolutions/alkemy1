@@ -328,12 +328,12 @@ export default function TTMGenerationPanel({
 
         {/* Service Status */}
         <div className={`flex items-center space-x-2 px-3 py-1 rounded-full ${
-          isTTMAvailable ? 'bg-green-600/20' : 'bg-red-600/20'
+          isTTMAvailable ? 'bg-[#dfec2d]/20' : 'bg-red-600/20'
         }`}>
           {isTTMAvailable ? (
             <>
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-              <span className="text-sm text-green-400">TTM Active</span>
+              <CheckCircle2 className="w-4 h-4 text-[#dfec2d]" />
+              <span className="text-sm text-[#dfec2d]">TTM Active</span>
             </>
           ) : (
             <>

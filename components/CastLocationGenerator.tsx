@@ -761,7 +761,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         </div>
                         <div className="flex items-center gap-2 mb-3">
                             <div className={`w-2 h-2 rounded-full ${
-                                getCharacterIdentityStatus(character.identity) === 'ready' ? 'bg-green-500' :
+                                getCharacterIdentityStatus(character.identity) === 'ready' ? 'bg-[#dfec2d]/100' :
                                 getCharacterIdentityStatus(character.identity) === 'preparing' ? 'bg-[#dfec2d] animate-pulse' :
                                 getCharacterIdentityStatus(character.identity) === 'error' ? 'bg-red-500' : 'bg-gray-500'
                             }`}></div>
@@ -789,7 +789,7 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                                     <p className="text-xs text-white/60 font-medium">LoRA Training Images</p>
                                     <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                                         loraImages.length >= 6 && loraImages.length <= 12
-                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                            ? 'bg-[#dfec2d]/100/20 text-[#dfec2d] border border-[#dfec2d]/30'
                                             : 'bg-[#dfec2d]/20 text-lime-900 border border-[#dfec2d]/30'
                                     }`}>
                                         {loraImages.length}/12

@@ -6,16 +6,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Alkemy AI Studio V2.0 Production is a fully-optimized AI-powered film generation platform that transforms scripts into complete visual productions. The application uses React 19, TypeScript, and integrates with Google Gemini AI, Fal.ai Flux models, HunyuanWorld 3D generation, and Supabase for authentication and data persistence.
 
-**Latest Production URL**: https://alkemy1-e0duncbnf-qualiasolutionscy.vercel.app (Deployed 2025-11-18)
+**Latest Production URL**: https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app (Deployed 2025-11-19)
+**Previous URL**: https://alkemy1-e0duncbnf-qualiasolutionscy.vercel.app (Deployed 2025-11-18)
 
 ## Recent Major Enhancements (v2.0 Production)
+
+### Latest Fixes (2025-11-19)
+- ✅ **LoRA Training CORS Fix**: Resolved image download 400 errors with dual-path approach (direct + proxy fallback)
+- ✅ **Content Security Policy**: Updated CSP to whitelist Supabase and Fal.ai domains
+- ✅ **Video API Corrections**: Fixed model references from 'Kling 2.5' to 'Kling 2.1 Pro'
+- ✅ **Image Proxy API**: Created `/api/image-proxy` for CORS bypass on image downloads
+- ✅ **Supabase Storage**: Configured character-references bucket as public with RLS policies
+- ✅ **API Key Validation**: Build-time validation warns of missing critical keys
+
+See [LORA_CORS_FIX_2025-11-19.md](./LORA_CORS_FIX_2025-11-19.md) for complete fix report.
 
 ### Security & Performance
 - ✅ **AES-256-GCM Encryption**: Military-grade API key encryption using Web Crypto API
 - ✅ **CLIP Similarity**: Advanced character identity testing (CLIP + pHash = 93% accuracy)
 - ✅ **Audio Storage**: Proper Supabase integration for voice-generated files
 - ✅ **Test Coverage**: 93% pass rate (77/83 tests passing)
-- ✅ **Bundle Optimization**: 512KB gzipped, 13 code chunks
+- ✅ **Bundle Optimization**: 164KB gzipped (down from 512KB), 13 code chunks
 
 ### Feature Status
 - ✅ **Epic 1 - Style Learning**: Creative pattern tracking and AI cinematography suggestions
@@ -336,6 +347,16 @@ npm test -t "LoRA training"                      # Pattern matching
 5. Test backward compatibility with existing projects
 
 ## Known Issues & Workarounds
+
+### ~~LoRA Training Image Downloads~~ ✅ FIXED (2025-11-19)
+**Issue**: 400 errors during character identity training image downloads
+**Root Cause**: CORS violations and Content Security Policy blocking cross-origin requests
+**Solution**: Dual-path approach with direct fetch + image proxy fallback (see LORA_CORS_FIX_2025-11-19.md)
+
+### ~~Video Model References~~ ✅ FIXED (2025-11-19)
+**Issue**: Empty error objects from video generation APIs
+**Root Cause**: Code referenced non-existent 'Kling 2.5' model
+**Solution**: Updated to 'Kling 2.1 Pro' with flexible `.includes()` checks
 
 ### Image Size Limits
 **Issue**: Gemini API has 20MB limit for inline images

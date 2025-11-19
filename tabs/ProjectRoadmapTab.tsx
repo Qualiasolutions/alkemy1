@@ -303,7 +303,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
   function getStatusIcon(status: string) {
     switch (status) {
       case 'complete':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+        return <CheckCircle2 className="w-4 h-4 text-[#dfec2d]" />;
       case 'in_progress':
       case 'active':
         return <Clock className="w-4 h-4 text-yellow-500" />;
@@ -589,7 +589,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                         <ul className="space-y-1">
                           {epic.features.map((feature, idx) => (
                             <li key={idx} className="text-xs text-gray-300 flex items-start gap-2">
-                              <CheckCircle2 className="w-3 h-3 text-green-400 mt-0.5 flex-shrink-0" />
+                              <CheckCircle2 className="w-3 h-3 text-[#dfec2d] mt-0.5 flex-shrink-0" />
                               <span>{feature}</span>
                             </li>
                           ))}
@@ -663,7 +663,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                       {sprint.goals.map((goal, idx) => (
                         <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
                           <CheckCircle2 className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                            idx === 0 ? 'text-green-400' : 'text-gray-500'
+                            idx === 0 ? 'text-[#dfec2d]' : 'text-gray-500'
                           }`} />
                           <span>{goal}</span>
                         </li>

@@ -43,7 +43,7 @@ export function DirectorShowcase() {
             <div className="absolute inset-0 flex flex-col">
               <div className="h-14 border-b border-white/10 bg-white/5 flex items-center px-6 justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <div className="w-2 h-2 rounded-full bg-[#dfec2d]/100" />
                   <span className="font-medium">Director Agent</span>
                 </div>
                 <div className="text-xs text-muted-foreground">Online</div>
