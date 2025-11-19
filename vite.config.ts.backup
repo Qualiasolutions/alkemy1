@@ -77,7 +77,6 @@ export default defineConfig(({ mode }) => {
   const bflApiKey = (process.env.BFL_API_KEY || env.BFL_API_KEY || '').trim();
   const togetherKey = process.env.TOGETHER_AI_API_KEY || env.TOGETHER_AI_API_KEY || '';
   const wanKey = process.env.WAN_API_KEY || env.WAN_API_KEY || '';
-  const falKey = process.env.FAL_API_KEY || env.FAL_API_KEY || '';
   const lumaKey = process.env.LUMA_API_KEY || env.LUMA_API_KEY || '';
   const braveSearchKey = process.env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY || '';
   const braveProxyUrl = process.env.BRAVE_PROXY_URL || env.BRAVE_PROXY_URL || '/api/brave-proxy';
@@ -165,7 +164,6 @@ export default defineConfig(({ mode }) => {
       'process.env.BFL_API_KEY': JSON.stringify(bflApiKey),
       'process.env.TOGETHER_AI_API_KEY': JSON.stringify(togetherKey),
       'process.env.WAN_API_KEY': JSON.stringify(wanKey),
-      'process.env.FAL_API_KEY': JSON.stringify(falKey),
       'process.env.LUMA_API_KEY': JSON.stringify(lumaKey),
       'process.env.BRAVE_SEARCH_API_KEY': JSON.stringify(braveSearchKey),
       'process.env.BRAVE_PROXY_URL': JSON.stringify(braveProxyUrl),
@@ -186,8 +184,6 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_HUNYUAN_API_URL': JSON.stringify(hunyuanApiUrl),
       'import.meta.env.VITE_WAN_API_KEY': JSON.stringify(wanKey),
       'import.meta.env.WAN_API_KEY': JSON.stringify(wanKey),
-      'import.meta.env.FAL_API_KEY': JSON.stringify(falKey),
-      'import.meta.env.VITE_FAL_API_KEY': JSON.stringify(falKey),
       'import.meta.env.VITE_KIE_API_KEY': JSON.stringify(kieApiKey),
       'import.meta.env.VITE_SEGMIND_API_KEY': JSON.stringify(segmindApiKey),
       'import.meta.env.VITE_VERTEX_AI_API_KEY': JSON.stringify(vertexAiApiKey),

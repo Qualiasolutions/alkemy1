@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/Button';
 import { generateVisual, animateFrame, refineVariant, upscaleImage } from '../services/aiService';
+import { generateVideoWithKling, refineVideoWithWAN } from '../services/videoFalService';
+import { generateVideoFromTextWan, generateVideoFromImageWan } from '../services/wanService';
 import { AlkemyLoadingIcon, ImagePlusIcon, FilmIcon, DownloadIcon, XIcon, PaperclipIcon, SparklesIcon, FourKIcon, Trash2Icon, ExpandIcon } from '../components/icons/Icons';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -42,7 +44,6 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
     // Image models - Removed BFL models that have CORS issues
     const imageModels = [
         'FLUX Schnell',           // Free via Pollinations
-        'FLUX Realism',           // Free via Pollinations
         'Stable Diffusion',       // Free via Pollinations
         'FLUX.1.1 Pro (FAL)',     // FAL with LoRA support
         'FLUX.1 Kontext (FAL)',   // FAL with LoRA support
@@ -54,6 +55,9 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
     // Video models
     const videoModels = [
         'Veo 3.1 Fast',
+        'Kling 2.5',
+        'SeedDream v4',
+        'WAN Video',
     ];
 
     const aspectRatios = ['16:9', '9:16', '1:1', '4:3', '3:4'];
@@ -131,57 +135,117 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
                 const results = await Promise.all(promises);
                 setGeneratedMedia(prev => [...results, ...prev]);
             } else {
-                // Generate video
+                // Generate video with different models
+                let videoUrl: string;
                 let referenceImageUrl = attachedImage;
 
-                // If no reference image, generate one from the prompt first
-                if (!referenceImageUrl) {
-                    console.log('[Video Generation] No reference image, generating one from prompt...');
-                    setProgress(10);
+                try {
+                    if (model === 'Kling 2.5') {
+                        // Kling 2.5 supports both text-to-video and image-to-video
+                        console.log('[Video Generation] Using Kling 2.5...');
+                        videoUrl = await generateVideoWithKling(
+                            prompt,
+                            referenceImageUrl,
+                            5, // duration
+                            aspectRatio as '16:9' | '9:16' | '1:1',
+                            (prog) => setProgress(prog)
+                        );
+                    } else if (model === 'SeedDream v4') {
+                        // SeedDream v4 requires a reference image
+                        console.log('[Video Generation] Using SeedDream v4...');
+                        if (!referenceImageUrl) {
+                            // Generate reference image first
+                            setProgress(10);
+                            const imageResult = await generateVisual(
+                                `A single cinematic frame: ${prompt}. Professional photography, detailed, high quality.`,
+                                'FLUX Schnell',
+                                [],
+                                aspectRatio,
+                                (prog) => setProgress(10 + Math.floor(prog * 0.3)),
+                                `video-frame-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                                undefined,
+                                undefined
+                            );
+                            referenceImageUrl = imageResult.url;
+                        }
+                        setProgress(40);
+                        videoUrl = await refineVideoWithWAN(
+                            prompt,
+                            referenceImageUrl,
+                            4, // duration
+                            aspectRatio as '16:9' | '9:16' | '1:1',
+                            (prog) => setProgress(prog)
+                        );
+                    } else if (model === 'WAN Video') {
+                        // WAN supports both text-to-video and image-to-video
+                        console.log('[Video Generation] Using WAN Video...');
+                        if (referenceImageUrl) {
+                            videoUrl = await generateVideoFromImageWan(
+                                prompt,
+                                referenceImageUrl,
+                                aspectRatio,
+                                (prog) => setProgress(prog)
+                            );
+                        } else {
+                            videoUrl = await generateVideoFromTextWan(
+                                prompt,
+                                aspectRatio,
+                                (prog) => setProgress(prog)
+                            );
+                        }
+                    } else {
+                        // Default: Veo 3.1 Fast
+                        console.log('[Video Generation] Using Veo 3.1 Fast...');
 
-                    try {
-                        // Use FLUX Realism for better quality initial frames (100% FREE, no safety filters)
-                        const imageResult = await generateVisual(
-                            `A single cinematic frame: ${prompt}. Professional photography, detailed, high quality.`,
-                            'FLUX Realism', // Free model with no safety filters
-                            [],
+                        // If no reference image, generate one from the prompt first
+                        if (!referenceImageUrl) {
+                            console.log('[Video Generation] No reference image, generating one from prompt...');
+                            setProgress(10);
+
+                            const imageResult = await generateVisual(
+                                `A single cinematic frame: ${prompt}. Professional photography, detailed, high quality.`,
+                                'FLUX Schnell',
+                                [],
+                                aspectRatio,
+                                (prog) => setProgress(10 + Math.floor(prog * 0.3)),
+                                `video-frame-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                                undefined,
+                                undefined
+                            );
+                            referenceImageUrl = imageResult.url;
+                        }
+
+                        setProgress(40);
+                        const videos = await animateFrame(
+                            prompt,
+                            referenceImageUrl,
+                            null,
+                            1,
                             aspectRatio,
-                            (prog) => setProgress(10 + Math.floor(prog * 0.3)), // 10-40% progress for image gen
-                            `video-frame-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                            (prog) => setProgress(40 + Math.floor(prog * 0.6)),
                             undefined,
                             undefined
                         );
-                        referenceImageUrl = imageResult.url;
-                        console.log('[Video Generation] Reference image generated successfully, starting video animation...');
-                    } catch (imageError) {
-                        console.error('[Video Generation] Failed to generate reference image:', imageError);
-                        throw new Error(`Failed to generate initial frame for video: ${imageError instanceof Error ? imageError.message : 'Unknown error'}. Please try uploading a reference image instead.`);
+                        videoUrl = videos[0]; // Take first video
                     }
+
+                    const newItem = {
+                        url: videoUrl,
+                        type: 'video' as const,
+                        prompt,
+                        model,
+                        aspectRatio,
+                        timestamp: Date.now(),
+                        id: `vid-${Date.now()}`
+                    };
+
+                    setGeneratedMedia(prev => [newItem, ...prev]);
+                    console.log(`[Video Generation] Successfully generated video using ${model}`);
+
+                } catch (error) {
+                    console.error(`[Video Generation] Failed with ${model}:`, error);
+                    throw new Error(`Video generation failed with ${model}: ${error instanceof Error ? error.message : 'Unknown error'}`);
                 }
-
-                setProgress(40);
-                const videos = await animateFrame(
-                    prompt,
-                    referenceImageUrl,
-                    null,
-                    1,
-                    aspectRatio,
-                    (prog) => setProgress(40 + Math.floor(prog * 0.6)), // 40-100% progress for video gen
-                    undefined,
-                    undefined
-                );
-
-                const newItems = videos.map((url, index) => ({
-                    url,
-                    type: 'video' as const,
-                    prompt,
-                    model: 'Veo 3.1 Fast',
-                    aspectRatio,
-                    timestamp: Date.now(),
-                    id: `vid-${Date.now()}-${index}`
-                }));
-
-                setGeneratedMedia(prev => [...newItems, ...prev]);
             }
         } catch (error) {
             console.error('Generation failed:', error);
@@ -389,11 +453,6 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
                                     </option>
                                 ))}
                             </select>
-                            {mode === 'image' && (
-                                <p className="text-xs text-white/40 mt-1">
-                                    ✨ FLUX models are 100% FREE
-                                </p>
-                            )}
                         </div>
 
                         <div>
@@ -762,7 +821,6 @@ const GenerateTab: React.FC<GenerateTabProps> = ({ user }) => {
                                         <>
                                             <li>Be specific with lighting, style, and mood</li>
                                             <li>Use reference images for better accuracy</li>
-                                            <li>FLUX models are 100% FREE!</li>
                                             <li>Select images to refine or upscale them</li>
                                         </>
                                     ) : (

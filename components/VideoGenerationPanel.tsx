@@ -4,7 +4,7 @@ import { AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate } fro
 import Button from './Button';
 import { FileVideoIcon, SparklesIcon, XIcon, PaperclipIcon, PlayIcon, PauseIcon, DownloadIcon, RefreshCwIcon } from './icons/Icons';
 import { generateVideoFromImageWan, generateVideoFromTextWan } from '../services/wanService';
-import { generateVideoWithKling, refineVideoWithSeedDream, isVideoFalApiAvailable } from '../services/videoFalService';
+import { generateVideoWithKling, refineVideoWithWAN, generateVideoWithVeo2, isVideoFalApiAvailable } from '../services/videoFalService';
 
 interface VideoGenerationPanelProps {
     item: {
@@ -27,7 +27,7 @@ interface VideoGeneration {
     duration?: number;
 }
 
-type VideoModel = 'Kling 2.5' | 'Wan' | 'SeedDream v4';
+type VideoModel = 'Kling 2.1 Pro' | 'Wan' | 'WAN 2.1' | 'Veo 2';
 
 const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodboard, moodboardTemplates, onUpdateItem }) => {
     const [videoPrompt, setVideoPrompt] = useState('');
@@ -35,7 +35,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
     const [attachedImage, setAttachedImage] = useState<string | null>(null);
     const [selectedVideo, setSelectedVideo] = useState<VideoGeneration | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [selectedModel, setSelectedModel] = useState<VideoModel>('Kling 2.5');
+    const [selectedModel, setSelectedModel] = useState<VideoModel>('Kling 2.1 Pro');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
 
@@ -43,11 +43,11 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
     const handleGenerateVideo = async () => {
         if (!videoPrompt.trim() || isGenerating) return;
 
-        // SeedDream v4 requires a reference image
-        if (selectedModel === 'SeedDream v4') {
+        // WAN 2.1 and Veo 2 require a reference image
+        if (selectedModel === 'WAN 2.1' || selectedModel === 'Veo 2') {
             const referenceImage = attachedImage || item.data.imageUrl;
             if (!referenceImage) {
-                alert('SeedDream v4 requires a reference image. Please attach an image or ensure the item has one.');
+                alert(`${selectedModel} requires a reference image. Please attach an image or ensure the item has one.`);
                 return;
             }
         }
@@ -76,7 +76,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
 
             // Route to the appropriate service based on selected model
             switch (selectedModel) {
-                case 'Kling 2.5':
+                case 'Kling 2.1 Pro':
                     if (referenceImage) {
                         // Image-to-video
                         videoUrl = await generateVideoWithKling(
@@ -121,15 +121,29 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                     }
                     break;
 
-                case 'SeedDream v4':
-                    // SeedDream requires reference image (checked above)
+                case 'WAN 2.1':
+                    // WAN 2.1 requires reference image (checked above)
                     if (!referenceImage) {
-                        throw new Error('SeedDream v4 requires a reference image.');
+                        throw new Error('WAN 2.1 requires a reference image.');
                     }
-                    videoUrl = await refineVideoWithSeedDream(
+                    videoUrl = await refineVideoWithWAN(
                         videoPrompt,
                         referenceImage,
                         4, // duration
+                        '16:9',
+                        onProgress
+                    );
+                    break;
+
+                case 'Veo 2':
+                    // Veo 2 requires reference image (checked above)
+                    if (!referenceImage) {
+                        throw new Error('Veo 2 requires a reference image.');
+                    }
+                    videoUrl = await generateVideoWithVeo2(
+                        videoPrompt,
+                        referenceImage,
+                        5, // duration
                         '16:9',
                         onProgress
                     );
@@ -147,7 +161,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                         url: videoUrl,
                         status: 'ready',
                         progress: 100,
-                        duration: selectedModel === 'Kling 2.5' ? 5 : 4
+                        duration: (selectedModel === 'Kling 2.1 Pro' || selectedModel === 'Veo 2') ? 5 : 4
                     }
                     : v
             ));
@@ -345,20 +359,20 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                     {/* Model Selector */}
                     <div>
                         <label className="block text-xs text-gray-400 mb-2 font-semibold">Video Model</label>
-                        <div className="flex gap-2">
-                            {(['Kling 2.5', 'Wan', 'SeedDream v4'] as VideoModel[]).map((model) => (
+                        <div className="flex gap-2 flex-wrap">
+                            {(['Kling 2.1 Pro', 'Wan', 'WAN 2.1', 'Veo 2'] as VideoModel[]).map((model) => (
                                 <button
                                     key={model}
                                     onClick={() => setSelectedModel(model)}
-                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                                    className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
                                         selectedModel === model
                                             ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                                             : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/60'
                                     }`}
                                 >
                                     {model}
-                                    {model === 'SeedDream v4' && (
-                                        <span className="block text-[10px] opacity-70">Refine only</span>
+                                    {(model === 'WAN 2.1' || model === 'Veo 2') && (
+                                        <span className="block text-[10px] opacity-70">Image-to-video</span>
                                     )}
                                 </button>
                             ))}

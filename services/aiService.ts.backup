@@ -6,9 +6,13 @@ import { getGeminiApiKey, clearGeminiApiKey, getApiKeyValidationError, isValidGe
 import { getMediaService } from './mediaService';
 import { logAIUsage, USAGE_ACTIONS } from './usageService';
 // Flux API removed - using free Pollinations models instead
-import { trackGenerationMetrics, API_COST_ESTIMATES } from './analyticsService';
+import { trackGenerationMetrics } from './analyticsService';
+import { API_COST_ESTIMATES } from './apiConstants';
 import { networkDetection } from './networkDetection';
 import { generateImageWithPollinations, isPollinationsAvailable, type PollinationsImageModel } from './pollinationsService';
+import { generateImageWithFlux, isFluxApiAvailable, type FluxModelVariant } from './fluxService';
+// BFL service removed due to CORS issues - using FAL models only
+import { ENHANCED_DIRECTOR_KNOWLEDGE } from './directorKnowledge';
 // This file simulates interactions with external services like Gemini, Drive, and a backend API.
 
 // FLUX_API_KEY removed - using free Pollinations instead
@@ -25,7 +29,7 @@ let inFlightModelList: Promise<string[]> | null = null;
 const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?.env ?? {} : {};
 const truthyStrings = new Set(['true', '1', 'yes', 'on']);
 
-const resolveBooleanEnv = (...keys: string[]): boolean => {
+function resolveBooleanEnv(...keys: string[]): boolean {
     for (const key of keys) {
         const candidates = [
             typeof importMetaEnv[key] === 'string' ? importMetaEnv[key] : undefined,
@@ -41,7 +45,7 @@ const resolveBooleanEnv = (...keys: string[]): boolean => {
         }
     }
     return false;
-};
+}
 
 const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
 
@@ -62,7 +66,7 @@ if (typeof window !== 'undefined') {
     }, 0);
 }
 
-const requireGeminiClient = (): GoogleGenAI => {
+function requireGeminiClient(): GoogleGenAI {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
         throw new Error('Gemini API key is not configured.');
@@ -79,9 +83,9 @@ const requireGeminiClient = (): GoogleGenAI => {
     }
 
     return new GoogleGenAI({ apiKey });
-};
+}
 
-const shouldUseFallbackForError = (error: unknown): boolean => {
+function shouldUseFallbackForError(error: unknown): boolean {
     if (FORCE_DEMO_MODE) return true;
     if (!error) return false;
     const message = error instanceof Error ? error.message : String(error);
@@ -110,13 +114,13 @@ const shouldUseFallbackForError = (error: unknown): boolean => {
         'unauthorized',
         'forbidden'
     ].some(fragment => normalized.includes(fragment));
-};
+}
 
-const prefersLiveGemini = (): boolean => {
+function prefersLiveGemini(): boolean {
     return !!getGeminiApiKey() && !FORCE_DEMO_MODE;
-};
+}
 
-const handleApiError = (error: unknown, model: string): Error => {
+function handleApiError(error: unknown, model: string): Error {
     console.error(`Error with ${model} API:`, error);
     let message = `An unknown error occurred with ${model}.`;
     if (error instanceof Error) {
@@ -134,7 +138,7 @@ const handleApiError = (error: unknown, model: string): Error => {
             resetModelListCache();
             message = 'Invalid API key format: This endpoint requires a Google AI API key (starting with "AIza"), not an AI Studio key. Generate one at https://aistudio.google.com/apikey';
         } else if (error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('429')) {
-             message = 'API quota exceeded. Please check your plan and billing details.';
+            message = 'API quota exceeded. Please check your plan and billing details.';
         } else if (error.message.includes('503') || errorLower.includes('unavailable') || errorLower.includes('overloaded')) {
             message = 'Service temporarily unavailable. The API is experiencing high load. Please wait a moment and try again.';
         } else if (errorLower.includes('safety') || errorLower.includes('prohibited_content')) {
@@ -152,9 +156,9 @@ const handleApiError = (error: unknown, model: string): Error => {
         }
     }
     return new Error(message);
-};
+}
 
-const isModelNotFoundError = (error: unknown): boolean => {
+function isModelNotFoundError(error: unknown): boolean {
     if (!error) return false;
 
     const unwrapError = (err: any): boolean => {
@@ -179,24 +183,24 @@ const isModelNotFoundError = (error: unknown): boolean => {
     return normalized.includes('not_found') ||
         normalized.includes('not found') ||
         normalized.includes('404');
-};
+}
 
 /**
  * Check if an error is retryable (503, network errors, etc.)
  */
-const isRetryableError = (error: unknown): boolean => {
+function isRetryableError(error: unknown): boolean {
     if (!error) return false;
     const message = error instanceof Error ? error.message : String(error);
     const normalized = message.toLowerCase();
 
     return normalized.includes('503') ||
-           normalized.includes('unavailable') ||
-           normalized.includes('overloaded') ||
-           normalized.includes('network') ||
-           normalized.includes('timeout') ||
-           normalized.includes('econnreset') ||
-           normalized.includes('enotfound');
-};
+        normalized.includes('unavailable') ||
+        normalized.includes('overloaded') ||
+        normalized.includes('network') ||
+        normalized.includes('timeout') ||
+        normalized.includes('econnreset') ||
+        normalized.includes('enotfound');
+}
 
 /**
  * Retry helper with exponential backoff for API calls
@@ -238,12 +242,12 @@ async function retryWithBackoff<T>(
     throw lastError;
 }
 
-const resetModelListCache = () => {
+function resetModelListCache(): void {
     cachedModelNames = null;
     inFlightModelList = null;
-};
+}
 
-const extractModelNames = (response: any): string[] => {
+function extractModelNames(response: any): string[] {
     if (!response) return [];
     const collections = Array.isArray(response) ? response : (response?.models ?? response?.data ?? []);
     if (!Array.isArray(collections)) return [];
@@ -255,9 +259,9 @@ const extractModelNames = (response: any): string[] => {
             return typeof name === 'string' ? name : '';
         })
         .filter((name): name is string => typeof name === 'string' && name.length > 0);
-};
+}
 
-const getAvailableGeminiModels = async (ai: GoogleGenAI): Promise<string[]> => {
+async function getAvailableGeminiModels(ai: GoogleGenAI): Promise<string[]> {
     if (cachedModelNames) {
         return cachedModelNames;
     }
@@ -280,9 +284,9 @@ const getAvailableGeminiModels = async (ai: GoogleGenAI): Promise<string[]> => {
         });
 
     return inFlightModelList;
-};
+}
 
-const expandModelIdVariants = (id: string): string[] => {
+function expandModelIdVariants(id: string): string[] {
     if (!id) return [];
     const clean = id.replace(/^models\//, '');
     const variants = new Set<string>();
@@ -292,9 +296,9 @@ const expandModelIdVariants = (id: string): string[] => {
         variants.add(id);
     }
     return Array.from(variants);
-};
+}
 
-const buildModelAttemptList = async (ai: GoogleGenAI, preferred: string[]): Promise<string[]> => {
+async function buildModelAttemptList(ai: GoogleGenAI, preferred: string[]): Promise<string[]> {
     const availableModels = await getAvailableGeminiModels(ai);
     const availableSet = new Set(availableModels);
     const attempts: string[] = [];
@@ -343,7 +347,7 @@ const buildModelAttemptList = async (ai: GoogleGenAI, preferred: string[]): Prom
     }
 
     return attempts;
-};
+}
 
 
 // --- Helper Functions ---
@@ -353,16 +357,16 @@ const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 /**
  * Validates if a base64 encoded image is within size limits
  */
-const validateImageSize = (base64Data: string, maxSizeBytes: number = MAX_IMAGE_SIZE_BYTES): { isValid: boolean; sizeBytes: number } => {
+function validateImageSize(base64Data: string, maxSizeBytes: number = MAX_IMAGE_SIZE_BYTES): { isValid: boolean; sizeBytes: number } {
     // Calculate approximate size from base64 (base64 adds ~33% overhead)
     const sizeBytes = Math.floor((base64Data.length * 3) / 4);
     return {
         isValid: sizeBytes <= maxSizeBytes,
         sizeBytes
     };
-};
+}
 
-const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; data: string }> => {
+async function image_url_to_base64(url: string): Promise<{ mimeType: string; data: string }> {
     // Handle data URLs directly
     if (url.startsWith('data:')) {
         const parts = url.split(',');
@@ -480,17 +484,17 @@ const image_url_to_base64 = async (url: string): Promise<{ mimeType: string; dat
         // Re-throw a more user-friendly error.
         throw new Error(`Could not process a reference image from URL: ${url}. ${errorMessage}. Please ensure the URL is valid, publicly accessible, and links directly to an image.`);
     }
-};
+}
 
 const MAX_PROMPT_LENGTH = 800; // Nano Banana performs best with concise prompts
 const MAX_REFINEMENT_PROMPT_LENGTH = 400; // Refinement needs shorter prompts since it also processes reference image
 
-export const buildSafePrompt = (
+export function buildSafePrompt(
     prompt: string,
     hasVisualReferences: boolean, // Keep for signature compatibility, though unused in this version
     type: 'still' | 'video' = 'still',
     isRefinement: boolean = false // New parameter for refinement operations
-): { finalPrompt: string; wasAdjusted: boolean } => {
+): { finalPrompt: string; wasAdjusted: boolean } {
     // NO PREFIX - Let the raw prompt through to avoid triggering safety filters
     // Gemini's safety filters are overly aggressive with certain keywords
 
@@ -516,9 +520,9 @@ export const buildSafePrompt = (
 
     // Return the prompt as-is (no prefix to avoid safety triggers)
     return { finalPrompt: adjustedPrompt, wasAdjusted };
-};
+}
 
-export const generateStillVariants = async (
+export async function generateStillVariants(
     frame_id: string,
     model: string,
     prompt: string,
@@ -544,11 +548,11 @@ export const generateStillVariants = async (
         selectedLocation: string;
         model: string;
     }
-}> => {
+}> {
     console.log("[API Action] generateStillVariants", { frame_id, model, prompt, reference_images, n, aspect_ratio, moodboard, characterNames, locationName });
-    
+
     const prioritizedImages = reference_images;
-    
+
     let moodboardImages: string[] = [];
     if (moodboard) {
         const styleImg = moodboard.style?.items[0]?.url;
@@ -609,45 +613,47 @@ export const generateStillVariants = async (
             },
             characterIdentities // NEW: Pass character identity LoRAs
         )
-        .then((result) => {
-            // Track successful generation
-            const duration = Date.now() - startTime;
-            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
-                                  model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                                  model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
-                                  API_COST_ESTIMATES.image.nanoBanana;
+            .then((result) => {
+                // Track successful generation
+                const duration = Date.now() - startTime;
+                const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ||
+                    model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra' ? API_COST_ESTIMATES.image.flux :
+                    model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
+                        model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
+                            API_COST_ESTIMATES.image.nanoBanana;
 
-            trackGenerationMetrics(
-                context?.projectId || 'temp',
-                'image',
-                model,
-                duration / 1000, // Convert to seconds
-                estimatedCost,
-                true // success
-            );
+                trackGenerationMetrics(
+                    context?.projectId || 'temp',
+                    'image',
+                    model,
+                    duration / 1000, // Convert to seconds
+                    estimatedCost,
+                    true // success
+                );
 
-            return result;
-        })
-        .catch((error) => {
-            // Track failed generation
-            const duration = Date.now() - startTime;
-            const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ? API_COST_ESTIMATES.image.flux :
-                                  model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
-                                  model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
-                                  API_COST_ESTIMATES.image.nanoBanana;
+                return result;
+            })
+            .catch((error) => {
+                // Track failed generation
+                const duration = Date.now() - startTime;
+                const estimatedCost = model === 'Flux Pro' || model === 'Flux Dev' ||
+                    model === 'FLUX.1.1 Pro' || model === 'FLUX.1 Kontext' || model === 'FLUX Ultra' ? API_COST_ESTIMATES.image.flux :
+                    model === 'Gemini Nano Banana' ? API_COST_ESTIMATES.image.nanoBanana :
+                        model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'Stable Diffusion' ? 0 : // FREE!
+                            API_COST_ESTIMATES.image.nanoBanana;
 
-            trackGenerationMetrics(
-                context?.projectId || 'temp',
-                'image',
-                model,
-                duration / 1000,
-                0, // No cost for failed generation
-                false, // failure
-                error instanceof Error ? error.message : 'Unknown error'
-            );
+                trackGenerationMetrics(
+                    context?.projectId || 'temp',
+                    'image',
+                    model,
+                    duration / 1000,
+                    0, // No cost for failed generation
+                    false, // failure
+                    error instanceof Error ? error.message : 'Unknown error'
+                );
 
-            throw error;
-        });
+                throw error;
+            });
     });
 
     const results = await Promise.allSettled(generationPromises);
@@ -680,10 +686,10 @@ export const generateStillVariants = async (
             model: model
         }
     };
-};
+}
 
 
-export const animateFrame = async (
+export async function animateFrame(
     prompt: string,
     reference_image_url: string,
     last_frame_image_url?: string | null,
@@ -692,7 +698,7 @@ export const animateFrame = async (
     onProgress?: (progress: number) => void,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string },
     temperature?: number  // NEW: Allow different temperatures for variation
-): Promise<string[]> => {
+): Promise<string[]> {
     const startTime = Date.now();
     const model = 'veo-3.1-fast-generate-preview';
 
@@ -710,17 +716,17 @@ export const animateFrame = async (
 
     try {
         const ai = requireGeminiClient();
-        
+
         const { mimeType, data } = await image_url_to_base64(reference_image_url);
 
         const imagePayload = {
             image: { imageBytes: data, mimeType: mimeType },
         };
-        
+
         const motionPrompt = `Animate the provided image. Preserve the character's appearance, clothing, and background perfectly. The desired motion is: ${prompt}`;
         const hasVisualReferences = true; // Veo animate always has at least one reference image.
         const { finalPrompt } = buildSafePrompt(motionPrompt, hasVisualReferences, 'video');
-        
+
         const supportedAspectRatios = ['16:9', '9:16'];
         const finalAspectRatio = supportedAspectRatios.includes(aspectRatio) ? aspectRatio : '16:9';
         if (!supportedAspectRatios.includes(aspectRatio)) {
@@ -741,14 +747,14 @@ export const animateFrame = async (
                 mimeType: lastMimeType,
             };
         }
-        
+
         let operation = await ai.models.generateVideos({
             model: 'veo-3.1-fast-generate-preview',
             prompt: finalPrompt,
             ...imagePayload,
             config: config,
         });
-        
+
         let progress = 0;
         onProgress?.(progress);
 
@@ -758,13 +764,13 @@ export const animateFrame = async (
             onProgress?.(progress);
             operation = await ai.operations.getVideosOperation({ operation: operation });
         }
-        
+
         onProgress?.(100);
 
         const downloadLinks = operation.response?.generatedVideos?.map(v => v.video?.uri).filter((uri): uri is string => !!uri) || [];
 
         if (downloadLinks.length === 0) {
-             if (operation.error) {
+            if (operation.error) {
                 throw new Error(`Video generation failed: ${operation.error.message || 'Unknown Veo API error'}`);
             }
             throw new Error("Video generation failed. The API completed without returning a video. This could be due to content safety filters.");
@@ -875,14 +881,14 @@ export const animateFrame = async (
         }
         throw handleApiError(error, 'Veo (Animate)');
     }
-};
+}
 
-export const refineVariant = async (
+export async function refineVariant(
     prompt: string,
     base_image_url: string,
     aspect_ratio: string,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string }
-): Promise<string> => {
+): Promise<string> {
     console.log("[API Action] refineVariant", {
         prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
         promptLength: prompt.length,
@@ -895,7 +901,7 @@ export const refineVariant = async (
         throw new Error('Base image URL is required for refinement.');
     }
 
-        // Use Gemini Nano Banana for refinement
+    // Use Gemini Nano Banana for refinement
     const refinementModel = 'Gemini Nano Banana';
     const hasVisualReferences = true;
 
@@ -940,7 +946,7 @@ export const refineVariant = async (
                 // Extract just the core action words from the prompt
                 const simplifiedPrompt = prompt
                     .split(/[,.]/)  // Split on commas and periods
-                    [0]              // Take first clause
+                [0]              // Take first clause
                     .trim()
                     .substring(0, 100); // Maximum 100 chars for retry
 
@@ -987,13 +993,13 @@ export const refineVariant = async (
         }
         throw error;
     }
-};
+}
 
 
-export const upscaleImage = (
+export function upscaleImage(
     image_url: string,
     onProgress: (progress: number) => void
-): Promise<{ image_url: string }> => {
+): Promise<{ image_url: string }> {
     console.log("[API Action] upscaleImage (simulated)", { image_url });
 
     return new Promise((resolve) => {
@@ -1010,12 +1016,12 @@ export const upscaleImage = (
             }
         }, 300); // Simulate a 3-second upscale process
     });
-};
+}
 
-export const upscaleVideo = (
+export function upscaleVideo(
     video_url: string,
     onProgress: (progress: number) => void
-): Promise<{ video_url: string }> => {
+): Promise<{ video_url: string }> {
     console.log("[API Action] upscaleVideo (simulated)", { video_url });
 
     return new Promise((resolve) => {
@@ -1032,18 +1038,18 @@ export const upscaleVideo = (
             }
         }, 500); // Simulate a 10-second upscale process
     });
-};
+}
 
 /**
  * Transfer motion from reference video to target avatar
  * This function now uses the real Wan API for motion transfer
  * @deprecated - Use transferMotionWan from wanService.ts directly for better control
  */
-export const transferMotion = async (
+export async function transferMotion(
     referenceVideo: File,
     targetAvatarImageUrl: string,
     onProgress: (progress: number) => void
-): Promise<string> => {
+): Promise<string> {
     console.log("[API Action] transferMotion - delegating to Wan API", {
         videoName: referenceVideo.name,
         avatarUrl: targetAvatarImageUrl.substring(0, 50) + '...'
@@ -1052,7 +1058,7 @@ export const transferMotion = async (
     // Import dynamically to avoid circular dependencies
     const { transferMotionWan } = await import('./wanService');
     return transferMotionWan(referenceVideo, targetAvatarImageUrl, onProgress);
-};
+}
 
 interface VisualGenerationResult {
     url: string;
@@ -1060,13 +1066,13 @@ interface VisualGenerationResult {
 }
 
 // Helper function to upload base64 image to Supabase Storage
-const uploadImageToSupabase = async (
+async function uploadImageToSupabase(
     base64Data: string,
     fileName: string,
     projectId: string | null,
     userId: string | null,
     metadata?: any
-): Promise<{ url: string; assetId: string | null; error: any }> => {
+): Promise<{ url: string; assetId: string | null; error: any }> {
     const mediaService = getMediaService();
     if (!mediaService || !projectId || !userId) {
         return { url: base64Data, assetId: null, error: null };
@@ -1108,16 +1114,16 @@ const uploadImageToSupabase = async (
         console.error('Error uploading image to Supabase Storage:', error);
         return { url: base64Data, assetId: null, error };
     }
-};
+}
 
 // Helper function to upload video blob to Supabase Storage
-const uploadVideoToSupabase = async (
+async function uploadVideoToSupabase(
     videoBlob: Blob,
     fileName: string,
     projectId: string | null,
     userId: string | null,
     metadata?: any
-): Promise<{ url: string; assetId: string | null; error: any }> => {
+): Promise<{ url: string; assetId: string | null; error: any }> {
     const mediaService = getMediaService();
     if (!mediaService || !projectId || !userId) {
         // Return blob URL if Supabase is not available
@@ -1157,9 +1163,9 @@ const uploadVideoToSupabase = async (
         console.error('Error uploading video to Supabase Storage:', error);
         return { url: URL.createObjectURL(videoBlob), assetId: null, error };
     }
-};
+}
 
-export const generateVisual = async (
+export async function generateVisual(
     prompt: string,
     model: string,
     reference_images: string[],
@@ -1168,7 +1174,7 @@ export const generateVisual = async (
     seed: string = `${model}-${prompt}`,
     context?: { projectId?: string; userId?: string; sceneId?: string; frameId?: string },
     characterIdentities?: Array<{ loraUrl: string; scale?: number }> // NEW: Character identity LoRAs
-): Promise<VisualGenerationResult> => {
+): Promise<VisualGenerationResult> {
     console.log("[generateVisual] Starting generation", {
         model,
         promptLength: prompt.length,
@@ -1211,6 +1217,93 @@ export const generateVisual = async (
 
     // Check if this is a Pollinations.AI model (FREE!)
     const isPollinationsModel = model === 'FLUX Schnell' || model === 'FLUX Realism' || model === 'FLUX Anime' || model === 'Stable Diffusion';
+
+    // Check if this is a FAL.AI Flux model (with LoRA support)
+    const isFalModel = model === 'FLUX.1.1 Pro (FAL)' || model === 'FLUX.1 Kontext (FAL)' || model === 'FLUX Ultra (FAL)' || model === 'Seadream v4 (FAL)';
+
+    if (isFalModel) {
+        // Route to FAL.AI service (paid, high quality)
+        if (!isFluxApiAvailable()) {
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+
+        console.log("[generateVisual] Using FAL.AI for model:", model);
+
+        try {
+            const falModel: FluxModelVariant = model === 'FLUX.1.1 Pro (FAL)' ? 'FLUX.1.1' :
+                model === 'FLUX.1 Kontext (FAL)' ? 'FLUX.1 Kontext' :
+                model === 'FLUX Ultra (FAL)' ? 'FLUX Ultra' :
+                model === 'Seadream v4 (FAL)' ? 'Seadream v4' :
+                    'FLUX Ultra';
+
+            // Convert aspect ratio to format expected by FAL.AI
+            const falAspectRatio = aspect_ratio;
+
+            const imageUrl = await generateImageWithFlux(
+                prompt,
+                falAspectRatio,
+                onProgress,
+                true, // raw mode for better quality
+                falModel
+            );
+
+            console.log("[generateVisual] FAL.AI generation successful:", imageUrl);
+
+            // Upload to Supabase if context is available
+            if (context?.projectId && context?.userId) {
+                try {
+                    // imageUrl is a URL from FAL.AI, download and upload to Supabase
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const base64Data = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const result = reader.result as string;
+                            resolve(result.split(',')[1]); // Remove data URL prefix
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+
+                    const fileName = `${model.replace(/\s+/g, '_').replace('.', '_')}_${aspect_ratio}_${seed}`;
+                    const { url: uploadedUrl, error } = await uploadImageToSupabase(
+                        base64Data,
+                        fileName,
+                        context.projectId,
+                        context.userId,
+                        USAGE_ACTIONS.IMAGE_GENERATION,
+                        undefined,
+                        context.projectId,
+                        {
+                            model: model,
+                            prompt: prompt.substring(0, 200),
+                            aspectRatio: aspect_ratio,
+                            sceneId: context.sceneId,
+                            frameId: context.frameId,
+                            seed,
+                        }
+                    );
+
+                    if (error) {
+                        console.warn('[generateVisual] Failed to upload to Supabase:', error);
+                        return { url: imageUrl, fromFallback: false };
+                    }
+
+                    console.log('[generateVisual] FAL.AI image uploaded to Supabase:', uploadedUrl);
+                    return { url: uploadedUrl, fromFallback: false };
+                } catch (uploadError) {
+                    console.warn('[generateVisual] Supabase upload failed, returning direct URL:', uploadError);
+                    return { url: imageUrl, fromFallback: false };
+                }
+            }
+
+            return { url: imageUrl, fromFallback: false };
+        } catch (error) {
+            console.error("[generateVisual] FAL.AI generation failed:", error);
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+    }
 
     if (isPollinationsModel) {
         // Route to Pollinations.AI service (100% FREE!)
@@ -1361,16 +1454,16 @@ export const generateVisual = async (
                     });
 
                     const fileName = `flux_${aspect_ratio}_${seed}`;
-                        const { url: uploadedUrl, error } = await uploadImageToSupabase(
-                            base64,
-                            fileName,
-                            context.projectId,
-                            context.userId,
-                            {
-                                model: getFluxModelDisplayName(fluxVariant),
-                                prompt: prompt.substring(0, 200),
-                                aspectRatio: aspect_ratio,
-                                generationType: 'image_generation_flux',
+                    const { url: uploadedUrl, error } = await uploadImageToSupabase(
+                        base64,
+                        fileName,
+                        context.projectId,
+                        context.userId,
+                        {
+                            model: getFluxModelDisplayName(fluxVariant),
+                            prompt: prompt.substring(0, 200),
+                            aspectRatio: aspect_ratio,
+                            generationType: 'image_generation_flux',
                             sceneId: context.sceneId,
                             frameId: context.frameId,
                             provider: 'FAL.AI'
@@ -1422,7 +1515,7 @@ export const generateVisual = async (
                     threshold: HarmBlockThreshold.BLOCK_NONE,
                 },
             ];
-            
+
             const imageParts = await Promise.all(
                 reference_images.map(async (url) => {
                     const { mimeType, data } = await image_url_to_base64(url);
@@ -1439,15 +1532,18 @@ export const generateVisual = async (
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: parts,
+                contents: [{
+                    role: 'user',
+                    parts: parts
+                }],
                 config: {
                     responseModalities: ['IMAGE'],
                     ...(imageConfig ? { imageConfig } : {}),
-                    safetySettings: safetySettings,
-                    ...(temperature !== undefined ? { temperature } : {}),
+                    ...(temperature !== undefined ? { temperature } : {})
                 },
+                safetySettings: safetySettings,
             });
-            
+
             onProgress?.(100);
 
             const candidate = response.candidates?.[0];
@@ -1592,8 +1688,8 @@ export const generateVisual = async (
         // Special handling for safety errors - try Pollinations as fallback (FREE)
         const errorMessage = error instanceof Error ? error.message : String(error);
         const isSafetyError = errorMessage.toLowerCase().includes('safety') ||
-                             errorMessage.includes('PROHIBITED_CONTENT') ||
-                             errorMessage.includes('HARM_CATEGORY');
+            errorMessage.includes('PROHIBITED_CONTENT') ||
+            errorMessage.includes('HARM_CATEGORY');
 
         if (isSafetyError && isPollinationsAvailable() && reference_images.length === 0) {
             console.warn(`[generateVisual] Gemini blocked for safety. Retrying with Pollinations API (FREE) as fallback...`);
@@ -1639,18 +1735,19 @@ export const generateVisual = async (
         }
         throw handleApiError(error, effectiveModel);
     }
-};
+}
 
-export const generateMoodboardDescription = async (section: MoodboardSection): Promise<string> => {
+export async function generateMoodboardDescription(section: MoodboardSection): Promise<string> {
     if (!prefersLiveGemini()) {
         return fallbackMoodboardDescription(section);
     }
     console.log("[API Action] generateMoodboardDescription", { notes: section.notes, itemCount: section.items.length });
-    
+
     try {
         const ai = requireGeminiClient();
 
-        const textPart = { text: `You are a professional cinematographer analyzing a moodboard for a film production. Analyze the provided images and extract detailed visual characteristics that will guide image generation.
+        const textPart = {
+            text: `You are a professional cinematographer analyzing a moodboard for a film production. Analyze the provided images and extract detailed visual characteristics that will guide image generation.
 
 User notes: "${section.notes || 'No notes provided.'}"
 
@@ -1671,7 +1768,7 @@ Analyze and extract the following aspects:
 Synthesize these observations into a rich, descriptive paragraph (3-5 sentences) that captures the overall visual language. Focus on concrete details that image generation models can interpret. Be specific about colors, lighting qualities, and compositional elements.
 
 Example output: "A gritty, rain-slicked neo-noir aesthetic featuring high-contrast chiaroscuro lighting with deep blacks and cool cyan highlights. The desaturated color palette emphasizes slate blues and amber streetlight warmth, creating urban decay atmosphere. Compositions favor Dutch angles and asymmetric framing with shallow depth of field, pulling focus to weathered textures and reflective surfaces. The overall mood evokes mystery and isolation through dimly lit, claustrophobic spaces with sharp rim lighting defining silhouettes."`};
-        
+
         const imageParts = await Promise.all(
             section.items
                 .filter(item => item.type === 'image')
@@ -1681,14 +1778,14 @@ Example output: "A gritty, rain-slicked neo-noir aesthetic featuring high-contra
                     return { inlineData: { mimeType, data } };
                 })
         );
-        
+
         const contents = [
             {
                 role: 'user',
                 parts: [textPart, ...imageParts]
             }
         ];
-        
+
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: contents,
@@ -1702,26 +1799,24 @@ Example output: "A gritty, rain-slicked neo-noir aesthetic featuring high-contra
         }
         throw handleApiError(error, 'Gemini');
     }
-};
-
-import { ENHANCED_DIRECTOR_KNOWLEDGE } from './directorKnowledge';
+}
 
 type DirectorConversationMessage = { author: 'user' | 'director'; text: string };
 
-const sanitizeConversationHistory = (history: DirectorConversationMessage[]): DirectorConversationMessage[] => {
+function sanitizeConversationHistory(history: DirectorConversationMessage[]): DirectorConversationMessage[] {
     return history
         .filter((entry) => entry && typeof entry.text === 'string' && entry.text.trim().length > 0)
         .slice(-8);
-};
+}
 
-const buildConversationContents = (history: DirectorConversationMessage[]) => {
+function buildConversationContents(history: DirectorConversationMessage[]) {
     return history.map((entry) => ({
         role: entry.author === 'user' ? 'user' : 'model',
         parts: [{ text: entry.text.trim() }]
     }));
-};
+}
 
-const extractCandidateText = async (response: any): Promise<string> => {
+async function extractCandidateText(response: any): Promise<string> {
     if (!response) return '';
 
     const candidates = response.candidates ?? [];
@@ -1744,13 +1839,13 @@ const extractCandidateText = async (response: any): Promise<string> => {
     }
 
     return '';
-};
+}
 
-export const askTheDirector = async (
+export async function askTheDirector(
     analysis: ScriptAnalysis,
     query: string,
     history: DirectorConversationMessage[] = []
-): Promise<string> => {
+): Promise<string> {
     if (!prefersLiveGemini()) {
         return fallbackDirectorResponse(analysis, query);
     }
@@ -1796,13 +1891,13 @@ ${analysis.scenes.map(s => `Scene ${s.sceneNumber} (${s.setting}): ${s.summary} 
 
 MOODBOARD VISUAL LANGUAGE:
 ${analysis.moodboardTemplates && analysis.moodboardTemplates.length > 0
-    ? analysis.moodboardTemplates
-        .filter(board => board.aiSummary || board.description)
-        .map(board => `${board.title}: ${board.aiSummary || board.description || 'Visual references collected'}`)
-        .join('\n')
-    : analysis.moodboard
-        ? `Cinematography: ${analysis.moodboard.cinematography.aiDescription || analysis.moodboard.cinematography.notes || 'Not defined.'}\nColor: ${analysis.moodboard.color.aiDescription || analysis.moodboard.color.notes || 'Not defined.'}\nStyle: ${analysis.moodboard.style.aiDescription || analysis.moodboard.style.notes || 'Not defined.'}`
-        : 'No moodboard defined yet.'}
+                ? analysis.moodboardTemplates
+                    .filter(board => board.aiSummary || board.description)
+                    .map(board => `${board.title}: ${board.aiSummary || board.description || 'Visual references collected'}`)
+                    .join('\n')
+                : analysis.moodboard
+                    ? `Cinematography: ${analysis.moodboard.cinematography.aiDescription || analysis.moodboard.cinematography.notes || 'Not defined.'}\nColor: ${analysis.moodboard.color.aiDescription || analysis.moodboard.color.notes || 'Not defined.'}\nStyle: ${analysis.moodboard.style.aiDescription || analysis.moodboard.style.notes || 'Not defined.'}`
+                    : 'No moodboard defined yet.'}
 
 TECHNICAL KNOWLEDGE AVAILABLE:${technicalContext || '\nFull cinematography database including lenses, lighting, movement, composition, and color grading.'}`;
 
@@ -1881,78 +1976,78 @@ Remember to stay concise (2-4 sentences or tight bullet points) and redirect cas
         }
         throw handleApiError(error, 'Gemini (Director)');
     }
-};
+}
 
 
 // --- Existing AI Services adapted for new spec ---
 
-export const analyzeScript = async (
+export async function analyzeScript(
     scriptContent: string,
     onProgress?: (message: string) => void,
     context?: { projectId?: string; userId?: string }
-): Promise<ScriptAnalysis> => {
-     if (!prefersLiveGemini()) {
+): Promise<ScriptAnalysis> {
+    if (!prefersLiveGemini()) {
         console.warn('[API Action] analyzeScript using fallback parser because live service is unavailable.');
         return fallbackScriptAnalysis(scriptContent);
-     }
-     console.log("Analyzing script with Gemini API...");
-     try {
-                const ai = requireGeminiClient();
+    }
+    console.log("Analyzing script with Gemini API...");
+    try {
+        const ai = requireGeminiClient();
         const analysisSchema = {
-             type: Type.OBJECT,
-             properties: {
-                 title: { type: Type.STRING },
-                 logline: { type: Type.STRING },
-                 summary: { type: Type.STRING },
-                 scenes: {
-                     type: Type.ARRAY,
-                     items: {
-                         type: Type.OBJECT,
-                         properties: {
-                             id: { type: Type.STRING },
-                             setting: { type: Type.STRING },
-                             summary: { type: Type.STRING },
-                             time_of_day: { type: Type.STRING },
-                             mood: { type: Type.STRING },
-                             lighting: { type: Type.STRING },
-                         },
-                         required: ["id", "setting", "summary", "time_of_day", "mood", "lighting"],
-                     },
-                 },
-                 characters: {
-                     type: Type.ARRAY,
-                     items: {
-                         type: Type.OBJECT,
-                         properties: {
-                             id: { type: Type.STRING },
-                             name: { type: Type.STRING },
-                             description: { type: Type.STRING },
-                         },
-                         required: ["id", "name", "description"],
-                     },
-                 },
-                 locations: {
-                     type: Type.ARRAY,
-                     items: {
-                         type: Type.OBJECT,
-                         properties: {
-                             id: { type: Type.STRING },
-                             name: { type: Type.STRING },
-                             description: { type: Type.STRING },
-                         },
-                         required: ["id", "name", "description"],
-                     },
-                 },
-                 props: { type: Type.ARRAY, items: { type: Type.STRING } },
-                 styling: { type: Type.ARRAY, items: { type: Type.STRING } },
-                 setDressing: { type: Type.ARRAY, items: { type: Type.STRING } },
-                 makeupAndHair: { type: Type.ARRAY, items: { type: Type.STRING } },
-                 sound: { type: Type.ARRAY, items: { type: Type.STRING } },
-             },
-             required: ["title", "logline", "summary", "scenes", "characters", "locations", "props", "styling", "setDressing", "makeupAndHair", "sound"],
-         };
-         const prompt = `You are a professional screenplay analyst.Analyze the following screenplay and provide the output in the requested JSON format. Generate a unique, short, URL-friendly string ID (e.g., "scene-1", "character-elena") for each scene, character, and location. Here is the script:\n\n${scriptContent}`;
-         
+            type: Type.OBJECT,
+            properties: {
+                title: { type: Type.STRING },
+                logline: { type: Type.STRING },
+                summary: { type: Type.STRING },
+                scenes: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            id: { type: Type.STRING },
+                            setting: { type: Type.STRING },
+                            summary: { type: Type.STRING },
+                            time_of_day: { type: Type.STRING },
+                            mood: { type: Type.STRING },
+                            lighting: { type: Type.STRING },
+                        },
+                        required: ["id", "setting", "summary", "time_of_day", "mood", "lighting"],
+                    },
+                },
+                characters: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            id: { type: Type.STRING },
+                            name: { type: Type.STRING },
+                            description: { type: Type.STRING },
+                        },
+                        required: ["id", "name", "description"],
+                    },
+                },
+                locations: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            id: { type: Type.STRING },
+                            name: { type: Type.STRING },
+                            description: { type: Type.STRING },
+                        },
+                        required: ["id", "name", "description"],
+                    },
+                },
+                props: { type: Type.ARRAY, items: { type: Type.STRING } },
+                styling: { type: Type.ARRAY, items: { type: Type.STRING } },
+                setDressing: { type: Type.ARRAY, items: { type: Type.STRING } },
+                makeupAndHair: { type: Type.ARRAY, items: { type: Type.STRING } },
+                sound: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+            required: ["title", "logline", "summary", "scenes", "characters", "locations", "props", "styling", "setDressing", "makeupAndHair", "sound"],
+        };
+        const prompt = `You are a professional screenplay analyst.Analyze the following screenplay and provide the output in the requested JSON format. Generate a unique, short, URL-friendly string ID (e.g., "scene-1", "character-elena") for each scene, character, and location. Here is the script:\n\n${scriptContent}`;
+
         onProgress?.('Analyzing script structure...');
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-pro',
@@ -1971,9 +2066,9 @@ export const analyzeScript = async (
             ...scene,
             sceneNumber: index + 1,
         }));
-        
+
         onProgress?.('Script analyzed. Generating initial shot lists in parallel...');
-        
+
         // OPTIMIZATION: Generate frames for each scene in parallel to reduce total analysis time.
         const frameGenerationPromises = scenesWithNumbers.map(scene => {
             onProgress?.(`Generating shots for Scene ${scene.sceneNumber}: ${scene.setting}...`);
@@ -2023,9 +2118,9 @@ export const analyzeScript = async (
         }
         throw handleApiError(error, 'Gemini (Analysis)');
     }
-};
+}
 
-export const generateFramesForScene = async (scene: AnalyzedScene, directorialNotes?: string): Promise<Partial<Frame>[]> => {
+export async function generateFramesForScene(scene: AnalyzedScene, directorialNotes?: string): Promise<Partial<Frame>[]> {
     if (!prefersLiveGemini()) {
         console.warn('[API Action] generateFramesForScene using fallback frame templates.');
         return [
@@ -2124,14 +2219,14 @@ export const generateFramesForScene = async (scene: AnalyzedScene, directorialNo
     } catch (error) {
         throw handleApiError(error, 'Gemini (Frames)');
     }
-};
+}
 
 /**
  * Analyze a video using Gemini AI to generate a descriptive prompt
  * @param videoUrl - URL of the video to analyze
  * @returns AI-generated description of the video content
  */
-export const analyzeVideoWithGemini = async (videoUrl: string): Promise<string> => {
+export async function analyzeVideoWithGemini(videoUrl: string): Promise<string> {
     console.log('[AI Service] Analyzing video:', videoUrl);
 
     try {
@@ -2185,14 +2280,14 @@ Provide a concise 2-3 sentence description suitable as a video prompt.`;
         // Return fallback description instead of throwing
         return 'Video analysis unavailable. Please add a manual description.';
     }
-};
+}
 
 // Helper function to convert blob to base64
-const blobToBase64 = (blob: Blob): Promise<string> => {
+function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(blob);
     });
-};
+}

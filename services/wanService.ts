@@ -28,15 +28,15 @@ function resolveBooleanEnv(...keys: string[]): boolean {
 
 function resolveWanApiKey(): string {
     try {
+        // Fixed environment variable resolution - check WAN_API_KEY first, then VITE_WAN_API_KEY
         const importMeta = typeof import.meta !== 'undefined' ? (import.meta as any) : undefined;
         const candidates = [
-            importMeta?.env?.VITE_WAN_API_KEY,
-            importMeta?.env?.WAN_API_KEY,
-            typeof process !== 'undefined' ? process.env?.WAN_API_KEY : undefined
+            importMeta?.env?.WAN_API_KEY,     // Check this first
+            importMeta?.env?.VITE_WAN_API_KEY, // Then this
         ];
         for (const candidate of candidates) {
             if (typeof candidate === 'string' && candidate.trim()) {
-                return candidate.trim();
+                return candidate.trim().replace(/\n/g, ''); // Remove newlines
             }
         }
     } catch (error) {
@@ -48,6 +48,19 @@ function resolveWanApiKey(): string {
 const WAN_API_KEY = resolveWanApiKey();
 const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MODE', 'USE_FALLBACK_MODE', 'VITE_USE_FALLBACK_MODE');
 const prefersLiveWan = (): boolean => !!WAN_API_KEY && !FORCE_DEMO_MODE;
+
+// Debug logging for environment variable resolution
+const importMeta = typeof import.meta !== 'undefined' ? (import.meta as any) : undefined;
+console.log('[WAN Service] Environment Variables:', {
+    WAN_API_KEY: !!importMeta?.env?.WAN_API_KEY,
+    WAN_API_KEY_Length: importMeta?.env?.WAN_API_KEY?.length,
+    VITE_WAN_API_KEY: !!importMeta?.env?.VITE_WAN_API_KEY,
+    VITE_WAN_API_KEY_Length: importMeta?.env?.VITE_WAN_API_KEY?.length,
+    RESOLVED_KEY: !!WAN_API_KEY,
+    RESOLVED_KEY_Length: WAN_API_KEY?.length,
+    FORCE_DEMO_MODE,
+    ENV_Source: 'import.meta.env'
+});
 
 function shouldFallbackForWanError(error: unknown): boolean {
     if (FORCE_DEMO_MODE) return true;

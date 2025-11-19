@@ -5,6 +5,7 @@ import { ScriptAnalysis, AnalyzedScene, Frame, Generation, AnalyzedCharacter, An
 import Button from '../components/Button';
 import { generateStillVariants, refineVariant, upscaleImage, animateFrame, upscaleVideo, analyzeVideoWithGemini } from '../services/aiService';
 import { generateVideoFromImageWan } from '../services/wanService';
+import { generateVideoWithKling, refineVideoWithWAN } from '../services/videoFalService';
 import { ArrowLeftIcon, FilmIcon, PlusIcon, AlkemyLoadingIcon, Trash2Icon, XIcon, ImagePlusIcon, FourKIcon, PlayIcon, PaperclipIcon, ArrowRightIcon, SendIcon, CheckIcon, ExpandIcon, ChevronDownIcon, DownloadIcon, SparklesIcon } from '../components/icons/Icons';
 import ImageCarousel from '../components/ImageCarousel';
 import MiniDirectorWidget from '../components/MiniDirectorWidget';
@@ -1188,7 +1189,7 @@ const AnimateStudio: React.FC<{
     scene?: AnalyzedScene;
 }> = ({ frame, onBack, onUpdateFrame, currentProject, user, scene }) => {
     const [motionPrompt, setMotionPrompt] = useState('');
-    const [videoModel, setVideoModel] = useState<'Veo 3.1' | 'Wan'>('Veo 3.1');
+    const [videoModel, setVideoModel] = useState<'Veo 3.1' | 'Kling 2.1 Pro' | 'WAN 2.1' | 'Wan'>('Veo 3.1');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [frameToUpload, setFrameToUpload] = useState<'start' | 'end' | null>(null);
     const [fullScreenVideoUrl, setFullScreenVideoUrl] = useState<string | null>(null);
@@ -1240,9 +1241,9 @@ const AnimateStudio: React.FC<{
             return;
         }
 
-        // SeedDream v4 requires a reference image
-        if (videoModel === 'SeedDream v4' && !startFrame) {
-            alert('SeedDream v4 requires a reference image.');
+        // WAN 2.1 requires a reference image
+        if (videoModel === 'WAN 2.1' && !startFrame) {
+            alert('WAN 2.1 requires a reference image.');
             return;
         }
 
@@ -1318,6 +1319,33 @@ const AnimateStudio: React.FC<{
                         (progress) => onProgress(progress)
                     )
                 );
+                videoUrls = await Promise.all(promises);
+            } else if (videoModel === 'Kling 2.1 Pro') {
+                // Use Kling 2.1 Pro for image-to-video
+                const promises = Array.from({ length: N_VIDEO_GENERATIONS }, async (_, i) => {
+                    return await generateVideoWithKling(
+                        motionPrompt,
+                        startFrame,
+                        5, // duration in seconds
+                        aspectRatio as '16:9' | '9:16' | '1:1',
+                        (progress) => onProgress(progress)
+                    );
+                });
+                videoUrls = await Promise.all(promises);
+            } else if (videoModel === 'WAN 2.1') {
+                // WAN 2.1 requires a reference image
+                if (!startFrame) {
+                    throw new Error('WAN 2.1 requires a reference image. Please upload a start frame.');
+                }
+                const promises = Array.from({ length: N_VIDEO_GENERATIONS }, async (_, i) => {
+                    return await refineVideoWithWAN(
+                        motionPrompt,
+                        startFrame,
+                        4, // duration in seconds
+                        aspectRatio as '16:9' | '9:16' | '1:1',
+                        (progress) => onProgress(progress)
+                    );
+                });
                 videoUrls = await Promise.all(promises);
             } else {
                 throw new Error(`Unknown video model: ${videoModel}`);
@@ -1490,7 +1518,7 @@ const AnimateStudio: React.FC<{
                             <div className="mb-4 p-3 rounded-lg border border-[#dfec2d]/30 bg-gray-800/20">
                                 <label className="text-xs text-gray-400 mb-2 block font-semibold">Video Model</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {(['Veo 3.1', 'Wan'] as const).map((model) => (
+                                    {(['Veo 3.1', 'Kling 2.1 Pro', 'WAN 2.1', 'Wan'] as const).map((model) => (
                                         <button
                                             key={model}
                                             onClick={() => setVideoModel(model)}

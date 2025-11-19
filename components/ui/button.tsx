@@ -5,27 +5,26 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-4 focus-visible:ring-offset-0 relative overflow-hidden group",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-#dfec2d text-white shadow-lg shadow-#dfec2d/20 hover:bg-#b3e617 hover:shadow-xl hover:shadow-#dfec2d/30 focus-visible:ring-#dfec2d/30 active:scale-[0.98] before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
+          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive:
-          "bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600 hover:shadow-xl hover:shadow-red-500/30 focus-visible:ring-red-500/30 active:scale-[0.98]",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border-2 border-#dfec2d/30 bg-transparent text-[var(--color-text-primary)] hover:bg-#dfec2d/10 hover:border-#dfec2d hover:shadow-lg hover:shadow-#dfec2d/10 focus-visible:ring-#dfec2d/20 active:scale-[0.98]",
+          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-[var(--color-surface-card)] text-[var(--color-text-primary)] shadow-md hover:bg-[var(--color-surface-elevated)] hover:shadow-lg focus-visible:ring-[var(--color-accent-primary)]/20 active:scale-[0.98]",
-        ghost:
-          "text-[var(--color-text-secondary)] hover:bg-[var(--color-hover-background)] hover:text-[var(--color-text-primary)] focus-visible:ring-[var(--color-accent-primary)]/20",
-        link: "text-#dfec2d underline-offset-4 hover:underline hover:text-lime-300",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-5 py-2.5 has-[>svg]:px-4",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-xs",
-        lg: "h-12 rounded-lg px-8 has-[>svg]:px-6 text-base font-semibold",
-        icon: "size-10 rounded-lg",
+        default: "h-9 px-4 py-2",
+        sm: "h-8 rounded-md px-3 text-xs",
+        lg: "h-10 rounded-md px-8",
+        icon: "h-9 w-9",
       },
     },
     defaultVariants: {
@@ -35,28 +34,24 @@ const buttonVariants = cva(
   }
 )
 
-function Button({
-  className,
-  variant,
-  size,
-  asChild = false,
-  children,
-  ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
-  const Comp = asChild ? Slot : "button"
-
-  return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    >
-      {children}
-    </Comp>
-  )
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
 }
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
 
 export { Button, buttonVariants }

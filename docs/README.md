@@ -1,10 +1,67 @@
-# Alkemy V2 Enhancement Roadmap
+# Alkemy AI Studio V2.0 - Documentation Hub
 
-This directory contains the complete V2 enhancement documentation for Alkemy AI Film Studio, transforming it from a visual-focused foundation into a **complete end-to-end AI film production platform**.
+## 🎬 Welcome to Alkemy AI Studio
+
+Alkemy AI Studio V2.0 is a production-ready AI-powered film generation platform that transforms scripts into complete visual productions. Built with React 19, TypeScript, and Supabase, the platform integrates cutting-edge AI services including Google Gemini, Fal.ai, and custom LoRA training for character consistency.
+
+**🚀 Production URL**: https://alkemy1-e0duncbnf-qualiasolutionscy.vercel.app
+
+## 📚 Documentation Structure
+
+This documentation is organized into six main categories to provide comprehensive guidance for development, deployment, and maintenance of the Alkemy AI Studio platform.
+
+### 🏗️ 1. Architecture Documentation
+*System design, patterns, and integration strategies*
+
+- **[System Overview](./1-architecture/system-overview.md)** - Complete system architecture and technology stack
+- **[Component Patterns](./1-architecture/component-patterns.md)** - React component design patterns and best practices
+- **[Service Layer](./1-architecture/service-layer.md)** - AI services, data services, and utility services architecture
+- **[Integration Patterns](./1-architecture/integration-patterns.md)** - External service integrations and API patterns
+
+### 💻 2. Development Documentation
+*Development workflows, BMAD integration, and coding standards*
+
+- **[BMAD Integration](./2-development/bmad-integration.md)** - Brownfield Method Agile Development framework integration
+- **[Frontend Guide](./2-development/frontend-guide.md)** - React 19 + TypeScript frontend development
+- **[Backend Guide](./2-development/backend-guide.md)** - Supabase backend development and database design
+- **[Coding Standards](./2-development/coding-standards.md)** - Code style, patterns, and quality standards
+
+### 🚀 3. Deployment Documentation
+*Deployment guides, environment setup, and infrastructure*
+
+- **[Vercel Deployment](./3-deployment/vercel-deployment.md)** - Complete Vercel deployment guide
+- **[Environment Setup](./3-deployment/environment-setup.md)** - Local development environment setup
+- **[API Integrations](./3-deployment/api-integrations.md)** - External API service configuration and integration
+- **[Infrastructure Guide](./3-deployment/infrastructure-guide.md)** - Infrastructure as code and DevOps practices
+
+### ⭐ 4. Features Documentation
+*Feature guides and user-facing functionality*
+
+- **[Voice Interface](./4-features/voice-interface.md)** - Voice I/O and AI Director integration
+- **[Character Identity](./4-features/character-identity.md)** - LoRA training and character consistency system
+- **[3D Worlds](./4-features/3d-worlds.md)** - 3D environment generation and management
+- **[Analytics](./4-features/analytics.md)** - Quality analysis, performance metrics, and cost tracking
+
+### 🧪 5. Quality Documentation
+*Testing, quality assurance, and performance optimization*
+
+- **[Testing Strategy](./5-quality/testing-strategy.md)** - Comprehensive testing approach and frameworks
+- **[Quality Gates](./5-quality/quality-gates.md)** - Quality assurance processes and BMAD QA integration
+- **[Performance Optimization](./5-quality/performance-optimization.md)** - Performance tuning and optimization strategies
+
+### 📖 6. Reference Documentation
+*API references, troubleshooting, and supporting materials*
+
+- **[API Documentation](./6-references/api-documentation.md)** - Complete API reference and endpoints
+- **[Component Library](./6-references/component-library.md)** - UI component documentation and usage
+- **[Troubleshooting](./6-references/troubleshooting.md)** - Common issues and solutions
+- **[Glossary](./6-references/glossary.md)** - Terms, definitions, and concepts
 
 ---
 
-## 📋 Quick Navigation
+## 📋 Legacy Documentation
+
+For historical reference and project context:
 
 - **[Product Requirements Document (PRD)](./prd.md)** - Complete V2 requirements and epic structure
 - **[Implementation Stories](./stories/)** - Detailed user stories for all epics (30 implementation stories)

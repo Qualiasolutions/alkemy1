@@ -10,15 +10,14 @@ const importMetaEnv = typeof import.meta !== 'undefined' ? (import.meta as any)?
 
 const resolveFalApiKey = (): string => {
     try {
+        // Fixed environment variable resolution - check FAL_API_KEY first, then VITE_FAL_API_KEY
         const candidates = [
-            importMetaEnv.VITE_FAL_API_KEY,
-            importMetaEnv.FAL_API_KEY,
-            typeof process !== 'undefined' ? process.env?.FAL_API_KEY : undefined,
-            typeof process !== 'undefined' ? process.env?.VITE_FAL_API_KEY : undefined
+            importMetaEnv.FAL_API_KEY,        // Check this first
+            importMetaEnv.VITE_FAL_API_KEY,   // Then this
         ];
         for (const candidate of candidates) {
             if (typeof candidate === 'string' && candidate.trim()) {
-                return candidate.trim();
+                return candidate.trim().replace(/\n/g, ''); // Remove newlines
             }
         }
     } catch (error) {
@@ -29,24 +28,56 @@ const resolveFalApiKey = (): string => {
 
 const FAL_API_KEY = resolveFalApiKey();
 
+// Debug logging for environment variable resolution
+console.log('[Video FAL Service] Environment Variables:', {
+    FAL_API_KEY: !!importMetaEnv.FAL_API_KEY,
+    FAL_API_KEY_Length: importMetaEnv.FAL_API_KEY?.length,
+    VITE_FAL_API_KEY: !!importMetaEnv.VITE_FAL_API_KEY,
+    VITE_FAL_API_KEY_Length: importMetaEnv.VITE_FAL_API_KEY?.length,
+    RESOLVED_KEY: !!FAL_API_KEY,
+    RESOLVED_KEY_Length: FAL_API_KEY?.length,
+    ENV_Source: 'import.meta.env'
+});
+
 // Video model configurations
+// Updated 2025-11-19: Fixed endpoints to match Fal.ai API v2.1
 const VIDEO_MODEL_CONFIG = {
-    'Kling 2.5': {
-        apiUrl: 'https://fal.run/fal-ai/kling-video/v2/pro/text-to-video',
-        imageToVideoUrl: 'https://fal.run/fal-ai/kling-video/v2/pro/image-to-video',
-        displayName: 'Kling 2.5 Pro',
-        description: 'High-quality cinematic video generation',
+    'Kling 2.1 Pro': {
+        apiUrl: 'https://fal.run/fal-ai/kling-video/v2.1/pro/text-to-video',
+        imageToVideoUrl: 'https://fal.run/fal-ai/kling-video/v2.1/pro/image-to-video',
+        displayName: 'Kling 2.1 Pro',
+        description: 'Professional-grade cinematic video generation with enhanced motion',
         supportsImageToVideo: true,
         supportsTextToVideo: true,
         maxDuration: 10, // seconds
     },
-    'SeedDream v4': {
-        apiUrl: 'https://fal.run/fal-ai/seeddream/v4/image-to-video',
-        displayName: 'SeedDream v4',
-        description: 'Image refinement and animation (refining only)',
+    'Kling 2.1 Standard': {
+        apiUrl: 'https://fal.run/fal-ai/kling-video/v2.1/standard/text-to-video',
+        imageToVideoUrl: 'https://fal.run/fal-ai/kling-video/v2.1/standard/image-to-video',
+        displayName: 'Kling 2.1 Standard',
+        description: 'Cost-efficient high-quality video generation',
+        supportsImageToVideo: true,
+        supportsTextToVideo: true,
+        maxDuration: 10, // seconds
+    },
+    'WAN 2.1': {
+        apiUrl: 'https://fal.run/fal-ai/wan-i2v',
+        imageToVideoUrl: 'https://fal.run/fal-ai/wan-i2v',
+        displayName: 'WAN 2.1',
+        description: 'Professional-grade image-to-video with high motion diversity',
         supportsImageToVideo: true,
         supportsTextToVideo: false,
         maxDuration: 5, // seconds
+        refinementOnly: true,
+    },
+    'Veo 2': {
+        apiUrl: 'https://fal.run/fal-ai/veo2/image-to-video',
+        imageToVideoUrl: 'https://fal.run/fal-ai/veo2/image-to-video',
+        displayName: 'Veo 2 (Google)',
+        description: 'Realistic motion and high-quality output up to 8 seconds',
+        supportsImageToVideo: true,
+        supportsTextToVideo: false,
+        maxDuration: 8, // seconds
         refinementOnly: true,
     },
 } as const;
@@ -210,7 +241,9 @@ export async function generateVideoWithFal(
             console.error('[Video FAL Service] API Error:', {
                 status: response.status,
                 statusText: response.statusText,
-                error: errorText
+                error: errorText,
+                endpoint: apiUrl,
+                model: variant
             });
 
             if (response.status === 401) {
@@ -219,9 +252,11 @@ export async function generateVideoWithFal(
                 throw new Error('FAL API rate limit exceeded. Please try again later.');
             } else if (response.status === 400) {
                 throw new Error(`FAL API request error: ${errorText}. Please check your prompt and parameters.`);
+            } else if (response.status === 404) {
+                throw new Error(`FAL API endpoint not found (${variant}). This model may not be available or the endpoint has changed. Technical details: ${response.status} - ${errorText}`);
             }
 
-            throw new Error(`Fal.ai service temporarily unavailable due to Egress Excess overloading the backend. Please try again in a few minutes. Technical details: ${response.status} - ${errorText}`);
+            throw new Error(`FAL API error (${variant}): ${response.status} - ${errorText}`);
         }
 
         const result: VideoGenerationResult = await response.json();
@@ -259,7 +294,7 @@ export async function generateVideoWithFal(
 };
 
 /**
- * Generate video using Kling 2.5 specifically
+ * Generate video using Kling 2.1 Pro specifically
  * Convenience wrapper for the most common use case
  */
 export async function generateVideoWithKling(
@@ -269,13 +304,13 @@ export async function generateVideoWithKling(
     aspectRatio: '16:9' | '9:16' | '1:1' = '16:9',
     onProgress?: (progress: number) => void
 ): Promise<string> {
-    return generateVideoWithFal(prompt, 'Kling 2.5', referenceImageUrl, duration, aspectRatio, onProgress);
+    return generateVideoWithFal(prompt, 'Kling 2.1 Pro', referenceImageUrl, duration, aspectRatio, onProgress);
 };
 
 /**
- * Generate video using SeedDream v4 (refinement only - requires reference image)
+ * Generate video using WAN 2.1 (image-to-video refinement - requires reference image)
  */
-export async function refineVideoWithSeedDream(
+export async function refineVideoWithWAN(
     prompt: string,
     referenceImageUrl: string,
     duration: number = 4,
@@ -283,7 +318,23 @@ export async function refineVideoWithSeedDream(
     onProgress?: (progress: number) => void
 ): Promise<string> {
     if (!referenceImageUrl) {
-        throw new Error('SeedDream v4 requires a reference image for video refinement.');
+        throw new Error('WAN 2.1 requires a reference image for video generation.');
     }
-    return generateVideoWithFal(prompt, 'SeedDream v4', referenceImageUrl, duration, aspectRatio, onProgress);
+    return generateVideoWithFal(prompt, 'WAN 2.1', referenceImageUrl, duration, aspectRatio, onProgress);
+};
+
+/**
+ * Generate video using Veo 2 (Google - image-to-video - requires reference image)
+ */
+export async function generateVideoWithVeo2(
+    prompt: string,
+    referenceImageUrl: string,
+    duration: number = 5,
+    aspectRatio: '16:9' | '9:16' | '1:1' = '16:9',
+    onProgress?: (progress: number) => void
+): Promise<string> {
+    if (!referenceImageUrl) {
+        throw new Error('Veo 2 requires a reference image for video generation.');
+    }
+    return generateVideoWithFal(prompt, 'Veo 2', referenceImageUrl, duration, aspectRatio, onProgress);
 };
