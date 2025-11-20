@@ -22,7 +22,7 @@ import WanTransferTab from './tabs/WanTransferTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
 import { ProjectRoadmapTab } from './tabs/ProjectRoadmapTab';
-import GenerateWorldTab from './src/tabs/GenerateWorldTab';
+// import GenerateWorldTab from './src/tabs/GenerateWorldTab'; // Removed - feature not yet implemented
 
 import GenerateTab from './tabs/GenerateTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
@@ -1060,7 +1060,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
         />;
       case '3d_worlds':
-        return <GenerateWorldTab scriptAnalysis={scriptAnalysis} currentSceneId={null} />;
+        return <PlaceholderTab tabName="Generate World" message="3D World Generation coming soon" />;
       case 'compositing':
         return <CompositingTab
           scriptAnalysis={scriptAnalysis}

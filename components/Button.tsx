@@ -1,10 +1,10 @@
 
 // Re-export unified button for backward compatibility
 // This preserves all existing imports and adds enhanced features
-export { Button, buttonVariants, type ButtonProps } from './ui/button-unified';
+export { Button, buttonVariants, type ButtonProps } from './ui/button';
 
 // Map old variant names to new ones for compatibility
-import { Button as UnifiedButton, type ButtonProps as UnifiedButtonProps } from './ui/button-unified';
+import { Button as UnifiedButton, type ButtonProps as UnifiedButtonProps } from './ui/button';
 import React from 'react';
 
 // Wrapper for backward compatibility with old variant names

@@ -1,4 +1,4 @@
-// Re-export unified card for backward compatibility
+// Re-export from card.tsx for backward compatibility
 export {
   Card,
   CardHeader,
@@ -8,4 +8,4 @@ export {
   CardDescription,
   CardAction,
   type CardProps
-} from './card-unified';
+} from './card';
