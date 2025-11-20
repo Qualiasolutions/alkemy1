@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:43.822Z'
+auto_sync: true
+---
 # Story 6.3: Analytics Dashboard and Reports
 
 **Epic**: Epic 6 - Project Quality Analytics & Feedback

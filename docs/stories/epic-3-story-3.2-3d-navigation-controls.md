@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:47.151Z'
+auto_sync: true
+---
 # Story 3.2: 3D Navigation and Camera Controls
 
 **Epic**: Epic 3 - Explorable 3D Location Environments

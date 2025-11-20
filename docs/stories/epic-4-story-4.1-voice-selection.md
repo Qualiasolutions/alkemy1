@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:46.220Z'
+auto_sync: true
+---
 # Story 4.1: Character Voice Selection and Casting
 
 **Epic**: Epic 4 - Voice & Dialogue Production

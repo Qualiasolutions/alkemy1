@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:45.528Z'
+auto_sync: true
+---
 # Story 4.4: Dialogue Timeline Integration
 
 **Epic**: Epic 4 - Voice & Dialogue Production

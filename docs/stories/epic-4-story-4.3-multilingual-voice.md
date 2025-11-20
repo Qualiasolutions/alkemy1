@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:45.755Z'
+auto_sync: true
+---
 # Story 4.3: Multilingual Voice Synthesis
 
 **Epic**: Epic 4 - Voice & Dialogue Production

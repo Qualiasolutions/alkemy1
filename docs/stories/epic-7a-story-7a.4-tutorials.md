@@ -1,3 +1,16 @@
+---
+epic: EPIC-7a
+story: STORY-7a.4
+title: Community Tutorials and Highlights
+status: draft
+progress: 0
+assignee: null
+dependencies:
+  - STORY-7a.1
+auto_sync: true
+last_sync: '2025-11-20T11:26:42.326Z'
+---
+
 # Story 7a.4: Community Tutorials and Highlights
 
 **Epic**: Epic 7a - Community Hub (Growth)

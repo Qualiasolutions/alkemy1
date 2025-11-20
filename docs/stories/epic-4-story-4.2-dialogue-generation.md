@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:45.986Z'
+auto_sync: true
+---
 # Story 4.2: Dialogue Generation from Script
 
 **Epic**: Epic 4 - Voice & Dialogue Production

@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:43.575Z'
+auto_sync: true
+---
 # Story 6.4: Director Agent Analytics Integration
 
 **Epic**: Epic 6 - Project Quality Analytics & Feedback

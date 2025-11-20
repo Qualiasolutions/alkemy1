@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:44.291Z'
+auto_sync: true
+---
 # Story 6.1: Creative Quality Analysis
 
 **Epic**: Epic 6 - Project Quality Analytics & Feedback

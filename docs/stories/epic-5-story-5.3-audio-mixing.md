@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:44.826Z'
+auto_sync: true
+---
 # Story 5.3: Timeline Audio Mixing
 
 **Epic**: Epic 5 - Music, Sound & Audio Mixing

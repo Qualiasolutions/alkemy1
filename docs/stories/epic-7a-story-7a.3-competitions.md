@@ -1,3 +1,16 @@
+---
+epic: EPIC-7a
+story: STORY-7a.3
+title: Monthly Competitions
+status: draft
+progress: 0
+assignee: null
+dependencies:
+  - STORY-7a.1
+auto_sync: true
+last_sync: '2025-11-20T11:26:42.566Z'
+---
+
 # Story 7a.3: Monthly Competitions
 
 **Epic**: Epic 7a - Community Hub (Growth)

@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:48.832Z'
+auto_sync: true
+---
 # Story 1.3: Style Learning and Personalization
 
 **Epic**: Epic 1 - Director Agent Voice Enhancement

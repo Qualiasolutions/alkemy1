@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:47.637Z'
+auto_sync: true
+---
 # Story 2.3: Character Identity Integration with Shot Generation
 
 **Epic**: Epic 2 - Character Identity Consistency System  

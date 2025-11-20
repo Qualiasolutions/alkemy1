@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:44.541Z'
+auto_sync: true
+---
 # Story 5.4: Audio Export and Rendering
 
 **Epic**: Epic 5 - Music, Sound & Audio Mixing

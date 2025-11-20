@@ -1,3 +1,16 @@
+---
+epic: EPIC-7a
+story: STORY-7a.2
+title: Creator Profiles and Portfolios
+status: draft
+progress: 0
+assignee: null
+dependencies:
+  - STORY-7a.1
+auto_sync: true
+last_sync: '2025-11-20T11:26:42.831Z'
+---
+
 # Story 7a.2: Creator Profiles and Portfolios
 
 **Epic**: Epic 7a - Community Hub (Growth)

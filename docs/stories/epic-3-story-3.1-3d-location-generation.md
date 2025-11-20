@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:47.396Z'
+auto_sync: true
+---
 # Story 3.1: 3D Location Generation and Loading
 
 **Epic**: Epic 3 - Explorable 3D Location Environments

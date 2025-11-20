@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:48.603Z'
+auto_sync: true
+---
 # Story 1.4: Continuity Checking and Feedback
 
 **Epic**: Epic 1 - Director Agent Voice Enhancement

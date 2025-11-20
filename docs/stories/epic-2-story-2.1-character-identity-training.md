@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:48.122Z'
+auto_sync: true
+---
 # Story 2.1: Character Identity Training/Preparation Workflow
 
 **Epic**: Epic 2 - Character Identity Consistency System

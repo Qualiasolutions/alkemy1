@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:46.686Z'
+auto_sync: true
+---
 # Story 3.4: Lighting Preset System
 
 **Epic**: Epic 3 - Explorable 3D Location Environments

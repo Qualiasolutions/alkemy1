@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:42.060Z'
+auto_sync: true
+---
 # Story 8.2: V2.1 Integration Testing
 
 **Epic**: Epic 8 - Cross-Feature Integration Testing

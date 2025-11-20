@@ -1,3 +1,7 @@
+---
+last_sync: '2025-11-20T11:26:46.451Z'
+auto_sync: true
+---
 # Story 3.5: Location Assets and Reusability
 
 **Epic**: Epic 3 - Explorable 3D Location Environments

@@ -1,3 +1,15 @@
+---
+epic: EPIC-7a
+story: STORY-7a.1
+title: Film Gallery and Browse
+status: draft
+progress: 0
+assignee: null
+dependencies: []
+auto_sync: true
+last_sync: '2025-11-20T11:26:43.099Z'
+---
+
 # Story 7a.1: Film Gallery and Browse
 
 **Epic**: Epic 7a - Community Hub (Growth)
