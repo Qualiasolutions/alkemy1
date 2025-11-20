@@ -41,7 +41,7 @@ export async function generateVideoFromText(
         }
 
         // Call HuggingFace text-to-video service
-        const video Url = await generateTextToVideoWithHF(prompt, onProgress);
+        const videoUrl = await generateTextToVideoWithHF(prompt, onProgress);
 
         // Log usage for analytics
         if (context?.userId && context?.projectId) {

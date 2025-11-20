@@ -23,7 +23,7 @@ export const TABS_CONFIG = [
       { id: 'script', name: 'Script', icon: '/script.svg' },
       { id: 'moodboard', name: 'Moodboard', icon: '/moodboard.svg' },
       { id: 'cast_locations', name: 'Cast & Locations', icon: '/cast_locations.svg' },
-      { id: '3d_worlds', name: '3D Worlds', icon: '/worlds_3d.svg' },
+      { id: '3d_worlds', name: 'Generate World', icon: '/worlds_3d.svg' },
       { id: 'compositing', name: 'Compositing', icon: '/compositing.svg' },
       { id: 'presentation', name: 'Presentation', icon: '/presentation.svg' },
     ],

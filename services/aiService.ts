@@ -1215,10 +1215,16 @@ export async function generateVisual(
     const canUsePollinations = isPollinationsAvailable();
 
     // Check if this is a Pollinations.AI model (FREE!)
-    const isPollinationsModel = false; // All free models removed
+    const isPollinationsModel = model === 'FLUX 1.1' || model === 'FLUX Schnell' ||
+                                model === 'FLUX Realism' || model === 'FLUX Anime' ||
+                                model === 'Stable Diffusion' ||
+                                (model.includes('FLUX') && !model.includes('BFL'));
 
-    // Check if this is a FAL.AI Flux model (with LoRA support)
-    const isFalModel = model === 'FLUX.1.1 Pro (FAL)' || model === 'FLUX.1 Kontext (FAL)' || model === 'FLUX Ultra (FAL)' || model === 'Seadream v4 (FAL)';
+    // Check if this is a BFL model (Black Forest Labs)
+    const isBflModel = model.includes('(BFL)');
+
+    // No FAL models allowed - user directive
+    const isFalModel = false;
 
     if (isFalModel) {
         // Route to FAL.AI service (paid, high quality)
@@ -1364,8 +1370,97 @@ export async function generateVisual(
         }
     }
 
+    // Handle BFL models (Black Forest Labs)
+    if (isBflModel) {
+        console.log("[generateVisual] Using BFL for model:", model);
+        try {
+            const { generateImageWithBFL, isBFLApiAvailable } = await import('./bflService');
+
+            if (!isBFLApiAvailable()) {
+                console.warn("[generateVisual] BFL API key not available, falling back");
+                onProgress?.(100);
+                return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+            }
+
+            // Map model names to BFL model IDs
+            const bflModel = model.includes('Kontext') ? 'flux-1-kontext' :
+                            model.includes('Ultra') ? 'flux-ultra' :
+                            'flux-1-kontext'; // Default
+
+            const imageUrl = await generateImageWithBFL(
+                prompt,
+                bflModel,
+                aspect_ratio,
+                onProgress,
+                seed
+            );
+
+            // Upload to Supabase if context is available
+            if (context?.projectId && context?.userId) {
+                try {
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const base64Data = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const result = reader.result as string;
+                            resolve(result.split(',')[1]);
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+
+                    const fileName = `${model.replace(/\s+/g, '_')}_${aspect_ratio}_${seed}`;
+                    const { url: uploadedUrl, error } = await uploadImageToSupabase(
+                        base64Data,
+                        fileName,
+                        context.projectId,
+                        context.userId,
+                        USAGE_ACTIONS.IMAGE_GENERATION,
+                        undefined,
+                        context.projectId,
+                        {
+                            model: model,
+                            prompt: prompt.substring(0, 200),
+                            aspectRatio: aspect_ratio,
+                            sceneId: context.sceneId,
+                            frameId: context.frameId,
+                            provider: 'BFL',
+                            seed,
+                        }
+                    );
+
+                    if (error) {
+                        console.warn('[generateVisual] Failed to upload BFL image to Supabase:', error);
+                        return { url: imageUrl, fromFallback: false };
+                    }
+
+                    return { url: uploadedUrl, fromFallback: false };
+                } catch (uploadError) {
+                    console.warn('[generateVisual] BFL upload failed, returning direct URL:', uploadError);
+                    return { url: imageUrl, fromFallback: false };
+                }
+            }
+
+            return { url: imageUrl, fromFallback: false };
+        } catch (error) {
+            console.error("[generateVisual] BFL generation failed:", error);
+            onProgress?.(100);
+            return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+        }
+    }
+
     // Normalize model labels for Gemini models
     const normalizedModel = model === 'Gemini Nano Banana' ? 'Gemini Flash Image' : model;
+
+    // Check if this is explicitly a Gemini model
+    const isGeminiModel = model.includes('Gemini') || model === 'Nano Banana' || model === 'Gemini Nano Banana';
+
+    // Only check Gemini availability for actual Gemini models
+    if (isGeminiModel && !canUseGemini) {
+        console.log("[generateVisual] Gemini model requested but not available, using fallback");
+        onProgress?.(100);
+        return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
+    }
 
     // Determine temperature based on model for creative variation
     let temperature: number | undefined = undefined;
@@ -1375,11 +1470,6 @@ export async function generateVisual(
 
     // Flux API removed - using free Pollinations for FLUX models instead
     const effectiveModel = normalizedModel;
-
-    if (!canUseGemini) {
-        onProgress?.(100);
-        return { url: getFallbackImageUrl(aspect_ratio, seed), fromFallback: true };
-    }
 
     console.log("[generateVisual] Model routing", {
         originalModel: model,

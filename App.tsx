@@ -22,7 +22,7 @@ import WanTransferTab from './tabs/WanTransferTab';
 import ExportsTab from './tabs/ExportsTab';
 import RoadmapTab from './tabs/RoadmapTab';
 import { ProjectRoadmapTab } from './tabs/ProjectRoadmapTab';
-import ThreeDWorldsTab from './src/tabs/3DWorldsTabEnhanced';
+import GenerateWorldTab from './src/tabs/GenerateWorldTab';
 
 import GenerateTab from './tabs/GenerateTab';
 import { ScriptAnalysis, AnalyzedScene, Frame, FrameStatus, AnalyzedCharacter, AnalyzedLocation, Moodboard, MoodboardTemplate, TimelineClip, Project, RoadmapBlock } from './types';
@@ -1060,7 +1060,7 @@ const AppContentBase: React.FC<AppContentBaseProps> = ({ user, isAuthenticated, 
           moodboardTemplates={scriptAnalysis?.moodboardTemplates || []}
         />;
       case '3d_worlds':
-        return <ThreeDWorldsTab scriptAnalysis={scriptAnalysis} />;
+        return <GenerateWorldTab scriptAnalysis={scriptAnalysis} currentSceneId={null} />;
       case 'compositing':
         return <CompositingTab
           scriptAnalysis={scriptAnalysis}

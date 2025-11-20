@@ -4,481 +4,283 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Alkemy AI Studio V2.0 Production is a fully-optimized AI-powered film generation platform that transforms scripts into complete visual productions. The application uses React 19, TypeScript, and integrates with Google Gemini AI, Fal.ai Flux models, HunyuanWorld 3D generation, and Supabase for authentication and data persistence.
+Alkemy AI Studio is an AI-powered film generation platform that transforms scripts into complete visual productions. Built with React 19, TypeScript, Vite, and TailwindCSS, it integrates multiple AI services (Google Gemini, Fal.ai Flux LoRA, HuggingFace, Pollinations) and uses Supabase for authentication and persistence.
 
-**Latest Production URL**: https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app (Deployed 2025-11-19)
-**Previous URL**: https://alkemy1-e0duncbnf-qualiasolutionscy.vercel.app (Deployed 2025-11-18)
-
-## Recent Major Enhancements (v2.0 Production)
-
-### Latest Fixes (2025-11-19)
-- ✅ **LoRA Training CORS Fix**: Resolved image download 400 errors with dual-path approach (direct + proxy fallback)
-- ✅ **Content Security Policy**: Updated CSP to whitelist Supabase and Fal.ai domains
-- ✅ **Video API Corrections**: Fixed model references from 'Kling 2.5' to 'Kling 2.1 Pro'
-- ✅ **Image Proxy API**: Created `/api/image-proxy` for CORS bypass on image downloads
-- ✅ **Supabase Storage**: Configured character-references bucket as public with RLS policies
-- ✅ **API Key Validation**: Build-time validation warns of missing critical keys
-
-See [LORA_CORS_FIX_2025-11-19.md](./LORA_CORS_FIX_2025-11-19.md) for complete fix report.
-
-### Security & Performance
-- ✅ **AES-256-GCM Encryption**: Military-grade API key encryption using Web Crypto API
-- ✅ **CLIP Similarity**: Advanced character identity testing (CLIP + pHash = 93% accuracy)
-- ✅ **Audio Storage**: Proper Supabase integration for voice-generated files
-- ✅ **Test Coverage**: 93% pass rate (77/83 tests passing)
-- ✅ **Bundle Optimization**: 164KB gzipped (down from 512KB), 13 code chunks
-
-### Feature Status
-- ✅ **Epic 1 - Style Learning**: Creative pattern tracking and AI cinematography suggestions
-- ✅ **Epic 2 - Character Identity**: LoRA training with 90-98% consistency achieved
-- ✅ **Epic 3 - 3D Worlds**: Infrastructure ready with HunyuanWorld integration
-- 🚧 **Epic 4 - Voice Acting**: Infrastructure ready, implementation pending
-- 🚧 **Epic 5 - Audio Production**: Services stubbed, implementation pending
+**Latest Production**: https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app (2025-11-19)
 
 ## Development Commands
 
-### Essential Commands
 ```bash
 # Development
-npm run dev              # Start dev server on port 3000 with hot reload
-npm run build            # Production build (optimizes with Terser, code splitting)
+npm run dev              # Start dev server on http://localhost:3000
+npm run build            # Production build with code splitting
 npm run preview          # Preview production build locally
+npm run type-check       # TypeScript type checking without build
+npm run lint             # Run ESLint
 
 # Testing
-npm test                 # Run unit tests with Vitest
-npm run test:ui          # Interactive test UI with Vitest
-npm run test:coverage    # Generate coverage reports (HTML, JSON, text)
+npm test                 # Run all tests with Vitest
+npm run test:ui          # Interactive test UI
+npm run test:coverage    # Generate coverage reports
 
-# Single test execution
-npm test -- CharacterIdentityService.test.ts    # Run specific test file
-npm test -t "should train LoRA model"           # Run tests matching pattern
-```
+# Run specific tests
+npm test -- CharacterIdentityService.test.ts
+npm test -t "should train LoRA model"
 
-### Deployment
-```bash
-# Deploy to Vercel production
-vercel --prod
-
-# View production logs
-vercel logs https://alkemy1-i4q9n2e8r-qualiasolutionscy.vercel.app
-
-# Pull environment variables from Vercel
+# Deployment
+vercel --prod            # Deploy to Vercel production
+vercel logs <url>        # View production logs
 vercel env pull .env.vercel.production --environment=production
 ```
 
 ## Architecture Overview
 
-### Core Application Structure
+### Application Structure
 
-The application follows a **tab-based workflow** architecture with distinct production phases:
+**Tab-Based Workflow** organized around film production phases:
+- **Pre-Production**: Script analysis, moodboard, cast/locations (`ScriptTab`, `MoodboardTab`, `CastLocationsTab`)
+- **Production**: Scene assembly, 3D worlds (`SceneAssemblerTab`, `GenerateWorldTab`)
+- **Post-Production**: Timeline editing, exports, analytics (`PostProductionTab`, `AnalyticsTab`)
 
-1. **Pre-Production**: Script analysis, moodboard creation, character/location management
-2. **Production**: 3D world generation, scene assembly, compositing
-3. **Post-Production**: Timeline editing, exports, analytics
+**Core Patterns**:
+- **State Management**: Centralized in `App.tsx`, user preferences in Supabase, optimistic updates via `saveManager.ts`
+- **Service Layer**: All AI/API logic in `/services`, isolated from UI components
+- **Tab Containers**: Smart components in `/tabs` manage state and service interactions
+- **Presentational Components**: Reusable UI in `/components` (Radix UI foundation)
+- **Type Safety**: Complete domain model in `types.ts` (~500 lines)
 
-**Key architectural patterns**:
-- **State Management**: Centralized project state in `App.tsx` with React hooks for UI preferences
-- **Service Layer**: All AI/API interactions isolated in `/services` directory
-- **Component Hierarchy**: Smart containers in `/tabs`, presentational components in `/components`
-- **Type Safety**: Comprehensive TypeScript types in `types.ts` (478 lines covering entire domain model)
-
-### Critical Services Architecture
+### Key Services
 
 #### AI Service (`services/aiService.ts`)
-**Purpose**: Unified interface for all AI generation (images, videos, script analysis)
+Central hub for all AI generation with multi-provider fallback:
 
-**Key patterns**:
-- **Model Fallback Chain**: Attempts multiple Gemini models (`gemini-2.5-pro` → `gemini-2.5-flash-002` → fallback)
-- **Safety Filter Bypass**: Automatically retries with Flux API if Gemini blocks for content safety
-- **Supabase Integration**: Uploads all generated media to Supabase Storage with metadata tracking
-- **Progress Callbacks**: Real-time progress updates for long-running operations
+**Model Routing**:
+- Script analysis: Gemini 2.5 Pro → Flash → fallback content
+- Image generation: Pollinations (free) → Flux API → HuggingFace
+- Video generation: HuggingFace AnimateDiff/SVD → Veo (when available)
+- Safety filter handling: Auto-retry with alternative providers
 
-**Critical functions**:
-- `analyzeScript()`: Parses screenplay into structured JSON (scenes, characters, locations, frames)
-- `generateStillVariants()`: Generates N image variants with reference images and character identity LoRAs
-- `animateFrame()`: Uses Veo 3.1 to animate still images with motion prompts
+**Critical Functions**:
+- `analyzeScript()`: Parses screenplay → JSON (scenes, characters, locations, frames)
+- `generateStillVariants()`: Image generation with LoRA injection for character identity
+- `animateFrame()`: Video animation from still images
 - `askTheDirector()`: AI cinematography assistant with technical knowledge base
 
-**Model routing logic**:
-- **Imagen 4.0**: Text-to-image generation (no reference images)
-- **Gemini Flash Image**: Image editing/refinement with reference images (multimodal)
-- **Flux Pro/Dev**: High-quality photorealistic generation via Fal.ai API
-- **Veo 3.1**: Video animation from still images
+**Integration Points**: Uploads all generated media to Supabase Storage, logs usage via `usageService`
 
 #### Character Identity Service (`services/characterIdentityService.ts`)
-**Purpose**: LoRA-based character consistency system (Epic 2)
+LoRA-based character consistency (Epic 2):
 
-**Architecture**:
-- Trains custom Flux LoRA models using Fal.ai API
-- Achieves 90-98% visual similarity across generations
-- Stores LoRA weights URLs in character identity metadata
-- Integrates with `generateStillVariants()` for automatic character injection
-- Full UI integration with Train Character button, status badges, and visual feedback
+**Workflow**:
+1. Validate 3-12 reference images (>512px, <10MB each)
+2. Upload to Supabase Storage (`character-references` bucket)
+3. Train Flux LoRA via Fal.ai API (5-10 min, dual-path CORS handling)
+4. Store LoRA URL in `character.identity.technologyData.falCharacterId`
+5. Auto-inject LoRA parameters into all subsequent image generations
 
-**Critical flow**:
-1. Upload 6-12 reference images via CharacterIdentityModal
-2. Train Flux LoRA model (5-10 minutes) with progress tracking
-3. Store `loraUrl` in `character.identity.technologyData.falCharacterId`
-4. Pass LoRA parameters to all subsequent image generations
-5. Visual status indicators: "Identity" (ready), "Training" (preparing), "Error" (failed), "No ID" (none)
+**Status States**: `none` | `preparing` | `ready` | `error`
 
-**Important callback**: `onPrepareIdentity` callback must be wired from CastLocationsTab → CastLocationGenerator to sync identity state during generation (fixed in commit 5d23fca)
+**IMPORTANT**: `onPrepareIdentity` callback must propagate from `CastLocationsTab` → `CastLocationGenerator` to sync identity state during generation.
 
-#### Supabase Integration (`services/supabase.ts`)
-**Purpose**: Authentication, project persistence, media storage
+#### Supabase Service (`services/supabase.ts`)
+Authentication, persistence, and media storage:
 
-**Database schema**:
-- `projects`: User projects with script_content, script_analysis JSON, timeline_clips
-- `user_preferences`: UI state, active tab, sidebar expansion per user
-- `media_assets`: Uploaded images/videos with metadata, linked to projects
-- `usage_logs`: AI usage tracking for analytics (token counts, costs, performance)
+**Tables**:
+- `projects`: Script content, analysis JSON, timeline clips
+- `user_preferences`: UI state (active tab, sidebar expansion)
+- `media_assets`: Generated images/videos with metadata
+- `usage_logs`: AI usage tracking (tokens, costs, performance)
 
-**RLS Security**: Row-Level Security policies ensure users only access their own data
+**Storage Buckets**:
+- `projects/{projectId}/images/` - Generated images
+- `projects/{projectId}/videos/` - Generated videos
+- `character-references/{characterId}/` - LoRA training images
 
-**Storage buckets**:
-- `projects/{projectId}/images/`: AI-generated images
-- `projects/{projectId}/videos/`: AI-generated videos
-- `projects/{projectId}/uploads/`: User-uploaded media
+**Security**: Row-Level Security (RLS) policies ensure user data isolation
 
 #### Save Manager (`services/saveManager.ts`)
-**Purpose**: Optimistic updates with debounced cloud sync
+Optimistic updates with debounced Supabase sync (5-second window)
 
-**Architecture**:
-- Debounces rapid saves (5-second window)
-- Optimistic local state updates
-- Background sync to Supabase
-- Conflict resolution for concurrent edits
+### State Management
 
-### Component Architecture
-
-#### Tab Components (`/tabs`)
-**Pattern**: Each tab is a smart container managing its own state and service interactions
-
-**Key tabs by workflow phase**:
-- **Pre-Production**:
-  - `ScriptTab.tsx`: Script upload, analysis trigger
-  - `MoodboardTab.tsx`: Reference image management, AI-powered search
-  - `CastLocationsTab.tsx`: Character/location generation, identity training
-- **Production**:
-  - `SceneAssemblerTab.tsx`: Shot-by-shot compositing with image/video generation
-  - `ThreeDWorldsTab.tsx`: 3D world generation (infrastructure ready)
-- **Post-Production**:
-  - `PostProductionTab.tsx`: Timeline editing, exports
-  - `AnalyticsTab.tsx`: Quality analysis, performance metrics, cost tracking
-
-#### Shared Components (`/components`)
-- **AI Interaction**: `DirectorWidget.tsx` (AI cinematography assistant, voice + text commands)
-- **Generation**: `VideoGenerationPanel.tsx`, `CharacterIdentityModal.tsx`, `TestPanel.tsx`
-- **UI/UX**: `SaveStatusIndicator.tsx`, `GenerationContextPanel.tsx`, `VideoFullscreenView.tsx`
-- **Core**: Reusable forms, modals, buttons, layout components with Radix UI foundation
-
-### State Management Patterns
-
-**Project State** (`App.tsx`):
+**App.tsx** (central project state):
 ```typescript
-const [projectState, setProjectState] = useState({
+{
   scriptContent: string | null,
   scriptAnalysis: ScriptAnalysis | null,
   timelineClips: TimelineClip[],
   roadmapBlocks: RoadmapBlock[],
   ui: { leftWidth, rightWidth, timelineHeight, zoom, playhead }
-});
+}
 ```
 
-**User Preferences** (Supabase):
-- Active tab, sidebar expansion persisted per user
-- Migration from localStorage on first login
-- Real-time sync across devices
+**userDataService.ts**: Supabase persistence for user preferences (syncs across devices)
 
-**Media Assets** (Supabase Storage):
-- All AI-generated content uploaded with metadata
-- Blob URLs converted to permanent Supabase URLs
-- Base64 → Blob → Upload flow for all generations
+**Media Flow**: Blob URL → Base64 (for localStorage) → Supabase Storage URL (permanent)
 
 ## Key Data Models
 
-### ScriptAnalysis
-The central domain object representing a fully analyzed screenplay:
+**ScriptAnalysis** - Central domain object from screenplay parsing:
 ```typescript
-{
-  title: string,
-  logline: string,
-  summary: string,
-  scenes: AnalyzedScene[],      // Scenes with frames (shots)
-  characters: AnalyzedCharacter[], // With optional identity LoRAs
-  locations: AnalyzedLocation[],
-  moodboard?: Moodboard,
-  moodboardTemplates?: MoodboardTemplate[]
-}
+{ title, logline, summary, scenes: AnalyzedScene[],
+  characters: AnalyzedCharacter[], locations: AnalyzedLocation[],
+  moodboard?, moodboardTemplates? }
 ```
 
-### Frame (Shot)
-Represents a single shot in a scene with full technical specification:
+**Frame** - Single shot with technical specs and generation state:
 ```typescript
-{
-  id: string,
-  shot_number: number,
-  description: string,
-  status: FrameStatus,          // Draft → GeneratingStill → VideoReady
-  camera_package: {             // Technical camera settings
-    lens_mm, aperture, iso, height, angle, movement
-  },
-  media: {
-    start_frame_url?: string,   // Hero still image
-    animated_video_url?: string,
-    video_upscaled_url?: string
-  },
-  generations?: Generation[],   // Variant images
-  videoGenerations?: Generation[]
-}
+{ id, shot_number, description,
+  status: FrameStatus, // Draft → GeneratingStill → AnimatedVideoReady
+  camera_package: { lens_mm, aperture, iso, height, angle, movement },
+  media: { start_frame_url?, animated_video_url?, video_upscaled_url? },
+  generations?: Generation[], videoGenerations?: Generation[],
+  selectedCharacterIds?: string[], appliedIdentities?: {...}[] }
 ```
 
-### CharacterIdentity
-Epic 2 feature for consistent character appearance:
+**CharacterIdentity** - LoRA-based character consistency (Epic 2):
 ```typescript
-{
-  status: 'none' | 'preparing' | 'ready' | 'error',
-  referenceImages: string[],    // 6-12 training images
-  technologyData: {
-    type: 'lora',
-    falCharacterId: string,     // Fal.ai LoRA model ID
-  },
-  tests?: CharacterIdentityTest[] // Visual similarity tests
-}
+{ status: 'none' | 'preparing' | 'ready' | 'error',
+  referenceImages: string[], // Training images
+  technologyData: { type: 'lora', falCharacterId: string },
+  tests?: CharacterIdentityTest[] }
 ```
 
-## Environment Configuration
+**TimelineClip** - Video clip in post-production timeline:
+```typescript
+{ id, timelineId, sceneNumber, shot_number, description,
+  url, audioUrl?, sourceDuration, trimStart, trimEnd }
+```
 
-### Required Environment Variables
+## Environment Variables
+
+**Required**:
 ```bash
-# Core AI (Required)
-VITE_GEMINI_API_KEY=your_gemini_api_key
-GEMINI_API_KEY=your_gemini_api_key
-
-# Character Identity (Required for Epic 2)
-FAL_API_KEY=your_fal_api_key
-
-# Supabase (Required for auth/persistence)
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
-VITE_SUPABASE_SERVICE_ROLE_KEY=your_service_key
-
-# Optional APIs
-FLUX_API_KEY=your_flux_key
-BRAVE_SEARCH_API_KEY=your_brave_key
-LUMA_API_KEY=your_luma_key
+VITE_GEMINI_API_KEY      # Google Gemini API (script analysis, image gen)
+GEMINI_API_KEY           # Alternative key for server-side
+FAL_API_KEY              # Fal.ai API (LoRA training, Flux models)
+VITE_SUPABASE_URL        # Supabase project URL
+VITE_SUPABASE_ANON_KEY   # Supabase anonymous key
 ```
 
-### Development Server Features
-- **Hot Module Replacement**: Fast development iteration with Vite HMR
-- **Brave Search Proxy**: CORS handling for image search API via `/api/brave-proxy` (dev only)
-- **Environment Management**: Automatic Vercel env var detection with local fallback
-- **Path Aliases**: `@/` mapped to project root for clean imports
-
-### Vercel Deployment
-- API keys configured in Vercel Dashboard → Environment Variables
-- `vite.config.ts` defines all environment variables at build time with proper precedence
-- **Multi-environment support**: Development, staging, production configurations
-- **Bundle optimization**: Automatic code splitting, vendor chunks, WASM support
-- Production mode: `process.env` prioritized over local `.env`
-
-## Testing Strategy
-
-### Current Test Coverage
-- Unit tests: `services/characterIdentityService.test.ts`
-- Component tests: `components/CharacterIdentityTestPanel.test.tsx`
-- E2E tests: `qa-epic-1-stories-1.3-1.4.test.ts`
-
-### Test Framework
-- **Vitest**: Fast unit test runner with Vite integration
-- **@testing-library/react**: Component testing with React 19 support
-- **@testing-library/user-event**: User interaction simulation
-- **jsdom**: DOM testing environment
-- **Coverage**: V8 provider with HTML/JSON/text reports
-
-### Running Tests
+**Optional**:
 ```bash
-npm test                    # Run all tests with Vitest
-npm run test:ui             # Interactive test UI with live reload
-npm run test:coverage       # Generate comprehensive coverage report
-
-# Targeted testing
-npm test -- --reporter=verbose                    # Detailed output
-npm test -- --run                                # Single run (no watch mode)
-npm test CharacterIdentityService.test.ts        # Specific file
-npm test -t "LoRA training"                      # Pattern matching
+BRAVE_SEARCH_API_KEY     # Moodboard image search
+LUMA_API_KEY             # Luma video generation
 ```
 
-### Critical Test Scenarios
-1. **Script Analysis**: Upload script → verify JSON parsing and scene extraction
-2. **Character Identity**: Train LoRA → test visual similarity (90-98% accuracy)
-3. **Image Generation**: Generate variants → verify Supabase upload and metadata
-4. **Video Animation**: Animate frame → verify Veo 3.1 API flow with progress tracking
-5. **Save/Load**: Create project → save → reload → verify state persistence
-6. **Voice Commands**: Test director widget integration with speech recognition
-7. **RLS Security**: Verify user data isolation through Row-Level Security policies
+**Configuration Notes**:
+- Development: Create `.env.local` (gitignored)
+- Production: Set in Vercel Dashboard → Environment Variables
+- Vite exposes variables at build time via `vite.config.ts`
+- Dev server provides `/api/brave-proxy` for CORS handling
+- Path alias: `@/` maps to project root
 
-## Common Development Tasks
+## Testing
+
+**Framework**: Vitest + @testing-library/react + jsdom
+
+**Coverage** (93% pass rate):
+- `services/characterIdentityService.test.ts` - LoRA training workflow
+- `services/saveManager.test.ts` - Debounced saves
+- Component tests in `/components/*.test.tsx`
+
+**Critical Test Scenarios**:
+1. Script analysis → JSON parsing (scenes, characters, locations)
+2. LoRA training → visual similarity validation (90-98% target)
+3. Image generation → Supabase upload + metadata
+4. Save/load → state persistence + RLS security
+5. Voice commands → DirectorWidget integration
+
+## Common Patterns
 
 ### Adding a New AI Model
-1. Add model identifier to `aiService.ts` model list
-2. Update `generateVisual()` routing logic
-3. Add cost estimate to `analyticsService.ts`
-4. Update model selector UI in `VideoGenerationPanel.tsx`
+1. Add to `aiService.ts` model routing logic
+2. Update cost estimates in `analyticsService.ts`
+3. Add usage logging via `logAIUsage()`
+4. Update UI selector in `VideoGenerationPanel.tsx`
 
 ### Adding a New Tab
-1. Create tab component in `/tabs`
-2. Add tab configuration to `constants.ts` TABS array
-3. Update `renderContent()` switch in `App.tsx`
+1. Create component in `/tabs/MyTab.tsx`
+2. Add config to `constants.ts` TABS array
+3. Update `App.tsx` renderContent() switch
 4. Add icon to `/components/icons/Icons.tsx`
 
-### Integrating a New API Service
-1. Create service file in `/services`
-2. Export service functions with consistent error handling
-3. Add usage logging via `logAIUsage()`
+### Integrating a New Service
+1. Create `/services/myService.ts`
+2. Add error handling + `logAIUsage()` calls
+3. Integrate Supabase Storage for media uploads
 4. Update analytics cost tracking
-5. Add Supabase storage integration for generated media
 
-### Modifying Project Schema
+### Modifying Database Schema
 1. Update types in `types.ts`
-2. Update Supabase migration in `/supabase/migrations`
-3. Run migration: `npm run supabase:db push`
-4. Update serialization in `App.tsx` getSerializableState()
-5. Test backward compatibility with existing projects
+2. Create migration in `/supabase/migrations/`
+3. Update `App.tsx` state serialization
+4. Test backward compatibility with existing projects
 
 ## Known Issues & Workarounds
 
-### ~~LoRA Training Image Downloads~~ ✅ FIXED (2025-11-19)
-**Issue**: 400 errors during character identity training image downloads
-**Root Cause**: CORS violations and Content Security Policy blocking cross-origin requests
-**Solution**: Dual-path approach with direct fetch + image proxy fallback (see LORA_CORS_FIX_2025-11-19.md)
-
-### ~~Video Model References~~ ✅ FIXED (2025-11-19)
-**Issue**: Empty error objects from video generation APIs
-**Root Cause**: Code referenced non-existent 'Kling 2.5' model
-**Solution**: Updated to 'Kling 2.1 Pro' with flexible `.includes()` checks
-
 ### Image Size Limits
-**Issue**: Gemini API has 20MB limit for inline images
-**Workaround**: `validateImageSize()` in aiService checks before upload, rejects oversized images
+Gemini API: 20MB limit for inline images. `validateImageSize()` in aiService rejects oversized files before upload.
 
 ### Safety Filters
-**Issue**: Gemini blocks legitimate prompts for false positives
-**Workaround**: Automatic retry with Flux API when safety error detected
+Gemini may block legitimate prompts. Auto-retry with Pollinations/Flux API when safety error detected.
 
 ### Blob URL Persistence
-**Issue**: Blob URLs don't persist across sessions
-**Workaround**: Convert to base64 before localStorage save, convert back on load
-
-### Supabase RLS Policies
-**Issue**: Slow auth.uid() re-evaluation in RLS policies
-**Workaround**: Optimized policies to O(1) auth checks (see SECURITY_FIXES.md)
+Blob URLs expire across sessions. Convert to base64 before localStorage save, then to Supabase Storage URL.
 
 ### Character Identity Callback Wiring
-**Issue**: Character identity state not syncing during generation in CastLocationGenerator
-**Root Cause**: Missing `onPrepareIdentity` callback prop from CastLocationsTab to CastLocationGenerator
-**Fix**: Wire the callback through component hierarchy (commit 5d23fca)
-**Symptom**: Characters show "No ID" status during generation despite having trained LoRA
+**CRITICAL**: `onPrepareIdentity` callback must propagate from `CastLocationsTab` → `CastLocationGenerator` to sync identity state during generation. Missing callback causes "No ID" status despite trained LoRA.
 
-## Project Status
+### CORS Handling (Fixed 2025-11-19)
+LoRA training uses dual-path: direct fetch + `/api/image-proxy` fallback for CORS bypass. See `LORA_CORS_FIX_2025-11-19.md`.
 
-**Current Epic Status** (as of 2025-11-12):
-- ✅ Epic 1: Director Voice (Voice I/O, style learning, continuity checking)
-- ✅ Epic 2: Character Identity (LoRA training, 90-98% consistency)
-- ✅ Epic 6: Analytics (Quality analysis, performance metrics)
-- ⚪ Epic 3: 3D Worlds (Infrastructure ready, not started)
-- ⚪ Epic 4: Voice Acting (Awaiting prioritization)
-- ⚪ Epic 5: Audio Production (Service stubs exist)
+## Build Optimization
 
-**Bundle Size**: 164KB gzipped (optimized with code splitting)
-**Build Time**: ~18 seconds
-**TypeScript Errors**: 0
+**Bundle Size**: 164KB gzipped (down from 512KB)
 
-## Documentation References
+**Code Splitting** (13 chunks):
+- `react-vendor` - React, React DOM, React Router
+- `ui-vendor` - Framer Motion, Radix UI
+- `three-vendor` - Three.js, React Three Fiber, Gaussian Splatting
+- `supabase-vendor` - Supabase client
+- `ffmpeg-vendor` - FFmpeg.wasm
+- `ai-services` - aiService, directorKnowledge
+- `data-services` - supabase, characterIdentity
+- `generation-services` - wanService, fluxService, lumaService, hunyuanWorld
 
-- **Project Roadmap**: `/docs/ROADMAP.html`
+**Optimization Techniques**:
+- Lazy loading for heavy components (3D viewers, video panels)
+- WASM support for FFmpeg and 3D processing
+- esbuild minification (prevents temporal dead zone errors)
+- Debounced saves (5s window) to prevent redundant Supabase writes
+- Image caching via Supabase Storage URLs
+
+**Performance Limitations**:
+- Gaussian Splatting requires WebGL 2.0 + GPU
+- FFmpeg.wasm is CPU-intensive in browser
+- Scripts >100K characters may hit Gemini token limits
+- LoRA training: 5-10 minutes on Fal.ai
+
+## Documentation
+
+- **LoRA Implementation**: `/docs/epics/LORA_IMPLEMENTATION_SUMMARY.md`
+- **LoRA Testing**: `/docs/epics/LORA_INTEGRATION_TEST_REPORT.md`
 - **Epic Status**: `/docs/EPIC_STATUS_UPDATE.md`
-- **Quality Checklist**: `/docs/qa/QUALITY_CHECKPOINT_2025-11-12.md`
-- **Character Identity Guide**: `/docs/EPIC2_STORY_2.1_FIX_COMPLETE.md`
-- **LoRA Implementation Summary**: `/LORA_IMPLEMENTATION_SUMMARY.md` (comprehensive UI integration guide)
-- **LoRA Integration Test Report**: `/LORA_INTEGRATION_TEST_REPORT.md` (detailed testing results)
-- **Supabase Setup**: `/SUPABASE_SETUP.md`
+- **Supabase Setup**: `/docs/setup/SUPABASE_SETUP.md`
 - **Security Fixes**: `/supabase/SECURITY_FIXES.md`
+- **Quick Start**: `/docs/setup/QUICKSTART.md`
 
-## Code Style & Conventions
+## Code Conventions
 
-- **TypeScript**: Strict mode enabled, no `any` types except where necessary
-- **React**: Functional components with hooks, no class components
-- **Async/Await**: Preferred over promises for readability
-- **Error Handling**: All service functions throw typed errors, caught at component level
-- **Logging**: Console logs prefixed with service name (e.g., `[AI Service]`, `[Database]`)
-- **Comments**: JSDoc for public APIs, inline comments for complex logic only
-
-## Performance Considerations
-
-### Build Performance & Optimization
-
-#### Bundle Optimization (164KB gzipped)
-- **Code Splitting**: Intelligent vendor chunks (React, Three.js, Supabase, Recharts, FFmpeg)
-- **Service Chunks**: AI services, data services, generation services separated
-- **Lazy Loading**: Heavy components (3D viewers, video panels) loaded on demand
-- **WASM Support**: FFmpeg.wasm and 3D processing libraries properly configured
-- **Terser Minification**: Debug info removal, class name preservation for compatibility
-- **Aggressive Optimization**: 62% reduction from 426KB to 164KB through improved chunking strategy
-
-#### API Cost Management
-- **Debounced Saves**: 5-second debounce prevents redundant Supabase writes
-- **Model Selection**: Gemini Flash for speed, Imagen/Flux for quality
-- **Safety Filter Fallback**: Automatic retry with Flux API when Gemini blocks content
-- **Image Caching**: Supabase Storage URLs cached in project state
-- **Progress Tracking**: Real-time progress prevents duplicate generation requests
-- **Usage Analytics**: Comprehensive logging via `logAIUsage()` for cost tracking
-
-#### Database Query Optimization
-- **RLS Policy Optimization**: O(1) auth checks, indexed foreign keys (improved from O(n))
-- **Batch Operations**: Parallel frame generation, bulk timeline transfers
-- **Connection Pooling**: Supabase client reuse and query deduplication
-- **Real-time Subscriptions**: Efficient live data sync across browser tabs
-
-### Known Performance Limitations
-- **3D Rendering**: Gaussian Splatting requires WebGL 2.0 and decent GPU
-- **Video Processing**: FFmpeg.wasm operations are CPU-intensive in browser
-- **Large Scripts**: Scripts >100K characters may hit Gemini token limits
-- **Character Training**: LoRA training takes 5-10 minutes on Fal.ai infrastructure
+- TypeScript strict mode, minimize `any` types
+- Functional React components with hooks
+- Async/await over promises
+- Error handling: services throw, components catch
+- Console logs prefixed with service name: `[AI Service]`, `[Database]`
+- JSDoc for public APIs only
 
 ---
 
-**Last Updated**: 2025-11-15
-**Codebase Version**: V2.0 Alpha
-**Maintained By**: Qualia Solutions
-**Recent Major Updates**: LoRA character identity training UI complete with full integration (Epic 2)
-
-## Quick Start for New Developers
-
-1. **Environment Setup**:
-   ```bash
-   # Clone and install
-   git clone https://github.com/QualiaSound/alkemy.git
-   cd alkemy
-   npm install
-
-   # Configure environment variables (see section above)
-   cp .env.example .env.local  # If template exists
-   ```
-
-2. **First Run**:
-   ```bash
-   npm run dev     # Starts on http://localhost:3000
-   ```
-
-3. **Test the Application**:
-   - Upload a sample script in the Script tab
-   - Try voice commands with the Director Widget (Epic 1)
-   - Train a character identity (Epic 2) requires FAL_API_KEY
-   - Generate scenes and check analytics
-
-4. **Key Files to Understand**:
-   - `src/App.tsx` - Main application state and routing
-   - `src/services/aiService.ts` - All AI model integrations
-   - `src/types.ts` - Complete TypeScript domain model
-   - `vite.config.ts` - Build configuration and proxy setup
+**Last Updated**: 2025-11-20
+**Version**: V2.0 Production
+**Status**: Live at https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app

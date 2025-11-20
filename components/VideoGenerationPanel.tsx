@@ -5,6 +5,7 @@ import Button from './Button';
 import { FileVideoIcon, SparklesIcon, XIcon, PaperclipIcon, PlayIcon, PauseIcon, DownloadIcon, RefreshCwIcon } from './icons/Icons';
 import { generateVideoFromImageWan, generateVideoFromTextWan } from '../services/wanService';
 import { generateVideoWithKling, refineVideoWithWAN, generateVideoWithVeo2, isVideoFalApiAvailable } from '../services/videoFalService';
+import { generateVideoWithHF, generateTextToVideoWithHF } from '../services/huggingFaceService';
 
 interface VideoGenerationPanelProps {
     item: {
@@ -27,7 +28,7 @@ interface VideoGeneration {
     duration?: number;
 }
 
-type VideoModel = 'Kling 2.1 Pro' | 'Wan' | 'WAN 2.1' | 'Veo 2';
+type VideoModel = 'Kling 2.1 Pro' | 'Wan' | 'WAN 2.1' | 'Veo 2' | 'SVD (Free)' | 'Text-to-Video (Free)';
 
 const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodboard, moodboardTemplates, onUpdateItem }) => {
     const [videoPrompt, setVideoPrompt] = useState('');
@@ -43,8 +44,8 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
     const handleGenerateVideo = async () => {
         if (!videoPrompt.trim() || isGenerating) return;
 
-        // WAN 2.1 and Veo 2 require a reference image
-        if (selectedModel === 'WAN 2.1' || selectedModel === 'Veo 2') {
+        // WAN 2.1, Veo 2, and SVD require a reference image
+        if (selectedModel === 'WAN 2.1' || selectedModel === 'Veo 2' || selectedModel === 'SVD (Free)') {
             const referenceImage = attachedImage || item.data.imageUrl;
             if (!referenceImage) {
                 alert(`${selectedModel} requires a reference image. Please attach an image or ensure the item has one.`);
@@ -145,6 +146,28 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                         referenceImage,
                         5, // duration
                         '16:9',
+                        onProgress
+                    );
+                    break;
+
+                case 'SVD (Free)':
+                    // SVD (Stable Video Diffusion) - Image-to-Video
+                    if (!referenceImage) {
+                        throw new Error('SVD requires a reference image for image-to-video generation.');
+                    }
+                    videoUrl = await generateVideoWithHF(
+                        referenceImage,
+                        25, // frames
+                        6, // fps
+                        onProgress
+                    );
+                    break;
+
+                case 'Text-to-Video (Free)':
+                    // Text-to-Video using HuggingFace
+                    videoUrl = await generateTextToVideoWithHF(
+                        videoPrompt,
+                        8, // frames
                         onProgress
                     );
                     break;
@@ -360,7 +383,7 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                     <div>
                         <label className="block text-xs text-gray-400 mb-2 font-semibold">Video Model</label>
                         <div className="flex gap-2 flex-wrap">
-                            {(['Kling 2.1 Pro', 'Wan', 'WAN 2.1', 'Veo 2'] as VideoModel[]).map((model) => (
+                            {(['Kling 2.1 Pro', 'Wan', 'WAN 2.1', 'Veo 2', 'SVD (Free)', 'Text-to-Video (Free)'] as VideoModel[]).map((model) => (
                                 <button
                                     key={model}
                                     onClick={() => setSelectedModel(model)}
@@ -371,8 +394,11 @@ const VideoGenerationPanel: React.FC<VideoGenerationPanelProps> = ({ item, moodb
                                     }`}
                                 >
                                     {model}
-                                    {(model === 'WAN 2.1' || model === 'Veo 2') && (
+                                    {(model === 'WAN 2.1' || model === 'Veo 2' || model === 'SVD (Free)') && (
                                         <span className="block text-[10px] opacity-70">Image-to-video</span>
+                                    )}
+                                    {model.includes('Free') && (
+                                        <span className="ml-1 text-green-400">✨</span>
                                     )}
                                 </button>
                             ))}

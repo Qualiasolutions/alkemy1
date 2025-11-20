@@ -31,12 +31,13 @@ const FORCE_DEMO_MODE = resolveBooleanEnv('VITE_FORCE_DEMO_MODE', 'FORCE_DEMO_MO
 const API_BASE_URL = 'https://image.pollinations.ai/prompt';
 
 // Available models on Pollinations.AI
-export type PollinationsImageModel = 'FLUX Schnell' | 'FLUX Realism' | 'FLUX Anime' | 'Stable Diffusion';
+export type PollinationsImageModel = 'FLUX Schnell' | 'FLUX Realism' | 'FLUX Anime' | 'Stable Diffusion' | 'FLUX 1.1' | string;
 
-const MODEL_IDS: Record<PollinationsImageModel, string> = {
+const MODEL_IDS: Record<string, string> = {
     'FLUX Schnell': 'flux',
     'FLUX Realism': 'flux-realism',
     'FLUX Anime': 'flux-anime',
+    'FLUX 1.1': 'flux',  // Map FLUX 1.1 to the standard FLUX model
     'Stable Diffusion': 'turbo',
 };
 
@@ -66,7 +67,7 @@ const aspectRatioToDimensions = (aspectRatio: string): { width: number; height: 
  */
 export async function generateImageWithPollinations(
     prompt: string,
-    model: PollinationsImageModel,
+    model: PollinationsImageModel | string,
     aspectRatio: string,
     onProgress?: (progress: number) => void,
     seed?: number,
@@ -89,7 +90,7 @@ export async function generateImageWithPollinations(
         onProgress?.(20);
 
         const { width, height } = aspectRatioToDimensions(aspectRatio);
-        const modelId = MODEL_IDS[model];
+        const modelId = MODEL_IDS[model] || 'flux'; // Default to flux if model not found
 
         // Encode prompt for URL
         const encodedPrompt = encodeURIComponent(prompt);

@@ -624,7 +624,6 @@ const CastLocationGenerator: React.FC<CastLocationGeneratorProps> = ({
                         <option value="Stable Diffusion" className="bg-[#0a0a0a]">Stable Diffusion</option>
                         <option value="FLUX.1 Kontext (BFL)" className="bg-[#0a0a0a]">FLUX Kontext (BFL)</option>
                         <option value="FLUX Ultra (BFL)" className="bg-[#0a0a0a]">FLUX Ultra (BFL)</option>
-                        <option value="Seadream v4 (FAL)" className="bg-[#0a0a0a]">Seadream v4 (FAL)</option>
                     </select>
                 </div>
 
