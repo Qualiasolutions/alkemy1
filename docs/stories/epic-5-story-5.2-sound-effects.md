@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:45.059Z'
+last_sync: '2025-11-21T10:28:17.437Z'
 auto_sync: true
 ---
 # Story 5.2: Sound Effects and Foley Generation

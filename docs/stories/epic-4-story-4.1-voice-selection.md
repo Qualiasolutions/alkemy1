@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:46.220Z'
+last_sync: '2025-11-21T10:28:18.757Z'
 auto_sync: true
 ---
 # Story 4.1: Character Voice Selection and Casting

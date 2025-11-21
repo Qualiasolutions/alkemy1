@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:43.575Z'
+last_sync: '2025-11-21T10:28:15.927Z'
 auto_sync: true
 ---
 # Story 6.4: Director Agent Analytics Integration

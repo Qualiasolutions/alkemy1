@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:48.122Z'
+last_sync: '2025-11-21T10:28:20.725Z'
 auto_sync: true
 ---
 # Story 2.1: Character Identity Training/Preparation Workflow

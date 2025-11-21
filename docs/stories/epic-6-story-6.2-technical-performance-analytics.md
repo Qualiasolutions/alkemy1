@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:44.063Z'
+last_sync: '2025-11-21T10:28:16.396Z'
 auto_sync: true
 ---
 # Story 6.2: Technical Performance Analytics

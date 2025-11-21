@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:45.755Z'
+last_sync: '2025-11-21T10:28:18.277Z'
 auto_sync: true
 ---
 # Story 4.3: Multilingual Voice Synthesis

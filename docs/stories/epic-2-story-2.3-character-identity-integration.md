@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:47.637Z'
+last_sync: '2025-11-21T10:28:20.224Z'
 auto_sync: true
 ---
 # Story 2.3: Character Identity Integration with Shot Generation

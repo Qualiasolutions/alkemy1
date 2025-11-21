@@ -8,7 +8,7 @@ assignee: null
 dependencies:
   - STORY-7a.1
 auto_sync: true
-last_sync: '2025-11-20T11:26:42.566Z'
+last_sync: '2025-11-21T10:28:14.812Z'
 ---
 
 # Story 7a.3: Monthly Competitions

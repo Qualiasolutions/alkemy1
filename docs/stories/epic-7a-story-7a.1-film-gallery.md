@@ -7,7 +7,7 @@ progress: 0
 assignee: null
 dependencies: []
 auto_sync: true
-last_sync: '2025-11-20T11:26:43.099Z'
+last_sync: '2025-11-21T10:28:15.344Z'
 ---
 
 # Story 7a.1: Film Gallery and Browse

@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:47.877Z'
+last_sync: '2025-11-21T10:28:20.464Z'
 auto_sync: true
 ---
 # Story 2.2: Character Identity Preview and Testing

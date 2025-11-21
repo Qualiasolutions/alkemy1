@@ -8,7 +8,7 @@ assignee: null
 dependencies:
   - STORY-7a.1
 auto_sync: true
-last_sync: '2025-11-20T11:26:42.326Z'
+last_sync: '2025-11-21T10:28:14.526Z'
 ---
 
 # Story 7a.4: Community Tutorials and Highlights

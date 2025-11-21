@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-20T11:26:41.792Z'
+last_sync: '2025-11-21T10:28:13.846Z'
 auto_sync: true
 ---
 # Story 8.3: V2.2 Integration Testing
