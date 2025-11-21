@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:18.520Z'
+last_sync: '2025-11-21T10:29:33.828Z'
 auto_sync: true
 ---
 # Story 4.2: Dialogue Generation from Script

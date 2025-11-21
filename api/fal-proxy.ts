@@ -29,10 +29,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Get API key from environment
-    const apiKey = process.env.FAL_API_KEY;
+    // Get API key from environment with sanitization
+    const apiKey = (process.env.FAL_API_KEY || process.env.VITE_FAL_API_KEY || '').trim().replace(/\n/g, '');
     if (!apiKey) {
-        console.error('FAL_API_KEY not found in environment');
+        console.error('[Fal Proxy] FAL_API_KEY not found in environment');
         return res.status(500).json({
             error: 'Character Identity requires a Fal.ai API key to be configured on the server.'
         });

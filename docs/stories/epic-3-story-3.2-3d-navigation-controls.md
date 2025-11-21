@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:19.745Z'
+last_sync: '2025-11-21T10:29:35.184Z'
 auto_sync: true
 ---
 # Story 3.2: 3D Navigation and Camera Controls

@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:17.184Z'
+last_sync: '2025-11-21T10:29:32.568Z'
 auto_sync: true
 ---
 # Story 5.3: Timeline Audio Mixing

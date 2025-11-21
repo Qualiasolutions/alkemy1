@@ -73,7 +73,7 @@ const ROADMAP_PHASES = [
     name: 'Immersion',
     tagline: '3D Worlds & Voice Acting',
     icon: Map,
-    color: 'bg-gradient-to-br from-amber-500 to-orange-600',
+    color: 'bg-gradient-to-br from-amber-500 to-yellow-600',
     epics: [
       { number: 'EPIC-3', name: '3D Locations', description: 'Explore film locations in 3D', status: 'not_started' },
       { number: 'EPIC-4', name: 'Voice Acting', description: 'Give characters realistic voices', status: 'not_started' },
@@ -84,7 +84,7 @@ const ROADMAP_PHASES = [
     name: 'Growth',
     tagline: 'Analytics & Community',
     icon: Users,
-    color: 'bg-gradient-to-br from-orange-400 to-red-500',
+    color: 'bg-gradient-to-br from-yellow-400 to-red-500',
     epics: [
       { number: 'EPIC-6', name: 'Quality Analytics', description: 'Get AI feedback on your film', status: 'not_started' },
       { number: 'EPIC-7a', name: 'Community Hub', description: 'Share films and compete', status: 'not_started' },
@@ -413,7 +413,7 @@ export function BMADStatusTab() {
                               </div>
                               <Badge className={`${
                                 epic.status === 'complete' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' :
-                                epic.status === 'in_progress' ? 'bg-orange-500/20 text-orange-300 border-orange-500/50' :
+                                epic.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' :
                                 epic.status === 'deferred' ? 'bg-gray-500/20 text-gray-400 border-gray-500/50' :
                                 'bg-gray-700/20 text-gray-400 border-gray-700/50'
                               }`}>

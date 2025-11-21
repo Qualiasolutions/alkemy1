@@ -8,6 +8,48 @@ Alkemy AI Studio is an AI-powered film generation platform that transforms scrip
 
 **Latest Production**: https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app (2025-11-19)
 
+## 🎯 BMAD Project Tracking System
+
+**IMPORTANT**: This project uses the BMAD (Bi-directional Markdown Alignment Database) system for tracking all development work. Before starting any work, you should:
+
+1. **Check current status**: View `docs/BMAD_STATUS.md` for real-time project status
+2. **Find your story**: All work is organized in `docs/stories/epic-{n}-story-{n}.{n}.md`
+3. **Sync after changes**: Always run `npm run bmad:sync` after updating story files
+
+### Quick BMAD Commands
+```bash
+npm run bmad:sync       # Sync markdown files ↔ Supabase database
+npm run bmad:status     # Show current project status  
+npm run bmad:validate   # Check for documentation drift
+```
+
+### Story Structure
+Each story file has YAML frontmatter that syncs with the database:
+```yaml
+---
+epic: EPIC-1
+story: STORY-1.1
+status: complete|in_progress|blocked|draft
+progress: 0-100
+assignee: null
+dependencies: []
+auto_sync: true
+---
+```
+
+### Status Tracking
+- **Acceptance Criteria (AC)**: `- [x] **AC1**: Description` = passed
+- **Integration Verifications (IV)**: `- [x] **IV1**: Description` = passed  
+- **Migration Checkpoints (MC)**: `- [x] **MC1**: Description` = passed
+
+### Where to Find Information
+- **Current Status**: `docs/BMAD_STATUS.md` (auto-generated)
+- **Agent Guide**: `docs/BMAD_AGENT_GUIDE.md` (comprehensive)
+- **All Stories**: `docs/stories/` directory
+- **Frontend Dashboard**: Production → BMAD Status tab
+
+**Rule**: Always check and update BMAD status when working on stories. This keeps all agents synchronized.
+
 ## Development Commands
 
 ```bash

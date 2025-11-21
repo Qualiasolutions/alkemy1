@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:21.835Z'
+last_sync: '2025-11-21T10:29:37.185Z'
 auto_sync: true
 ---
 # Story 1.2: Voice Output and Spoken Responses

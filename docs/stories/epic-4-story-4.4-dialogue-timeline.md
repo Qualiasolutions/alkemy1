@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:17.969Z'
+last_sync: '2025-11-21T10:29:33.313Z'
 auto_sync: true
 ---
 # Story 4.4: Dialogue Timeline Integration

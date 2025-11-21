@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import path, { dirname } from 'path';
 import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
@@ -72,13 +72,14 @@ export default defineConfig(({ mode }) => {
 
   // Vercel automatically exposes environment variables at build time
   // Prioritize Vercel's env vars, fall back to local .env
-  const geminiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '';
+  // Sanitize all API keys to remove newlines and whitespace
+  const geminiKey = (process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '').trim().replace(/\n/g, '');
   // Black Forest Labs FLUX API (Official)
-  const bflApiKey = (process.env.BFL_API_KEY || env.BFL_API_KEY || '').trim();
-  const togetherKey = process.env.TOGETHER_AI_API_KEY || env.TOGETHER_AI_API_KEY || '';
-  const wanKey = process.env.WAN_API_KEY || env.WAN_API_KEY || '';
-  const falKey = process.env.FAL_API_KEY || env.FAL_API_KEY || '';
-  const lumaKey = process.env.LUMA_API_KEY || env.LUMA_API_KEY || '';
+  const bflApiKey = (process.env.BFL_API_KEY || env.BFL_API_KEY || '').trim().replace(/\n/g, '');
+  const togetherKey = (process.env.TOGETHER_AI_API_KEY || env.TOGETHER_AI_API_KEY || '').trim().replace(/\n/g, '');
+  const wanKey = (process.env.WAN_API_KEY || env.WAN_API_KEY || '').trim().replace(/\n/g, '');
+  const falKey = (process.env.FAL_API_KEY || env.FAL_API_KEY || '').trim().replace(/\n/g, '');
+  const lumaKey = (process.env.LUMA_API_KEY || env.LUMA_API_KEY || '').trim().replace(/\n/g, '');
   const braveSearchKey = process.env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY || '';
   const braveProxyUrl = process.env.BRAVE_PROXY_URL || env.BRAVE_PROXY_URL || '/api/brave-proxy';
 
@@ -142,11 +143,10 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'react-vendor';
-              }
-              if (id.includes('framer-motion') || id.includes('@radix-ui')) {
-                return 'ui-vendor';
+              // Bundle React + UI libraries together to avoid dependency issues
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') ||
+                id.includes('framer-motion') || id.includes('@radix-ui')) {
+                return 'react-ui-vendor';
               }
               if (id.includes('three') || id.includes('@react-three') || id.includes('gaussian')) {
                 return 'three-vendor';
@@ -219,7 +219,7 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        '@': dirname(fileURLToPath(import.meta.url)),
+        '@': path.resolve(__dirname, './src'),
       }
     },
     optimizeDeps: {

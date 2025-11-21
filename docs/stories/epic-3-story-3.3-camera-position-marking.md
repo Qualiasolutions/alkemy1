@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:19.489Z'
+last_sync: '2025-11-21T10:29:34.917Z'
 auto_sync: true
 ---
 # Story 3.3: Camera Position Marking System

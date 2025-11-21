@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:15.678Z'
+last_sync: '2025-11-21T10:29:31.013Z'
 auto_sync: true
 ---
 # Story 6.5: Frontend Performance Optimization

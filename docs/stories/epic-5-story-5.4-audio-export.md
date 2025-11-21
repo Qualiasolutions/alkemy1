@@ -1,5 +1,5 @@
 ---
-last_sync: '2025-11-21T10:28:16.931Z'
+last_sync: '2025-11-21T10:29:32.279Z'
 auto_sync: true
 ---
 # Story 5.4: Audio Export and Rendering
