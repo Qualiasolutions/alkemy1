@@ -3,167 +3,163 @@
  * Handles script analysis functionality extracted from App.tsx
  */
 
-import React, { useCallback } from 'react';
-import { ScriptAnalysis } from '../types';
-import { analyzeScript } from '../services/aiService';
-import { logAIUsage } from '../services/usageService';
+import type React from 'react'
+import { useCallback } from 'react'
+import { analyzeScript } from '../services/aiService'
+import { logAIUsage } from '../services/usageService'
+import type { ScriptAnalysis } from '../types'
 
 interface ScriptAnalysisPanelProps {
-    scriptContent: string | null;
-    scriptAnalysis: ScriptAnalysis | null;
-    isAnalyzing: boolean;
-    analysisError: string | null;
-    analysisMessage: string;
-    onAnalysisStart: () => void;
-    onAnalysisComplete: (analysis: ScriptAnalysis) => void;
-    onAnalysisError: (error: string) => void;
-    onAnalysisMessage: (message: string) => void;
+  scriptContent: string | null
+  scriptAnalysis: ScriptAnalysis | null
+  isAnalyzing: boolean
+  analysisError: string | null
+  analysisMessage: string
+  onAnalysisStart: () => void
+  onAnalysisComplete: (analysis: ScriptAnalysis) => void
+  onAnalysisError: (error: string) => void
+  onAnalysisMessage: (message: string) => void
 }
 
 const ScriptAnalysisPanel: React.FC<ScriptAnalysisPanelProps> = ({
-    scriptContent,
-    scriptAnalysis,
-    isAnalyzing,
-    analysisError,
-    analysisMessage,
-    onAnalysisStart,
-    onAnalysisComplete,
-    onAnalysisError,
-    onAnalysisMessage
+  scriptContent,
+  scriptAnalysis,
+  isAnalyzing,
+  analysisError,
+  analysisMessage,
+  onAnalysisStart,
+  onAnalysisComplete,
+  onAnalysisError,
+  onAnalysisMessage,
 }) => {
-    const analyzeScriptContent = useCallback(async () => {
-        if (!scriptContent || scriptContent.trim().length < 100) {
-            onAnalysisError('Script content is too short for analysis (minimum 100 characters)');
-            return;
-        }
+  const analyzeScriptContent = useCallback(async () => {
+    if (!scriptContent || scriptContent.trim().length < 100) {
+      onAnalysisError('Script content is too short for analysis (minimum 100 characters)')
+      return
+    }
 
-        onAnalysisStart();
-        onAnalysisError(null);
+    onAnalysisStart()
+    onAnalysisError(null)
 
-        try {
-            onAnalysisMessage('Analyzing script structure and characters...');
+    try {
+      onAnalysisMessage('Analyzing script structure and characters...')
 
-            const analysis = await analyzeScript(scriptContent, {
-                onProgress: (message: string) => {
-                    onAnalysisMessage(message);
-                }
-            });
+      const analysis = await analyzeScript(scriptContent, {
+        onProgress: (message: string) => {
+          onAnalysisMessage(message)
+        },
+      })
 
-            if (!analysis || !analysis.scenes || analysis.scenes.length === 0) {
-                throw new Error('Script analysis failed to extract scenes. Please check your script format.');
-            }
+      if (!analysis || !analysis.scenes || analysis.scenes.length === 0) {
+        throw new Error(
+          'Script analysis failed to extract scenes. Please check your script format.'
+        )
+      }
 
-            // Log AI usage
-            await logAIUsage('script_analysis', {
-                scriptLength: scriptContent.length,
-                sceneCount: analysis.scenes.length,
-                characterCount: analysis.characters.length
-            });
+      // Log AI usage
+      await logAIUsage('script_analysis', {
+        scriptLength: scriptContent.length,
+        sceneCount: analysis.scenes.length,
+        characterCount: analysis.characters.length,
+      })
 
-            onAnalysisComplete(analysis);
-        } catch (error: any) {
-            console.error('[ScriptAnalysisPanel] Script analysis failed:', error);
-            const errorMessage = error.message || 'Script analysis failed. Please try again.';
-            onAnalysisError(errorMessage);
-        }
-    }, [scriptContent, onAnalysisStart, onAnalysisComplete, onAnalysisError, onAnalysisMessage]);
+      onAnalysisComplete(analysis)
+    } catch (error: any) {
+      console.error('[ScriptAnalysisPanel] Script analysis failed:', error)
+      const errorMessage = error.message || 'Script analysis failed. Please try again.'
+      onAnalysisError(errorMessage)
+    }
+  }, [scriptContent, onAnalysisStart, onAnalysisComplete, onAnalysisError, onAnalysisMessage])
 
-    const clearAnalysis = useCallback(() => {
-        onAnalysisComplete(null as any);
-        onAnalysisError(null);
-        onAnalysisMessage('');
-    }, [onAnalysisComplete, onAnalysisError, onAnalysisMessage]);
+  const clearAnalysis = useCallback(() => {
+    onAnalysisComplete(null as any)
+    onAnalysisError(null)
+    onAnalysisMessage('')
+  }, [onAnalysisComplete, onAnalysisError, onAnalysisMessage])
 
-    return (
-        <div className="script-analysis-panel">
-            <div className="analysis-header">
-                <h3>Script Analysis</h3>
-                {scriptContent && !isAnalyzing && (
-                    <div className="analysis-actions">
-                        {!scriptAnalysis ? (
-                            <button
-                                onClick={analyzeScriptContent}
-                                className="analyze-button"
-                                disabled={isAnalyzing}
-                            >
-                                Analyze Script
-                            </button>
-                        ) : (
-                            <button
-                                onClick={clearAnalysis}
-                                className="clear-button"
-                            >
-                                Clear Analysis
-                            </button>
-                        )}
-                    </div>
-                )}
+  return (
+    <div className="script-analysis-panel">
+      <div className="analysis-header">
+        <h3>Script Analysis</h3>
+        {scriptContent && !isAnalyzing && (
+          <div className="analysis-actions">
+            {!scriptAnalysis ? (
+              <button
+                onClick={analyzeScriptContent}
+                className="analyze-button"
+                disabled={isAnalyzing}
+              >
+                Analyze Script
+              </button>
+            ) : (
+              <button onClick={clearAnalysis} className="clear-button">
+                Clear Analysis
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {isAnalyzing && (
+        <div className="analysis-progress">
+          <div className="loading-spinner" />
+          <p>{analysisMessage || 'Analyzing script...'}</p>
+        </div>
+      )}
+
+      {analysisError && (
+        <div className="analysis-error">
+          <p className="error-message">{analysisError}</p>
+          <button onClick={analyzeScriptContent} className="retry-button">
+            Retry Analysis
+          </button>
+        </div>
+      )}
+
+      {scriptAnalysis && !isAnalyzing && (
+        <div className="analysis-results">
+          <div className="analysis-summary">
+            <h4>{scriptAnalysis.title}</h4>
+            {scriptAnalysis.logline && <p className="logline">{scriptAnalysis.logline}</p>}
+            {scriptAnalysis.summary && <p className="summary">{scriptAnalysis.summary}</p>}
+          </div>
+
+          <div className="analysis-stats">
+            <div className="stat">
+              <span className="label">Scenes:</span>
+              <span className="value">{scriptAnalysis.scenes.length}</span>
             </div>
+            <div className="stat">
+              <span className="label">Characters:</span>
+              <span className="value">{scriptAnalysis.characters.length}</span>
+            </div>
+            <div className="stat">
+              <span className="label">Locations:</span>
+              <span className="value">{scriptAnalysis.locations.length}</span>
+            </div>
+          </div>
 
-            {isAnalyzing && (
-                <div className="analysis-progress">
-                    <div className="loading-spinner" />
-                    <p>{analysisMessage || 'Analyzing script...'}</p>
+          {scriptAnalysis.scenes.length > 0 && (
+            <div className="scenes-preview">
+              <h5>Scene Breakdown</h5>
+              {scriptAnalysis.scenes.slice(0, 5).map((scene, index) => (
+                <div key={index} className="scene-item">
+                  <span className="scene-number">Scene {scene.scene_number}</span>
+                  <span className="scene-location">{scene.location}</span>
+                  <span className="scene-time">{scene.time_of_day}</span>
                 </div>
-            )}
+              ))}
+              {scriptAnalysis.scenes.length > 5 && (
+                <p className="more-scenes">
+                  ... and {scriptAnalysis.scenes.length - 5} more scenes
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
-            {analysisError && (
-                <div className="analysis-error">
-                    <p className="error-message">{analysisError}</p>
-                    <button onClick={analyzeScriptContent} className="retry-button">
-                        Retry Analysis
-                    </button>
-                </div>
-            )}
-
-            {scriptAnalysis && !isAnalyzing && (
-                <div className="analysis-results">
-                    <div className="analysis-summary">
-                        <h4>{scriptAnalysis.title}</h4>
-                        {scriptAnalysis.logline && (
-                            <p className="logline">{scriptAnalysis.logline}</p>
-                        )}
-                        {scriptAnalysis.summary && (
-                            <p className="summary">{scriptAnalysis.summary}</p>
-                        )}
-                    </div>
-
-                    <div className="analysis-stats">
-                        <div className="stat">
-                            <span className="label">Scenes:</span>
-                            <span className="value">{scriptAnalysis.scenes.length}</span>
-                        </div>
-                        <div className="stat">
-                            <span className="label">Characters:</span>
-                            <span className="value">{scriptAnalysis.characters.length}</span>
-                        </div>
-                        <div className="stat">
-                            <span className="label">Locations:</span>
-                            <span className="value">{scriptAnalysis.locations.length}</span>
-                        </div>
-                    </div>
-
-                    {scriptAnalysis.scenes.length > 0 && (
-                        <div className="scenes-preview">
-                            <h5>Scene Breakdown</h5>
-                            {scriptAnalysis.scenes.slice(0, 5).map((scene, index) => (
-                                <div key={index} className="scene-item">
-                                    <span className="scene-number">Scene {scene.scene_number}</span>
-                                    <span className="scene-location">{scene.location}</span>
-                                    <span className="scene-time">{scene.time_of_day}</span>
-                                </div>
-                            ))}
-                            {scriptAnalysis.scenes.length > 5 && (
-                                <p className="more-scenes">
-                                    ... and {scriptAnalysis.scenes.length - 5} more scenes
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            <style jsx>{`
+      <style jsx>{`
                 .script-analysis-panel {
                     padding: 20px;
                     background: var(--background-secondary);
@@ -339,8 +335,8 @@ const ScriptAnalysisPanel: React.FC<ScriptAnalysisPanelProps> = ({
                     font-style: italic;
                 }
             `}</style>
-        </div>
-    );
-};
+    </div>
+  )
+}
 
-export default ScriptAnalysisPanel;
+export default ScriptAnalysisPanel

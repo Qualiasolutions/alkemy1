@@ -1,112 +1,113 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SendIcon, SparklesIcon, ChevronDownIcon, ArrowLeftIcon, ArrowRightIcon } from './icons/Icons';
+import { AnimatePresence, motion } from 'framer-motion'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ChevronDownIcon, SendIcon, SparklesIcon } from './icons/Icons'
 
 interface ChatMessage {
-  id: string;
-  text: string;
-  type: 'user' | 'system';
-  timestamp: Date;
+  id: string
+  text: string
+  type: 'user' | 'system'
+  timestamp: Date
 }
 
 interface PromptChatBubbleProps {
-  onSendPrompt: (prompt: string) => Promise<void>;
-  isGenerating: boolean;
-  placeholder?: string;
-  disabled?: boolean;
-  className?: string;
-  suggestedPrompts?: string[];
+  onSendPrompt: (prompt: string) => Promise<void>
+  isGenerating: boolean
+  placeholder?: string
+  disabled?: boolean
+  className?: string
+  suggestedPrompts?: string[]
 }
 
 const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
   onSendPrompt,
   isGenerating,
-  placeholder = "Describe what you want to refine...",
+  placeholder = 'Describe what you want to refine...',
   disabled = false,
-  className = "",
+  className = '',
   suggestedPrompts = [
-    "Add cinematic lighting with golden hour effect",
-    "Make the colors more vibrant and saturated",
-    "Enhance facial details and expressions",
-    "Add subtle film grain for cinematic feel",
-    "Improve composition with rule of thirds",
-    "Softer lighting with more dramatic shadows"
-  ]
+    'Add cinematic lighting with golden hour effect',
+    'Make the colors more vibrant and saturated',
+    'Enhance facial details and expressions',
+    'Add subtle film grain for cinematic feel',
+    'Improve composition with rule of thirds',
+    'Softer lighting with more dramatic shadows',
+  ],
 }) => {
-  const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [prompt, setPrompt] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(true)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollToBottom()
+  }, [scrollToBottom])
 
   const handleSend = async () => {
-    if (!prompt.trim() || isGenerating || disabled) return;
+    if (!prompt.trim() || isGenerating || disabled) return
 
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       text: prompt.trim(),
       type: 'user',
-      timestamp: new Date()
-    };
+      timestamp: new Date(),
+    }
 
-    setMessages(prev => [...prev, userMessage]);
-    setShowSuggestions(false);
-    setIsExpanded(true);
+    setMessages((prev) => [...prev, userMessage])
+    setShowSuggestions(false)
+    setIsExpanded(true)
 
-    const promptToSend = prompt.trim();
-    setPrompt('');
+    const promptToSend = prompt.trim()
+    setPrompt('')
 
     try {
-      await onSendPrompt(promptToSend);
+      await onSendPrompt(promptToSend)
 
       // Add a success message after generation completes
       setTimeout(() => {
         const successMessage: ChatMessage = {
           id: `msg-${Date.now() + 1}`,
-          text: "✨ Image refined successfully! Check out the updated result.",
+          text: '✨ Image refined successfully! Check out the updated result.',
           type: 'system',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, successMessage]);
-      }, 500);
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, successMessage])
+      }, 500)
     } catch (error) {
       const errorMessage: ChatMessage = {
         id: `msg-${Date.now() + 1}`,
         text: `❌ Error: ${error instanceof Error ? error.message : 'Failed to refine image'}`,
         type: 'system',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
     }
-  };
+  }
 
   const handleSuggestedPrompt = (suggestion: string) => {
-    setPrompt(suggestion);
-    setShowSuggestions(false);
-    textareaRef.current?.focus();
-  };
+    setPrompt(suggestion)
+    setShowSuggestions(false)
+    textareaRef.current?.focus()
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      e.preventDefault()
+      handleSend()
     }
-  };
+  }
 
   const clearChat = () => {
-    setMessages([]);
-    setShowSuggestions(true);
-    setIsExpanded(false);
-  };
+    setMessages([])
+    setShowSuggestions(true)
+    setIsExpanded(false)
+  }
 
   return (
     <div className={`prompt-chat-bubble ${className}`}>
@@ -143,7 +144,7 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
               className="overflow-hidden"
             >
               <div className="max-h-48 overflow-y-auto p-4 space-y-3">
@@ -179,8 +180,8 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
                         message.type === 'user'
                           ? 'bg-gradient-to-r from-[#DFEC2D] to-[#FDE047] text-black font-medium'
                           : message.text.includes('✨')
-                          ? 'bg-[#DFEC2D]/100/20 text-[#DFEC2D] border border-[#DFEC2D]/30'
-                          : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                            ? 'bg-[#DFEC2D]/100/20 text-[#DFEC2D] border border-[#DFEC2D]/30'
+                            : 'bg-red-500/20 text-red-300 border border-red-500/30'
                       }`}
                     >
                       {message.text}
@@ -262,7 +263,7 @@ const PromptChatBubble: React.FC<PromptChatBubbleProps> = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default PromptChatBubble;
+export default PromptChatBubble

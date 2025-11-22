@@ -1,9 +1,8 @@
-
-import React from 'react';
+import type React from 'react'
 
 interface PlaceholderTabProps {
-  title: string;
-  description: string;
+  title: string
+  description: string
 }
 
 const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title, description }) => {
@@ -16,7 +15,7 @@ const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title, description }) =
         </p>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default PlaceholderTab;
+export default PlaceholderTab

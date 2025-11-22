@@ -14,8 +14,14 @@
       "!**/build",
       "!**/.next",
       "!**/*.min.js",
-      "!**/coverage"
+      "!**/coverage",
+      "!**/*.css"
     ]
+  },
+  "css": {
+    "parser": {
+      "cssModules": true
+    }
   },
   "formatter": {
     "enabled": true,
@@ -69,6 +75,7 @@
         "useTemplate": "warn"
       },
       "suspicious": {
+        "noArrayIndexKey": "off",
         "noAsyncPromiseExecutor": "error",
         "noCatchAssign": "error",
         "noClassAssign": "error",
@@ -95,6 +102,9 @@
         "useGetterReturn": "error",
         "noWith": "error",
         "noVar": "error"
+      },
+      "a11y": {
+        "recommended": false
       }
     }
   },

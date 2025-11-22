@@ -1,27 +1,27 @@
-import React from 'react';
-import { Trash2Icon, SparklesIcon } from './icons/Icons';
-import { MoodboardTemplate } from '../types';
+import type React from 'react'
+import type { MoodboardTemplate } from '../types'
+import { SparklesIcon, Trash2Icon } from './icons/Icons'
 
 interface CompactMoodboardCardProps {
-  template: MoodboardTemplate;
-  isActive: boolean;
-  onSelect: (id: string) => void;
-  onDelete: (id: string) => void;
-  getCoverImageUrl: (template: MoodboardTemplate) => string | null;
+  template: MoodboardTemplate
+  isActive: boolean
+  onSelect: (id: string) => void
+  onDelete: (id: string) => void
+  getCoverImageUrl: (template: MoodboardTemplate) => string | null
 }
 
-const MAX_ITEMS = 20;
+const MAX_ITEMS = 20
 
 const CompactMoodboardCard: React.FC<CompactMoodboardCardProps> = ({
   template,
   isActive,
   onSelect,
   onDelete,
-  getCoverImageUrl
+  getCoverImageUrl,
 }) => {
-  const coverUrl = getCoverImageUrl(template);
-  const itemCount = template.items.length;
-  const fillPercentage = (itemCount / MAX_ITEMS) * 100;
+  const coverUrl = getCoverImageUrl(template)
+  const itemCount = template.items.length
+  const fillPercentage = (itemCount / MAX_ITEMS) * 100
 
   return (
     <button
@@ -40,8 +40,8 @@ const CompactMoodboardCard: React.FC<CompactMoodboardCardProps> = ({
           </h3>
           <button
             onClick={(e) => {
-              e.stopPropagation();
-              onDelete(template.id);
+              e.stopPropagation()
+              onDelete(template.id)
             }}
             className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1 rounded hover:bg-red-500/20"
           >
@@ -52,11 +52,7 @@ const CompactMoodboardCard: React.FC<CompactMoodboardCardProps> = ({
         {/* Center content - cover image or placeholder */}
         <div className="flex-1 flex items-center justify-center my-2">
           {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={template.title}
-              className="w-full h-12 object-cover rounded"
-            />
+            <img src={coverUrl} alt={template.title} className="w-full h-12 object-cover rounded" />
           ) : (
             <div className="text-center">
               <div className="w-8 h-8 mx-auto mb-1 rounded bg-gray-800 flex items-center justify-center">
@@ -73,20 +69,14 @@ const CompactMoodboardCard: React.FC<CompactMoodboardCardProps> = ({
             <span className="text-xs text-gray-400">
               {itemCount}/{MAX_ITEMS}
             </span>
-            {template.aiSummary && (
-              <SparklesIcon className="w-3 h-3 text-purple-400" />
-            )}
+            {template.aiSummary && <SparklesIcon className="w-3 h-3 text-purple-400" />}
           </div>
 
           {/* Progress bar */}
           <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
             <div
               className={`h-full transition-all ${
-                itemCount >= MAX_ITEMS
-                  ? 'bg-yellow-500'
-                  : isActive
-                  ? 'bg-[#DFEC2D]'
-                  : 'bg-gray-600'
+                itemCount >= MAX_ITEMS ? 'bg-yellow-500' : isActive ? 'bg-[#DFEC2D]' : 'bg-gray-600'
               }`}
               style={{ width: `${fillPercentage}%` }}
             />
@@ -94,7 +84,7 @@ const CompactMoodboardCard: React.FC<CompactMoodboardCardProps> = ({
         </div>
       </div>
     </button>
-  );
-};
+  )
+}
 
-export default CompactMoodboardCard;
+export default CompactMoodboardCard

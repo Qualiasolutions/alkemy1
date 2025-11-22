@@ -1,0 +1,2 @@
+src/components/DirectorWidget.tsx(1659,2): error TS1005: ')' expected.
+src/components/DirectorWidget.tsx(1662,1): error TS1005: '}' expected.

@@ -1,12 +1,12 @@
-import React from 'react';
+import type React from 'react'
 
 interface ProgressProps {
-  value: number; // 0-100
-  className?: string;
+  value: number // 0-100
+  className?: string
 }
 
 export const Progress: React.FC<ProgressProps> = ({ value, className = '' }) => {
-  const clampedValue = Math.min(100, Math.max(0, value));
+  const clampedValue = Math.min(100, Math.max(0, value))
 
   return (
     <div className={`w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 ${className}`}>
@@ -15,5 +15,5 @@ export const Progress: React.FC<ProgressProps> = ({ value, className = '' }) => 
         style={{ width: `${clampedValue}%` }}
       />
     </div>
-  );
-};
+  )
+}

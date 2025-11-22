@@ -1,11 +1,11 @@
 // Re-export from card.tsx for backward compatibility
 export {
   Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-  CardDescription,
   CardAction,
-  type CardProps
-} from './card';
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  type CardProps,
+  CardTitle,
+} from './card'

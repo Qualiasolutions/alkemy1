@@ -1,0 +1,431 @@
+examples/audio-provider-usage.ts:35:29 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━
+
+  ! Template literals are preferred over string concatenation.
+  
+    33 │     console.log('Voice ID:', characterVoice.voiceId);
+    34 │     console.log('Provider:', characterVoice.provider);
+  > 35 │     console.log('Quality:', characterVoice.cloneMetadata?.quality + '%');
+       │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    36 │     console.log('Reference audio:', characterVoice.referenceAudio);
+    37 │ 
+  
+  i Unsafe fix: Use a template literal.
+  
+     33  33 │       console.log('Voice ID:', characterVoice.voiceId);
+     34  34 │       console.log('Provider:', characterVoice.provider);
+     35     │ - ····console.log('Quality:',·characterVoice.cloneMetadata?.quality·+·'%');
+         35 │ + ····console.log('Quality:',·`${characterVoice.cloneMetadata?.quality}%`);
+     36  36 │       console.log('Reference audio:', characterVoice.referenceAudio);
+     37  37 │   
+  
+
+examples/audio-provider-usage.ts:73:39 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━
+
+  ! Template literals are preferred over string concatenation.
+  
+    71 │       console.log(`Generated: "${line.text}" [${line.emotion}]`);
+    72 │       console.log('Audio URL:', dialogue.outputAudio);
+  > 73 │       console.log('Processing time:', dialogue.processingTime + 'ms');
+       │                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    74 │ 
+    75 │       generatedDialogue.push(dialogue);
+  
+  i Unsafe fix: Use a template literal.
+  
+     71  71 │         console.log(`Generated: "${line.text}" [${line.emotion}]`);
+     72  72 │         console.log('Audio URL:', dialogue.outputAudio);
+     73     │ - ······console.log('Processing·time:',·dialogue.processingTime·+·'ms');
+         73 │ + ······console.log('Processing·time:',·`${dialogue.processingTime}ms`);
+     74  74 │   
+     75  75 │         generatedDialogue.push(dialogue);
+  
+
+examples/audio-provider-usage.ts:103:37 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  ! Template literals are preferred over string concatenation.
+  
+    101 │     console.log('Original:', originalAudioUrl);
+    102 │     console.log('Edited:', editedAudio.audioUrl);
+  > 103 │     console.log('Processing time:', editedAudio.metadata?.processingTime + 'ms');
+        │                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    104 │ 
+    105 │     return editedAudio;
+  
+  i Unsafe fix: Use a template literal.
+  
+    101 101 │       console.log('Original:', originalAudioUrl);
+    102 102 │       console.log('Edited:', editedAudio.audioUrl);
+    103     │ - ····console.log('Processing·time:',·editedAudio.metadata?.processingTime·+·'ms');
+        103 │ + ····console.log('Processing·time:',·`${editedAudio.metadata?.processingTime}ms`);
+    104 104 │   
+    105 105 │       return editedAudio;
+  
+
+examples/audio-provider-usage.ts:131:31 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━
+
+  ! Template literals are preferred over string concatenation.
+  
+    129 │       console.log('Gender:', voice.gender);
+    130 │       console.log('Custom:', voice.isCustom ? 'Yes (Cloned)' : 'No (Built-in)');
+  > 131 │       console.log('Quality:', voice.metadata?.quality + '%');
+        │                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    132 │     });
+    133 │ 
+  
+  i Unsafe fix: Use a template literal.
+  
+    129 129 │         console.log('Gender:', voice.gender);
+    130 130 │         console.log('Custom:', voice.isCustom ? 'Yes (Cloned)' : 'No (Built-in)');
+    131     │ - ······console.log('Quality:',·voice.metadata?.quality·+·'%');
+        131 │ + ······console.log('Quality:',·`${voice.metadata?.quality}%`);
+    132 132 │       });
+    133 133 │   
+  
+
+examples/audio-provider-usage.ts:227:7 lint/style/noNonNullAssertion ━━━━━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    225 │     console.log('\nStep 3: Editing emotion...');
+    226 │     const editedAudio = await exampleEditEmotion(
+  > 227 │       generatedDialogue[0].outputAudio!,
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    228 │       characterVoice
+    229 │     );
+  
+
+examples/audio-provider-usage.ts:268:30 lint/style/noNonNullAssertion ━━━━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    267 │     // Edit emotion
+  > 268 │     await exampleEditEmotion(generatedDialogue[0].outputAudio!, characterVoice);
+        │                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    269 │ 
+    270 │     // Get voices
+  
+
+examples/audio-provider-usage.ts:145:16 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━
+
+  ! This function exampleSwitchProviders is unused.
+  
+    143 │ // ========================================================================================
+    144 │ 
+  > 145 │ async function exampleSwitchProviders() {
+        │                ^^^^^^^^^^^^^^^^^^^^^^
+    146 │   console.log('\n=== Example 5: Switch Providers at Runtime ===');
+    147 │ 
+  
+  i Unused variables are often the result of an incomplete refactoring, typos, or other sources of bugs.
+  
+  i Unsafe fix: If this is intentional, prepend exampleSwitchProviders with an underscore.
+  
+    143 143 │   // ========================================================================================
+    144 144 │   
+    145     │ - async·function·exampleSwitchProviders()·{
+        145 │ + async·function·_exampleSwitchProviders()·{
+    146 146 │     console.log('\n=== Example 5: Switch Providers at Runtime ===');
+    147 147 │   
+  
+
+examples/audio-provider-usage.ts:212:16 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━
+
+  ! This function exampleCompleteWorkflow is unused.
+  
+    210 │ // ========================================================================================
+    211 │ 
+  > 212 │ async function exampleCompleteWorkflow() {
+        │                ^^^^^^^^^^^^^^^^^^^^^^^
+    213 │   console.log('\n=== Example 7: Complete Workflow ===');
+    214 │ 
+  
+  i Unused variables are often the result of an incomplete refactoring, typos, or other sources of bugs.
+  
+  i Unsafe fix: If this is intentional, prepend exampleCompleteWorkflow with an underscore.
+  
+    210 210 │   // ========================================================================================
+    211 211 │   
+    212     │ - async·function·exampleCompleteWorkflow()·{
+        212 │ + async·function·_exampleCompleteWorkflow()·{
+    213 213 │     console.log('\n=== Example 7: Complete Workflow ===');
+    214 214 │   
+  
+
+src/App.tsx:1:8 lint/correctness/noUnusedImports  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! This import is unused.
+  
+  > 1 │ import { useState } from 'react';
+      │        ^^^^^^^^^^^^
+    2 │ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+    3 │ import { DashboardLayout } from './components/layout/DashboardLayout';
+  
+  i Unused imports might be the result of an incomplete refactoring.
+  
+  i Unsafe fix: Remove the unused imports.
+  
+    1 │ import·{·useState·}·from·'react';
+      │ ---------------------------------
+
+overviews/timeline.html:123:100 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected an attribute but instead found '<'.
+  
+    121 │                 <div class="card">
+    122 │                     <h4>Shadows</h4>
+  > 123 │                     <p>Targets dark pixels (luminance <75). Lift shadows or deepen blacks for mood.</p>
+        │                                                                                                    ^
+    124 │                 </div>
+    125 │             </div>
+  
+  i Expected an attribute here.
+  
+    121 │                 <div class="card">
+    122 │                     <h4>Shadows</h4>
+  > 123 │                     <p>Targets dark pixels (luminance <75). Lift shadows or deepen blacks for mood.</p>
+        │                                                                                                    ^
+    124 │                 </div>
+    125 │             </div>
+  
+
+overviews/timeline.html:124:17 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected a matching closing tag but instead found '</div>'.
+  
+    122 │                     <h4>Shadows</h4>
+    123 │                     <p>Targets dark pixels (luminance <75). Lift shadows or deepen blacks for mood.</p>
+  > 124 │                 </div>
+        │                 ^^^^^^
+    125 │             </div>
+    126 │         </div>
+  
+  i Expected a matching closing tag here.
+  
+    122 │                     <h4>Shadows</h4>
+    123 │                     <p>Targets dark pixels (luminance <75). Lift shadows or deepen blacks for mood.</p>
+  > 124 │                 </div>
+        │                 ^^^^^^
+    125 │             </div>
+    126 │         </div>
+  
+
+overviews/timeline.html:125:13 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected a matching closing tag but instead found '</div>'.
+  
+    123 │                     <p>Targets dark pixels (luminance <75). Lift shadows or deepen blacks for mood.</p>
+    124 │                 </div>
+  > 125 │             </div>
+        │             ^^^^^^
+    126 │         </div>
+    127 │ 
+  
+  i Expected a matching closing tag here.
+  
+    123 │                     <p>Targets dark pixels (luminance <75). Lift shadows or deepen blacks for mood.</p>
+    124 │                 </div>
+  > 125 │             </div>
+        │             ^^^^^^
+    126 │         </div>
+    127 │ 
+  
+
+overviews/timeline.html:126:9 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected a matching closing tag but instead found '</div>'.
+  
+    124 │                 </div>
+    125 │             </div>
+  > 126 │         </div>
+        │         ^^^^^^
+    127 │ 
+    128 │         <div class="section">
+  
+  i Expected a matching closing tag here.
+  
+    124 │                 </div>
+    125 │             </div>
+  > 126 │         </div>
+        │         ^^^^^^
+    127 │ 
+    128 │         <div class="section">
+  
+
+overviews/timeline.html:273:5 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected a matching closing tag but instead found '</div>'.
+  
+    271 │             <p style="margin-top: 8px;">Last Updated: November 2025</p>
+    272 │         </div>
+  > 273 │     </div>
+        │     ^^^^^^
+    274 │ </body>
+    275 │ </html>
+  
+  i Expected a matching closing tag here.
+  
+    271 │             <p style="margin-top: 8px;">Last Updated: November 2025</p>
+    272 │         </div>
+  > 273 │     </div>
+        │     ^^^^^^
+    274 │ </body>
+    275 │ </html>
+  
+
+overviews/timeline.html:274:1 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected a matching closing tag but instead found '</body>'.
+  
+    272 │         </div>
+    273 │     </div>
+  > 274 │ </body>
+        │ ^^^^^^^
+    275 │ </html>
+    276 │ 
+  
+  i Expected a matching closing tag here.
+  
+    272 │         </div>
+    273 │     </div>
+  > 274 │ </body>
+        │ ^^^^^^^
+    275 │ </html>
+    276 │ 
+  
+
+overviews/timeline.html:275:1 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected a matching closing tag but instead found '</html>'.
+  
+    273 │     </div>
+    274 │ </body>
+  > 275 │ </html>
+        │ ^^^^^^^
+    276 │ 
+  
+  i Expected a matching closing tag here.
+  
+    273 │     </div>
+    274 │ </body>
+  > 275 │ </html>
+        │ ^^^^^^^
+    276 │ 
+  
+
+overviews/timeline.html:276:1 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Expected a closing tag but instead found the end of the file.
+  
+    274 │ </body>
+    275 │ </html>
+  > 276 │ 
+        │ 
+  
+  i Expected a closing tag here.
+  
+    274 │ </body>
+    275 │ </html>
+  > 276 │ 
+        │ 
+  
+
+overviews/timeline.html:26:138 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `;`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                          ^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove ;
+  
+
+overviews/timeline.html:26:140 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `font-weight`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                            ^^^^^^^^^^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove font-weight
+  
+
+overviews/timeline.html:26:153 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected value or character.
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                         ^^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Expected one of:
+  
+  - hover
+  - focus
+  - active
+  - first-child
+  - last-child
+  - nth-child
+  - nth-last-child
+  - first-of-type
+  - last-of-type
+  - nth-of-type
+  - nth-last-of-type
+  - only-child
+  - only-of-type
+  - checked
+  - disabled
+  - enabled
+  - required
+  - optional
+  - valid
+  - invalid
+  - in-range
+  - out-of-range
+  - read-only
+  - read-write
+  - placeholder-shown
+  - default
+  - checked
+  - indeterminate
+  - blank
+  - empty
+  - root
+  - target
+  - lang
+  - not
+  - is
+  - where
+  - fullscreen
+  - link
+  - visited
+  - any-link
+  - local-link
+  - scope
+  - state
+  - current
+  - past
+  - future
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 1443.
+Checked 265 files in 477ms. No fixes applied.
+Found 679 errors.
+Found 760 warnings.
+Found 24 infos.
+lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+

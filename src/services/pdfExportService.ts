@@ -1,821 +1,886 @@
-import jsPDF from 'jspdf';
-import {
-    CreativeQualityReport,
-    TechnicalPerformanceMetrics,
-    ScriptAnalysis
-} from '@/types';
-import { getQualityLevel, getQualityColorIndicator } from './analyticsService';
+import jsPDF from 'jspdf'
+import type { CreativeQualityReport, ScriptAnalysis, TechnicalPerformanceMetrics } from '@/types'
+import { getQualityLevel } from './analyticsService'
 
 // Custom types for PDF generation
 interface PDFExportOptions {
-    includeCharts?: boolean;
-    includeComparison?: boolean;
-    includeRecommendations?: boolean;
-    format?: 'detailed' | 'summary';
+  includeCharts?: boolean
+  includeComparison?: boolean
+  includeRecommendations?: boolean
+  format?: 'detailed' | 'summary'
 }
 
 // Color palette for PDF
 const PDF_COLORS = {
-    primary: '#1a1a1a',
-    secondary: '#666666',
-    accent: '#007bff',
-    success: '#28a745',
-    warning: '#ffc107',
-    danger: '#dc3545',
-    light: '#f8f9fa',
-    dark: '#343a40'
-};
+  primary: '#1a1a1a',
+  secondary: '#666666',
+  accent: '#007bff',
+  success: '#28a745',
+  warning: '#ffc107',
+  danger: '#dc3545',
+  light: '#f8f9fa',
+  dark: '#343a40',
+}
 
 /**
  * Generates a comprehensive PDF report for project analytics
  */
 export async function generateAnalyticsPDF(
-    projectId: string,
-    scriptAnalysis: ScriptAnalysis | null,
-    qualityReport: CreativeQualityReport | null,
-    performanceMetrics: TechnicalPerformanceMetrics | null,
-    options: PDFExportOptions = {}
+  projectId: string,
+  scriptAnalysis: ScriptAnalysis | null,
+  qualityReport: CreativeQualityReport | null,
+  performanceMetrics: TechnicalPerformanceMetrics | null,
+  options: PDFExportOptions = {}
 ): Promise<Blob> {
-    const {
-        includeCharts = true,
-        includeComparison = true,
-        includeRecommendations = true,
-        format = 'detailed'
-    } = options;
+  const {
+    includeCharts = true,
+    includeComparison = true,
+    includeRecommendations = true,
+    format = 'detailed',
+  } = options
 
-    // Initialize PDF document
-    const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-    });
+  // Initialize PDF document
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  })
 
-    // Set default styles
-    doc.setFontSize(12);
-    doc.setTextColor(PDF_COLORS.primary);
+  // Set default styles
+  doc.setFontSize(12)
+  doc.setTextColor(PDF_COLORS.primary)
 
-    let yPosition = 20;
+  let yPosition = 20
 
-    // Add header
-    addHeader(doc, projectId, scriptAnalysis);
-    yPosition = 50;
+  // Add header
+  addHeader(doc, projectId, scriptAnalysis)
+  yPosition = 50
 
-    // Add executive summary
-    if (format === 'detailed') {
-        yPosition = addExecutiveSummary(doc, yPosition, qualityReport, performanceMetrics);
-    }
+  // Add executive summary
+  if (format === 'detailed') {
+    yPosition = addExecutiveSummary(doc, yPosition, qualityReport, performanceMetrics)
+  }
 
-    // Add quality report section
-    if (qualityReport) {
-        yPosition = addQualitySection(doc, yPosition, qualityReport, includeCharts);
-    }
+  // Add quality report section
+  if (qualityReport) {
+    yPosition = addQualitySection(doc, yPosition, qualityReport, includeCharts)
+  }
 
-    // Add performance metrics section
-    if (performanceMetrics) {
-        yPosition = addPerformanceSection(doc, yPosition, performanceMetrics, includeCharts);
-    }
+  // Add performance metrics section
+  if (performanceMetrics) {
+    yPosition = addPerformanceSection(doc, yPosition, performanceMetrics, includeCharts)
+  }
 
-    // Add scene-by-scene analysis
-    if (qualityReport && format === 'detailed') {
-        doc.addPage();
-        yPosition = 20;
-        yPosition = addSceneAnalysis(doc, yPosition, qualityReport);
-    }
+  // Add scene-by-scene analysis
+  if (qualityReport && format === 'detailed') {
+    doc.addPage()
+    yPosition = 20
+    yPosition = addSceneAnalysis(doc, yPosition, qualityReport)
+  }
 
-    // Add comparison section
-    if (includeComparison && qualityReport && performanceMetrics) {
-        doc.addPage();
-        yPosition = 20;
-        yPosition = addComparisonSection(doc, yPosition, qualityReport, performanceMetrics);
-    }
+  // Add comparison section
+  if (includeComparison && qualityReport && performanceMetrics) {
+    doc.addPage()
+    yPosition = 20
+    yPosition = addComparisonSection(doc, yPosition, qualityReport, performanceMetrics)
+  }
 
-    // Add recommendations
-    if (includeRecommendations) {
-        doc.addPage();
-        yPosition = 20;
-        yPosition = addRecommendations(doc, yPosition, qualityReport, performanceMetrics);
-    }
+  // Add recommendations
+  if (includeRecommendations) {
+    doc.addPage()
+    yPosition = 20
+    yPosition = addRecommendations(doc, yPosition, qualityReport, performanceMetrics)
+  }
 
-    // Add footer to all pages
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        addFooter(doc, i, pageCount);
-    }
+  // Add footer to all pages
+  const pageCount = doc.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    addFooter(doc, i, pageCount)
+  }
 
-    // Generate blob
-    const pdfBlob = doc.output('blob');
-    return pdfBlob;
+  // Generate blob
+  const pdfBlob = doc.output('blob')
+  return pdfBlob
 }
 
 /**
  * Adds header to PDF
  */
 function addHeader(doc: jsPDF, projectId: string, scriptAnalysis: ScriptAnalysis | null) {
-    // Add logo placeholder (you can replace with actual logo)
-    doc.setFillColor(PDF_COLORS.accent);
-    doc.rect(10, 10, 30, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.text('ALKEMY AI', 15, 16);
+  // Add logo placeholder (you can replace with actual logo)
+  doc.setFillColor(PDF_COLORS.accent)
+  doc.rect(10, 10, 30, 10, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(10)
+  doc.text('ALKEMY AI', 15, 16)
 
-    // Add title
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.setFontSize(24);
-    doc.text('Analytics Report', 50, 18);
+  // Add title
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.setFontSize(24)
+  doc.text('Analytics Report', 50, 18)
 
-    // Add project info
-    doc.setFontSize(10);
-    doc.setTextColor(PDF_COLORS.secondary);
-    doc.text(`Project: ${scriptAnalysis?.title || projectId}`, 50, 25);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 50, 30);
+  // Add project info
+  doc.setFontSize(10)
+  doc.setTextColor(PDF_COLORS.secondary)
+  doc.text(`Project: ${scriptAnalysis?.title || projectId}`, 50, 25)
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 50, 30)
 
-    // Add separator line
-    doc.setDrawColor(PDF_COLORS.light);
-    doc.setLineWidth(0.5);
-    doc.line(10, 35, 200, 35);
+  // Add separator line
+  doc.setDrawColor(PDF_COLORS.light)
+  doc.setLineWidth(0.5)
+  doc.line(10, 35, 200, 35)
 }
 
 /**
  * Adds footer to PDF
  */
 function addFooter(doc: jsPDF, currentPage: number, totalPages: number) {
-    const pageHeight = doc.internal.pageSize.height;
+  const pageHeight = doc.internal.pageSize.height
 
-    doc.setFontSize(9);
-    doc.setTextColor(PDF_COLORS.secondary);
-    doc.text(
-        `Page ${currentPage} of ${totalPages}`,
-        105,
-        pageHeight - 10,
-        { align: 'center' }
-    );
+  doc.setFontSize(9)
+  doc.setTextColor(PDF_COLORS.secondary)
+  doc.text(`Page ${currentPage} of ${totalPages}`, 105, pageHeight - 10, { align: 'center' })
 
-    doc.text(
-        'Generated by Alkemy AI Studio',
-        10,
-        pageHeight - 10
-    );
+  doc.text('Generated by Alkemy AI Studio', 10, pageHeight - 10)
 
-    doc.text(
-        new Date().toISOString().split('T')[0],
-        200,
-        pageHeight - 10,
-        { align: 'right' }
-    );
+  doc.text(new Date().toISOString().split('T')[0], 200, pageHeight - 10, { align: 'right' })
 }
 
 /**
  * Adds executive summary section
  */
 function addExecutiveSummary(
-    doc: jsPDF,
-    yPos: number,
-    qualityReport: CreativeQualityReport | null,
-    performanceMetrics: TechnicalPerformanceMetrics | null
+  doc: jsPDF,
+  yPos: number,
+  qualityReport: CreativeQualityReport | null,
+  performanceMetrics: TechnicalPerformanceMetrics | null
 ): number {
-    // Section title
-    doc.setFontSize(18);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Executive Summary', 10, yPos);
-    yPos += 10;
+  // Section title
+  doc.setFontSize(18)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Executive Summary', 10, yPos)
+  yPos += 10
 
-    doc.setFontSize(11);
-    doc.setTextColor(PDF_COLORS.secondary);
+  doc.setFontSize(11)
+  doc.setTextColor(PDF_COLORS.secondary)
 
-    // Key metrics box
-    doc.setFillColor(PDF_COLORS.light);
-    doc.roundedRect(10, yPos, 190, 40, 3, 3, 'F');
+  // Key metrics box
+  doc.setFillColor(PDF_COLORS.light)
+  doc.roundedRect(10, yPos, 190, 40, 3, 3, 'F')
 
-    // Quality Score
-    if (qualityReport) {
-        const qualityLevel = getQualityLevel(qualityReport.overallScore);
+  // Quality Score
+  if (qualityReport) {
+    const qualityLevel = getQualityLevel(qualityReport.overallScore)
 
-        doc.setFontSize(14);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text('Overall Quality Score', 20, yPos + 10);
+    doc.setFontSize(14)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text('Overall Quality Score', 20, yPos + 10)
 
-        doc.setFontSize(24);
-        doc.setTextColor(PDF_COLORS.accent);
-        doc.text(`${qualityReport.overallScore}/100`, 20, yPos + 20);
+    doc.setFontSize(24)
+    doc.setTextColor(PDF_COLORS.accent)
+    doc.text(`${qualityReport.overallScore}/100`, 20, yPos + 20)
 
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text(qualityLevel.toUpperCase(), 20, yPos + 28);
-    }
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text(qualityLevel.toUpperCase(), 20, yPos + 28)
+  }
 
-    // Performance Metrics
-    if (performanceMetrics) {
-        doc.setFontSize(14);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text('Total Cost', 80, yPos + 10);
+  // Performance Metrics
+  if (performanceMetrics) {
+    doc.setFontSize(14)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text('Total Cost', 80, yPos + 10)
 
-        doc.setFontSize(24);
-        doc.setTextColor(PDF_COLORS.success);
-        doc.text(`$${performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`, 80, yPos + 20);
+    doc.setFontSize(24)
+    doc.setTextColor(PDF_COLORS.success)
+    doc.text(`$${performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`, 80, yPos + 20)
 
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text(`${performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}% Success Rate`, 80, yPos + 28);
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text(
+      `${performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}% Success Rate`,
+      80,
+      yPos + 28
+    )
 
-        // Generation count
-        doc.setFontSize(14);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text('Generations', 140, yPos + 10);
+    // Generation count
+    doc.setFontSize(14)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text('Generations', 140, yPos + 10)
 
-        const totalGenerations = performanceMetrics.renderTimes.imageGeneration.reduce((sum, m) => sum + m.count, 0) +
-            performanceMetrics.renderTimes.videoAnimation.count;
+    const totalGenerations =
+      performanceMetrics.renderTimes.imageGeneration.reduce((sum, m) => sum + m.count, 0) +
+      performanceMetrics.renderTimes.videoAnimation.count
 
-        doc.setFontSize(24);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text(totalGenerations.toString(), 140, yPos + 20);
+    doc.setFontSize(24)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text(totalGenerations.toString(), 140, yPos + 20)
 
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text('Total Assets', 140, yPos + 28);
-    }
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text('Total Assets', 140, yPos + 28)
+  }
 
-    return yPos + 50;
+  return yPos + 50
 }
 
 /**
  * Adds quality report section
  */
 function addQualitySection(
-    doc: jsPDF,
-    yPos: number,
-    qualityReport: CreativeQualityReport,
-    includeCharts: boolean
+  doc: jsPDF,
+  yPos: number,
+  qualityReport: CreativeQualityReport,
+  _includeCharts: boolean
 ): number {
-    // Check for page break
-    if (yPos > 230) {
-        doc.addPage();
-        yPos = 20;
-    }
+  // Check for page break
+  if (yPos > 230) {
+    doc.addPage()
+    yPos = 20
+  }
 
-    // Section title
-    doc.setFontSize(16);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Creative Quality Analysis', 10, yPos);
-    yPos += 10;
+  // Section title
+  doc.setFontSize(16)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Creative Quality Analysis', 10, yPos)
+  yPos += 10
 
-    // Quality dimensions
-    doc.setFontSize(12);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Quality Dimensions:', 10, yPos);
-    yPos += 8;
+  // Quality dimensions
+  doc.setFontSize(12)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Quality Dimensions:', 10, yPos)
+  yPos += 8
 
-    const dimensions = [
-        { name: 'Color Consistency', score: qualityReport.colorConsistency },
-        { name: 'Lighting Coherence', score: qualityReport.lightingCoherence },
-        { name: 'Look Bible Adherence', score: qualityReport.lookBibleAdherence }
-    ];
+  const dimensions = [
+    { name: 'Color Consistency', score: qualityReport.colorConsistency },
+    { name: 'Lighting Coherence', score: qualityReport.lightingCoherence },
+    { name: 'Look Bible Adherence', score: qualityReport.lookBibleAdherence },
+  ]
 
-    dimensions.forEach(dim => {
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text(`${dim.name}:`, 15, yPos);
+  dimensions.forEach((dim) => {
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text(`${dim.name}:`, 15, yPos)
 
-        // Score bar
-        const barWidth = 100;
-        const barHeight = 5;
-        const scoreWidth = (dim.score / 100) * barWidth;
+    // Score bar
+    const barWidth = 100
+    const barHeight = 5
+    const scoreWidth = (dim.score / 100) * barWidth
 
-        // Background bar
-        doc.setFillColor(PDF_COLORS.light);
-        doc.rect(70, yPos - 4, barWidth, barHeight, 'F');
+    // Background bar
+    doc.setFillColor(PDF_COLORS.light)
+    doc.rect(70, yPos - 4, barWidth, barHeight, 'F')
 
-        // Score bar
-        const scoreColor = dim.score >= 80 ? PDF_COLORS.success :
-                          dim.score >= 60 ? PDF_COLORS.warning : PDF_COLORS.danger;
-        doc.setFillColor(scoreColor);
-        doc.rect(70, yPos - 4, scoreWidth, barHeight, 'F');
+    // Score bar
+    const scoreColor =
+      dim.score >= 80
+        ? PDF_COLORS.success
+        : dim.score >= 60
+          ? PDF_COLORS.warning
+          : PDF_COLORS.danger
+    doc.setFillColor(scoreColor)
+    doc.rect(70, yPos - 4, scoreWidth, barHeight, 'F')
 
-        // Score text
-        doc.text(`${dim.score}/100`, 175, yPos);
+    // Score text
+    doc.text(`${dim.score}/100`, 175, yPos)
 
-        yPos += 8;
-    });
+    yPos += 8
+  })
 
-    // Top issues
-    if (qualityReport.improvementSuggestions.length > 0) {
-        yPos += 5;
-        doc.setFontSize(12);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text('Key Improvement Areas:', 10, yPos);
-        yPos += 8;
+  // Top issues
+  if (qualityReport.improvementSuggestions.length > 0) {
+    yPos += 5
+    doc.setFontSize(12)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text('Key Improvement Areas:', 10, yPos)
+    yPos += 8
 
-        qualityReport.improvementSuggestions.slice(0, 3).forEach(suggestion => {
-            doc.setFontSize(10);
-            doc.setTextColor(PDF_COLORS.secondary);
+    qualityReport.improvementSuggestions.slice(0, 3).forEach((suggestion) => {
+      doc.setFontSize(10)
+      doc.setTextColor(PDF_COLORS.secondary)
 
-            // Bullet point
-            doc.circle(15, yPos - 2, 1, 'F');
+      // Bullet point
+      doc.circle(15, yPos - 2, 1, 'F')
 
-            // Issue text
-            const lines = doc.splitTextToSize(suggestion.issue, 170);
-            doc.text(lines, 20, yPos);
-            yPos += lines.length * 4 + 2;
-        });
-    }
+      // Issue text
+      const lines = doc.splitTextToSize(suggestion.issue, 170)
+      doc.text(lines, 20, yPos)
+      yPos += lines.length * 4 + 2
+    })
+  }
 
-    return yPos + 10;
+  return yPos + 10
 }
 
 /**
  * Adds performance metrics section
  */
 function addPerformanceSection(
-    doc: jsPDF,
-    yPos: number,
-    performanceMetrics: TechnicalPerformanceMetrics,
-    includeCharts: boolean
+  doc: jsPDF,
+  yPos: number,
+  performanceMetrics: TechnicalPerformanceMetrics,
+  _includeCharts: boolean
 ): number {
-    // Check for page break
-    if (yPos > 200) {
-        doc.addPage();
-        yPos = 20;
+  // Check for page break
+  if (yPos > 200) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  // Section title
+  doc.setFontSize(16)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Technical Performance', 10, yPos)
+  yPos += 10
+
+  // Cost breakdown
+  doc.setFontSize(12)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Cost Breakdown:', 10, yPos)
+  yPos += 8
+
+  const costs = [
+    { name: 'Image Generation', amount: performanceMetrics.apiCosts.imageGenerationCost },
+    { name: 'Video Animation', amount: performanceMetrics.apiCosts.videoGenerationCost },
+    { name: 'Audio Generation', amount: performanceMetrics.apiCosts.audioGenerationCost },
+  ]
+
+  costs.forEach((cost) => {
+    if (cost.amount > 0) {
+      doc.setFontSize(10)
+      doc.setTextColor(PDF_COLORS.secondary)
+      doc.text(`${cost.name}:`, 15, yPos)
+      doc.text(`$${cost.amount.toFixed(2)}`, 100, yPos)
+      yPos += 6
     }
+  })
 
-    // Section title
-    doc.setFontSize(16);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Technical Performance', 10, yPos);
-    yPos += 10;
+  // Total
+  doc.setLineWidth(0.5)
+  doc.line(15, yPos, 115, yPos)
+  yPos += 2
+  doc.setFontSize(11)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Total Project Cost:', 15, yPos + 4)
+  doc.setTextColor(PDF_COLORS.accent)
+  doc.text(`$${performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`, 100, yPos + 4)
+  yPos += 12
 
-    // Cost breakdown
-    doc.setFontSize(12);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Cost Breakdown:', 10, yPos);
-    yPos += 8;
+  // Render times
+  doc.setFontSize(12)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Average Render Times:', 10, yPos)
+  yPos += 8
 
-    const costs = [
-        { name: 'Image Generation', amount: performanceMetrics.apiCosts.imageGenerationCost },
-        { name: 'Video Animation', amount: performanceMetrics.apiCosts.videoGenerationCost },
-        { name: 'Audio Generation', amount: performanceMetrics.apiCosts.audioGenerationCost }
-    ];
+  performanceMetrics.renderTimes.imageGeneration.forEach((model) => {
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text(`${model.model}:`, 15, yPos)
+    doc.text(`${model.avgTime.toFixed(1)}s (${model.count} generations)`, 70, yPos)
+    yPos += 6
+  })
 
-    costs.forEach(cost => {
-        if (cost.amount > 0) {
-            doc.setFontSize(10);
-            doc.setTextColor(PDF_COLORS.secondary);
-            doc.text(`${cost.name}:`, 15, yPos);
-            doc.text(`$${cost.amount.toFixed(2)}`, 100, yPos);
-            yPos += 6;
-        }
-    });
+  if (performanceMetrics.renderTimes.videoAnimation.count > 0) {
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text('Video Animation:', 15, yPos)
+    doc.text(
+      `${performanceMetrics.renderTimes.videoAnimation.avgTime.toFixed(1)}s (${performanceMetrics.renderTimes.videoAnimation.count} generations)`,
+      70,
+      yPos
+    )
+    yPos += 6
+  }
 
-    // Total
-    doc.setLineWidth(0.5);
-    doc.line(15, yPos, 115, yPos);
-    yPos += 2;
-    doc.setFontSize(11);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Total Project Cost:', 15, yPos + 4);
-    doc.setTextColor(PDF_COLORS.accent);
-    doc.text(`$${performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`, 100, yPos + 4);
-    yPos += 12;
-
-    // Render times
-    doc.setFontSize(12);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Average Render Times:', 10, yPos);
-    yPos += 8;
-
-    performanceMetrics.renderTimes.imageGeneration.forEach(model => {
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text(`${model.model}:`, 15, yPos);
-        doc.text(`${model.avgTime.toFixed(1)}s (${model.count} generations)`, 70, yPos);
-        yPos += 6;
-    });
-
-    if (performanceMetrics.renderTimes.videoAnimation.count > 0) {
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text('Video Animation:', 15, yPos);
-        doc.text(
-            `${performanceMetrics.renderTimes.videoAnimation.avgTime.toFixed(1)}s (${performanceMetrics.renderTimes.videoAnimation.count} generations)`,
-            70,
-            yPos
-        );
-        yPos += 6;
-    }
-
-    return yPos + 10;
+  return yPos + 10
 }
 
 /**
  * Adds scene-by-scene analysis
  */
-function addSceneAnalysis(
-    doc: jsPDF,
-    yPos: number,
-    qualityReport: CreativeQualityReport
-): number {
-    // Section title
-    doc.setFontSize(18);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Scene-by-Scene Analysis', 10, yPos);
-    yPos += 10;
+function addSceneAnalysis(doc: jsPDF, yPos: number, qualityReport: CreativeQualityReport): number {
+  // Section title
+  doc.setFontSize(18)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Scene-by-Scene Analysis', 10, yPos)
+  yPos += 10
 
-    // Scene reports
-    qualityReport.sceneReports.forEach((scene, index) => {
-        // Check for page break
-        if (yPos > 250) {
-            doc.addPage();
-            yPos = 20;
-        }
+  // Scene reports
+  qualityReport.sceneReports.forEach((scene, index) => {
+    // Check for page break
+    if (yPos > 250) {
+      doc.addPage()
+      yPos = 20
+    }
 
-        // Scene header
-        doc.setFillColor(PDF_COLORS.light);
-        doc.rect(10, yPos, 190, 8, 'F');
-        doc.setFontSize(11);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text(`Scene ${index + 1}: ${scene.sceneName}`, 12, yPos + 5);
-        yPos += 12;
+    // Scene header
+    doc.setFillColor(PDF_COLORS.light)
+    doc.rect(10, yPos, 190, 8, 'F')
+    doc.setFontSize(11)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text(`Scene ${index + 1}: ${scene.sceneName}`, 12, yPos + 5)
+    yPos += 12
 
-        // Scene metrics
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
+    // Scene metrics
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
 
-        const metrics = [
-            `Overall: ${scene.overallScore}/100`,
-            `Color: ${scene.colorConsistency}/100`,
-            `Lighting: ${scene.lightingCoherence}/100`,
-            `Look Bible: ${scene.lookBibleAdherence}/100`
-        ];
+    const metrics = [
+      `Overall: ${scene.overallScore}/100`,
+      `Color: ${scene.colorConsistency}/100`,
+      `Lighting: ${scene.lightingCoherence}/100`,
+      `Look Bible: ${scene.lookBibleAdherence}/100`,
+    ]
 
-        metrics.forEach((metric, i) => {
-            doc.text(metric, 15 + (i % 2) * 90, yPos + Math.floor(i / 2) * 6);
-        });
+    metrics.forEach((metric, i) => {
+      doc.text(metric, 15 + (i % 2) * 90, yPos + Math.floor(i / 2) * 6)
+    })
 
-        yPos += 12;
+    yPos += 12
 
-        // Scene notes if any
-        if (scene.notes && scene.notes.length > 0) {
-            doc.setFontSize(9);
-            doc.setTextColor(PDF_COLORS.secondary);
-            const lines = doc.splitTextToSize(scene.notes.join('. '), 180);
-            doc.text(lines, 15, yPos);
-            yPos += lines.length * 4 + 4;
-        }
-    });
+    // Scene notes if any
+    if (scene.notes && scene.notes.length > 0) {
+      doc.setFontSize(9)
+      doc.setTextColor(PDF_COLORS.secondary)
+      const lines = doc.splitTextToSize(scene.notes.join('. '), 180)
+      doc.text(lines, 15, yPos)
+      yPos += lines.length * 4 + 4
+    }
+  })
 
-    return yPos;
+  return yPos
 }
 
 /**
  * Adds comparison section
  */
 function addComparisonSection(
-    doc: jsPDF,
-    yPos: number,
-    qualityReport: CreativeQualityReport,
-    performanceMetrics: TechnicalPerformanceMetrics
+  doc: jsPDF,
+  yPos: number,
+  qualityReport: CreativeQualityReport,
+  performanceMetrics: TechnicalPerformanceMetrics
 ): number {
-    // Section title
-    doc.setFontSize(18);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Comparative Analysis', 10, yPos);
-    yPos += 10;
+  // Section title
+  doc.setFontSize(18)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Comparative Analysis', 10, yPos)
+  yPos += 10
 
-    doc.setFontSize(11);
-    doc.setTextColor(PDF_COLORS.secondary);
+  doc.setFontSize(11)
+  doc.setTextColor(PDF_COLORS.secondary)
 
-    // Quality vs Cost analysis
-    doc.text('Quality-Cost Efficiency:', 10, yPos);
-    yPos += 8;
+  // Quality vs Cost analysis
+  doc.text('Quality-Cost Efficiency:', 10, yPos)
+  yPos += 8
 
-    const efficiencyScore = (qualityReport.overallScore / 100) *
-                           (performanceMetrics.efficiencyMetrics.successRate / 100) * 100;
+  const efficiencyScore =
+    (qualityReport.overallScore / 100) *
+    (performanceMetrics.efficiencyMetrics.successRate / 100) *
+    100
 
-    doc.setFontSize(10);
-    doc.text(`• Quality Score: ${qualityReport.overallScore}/100`, 15, yPos);
-    yPos += 6;
-    doc.text(`• Success Rate: ${performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}%`, 15, yPos);
-    yPos += 6;
-    doc.text(`• Cost per Generation: $${(performanceMetrics.apiCosts.totalProjectCost /
+  doc.setFontSize(10)
+  doc.text(`• Quality Score: ${qualityReport.overallScore}/100`, 15, yPos)
+  yPos += 6
+  doc.text(
+    `• Success Rate: ${performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}%`,
+    15,
+    yPos
+  )
+  yPos += 6
+  doc.text(
+    `• Cost per Generation: $${(
+      performanceMetrics.apiCosts.totalProjectCost /
         (performanceMetrics.renderTimes.imageGeneration.reduce((sum, m) => sum + m.count, 0) +
-         performanceMetrics.renderTimes.videoAnimation.count)).toFixed(2)}`, 15, yPos);
-    yPos += 6;
-    doc.text(`• Efficiency Score: ${efficiencyScore.toFixed(1)}%`, 15, yPos);
-    yPos += 10;
+          performanceMetrics.renderTimes.videoAnimation.count)
+    ).toFixed(2)}`,
+    15,
+    yPos
+  )
+  yPos += 6
+  doc.text(`• Efficiency Score: ${efficiencyScore.toFixed(1)}%`, 15, yPos)
+  yPos += 10
 
-    // Scene comparison table
-    if (qualityReport.sceneReports.length > 0) {
-        doc.setFontSize(11);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text('Scene Performance Comparison:', 10, yPos);
-        yPos += 8;
+  // Scene comparison table
+  if (qualityReport.sceneReports.length > 0) {
+    doc.setFontSize(11)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text('Scene Performance Comparison:', 10, yPos)
+    yPos += 8
 
-        // Table header
-        doc.setFillColor(PDF_COLORS.dark);
-        doc.rect(10, yPos, 190, 8, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.text('Scene', 12, yPos + 5);
-        doc.text('Overall', 80, yPos + 5);
-        doc.text('Color', 110, yPos + 5);
-        doc.text('Lighting', 140, yPos + 5);
-        doc.text('Look Bible', 170, yPos + 5);
-        yPos += 10;
+    // Table header
+    doc.setFillColor(PDF_COLORS.dark)
+    doc.rect(10, yPos, 190, 8, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(9)
+    doc.text('Scene', 12, yPos + 5)
+    doc.text('Overall', 80, yPos + 5)
+    doc.text('Color', 110, yPos + 5)
+    doc.text('Lighting', 140, yPos + 5)
+    doc.text('Look Bible', 170, yPos + 5)
+    yPos += 10
 
-        // Table rows
-        doc.setTextColor(PDF_COLORS.secondary);
-        qualityReport.sceneReports.slice(0, 10).forEach((scene, index) => {
-            if (index % 2 === 0) {
-                doc.setFillColor(PDF_COLORS.light);
-                doc.rect(10, yPos - 2, 190, 6, 'F');
-            }
+    // Table rows
+    doc.setTextColor(PDF_COLORS.secondary)
+    qualityReport.sceneReports.slice(0, 10).forEach((scene, index) => {
+      if (index % 2 === 0) {
+        doc.setFillColor(PDF_COLORS.light)
+        doc.rect(10, yPos - 2, 190, 6, 'F')
+      }
 
-            doc.setFontSize(9);
-            doc.text(scene.sceneName.substring(0, 40), 12, yPos + 2);
-            doc.text(scene.overallScore.toString(), 80, yPos + 2);
-            doc.text(scene.colorConsistency.toString(), 110, yPos + 2);
-            doc.text(scene.lightingCoherence.toString(), 140, yPos + 2);
-            doc.text(scene.lookBibleAdherence.toString(), 170, yPos + 2);
-            yPos += 6;
-        });
-    }
+      doc.setFontSize(9)
+      doc.text(scene.sceneName.substring(0, 40), 12, yPos + 2)
+      doc.text(scene.overallScore.toString(), 80, yPos + 2)
+      doc.text(scene.colorConsistency.toString(), 110, yPos + 2)
+      doc.text(scene.lightingCoherence.toString(), 140, yPos + 2)
+      doc.text(scene.lookBibleAdherence.toString(), 170, yPos + 2)
+      yPos += 6
+    })
+  }
 
-    return yPos + 10;
+  return yPos + 10
 }
 
 /**
  * Adds recommendations section
  */
 function addRecommendations(
-    doc: jsPDF,
-    yPos: number,
-    qualityReport: CreativeQualityReport | null,
-    performanceMetrics: TechnicalPerformanceMetrics | null
+  doc: jsPDF,
+  yPos: number,
+  qualityReport: CreativeQualityReport | null,
+  performanceMetrics: TechnicalPerformanceMetrics | null
 ): number {
-    // Section title
-    doc.setFontSize(18);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Recommendations & Next Steps', 10, yPos);
-    yPos += 10;
+  // Section title
+  doc.setFontSize(18)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Recommendations & Next Steps', 10, yPos)
+  yPos += 10
 
-    const recommendations: Array<{ priority: 'high' | 'medium' | 'low'; text: string }> = [];
+  const recommendations: Array<{ priority: 'high' | 'medium' | 'low'; text: string }> = []
 
-    // Quality recommendations
-    if (qualityReport) {
-        if (qualityReport.overallScore < 70) {
-            recommendations.push({
-                priority: 'high',
-                text: 'Focus on improving overall quality score through better prompt engineering and reference image selection.'
-            });
-        }
-
-        if (qualityReport.colorConsistency < 80) {
-            recommendations.push({
-                priority: 'high',
-                text: 'Establish a stronger color palette and ensure consistency across all generated assets.'
-            });
-        }
-
-        if (qualityReport.lightingCoherence < 80) {
-            recommendations.push({
-                priority: 'medium',
-                text: 'Standardize lighting conditions in prompts to maintain visual coherence.'
-            });
-        }
-
-        // Add improvement suggestions
-        qualityReport.improvementSuggestions.forEach(suggestion => {
-            recommendations.push({
-                priority: suggestion.severity === 'high' ? 'high' :
-                        suggestion.severity === 'medium' ? 'medium' : 'low',
-                text: `${suggestion.issue}: ${suggestion.suggestion}`
-            });
-        });
+  // Quality recommendations
+  if (qualityReport) {
+    if (qualityReport.overallScore < 70) {
+      recommendations.push({
+        priority: 'high',
+        text: 'Focus on improving overall quality score through better prompt engineering and reference image selection.',
+      })
     }
 
-    // Performance recommendations
-    if (performanceMetrics) {
-        const avgCostPerGeneration = performanceMetrics.apiCosts.totalProjectCost /
-            (performanceMetrics.renderTimes.imageGeneration.reduce((sum, m) => sum + m.count, 0) +
-             performanceMetrics.renderTimes.videoAnimation.count);
-
-        if (avgCostPerGeneration > 1) {
-            recommendations.push({
-                priority: 'high',
-                text: 'Consider using more cost-effective models for initial iterations and drafts.'
-            });
-        }
-
-        if (performanceMetrics.efficiencyMetrics.successRate < 80) {
-            recommendations.push({
-                priority: 'high',
-                text: 'Improve generation success rate by refining prompts and fixing common failure points.'
-            });
-        }
-
-        if (performanceMetrics.efficiencyMetrics.failedGenerations > 5) {
-            recommendations.push({
-                priority: 'medium',
-                text: `Address ${performanceMetrics.efficiencyMetrics.failedGenerations} failed generations to reduce wasted API calls.`
-            });
-        }
+    if (qualityReport.colorConsistency < 80) {
+      recommendations.push({
+        priority: 'high',
+        text: 'Establish a stronger color palette and ensure consistency across all generated assets.',
+      })
     }
 
-    // Sort by priority
-    recommendations.sort((a, b) => {
-        const priorityOrder = { high: 0, medium: 1, low: 2 };
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-    });
+    if (qualityReport.lightingCoherence < 80) {
+      recommendations.push({
+        priority: 'medium',
+        text: 'Standardize lighting conditions in prompts to maintain visual coherence.',
+      })
+    }
 
-    // Render recommendations
-    ['high', 'medium', 'low'].forEach(priority => {
-        const priorityRecs = recommendations.filter(r => r.priority === priority);
-        if (priorityRecs.length > 0) {
-            // Check for page break
-            if (yPos > 240) {
-                doc.addPage();
-                yPos = 20;
-            }
+    // Add improvement suggestions
+    qualityReport.improvementSuggestions.forEach((suggestion) => {
+      recommendations.push({
+        priority:
+          suggestion.severity === 'high'
+            ? 'high'
+            : suggestion.severity === 'medium'
+              ? 'medium'
+              : 'low',
+        text: `${suggestion.issue}: ${suggestion.suggestion}`,
+      })
+    })
+  }
 
-            // Priority header
-            const priorityColors = {
-                high: PDF_COLORS.danger,
-                medium: PDF_COLORS.warning,
-                low: PDF_COLORS.success
-            };
+  // Performance recommendations
+  if (performanceMetrics) {
+    const avgCostPerGeneration =
+      performanceMetrics.apiCosts.totalProjectCost /
+      (performanceMetrics.renderTimes.imageGeneration.reduce((sum, m) => sum + m.count, 0) +
+        performanceMetrics.renderTimes.videoAnimation.count)
 
-            doc.setFontSize(12);
-            doc.setTextColor(priorityColors[priority as keyof typeof priorityColors]);
-            doc.text(`${priority.charAt(0).toUpperCase() + priority.slice(1)} Priority:`, 10, yPos);
-            yPos += 8;
+    if (avgCostPerGeneration > 1) {
+      recommendations.push({
+        priority: 'high',
+        text: 'Consider using more cost-effective models for initial iterations and drafts.',
+      })
+    }
 
-            // Recommendations
-            priorityRecs.forEach(rec => {
-                doc.setFontSize(10);
-                doc.setTextColor(PDF_COLORS.secondary);
+    if (performanceMetrics.efficiencyMetrics.successRate < 80) {
+      recommendations.push({
+        priority: 'high',
+        text: 'Improve generation success rate by refining prompts and fixing common failure points.',
+      })
+    }
 
-                // Bullet point
-                doc.circle(15, yPos - 2, 1, 'F');
+    if (performanceMetrics.efficiencyMetrics.failedGenerations > 5) {
+      recommendations.push({
+        priority: 'medium',
+        text: `Address ${performanceMetrics.efficiencyMetrics.failedGenerations} failed generations to reduce wasted API calls.`,
+      })
+    }
+  }
 
-                // Recommendation text
-                const lines = doc.splitTextToSize(rec.text, 175);
-                doc.text(lines, 20, yPos);
-                yPos += lines.length * 4 + 4;
-            });
+  // Sort by priority
+  recommendations.sort((a, b) => {
+    const priorityOrder = { high: 0, medium: 1, low: 2 }
+    return priorityOrder[a.priority] - priorityOrder[b.priority]
+  })
 
-            yPos += 4;
-        }
-    });
+  // Render recommendations
+  ;['high', 'medium', 'low'].forEach((priority) => {
+    const priorityRecs = recommendations.filter((r) => r.priority === priority)
+    if (priorityRecs.length > 0) {
+      // Check for page break
+      if (yPos > 240) {
+        doc.addPage()
+        yPos = 20
+      }
 
-    // Action items
-    yPos += 6;
-    doc.setFontSize(12);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Immediate Action Items:', 10, yPos);
-    yPos += 8;
+      // Priority header
+      const priorityColors = {
+        high: PDF_COLORS.danger,
+        medium: PDF_COLORS.warning,
+        low: PDF_COLORS.success,
+      }
 
-    const actionItems = [
-        'Review and implement high-priority recommendations',
-        'Schedule follow-up quality analysis after improvements',
-        'Monitor cost metrics and optimize model selection',
-        'Document successful prompts and patterns for reuse',
-        'Consider batch processing for similar generations'
-    ];
+      doc.setFontSize(12)
+      doc.setTextColor(priorityColors[priority as keyof typeof priorityColors])
+      doc.text(`${priority.charAt(0).toUpperCase() + priority.slice(1)} Priority:`, 10, yPos)
+      yPos += 8
 
-    actionItems.forEach((item, index) => {
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text(`${index + 1}. ${item}`, 15, yPos);
-        yPos += 6;
-    });
+      // Recommendations
+      priorityRecs.forEach((rec) => {
+        doc.setFontSize(10)
+        doc.setTextColor(PDF_COLORS.secondary)
 
-    return yPos;
+        // Bullet point
+        doc.circle(15, yPos - 2, 1, 'F')
+
+        // Recommendation text
+        const lines = doc.splitTextToSize(rec.text, 175)
+        doc.text(lines, 20, yPos)
+        yPos += lines.length * 4 + 4
+      })
+
+      yPos += 4
+    }
+  })
+
+  // Action items
+  yPos += 6
+  doc.setFontSize(12)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Immediate Action Items:', 10, yPos)
+  yPos += 8
+
+  const actionItems = [
+    'Review and implement high-priority recommendations',
+    'Schedule follow-up quality analysis after improvements',
+    'Monitor cost metrics and optimize model selection',
+    'Document successful prompts and patterns for reuse',
+    'Consider batch processing for similar generations',
+  ]
+
+  actionItems.forEach((item, index) => {
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text(`${index + 1}. ${item}`, 15, yPos)
+    yPos += 6
+  })
+
+  return yPos
 }
 
 /**
  * Generates a comparison PDF between two different time periods
  */
 export async function generateComparisonPDF(
-    projectId: string,
-    currentData: {
-        qualityReport: CreativeQualityReport | null;
-        performanceMetrics: TechnicalPerformanceMetrics | null;
-    },
-    previousData: {
-        qualityReport: CreativeQualityReport | null;
-        performanceMetrics: TechnicalPerformanceMetrics | null;
-        date: Date;
-    }
+  _projectId: string,
+  currentData: {
+    qualityReport: CreativeQualityReport | null
+    performanceMetrics: TechnicalPerformanceMetrics | null
+  },
+  previousData: {
+    qualityReport: CreativeQualityReport | null
+    performanceMetrics: TechnicalPerformanceMetrics | null
+    date: Date
+  }
 ): Promise<Blob> {
-    const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-    });
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  })
 
-    let yPosition = 20;
+  let yPosition = 20
 
-    // Header
-    doc.setFontSize(24);
-    doc.setTextColor(PDF_COLORS.primary);
-    doc.text('Comparison Report', 10, yPosition);
-    yPosition += 10;
+  // Header
+  doc.setFontSize(24)
+  doc.setTextColor(PDF_COLORS.primary)
+  doc.text('Comparison Report', 10, yPosition)
+  yPosition += 10
 
-    doc.setFontSize(11);
-    doc.setTextColor(PDF_COLORS.secondary);
-    doc.text(`Comparing: ${previousData.date.toLocaleDateString()} vs ${new Date().toLocaleDateString()}`, 10, yPosition);
-    yPosition += 15;
+  doc.setFontSize(11)
+  doc.setTextColor(PDF_COLORS.secondary)
+  doc.text(
+    `Comparing: ${previousData.date.toLocaleDateString()} vs ${new Date().toLocaleDateString()}`,
+    10,
+    yPosition
+  )
+  yPosition += 15
 
-    // Quality comparison
-    if (currentData.qualityReport && previousData.qualityReport) {
-        doc.setFontSize(16);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text('Quality Score Changes', 10, yPosition);
-        yPosition += 10;
+  // Quality comparison
+  if (currentData.qualityReport && previousData.qualityReport) {
+    doc.setFontSize(16)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text('Quality Score Changes', 10, yPosition)
+    yPosition += 10
 
-        const qualityChange = currentData.qualityReport.overallScore - previousData.qualityReport.overallScore;
-        const colorChange = currentData.qualityReport.colorConsistency - previousData.qualityReport.colorConsistency;
-        const lightingChange = currentData.qualityReport.lightingCoherence - previousData.qualityReport.lightingCoherence;
+    const qualityChange =
+      currentData.qualityReport.overallScore - previousData.qualityReport.overallScore
+    const colorChange =
+      currentData.qualityReport.colorConsistency - previousData.qualityReport.colorConsistency
+    const lightingChange =
+      currentData.qualityReport.lightingCoherence - previousData.qualityReport.lightingCoherence
 
-        // Display changes with arrows
-        const changes = [
-            { name: 'Overall Quality', prev: previousData.qualityReport.overallScore, curr: currentData.qualityReport.overallScore, change: qualityChange },
-            { name: 'Color Consistency', prev: previousData.qualityReport.colorConsistency, curr: currentData.qualityReport.colorConsistency, change: colorChange },
-            { name: 'Lighting Coherence', prev: previousData.qualityReport.lightingCoherence, curr: currentData.qualityReport.lightingCoherence, change: lightingChange }
-        ];
+    // Display changes with arrows
+    const changes = [
+      {
+        name: 'Overall Quality',
+        prev: previousData.qualityReport.overallScore,
+        curr: currentData.qualityReport.overallScore,
+        change: qualityChange,
+      },
+      {
+        name: 'Color Consistency',
+        prev: previousData.qualityReport.colorConsistency,
+        curr: currentData.qualityReport.colorConsistency,
+        change: colorChange,
+      },
+      {
+        name: 'Lighting Coherence',
+        prev: previousData.qualityReport.lightingCoherence,
+        curr: currentData.qualityReport.lightingCoherence,
+        change: lightingChange,
+      },
+    ]
 
-        changes.forEach(metric => {
-            doc.setFontSize(10);
-            doc.setTextColor(PDF_COLORS.secondary);
-            doc.text(`${metric.name}:`, 15, yPosition);
+    changes.forEach((metric) => {
+      doc.setFontSize(10)
+      doc.setTextColor(PDF_COLORS.secondary)
+      doc.text(`${metric.name}:`, 15, yPosition)
 
-            // Previous value
-            doc.text(`${metric.prev}`, 70, yPosition);
+      // Previous value
+      doc.text(`${metric.prev}`, 70, yPosition)
 
-            // Arrow
-            const arrow = metric.change > 0 ? '→' : metric.change < 0 ? '←' : '=';
-            doc.text(arrow, 85, yPosition);
+      // Arrow
+      const arrow = metric.change > 0 ? '→' : metric.change < 0 ? '←' : '='
+      doc.text(arrow, 85, yPosition)
 
-            // Current value
-            const changeColor = metric.change > 0 ? PDF_COLORS.success : metric.change < 0 ? PDF_COLORS.danger : PDF_COLORS.secondary;
-            doc.setTextColor(changeColor);
-            doc.text(`${metric.curr}`, 95, yPosition);
+      // Current value
+      const changeColor =
+        metric.change > 0
+          ? PDF_COLORS.success
+          : metric.change < 0
+            ? PDF_COLORS.danger
+            : PDF_COLORS.secondary
+      doc.setTextColor(changeColor)
+      doc.text(`${metric.curr}`, 95, yPosition)
 
-            // Change amount
-            if (metric.change !== 0) {
-                doc.text(`(${metric.change > 0 ? '+' : ''}${metric.change.toFixed(1)})`, 110, yPosition);
-            }
+      // Change amount
+      if (metric.change !== 0) {
+        doc.text(`(${metric.change > 0 ? '+' : ''}${metric.change.toFixed(1)})`, 110, yPosition)
+      }
 
-            yPosition += 6;
-        });
+      yPosition += 6
+    })
+  }
+
+  yPosition += 10
+
+  // Performance comparison
+  if (currentData.performanceMetrics && previousData.performanceMetrics) {
+    doc.setFontSize(16)
+    doc.setTextColor(PDF_COLORS.primary)
+    doc.text('Performance Changes', 10, yPosition)
+    yPosition += 10
+
+    const costChange =
+      currentData.performanceMetrics.apiCosts.totalProjectCost -
+      previousData.performanceMetrics.apiCosts.totalProjectCost
+    const successRateChange =
+      currentData.performanceMetrics.efficiencyMetrics.successRate -
+      previousData.performanceMetrics.efficiencyMetrics.successRate
+
+    doc.setFontSize(10)
+    doc.setTextColor(PDF_COLORS.secondary)
+
+    // Cost change
+    doc.text('Total Cost:', 15, yPosition)
+    doc.text(
+      `$${previousData.performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`,
+      70,
+      yPosition
+    )
+    doc.text('→', 95, yPosition)
+
+    const costColor =
+      costChange > 0
+        ? PDF_COLORS.danger
+        : costChange < 0
+          ? PDF_COLORS.success
+          : PDF_COLORS.secondary
+    doc.setTextColor(costColor)
+    doc.text(
+      `$${currentData.performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`,
+      105,
+      yPosition
+    )
+
+    if (costChange !== 0) {
+      doc.text(`(${costChange > 0 ? '+' : ''}$${costChange.toFixed(2)})`, 135, yPosition)
     }
+    yPosition += 6
 
-    yPosition += 10;
+    // Success rate change
+    doc.setTextColor(PDF_COLORS.secondary)
+    doc.text('Success Rate:', 15, yPosition)
+    doc.text(
+      `${previousData.performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}%`,
+      70,
+      yPosition
+    )
+    doc.text('→', 95, yPosition)
 
-    // Performance comparison
-    if (currentData.performanceMetrics && previousData.performanceMetrics) {
-        doc.setFontSize(16);
-        doc.setTextColor(PDF_COLORS.primary);
-        doc.text('Performance Changes', 10, yPosition);
-        yPosition += 10;
+    const successColor =
+      successRateChange > 0
+        ? PDF_COLORS.success
+        : successRateChange < 0
+          ? PDF_COLORS.danger
+          : PDF_COLORS.secondary
+    doc.setTextColor(successColor)
+    doc.text(
+      `${currentData.performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}%`,
+      105,
+      yPosition
+    )
 
-        const costChange = currentData.performanceMetrics.apiCosts.totalProjectCost - previousData.performanceMetrics.apiCosts.totalProjectCost;
-        const successRateChange = currentData.performanceMetrics.efficiencyMetrics.successRate - previousData.performanceMetrics.efficiencyMetrics.successRate;
-
-        doc.setFontSize(10);
-        doc.setTextColor(PDF_COLORS.secondary);
-
-        // Cost change
-        doc.text('Total Cost:', 15, yPosition);
-        doc.text(`$${previousData.performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`, 70, yPosition);
-        doc.text('→', 95, yPosition);
-
-        const costColor = costChange > 0 ? PDF_COLORS.danger : costChange < 0 ? PDF_COLORS.success : PDF_COLORS.secondary;
-        doc.setTextColor(costColor);
-        doc.text(`$${currentData.performanceMetrics.apiCosts.totalProjectCost.toFixed(2)}`, 105, yPosition);
-
-        if (costChange !== 0) {
-            doc.text(`(${costChange > 0 ? '+' : ''}$${costChange.toFixed(2)})`, 135, yPosition);
-        }
-        yPosition += 6;
-
-        // Success rate change
-        doc.setTextColor(PDF_COLORS.secondary);
-        doc.text('Success Rate:', 15, yPosition);
-        doc.text(`${previousData.performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}%`, 70, yPosition);
-        doc.text('→', 95, yPosition);
-
-        const successColor = successRateChange > 0 ? PDF_COLORS.success : successRateChange < 0 ? PDF_COLORS.danger : PDF_COLORS.secondary;
-        doc.setTextColor(successColor);
-        doc.text(`${currentData.performanceMetrics.efficiencyMetrics.successRate.toFixed(1)}%`, 105, yPosition);
-
-        if (successRateChange !== 0) {
-            doc.text(`(${successRateChange > 0 ? '+' : ''}${successRateChange.toFixed(1)}%)`, 135, yPosition);
-        }
+    if (successRateChange !== 0) {
+      doc.text(
+        `(${successRateChange > 0 ? '+' : ''}${successRateChange.toFixed(1)}%)`,
+        135,
+        yPosition
+      )
     }
+  }
 
-    // Add footer
-    addFooter(doc, 1, 1);
+  // Add footer
+  addFooter(doc, 1, 1)
 
-    // Generate blob
-    return doc.output('blob');
+  // Generate blob
+  return doc.output('blob')
 }

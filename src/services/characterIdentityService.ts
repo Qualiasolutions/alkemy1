@@ -10,25 +10,36 @@
  * Reference: https://fal.ai/models/fal-ai/flux-pro/character
  */
 
-import type { CharacterIdentity, CharacterIdentityStatus, CharacterIdentityTest, CharacterIdentityTestType } from '@/types';
-import { supabase, getCurrentUserId } from './supabase';
+import type {
+  CharacterIdentity,
+  CharacterIdentityStatus,
+  CharacterIdentityTest,
+  CharacterIdentityTestType,
+} from '@/types'
+import { getCurrentUserId, supabase } from './supabase'
 
 export interface PrepareCharacterIdentityRequest {
-    characterId: string;
-    referenceImages: File[];
-    onProgress?: (progress: number, status: string) => void;
+  characterId: string
+  referenceImages: File[]
+  onProgress?: (progress: number, status: string) => void
 }
 
 export interface ReconfigureCharacterIdentityRequest {
-    characterId: string;
-    newReferenceImages: File[];
-    onProgress?: (progress: number, status: string) => void;
+  characterId: string
+  newReferenceImages: File[]
+  onProgress?: (progress: number, status: string) => void
 }
 
 export interface CharacterIdentityError {
-    type: 'low-quality' | 'api-error' | 'network-error' | 'storage-quota' | 'insufficient-references' | 'unknown';
-    message: string;
-    details?: string;
+  type:
+    | 'low-quality'
+    | 'api-error'
+    | 'network-error'
+    | 'storage-quota'
+    | 'insufficient-references'
+    | 'unknown'
+  message: string
+  details?: string
 }
 
 /**
@@ -41,58 +52,61 @@ export interface CharacterIdentityError {
  * 4. Returns CharacterIdentity object with status 'ready' or 'error'
  */
 export async function prepareCharacterIdentity(
-    request: PrepareCharacterIdentityRequest
+  request: PrepareCharacterIdentityRequest
 ): Promise<CharacterIdentity> {
-    const { characterId, referenceImages, onProgress } = request;
+  const { characterId, referenceImages, onProgress } = request
 
-    try {
-        // Step 1: Validate reference images
-        onProgress?.(5, 'Validating reference images...');
-        const validationError = validateReferenceImages(referenceImages);
-        if (validationError) {
-            throw validationError;
-        }
-
-        // Step 2: Upload reference images to storage
-        onProgress?.(15, 'Uploading reference images...');
-        const referenceUrls = await uploadReferenceImages(characterId, referenceImages, onProgress);
-
-        // Step 3: Call Fal.ai API to create character identity
-        onProgress?.(50, 'Creating character identity with Fal.ai...');
-        const falCharacterId = await createFalCharacter(referenceUrls, onProgress);
-
-        // Step 4: Return CharacterIdentity object
-        onProgress?.(100, 'Character identity ready!');
-
-        const identity: CharacterIdentity = {
-            status: 'ready',
-            referenceImages: referenceUrls,
-            createdAt: new Date().toISOString(),
-            lastUpdated: new Date().toISOString(),
-            trainingCost: 0.10, // Fal.ai Instant Character cost (~$0.10/character)
-            technologyData: {
-                type: falCharacterId.includes('fal.ai') || /\.(safetensors|bin|pth)$/.test(falCharacterId) ? 'lora' : 'reference',
-                referenceStrength: 80, // Default 80% strength
-                embeddingId: falCharacterId,
-                falCharacterId: falCharacterId, // Custom field for Fal.ai character ID
-            },
-        };
-
-        return identity;
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Character identity preparation failed:', errorMessage);
-
-        const identity: CharacterIdentity = {
-            status: 'error',
-            referenceImages: [],
-            createdAt: new Date().toISOString(),
-            lastUpdated: new Date().toISOString(),
-            errorMessage,
-        };
-
-        return identity;
+  try {
+    // Step 1: Validate reference images
+    onProgress?.(5, 'Validating reference images...')
+    const validationError = validateReferenceImages(referenceImages)
+    if (validationError) {
+      throw validationError
     }
+
+    // Step 2: Upload reference images to storage
+    onProgress?.(15, 'Uploading reference images...')
+    const referenceUrls = await uploadReferenceImages(characterId, referenceImages, onProgress)
+
+    // Step 3: Call Fal.ai API to create character identity
+    onProgress?.(50, 'Creating character identity with Fal.ai...')
+    const falCharacterId = await createFalCharacter(referenceUrls, onProgress)
+
+    // Step 4: Return CharacterIdentity object
+    onProgress?.(100, 'Character identity ready!')
+
+    const identity: CharacterIdentity = {
+      status: 'ready',
+      referenceImages: referenceUrls,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
+      trainingCost: 0.1, // Fal.ai Instant Character cost (~$0.10/character)
+      technologyData: {
+        type:
+          falCharacterId.includes('fal.ai') || /\.(safetensors|bin|pth)$/.test(falCharacterId)
+            ? 'lora'
+            : 'reference',
+        referenceStrength: 80, // Default 80% strength
+        embeddingId: falCharacterId,
+        falCharacterId: falCharacterId, // Custom field for Fal.ai character ID
+      },
+    }
+
+    return identity
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Character identity preparation failed:', errorMessage)
+
+    const identity: CharacterIdentity = {
+      status: 'error',
+      referenceImages: [],
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
+      errorMessage,
+    }
+
+    return identity
+  }
 }
 
 /**
@@ -101,7 +115,7 @@ export async function prepareCharacterIdentity(
  * Helper function to extract status from CharacterIdentity object
  */
 export function getCharacterIdentityStatus(identity?: CharacterIdentity): CharacterIdentityStatus {
-    return identity?.status || 'none';
+  return identity?.status || 'none'
 }
 
 /**
@@ -112,42 +126,42 @@ export function getCharacterIdentityStatus(identity?: CharacterIdentity): Charac
  * 2. Creates new character identity with new reference images
  */
 export async function reconfigureCharacterIdentity(
-    request: ReconfigureCharacterIdentityRequest
+  request: ReconfigureCharacterIdentityRequest
 ): Promise<CharacterIdentity> {
-    const { characterId, newReferenceImages, onProgress } = request;
+  const { characterId, newReferenceImages, onProgress } = request
 
-    try {
-        // Step 1: Delete existing character identity (Fal.ai character)
-        onProgress?.(10, 'Removing old character identity...');
-        // Note: Fal.ai doesn't require explicit deletion, identities are stateless
+  try {
+    // Step 1: Delete existing character identity (Fal.ai character)
+    onProgress?.(10, 'Removing old character identity...')
+    // Note: Fal.ai doesn't require explicit deletion, identities are stateless
 
-        // Step 2: Create new character identity
-        onProgress?.(20, 'Creating new character identity...');
-        const identity = await prepareCharacterIdentity({
-            characterId,
-            referenceImages: newReferenceImages,
-            onProgress: (progress, status) => {
-                // Re-map progress from 20-100 range
-                const mappedProgress = 20 + (progress * 0.8);
-                onProgress?.(mappedProgress, status);
-            },
-        });
+    // Step 2: Create new character identity
+    onProgress?.(20, 'Creating new character identity...')
+    const identity = await prepareCharacterIdentity({
+      characterId,
+      referenceImages: newReferenceImages,
+      onProgress: (progress, status) => {
+        // Re-map progress from 20-100 range
+        const mappedProgress = 20 + progress * 0.8
+        onProgress?.(mappedProgress, status)
+      },
+    })
 
-        return identity;
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Character identity reconfiguration failed:', errorMessage);
+    return identity
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Character identity reconfiguration failed:', errorMessage)
 
-        const identity: CharacterIdentity = {
-            status: 'error',
-            referenceImages: [],
-            createdAt: new Date().toISOString(),
-            lastUpdated: new Date().toISOString(),
-            errorMessage,
-        };
-
-        return identity;
+    const identity: CharacterIdentity = {
+      status: 'error',
+      referenceImages: [],
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
+      errorMessage,
     }
+
+    return identity
+  }
 }
 
 /**
@@ -158,45 +172,45 @@ export async function reconfigureCharacterIdentity(
  * 2. Returns true if successful
  */
 export async function deleteCharacterIdentity(characterId: string): Promise<boolean> {
-    try {
-        // Delete reference images from Supabase Storage (if configured)
-        const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL;
+  try {
+    // Delete reference images from Supabase Storage (if configured)
+    const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL
 
-        if (isSupabaseConfigured) {
-            // Use Supabase client
+    if (isSupabaseConfigured) {
+      // Use Supabase client
 
-            // Delete all files in character-references/{characterId}/ folder
-            const { data: files, error: listError } = await supabase.storage
-                .from('character-references')
-                .list(characterId);
+      // Delete all files in character-references/{characterId}/ folder
+      const { data: files, error: listError } = await supabase.storage
+        .from('character-references')
+        .list(characterId)
 
-            if (listError) {
-                console.error('Failed to list character reference files:', listError);
-                return false;
-            }
+      if (listError) {
+        console.error('Failed to list character reference files:', listError)
+        return false
+      }
 
-            if (files && files.length > 0) {
-                const filePaths = files.map(file => `${characterId}/${file.name}`);
-                const { error: deleteError } = await supabase.storage
-                    .from('character-references')
-                    .remove(filePaths);
+      if (files && files.length > 0) {
+        const filePaths = files.map((file) => `${characterId}/${file.name}`)
+        const { error: deleteError } = await supabase.storage
+          .from('character-references')
+          .remove(filePaths)
 
-                if (deleteError) {
-                    console.error('Failed to delete character reference files:', deleteError);
-                    return false;
-                }
-            }
+        if (deleteError) {
+          console.error('Failed to delete character reference files:', deleteError)
+          return false
         }
-
-        // Note: localStorage-only mode doesn't require explicit deletion
-        // Reference images are stored in CharacterIdentity object (project state)
-        // They will be removed when the identity field is set to undefined
-
-        return true;
-    } catch (error) {
-        console.error('Failed to delete character identity:', error);
-        return false;
+      }
     }
+
+    // Note: localStorage-only mode doesn't require explicit deletion
+    // Reference images are stored in CharacterIdentity object (project state)
+    // They will be removed when the identity field is set to undefined
+
+    return true
+  } catch (error) {
+    console.error('Failed to delete character identity:', error)
+    return false
+  }
 }
 
 /**
@@ -207,7 +221,7 @@ export async function deleteCharacterIdentity(characterId: string): Promise<bool
  * 2. Includes reference images as base64 data URLs for portability
  */
 export function exportCharacterIdentity(identity: CharacterIdentity): string {
-    return JSON.stringify(identity, null, 2);
+  return JSON.stringify(identity, null, 2)
 }
 
 /**
@@ -219,19 +233,19 @@ export function exportCharacterIdentity(identity: CharacterIdentity): string {
  * 3. Returns CharacterIdentity object
  */
 export function importCharacterIdentity(jsonData: string): CharacterIdentity {
-    try {
-        const identity = JSON.parse(jsonData) as CharacterIdentity;
+  try {
+    const identity = JSON.parse(jsonData) as CharacterIdentity
 
-        // Validate required fields
-        if (!identity.status || !identity.referenceImages || !identity.createdAt) {
-            throw new Error('Invalid character identity data: missing required fields');
-        }
-
-        return identity;
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        throw new Error(`Failed to import character identity: ${errorMessage}`);
+    // Validate required fields
+    if (!identity.status || !identity.referenceImages || !identity.createdAt) {
+      throw new Error('Invalid character identity data: missing required fields')
     }
+
+    return identity
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to import character identity: ${errorMessage}`)
+  }
 }
 
 /**
@@ -240,7 +254,7 @@ export function importCharacterIdentity(jsonData: string): CharacterIdentity {
  * Helper function to check if a character has a configured identity
  */
 export function hasCharacterIdentity(identity?: CharacterIdentity): boolean {
-    return identity?.status === 'ready';
+  return identity?.status === 'ready'
 }
 
 // ============================================================================
@@ -258,50 +272,50 @@ export function hasCharacterIdentity(identity?: CharacterIdentity): boolean {
  * - Supported formats: JPEG, PNG, WebP
  */
 function validateReferenceImages(images: File[]): CharacterIdentityError | null {
-    // Check minimum count
-    if (images.length < 6) {
-        return {
-            type: 'insufficient-references',
-            message: `At least 6 reference images are required for optimal character identity training. You have ${images.length}. Upload ${6 - images.length} more image(s).`,
-        };
+  // Check minimum count
+  if (images.length < 6) {
+    return {
+      type: 'insufficient-references',
+      message: `At least 6 reference images are required for optimal character identity training. You have ${images.length}. Upload ${6 - images.length} more image(s).`,
+    }
+  }
+
+  // Check maximum count
+  if (images.length > 12) {
+    return {
+      type: 'api-error',
+      message: `Maximum 12 reference images allowed. You have ${images.length}. Please remove ${images.length - 12} image(s).`,
+    }
+  }
+
+  // Check file size and format
+  for (const image of images) {
+    // Check file size (10MB = 10 * 1024 * 1024 bytes)
+    const maxSize = 10 * 1024 * 1024
+    if (image.size > maxSize) {
+      return {
+        type: 'api-error',
+        message: `Image "${image.name}" exceeds 10MB size limit. Use a smaller file.`,
+        details: `File size: ${(image.size / 1024 / 1024).toFixed(2)}MB`,
+      }
     }
 
-    // Check maximum count
-    if (images.length > 12) {
-        return {
-            type: 'api-error',
-            message: `Maximum 12 reference images allowed. You have ${images.length}. Please remove ${images.length - 12} image(s).`,
-        };
+    // Check file format
+    const supportedFormats = ['image/jpeg', 'image/png', 'image/webp']
+    if (!supportedFormats.includes(image.type)) {
+      return {
+        type: 'api-error',
+        message: `Image "${image.name}" format not supported. Use JPEG, PNG, or WebP.`,
+        details: `File type: ${image.type}`,
+      }
     }
+  }
 
-    // Check file size and format
-    for (const image of images) {
-        // Check file size (10MB = 10 * 1024 * 1024 bytes)
-        const maxSize = 10 * 1024 * 1024;
-        if (image.size > maxSize) {
-            return {
-                type: 'api-error',
-                message: `Image "${image.name}" exceeds 10MB size limit. Use a smaller file.`,
-                details: `File size: ${(image.size / 1024 / 1024).toFixed(2)}MB`,
-            };
-        }
+  // Note: Resolution validation (>512x512px) is deferred to image loading
+  // This requires reading the image file which is async
+  // Will be implemented in the UI layer (CastLocationsTab) during preview
 
-        // Check file format
-        const supportedFormats = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!supportedFormats.includes(image.type)) {
-            return {
-                type: 'api-error',
-                message: `Image "${image.name}" format not supported. Use JPEG, PNG, or WebP.`,
-                details: `File type: ${image.type}`,
-            };
-        }
-    }
-
-    // Note: Resolution validation (>512x512px) is deferred to image loading
-    // This requires reading the image file which is async
-    // Will be implemented in the UI layer (CastLocationsTab) during preview
-
-    return null;
+  return null
 }
 
 /**
@@ -314,109 +328,108 @@ function validateReferenceImages(images: File[]): CharacterIdentityError | null 
  * 4. Returns array of URLs
  */
 async function uploadReferenceImages(
-    characterId: string,
-    images: File[],
-    onProgress?: (progress: number, status: string) => void
+  characterId: string,
+  images: File[],
+  onProgress?: (progress: number, status: string) => void
 ): Promise<string[]> {
-    const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL;
+  const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL
 
-    if (isSupabaseConfigured) {
-        // Upload to Supabase Storage
-        return uploadToSupabaseStorage(characterId, images, onProgress);
-    } else {
-        // Convert to base64 data URLs for localStorage
-        return convertToDataUrls(images, onProgress);
-    }
+  if (isSupabaseConfigured) {
+    // Upload to Supabase Storage
+    return uploadToSupabaseStorage(characterId, images, onProgress)
+  } else {
+    // Convert to base64 data URLs for localStorage
+    return convertToDataUrls(images, onProgress)
+  }
 }
 
 /**
  * Upload reference images to Supabase Storage
  */
 async function uploadToSupabaseStorage(
-    characterId: string,
-    images: File[],
-    onProgress?: (progress: number, status: string) => void
+  characterId: string,
+  images: File[],
+  onProgress?: (progress: number, status: string) => void
 ): Promise<string[]> {
+  const userId = await getCurrentUserId()
+  if (!userId) {
+    throw new Error('User must be authenticated to upload character references')
+  }
 
-    const userId = await getCurrentUserId();
-    if (!userId) {
-        throw new Error('User must be authenticated to upload character references');
+  const urls: string[] = []
+
+  for (let i = 0; i < images.length; i++) {
+    const image = images[i]
+    const progress = 15 + ((i + 1) / images.length) * 30 // 15-45% range
+    onProgress?.(progress, `Uploading image ${i + 1} of ${images.length}...`)
+
+    // Generate unique file path: {userId}/{characterId}/{timestamp}_{filename}
+    const timestamp = Date.now()
+    const filePath = `${userId}/${characterId}/${timestamp}_${image.name}`
+
+    const { data, error } = await supabase.storage
+      .from('character-references')
+      .upload(filePath, image, {
+        contentType: image.type,
+        upsert: false, // Don't overwrite existing files
+      })
+
+    if (error) {
+      console.error('Failed to upload reference image:', error)
+      throw new Error(`Upload failed: ${error.message}`)
     }
 
-    const urls: string[] = [];
+    // Get public URL
+    const { data: urlData } = supabase.storage.from('character-references').getPublicUrl(filePath)
 
-    for (let i = 0; i < images.length; i++) {
-        const image = images[i];
-        const progress = 15 + ((i + 1) / images.length) * 30; // 15-45% range
-        onProgress?.(progress, `Uploading image ${i + 1} of ${images.length}...`);
+    urls.push(urlData.publicUrl)
+  }
 
-        // Generate unique file path: {userId}/{characterId}/{timestamp}_{filename}
-        const timestamp = Date.now();
-        const filePath = `${userId}/${characterId}/${timestamp}_${image.name}`;
-
-        const { data, error } = await supabase.storage
-            .from('character-references')
-            .upload(filePath, image, {
-                contentType: image.type,
-                upsert: false, // Don't overwrite existing files
-            });
-
-        if (error) {
-            console.error('Failed to upload reference image:', error);
-            throw new Error(`Upload failed: ${error.message}`);
-        }
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-            .from('character-references')
-            .getPublicUrl(filePath);
-
-        urls.push(urlData.publicUrl);
-    }
-
-    return urls;
+  return urls
 }
 
 /**
  * Convert images to base64 data URLs (localStorage fallback)
  */
 async function convertToDataUrls(
-    images: File[],
-    onProgress?: (progress: number, status: string) => void
+  images: File[],
+  onProgress?: (progress: number, status: string) => void
 ): Promise<string[]> {
-    const dataUrls: string[] = [];
+  const dataUrls: string[] = []
 
-    for (let i = 0; i < images.length; i++) {
-        const image = images[i];
-        const progress = 15 + ((i + 1) / images.length) * 30; // 15-45% range
-        onProgress?.(progress, `Processing image ${i + 1} of ${images.length}...`);
+  for (let i = 0; i < images.length; i++) {
+    const image = images[i]
+    const progress = 15 + ((i + 1) / images.length) * 30 // 15-45% range
+    onProgress?.(progress, `Processing image ${i + 1} of ${images.length}...`)
 
-        const dataUrl = await fileToDataUrl(image);
-        dataUrls.push(dataUrl);
-    }
+    const dataUrl = await fileToDataUrl(image)
+    dataUrls.push(dataUrl)
+  }
 
-    // Check localStorage quota (warning if >8MB total)
-    const totalSize = dataUrls.reduce((sum, url) => sum + url.length, 0);
-    const totalSizeMB = totalSize / 1024 / 1024;
+  // Check localStorage quota (warning if >8MB total)
+  const totalSize = dataUrls.reduce((sum, url) => sum + url.length, 0)
+  const totalSizeMB = totalSize / 1024 / 1024
 
-    if (totalSizeMB > 8) {
-        console.warn(`Character references total ${totalSizeMB.toFixed(2)}MB - approaching localStorage quota limit (10MB)`);
-        // Note: Warning will be displayed in UI toast notification
-    }
+  if (totalSizeMB > 8) {
+    console.warn(
+      `Character references total ${totalSizeMB.toFixed(2)}MB - approaching localStorage quota limit (10MB)`
+    )
+    // Note: Warning will be displayed in UI toast notification
+  }
 
-    return dataUrls;
+  return dataUrls
 }
 
 /**
  * Convert File to base64 data URL
  */
 function fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 /**
@@ -425,83 +438,93 @@ function fileToDataUrl(file: File): Promise<string> {
  * FAL API expects a single ZIP file URL containing all training images
  */
 async function createTrainingZip(
-    imageUrls: string[],
-    onProgress?: (progress: number, status: string) => void
+  imageUrls: string[],
+  onProgress?: (progress: number, status: string) => void
 ): Promise<Blob> {
-    try {
-        // Dynamically import JSZip
-        const JSZip = (await import('jszip')).default;
-        const zip = new JSZip();
+  try {
+    // Dynamically import JSZip
+    const JSZip = (await import('jszip')).default
+    const zip = new JSZip()
 
-        onProgress?.(35, 'Downloading training images...');
+    onProgress?.(35, 'Downloading training images...')
 
-        // Download each image and add to ZIP
-        for (let i = 0; i < imageUrls.length; i++) {
-            const imageUrl = imageUrls[i];
-            onProgress?.(35 + (i / imageUrls.length) * 10, `Packaging image ${i + 1}/${imageUrls.length}...`);
+    // Download each image and add to ZIP
+    for (let i = 0; i < imageUrls.length; i++) {
+      const imageUrl = imageUrls[i]
+      onProgress?.(
+        35 + (i / imageUrls.length) * 10,
+        `Packaging image ${i + 1}/${imageUrls.length}...`
+      )
 
-            try {
-                // First attempt: direct download with CORS mode
-                let response: Response;
-                let blob: Blob;
+      try {
+        // First attempt: direct download with CORS mode
+        let response: Response
+        let blob: Blob
 
-                try {
-                    response = await fetch(imageUrl, {
-                        mode: 'cors',
-                        credentials: 'omit',  // Don't send cookies for public buckets
-                        headers: {
-                            'Accept': 'image/jpeg,image/png,image/webp,image/*'
-                        }
-                    });
+        try {
+          response = await fetch(imageUrl, {
+            mode: 'cors',
+            credentials: 'omit', // Don't send cookies for public buckets
+            headers: {
+              Accept: 'image/jpeg,image/png,image/webp,image/*',
+            },
+          })
 
-                    if (!response.ok) {
-                        throw new Error(`Direct fetch failed: ${response.status}`);
-                    }
+          if (!response.ok) {
+            throw new Error(`Direct fetch failed: ${response.status}`)
+          }
 
-                    blob = await response.blob();
-                } catch (directError) {
-                    // Fallback: use image proxy for CORS bypass
-                    console.warn(`[Character Identity] Direct download failed for image ${i + 1}, using proxy...`, directError);
+          blob = await response.blob()
+        } catch (directError) {
+          // Fallback: use image proxy for CORS bypass
+          console.warn(
+            `[Character Identity] Direct download failed for image ${i + 1}, using proxy...`,
+            directError
+          )
 
-                    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
-                    const proxyResponse = await fetch(proxyUrl);
+          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`
+          const proxyResponse = await fetch(proxyUrl)
 
-                    if (!proxyResponse.ok) {
-                        throw new Error(`Proxy download also failed: ${proxyResponse.status}`);
-                    }
+          if (!proxyResponse.ok) {
+            throw new Error(`Proxy download also failed: ${proxyResponse.status}`)
+          }
 
-                    blob = await proxyResponse.blob();
-                }
-
-                // Extract file extension from URL or blob type
-                const urlExt = imageUrl.split('.').pop()?.split('?')[0];
-                const typeExt = blob.type.split('/')[1];
-                const ext = urlExt || typeExt || 'jpg';
-
-                // Add to ZIP with sequential naming
-                zip.file(`image_${String(i + 1).padStart(3, '0')}.${ext}`, blob);
-            } catch (error) {
-                console.error(`Failed to download image ${i + 1}:`, error);
-                throw new Error(`Failed to package training images: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            }
+          blob = await proxyResponse.blob()
         }
 
-        onProgress?.(45, 'Creating training archive...');
+        // Extract file extension from URL or blob type
+        const urlExt = imageUrl.split('.').pop()?.split('?')[0]
+        const typeExt = blob.type.split('/')[1]
+        const ext = urlExt || typeExt || 'jpg'
 
-        // Generate ZIP file
-        const zipBlob = await zip.generateAsync({
-            type: 'blob',
-            compression: 'DEFLATE',
-            compressionOptions: { level: 6 }
-        });
-
-        onProgress?.(48, 'Training archive ready');
-
-        return zipBlob;
-    } catch (error) {
-        console.error('[Character Identity] Failed to create training ZIP:', error);
-        throw new Error(`Failed to create training ZIP: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Add to ZIP with sequential naming
+        zip.file(`image_${String(i + 1).padStart(3, '0')}.${ext}`, blob)
+      } catch (error) {
+        console.error(`Failed to download image ${i + 1}:`, error)
+        throw new Error(
+          `Failed to package training images: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
+      }
     }
+
+    onProgress?.(45, 'Creating training archive...')
+
+    // Generate ZIP file
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    })
+
+    onProgress?.(48, 'Training archive ready')
+
+    return zipBlob
+  } catch (error) {
+    console.error('[Character Identity] Failed to create training ZIP:', error)
+    throw new Error(
+      `Failed to create training ZIP: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
 }
 
 /**
@@ -510,48 +533,48 @@ async function createTrainingZip(
  * Returns public URL for FAL API to download
  */
 async function uploadZipToStorage(
-    zipBlob: Blob,
-    onProgress?: (progress: number, status: string) => void
+  zipBlob: Blob,
+  onProgress?: (progress: number, status: string) => void
 ): Promise<string> {
-    try {
-        const userId = await getCurrentUserId();
-        if (!userId) {
-            throw new Error('User must be authenticated to upload training data');
-        }
-
-        const fileName = `training_${Date.now()}.zip`;
-        const filePath = `${userId}/lora-training/${fileName}`;
-
-        onProgress?.(52, 'Uploading training data...');
-
-        const { data, error } = await supabase.storage
-            .from('character-references')
-            .upload(filePath, zipBlob, {
-                contentType: 'application/zip',
-                upsert: false,
-            });
-
-        if (error) {
-            console.error('[Character Identity] Upload failed:', error);
-            throw new Error(`Upload failed: ${error.message}`);
-        }
-
-        onProgress?.(58, 'Getting training data URL...');
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-            .from('character-references')
-            .getPublicUrl(filePath);
-
-        if (!urlData?.publicUrl) {
-            throw new Error('Failed to get public URL for training data');
-        }
-
-        return urlData.publicUrl;
-    } catch (error) {
-        console.error('[Character Identity] Failed to upload training ZIP:', error);
-        throw new Error(`Failed to upload training data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  try {
+    const userId = await getCurrentUserId()
+    if (!userId) {
+      throw new Error('User must be authenticated to upload training data')
     }
+
+    const fileName = `training_${Date.now()}.zip`
+    const filePath = `${userId}/lora-training/${fileName}`
+
+    onProgress?.(52, 'Uploading training data...')
+
+    const { data, error } = await supabase.storage
+      .from('character-references')
+      .upload(filePath, zipBlob, {
+        contentType: 'application/zip',
+        upsert: false,
+      })
+
+    if (error) {
+      console.error('[Character Identity] Upload failed:', error)
+      throw new Error(`Upload failed: ${error.message}`)
+    }
+
+    onProgress?.(58, 'Getting training data URL...')
+
+    // Get public URL
+    const { data: urlData } = supabase.storage.from('character-references').getPublicUrl(filePath)
+
+    if (!urlData?.publicUrl) {
+      throw new Error('Failed to get public URL for training data')
+    }
+
+    return urlData.publicUrl
+  } catch (error) {
+    console.error('[Character Identity] Failed to upload training ZIP:', error)
+    throw new Error(
+      `Failed to upload training data: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
+  }
 }
 
 /**
@@ -563,63 +586,63 @@ async function uploadZipToStorage(
  * 3. Returns a character ID compatible with generation functions
  */
 async function createFalCharacter(
-    referenceUrls: string[],
-    onProgress?: (progress: number, status: string) => void
+  referenceUrls: string[],
+  onProgress?: (progress: number, status: string) => void
 ): Promise<string> {
-    onProgress?.(30, 'Preparing training data...');
+  onProgress?.(30, 'Preparing training data...')
 
-    try {
-        // Step 1: Create ZIP file from reference images
-        const zipBlob = await createTrainingZip(referenceUrls, onProgress);
+  try {
+    // Step 1: Create ZIP file from reference images
+    const zipBlob = await createTrainingZip(referenceUrls, onProgress)
 
-        // Step 2: Upload ZIP to Supabase Storage
-        onProgress?.(50, 'Uploading training data...');
-        const zipUrl = await uploadZipToStorage(zipBlob, onProgress);
+    // Step 2: Upload ZIP to Supabase Storage
+    onProgress?.(50, 'Uploading training data...')
+    const zipUrl = await uploadZipToStorage(zipBlob, onProgress)
 
-        // Step 3: Call Fal.ai API with ZIP URL
-        onProgress?.(60, 'Starting LoRA training...');
-        const response = await fetch('/api/fal-proxy', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                endpoint: '/fal-ai/flux-lora-fast-training',
-                method: 'POST',
-                body: {
-                    images_data_url: zipUrl, // ✅ FIXED: Single ZIP URL instead of array
-                    steps: 1000,
-                    is_input_format_already_preprocessed: false,
-                },
-            }),
-        });
+    // Step 3: Call Fal.ai API with ZIP URL
+    onProgress?.(60, 'Starting LoRA training...')
+    const response = await fetch('/api/fal-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        endpoint: '/fal-ai/flux-lora-fast-training',
+        method: 'POST',
+        body: {
+          images_data_url: zipUrl, // ✅ FIXED: Single ZIP URL instead of array
+          steps: 1000,
+          is_input_format_already_preprocessed: false,
+        },
+      }),
+    })
 
-        if (response.ok) {
-            const data = await response.json();
-            onProgress?.(90, 'Finalizing advanced character identity...');
+    if (response.ok) {
+      const data = await response.json()
+      onProgress?.(90, 'Finalizing advanced character identity...')
 
-            const loraUrl = data.diffusers_lora_file?.url || data.lora_url || data.url;
-            if (loraUrl) {
-                return loraUrl;
-            }
-        } else {
-            const errorData = await response.json();
-            console.error('[Character Identity] Fal.ai training failed:', response.status, errorData);
-            throw new Error(`LoRA training failed: ${response.status} - ${JSON.stringify(errorData)}`);
-        }
-    } catch (error) {
-        console.warn('[Character Identity] Fal.ai unavailable, using fallback solution:', error);
+      const loraUrl = data.diffusers_lora_file?.url || data.lora_url || data.url
+      if (loraUrl) {
+        return loraUrl
+      }
+    } else {
+      const errorData = await response.json()
+      console.error('[Character Identity] Fal.ai training failed:', response.status, errorData)
+      throw new Error(`LoRA training failed: ${response.status} - ${JSON.stringify(errorData)}`)
     }
+  } catch (error) {
+    console.warn('[Character Identity] Fal.ai unavailable, using fallback solution:', error)
+  }
 
-    // Fallback: Create reference-based character identity
-    onProgress?.(50, 'Creating character identity with reference images...');
+  // Fallback: Create reference-based character identity
+  onProgress?.(50, 'Creating character identity with reference images...')
 
-    // Generate a unique character ID based on reference images
-    const characterId = await createReferenceBasedCharacter(referenceUrls, onProgress);
+  // Generate a unique character ID based on reference images
+  const characterId = await createReferenceBasedCharacter(referenceUrls, onProgress)
 
-    onProgress?.(90, 'Character identity ready!');
+  onProgress?.(90, 'Character identity ready!')
 
-    return characterId;
+  return characterId
 }
 
 /**
@@ -627,56 +650,56 @@ async function createFalCharacter(
  * This uses the reference images directly with Pollinations/Gemini for consistency
  */
 async function createReferenceBasedCharacter(
-    referenceUrls: string[],
-    onProgress?: (progress: number, status: string) => void
+  referenceUrls: string[],
+  onProgress?: (progress: number, status: string) => void
 ): Promise<string> {
-    onProgress?.(60, 'Analyzing reference images for character consistency...');
+  onProgress?.(60, 'Analyzing reference images for character consistency...')
 
-    // Create a character identity signature using the reference images
-    // This will be used to ensure consistent generation across different APIs
-    const characterSignature = {
-        id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        referenceImages: referenceUrls.slice(0, 3), // Use first 3 for consistency
-        styleEmbedding: await generateStyleEmbedding(referenceUrls),
-        created: new Date().toISOString()
-    };
+  // Create a character identity signature using the reference images
+  // This will be used to ensure consistent generation across different APIs
+  const characterSignature = {
+    id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    referenceImages: referenceUrls.slice(0, 3), // Use first 3 for consistency
+    styleEmbedding: await generateStyleEmbedding(referenceUrls),
+    created: new Date().toISOString(),
+  }
 
-    onProgress?.(80, 'Optimizing character generation parameters...');
+  onProgress?.(80, 'Optimizing character generation parameters...')
 
-    // Store the character signature for later use in generation
-    // In a real implementation, this would be stored in Supabase or a database
-    const characterId = btoa(JSON.stringify(characterSignature)).substring(0, 32);
+  // Store the character signature for later use in generation
+  // In a real implementation, this would be stored in Supabase or a database
+  const characterId = btoa(JSON.stringify(characterSignature)).substring(0, 32)
 
-    return characterId;
+  return characterId
 }
 
 /**
  * Generate style embedding from reference images for consistency
  */
 async function generateStyleEmbedding(referenceUrls: string[]): Promise<string> {
-    try {
-        // Use the first reference image to generate a style description
-        // This would ideally use a vision model, but we'll use a simple hash for now
-        const firstImage = referenceUrls[0];
-        const hash = await simpleImageHash(firstImage);
-        return `style_${hash}`;
-    } catch (error) {
-        console.warn('Failed to generate style embedding:', error);
-        return `style_${Date.now()}`;
-    }
+  try {
+    // Use the first reference image to generate a style description
+    // This would ideally use a vision model, but we'll use a simple hash for now
+    const firstImage = referenceUrls[0]
+    const hash = await simpleImageHash(firstImage)
+    return `style_${hash}`
+  } catch (error) {
+    console.warn('Failed to generate style embedding:', error)
+    return `style_${Date.now()}`
+  }
 }
 
 /**
  * Generate simple hash from image URL for style consistency
  */
 async function simpleImageHash(imageUrl: string): Promise<string> {
-    try {
-        // Simple hash based on URL and timestamp
-        const urlHash = imageUrl.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        return (urlHash + Date.now()).toString(36);
-    } catch (error) {
-        return `fallback_${Date.now()}`;
-    }
+  try {
+    // Simple hash based on URL and timestamp
+    const urlHash = imageUrl.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    return (urlHash + Date.now()).toString(36)
+  } catch (_error) {
+    return `fallback_${Date.now()}`
+  }
 }
 
 // ============================================================================
@@ -690,59 +713,54 @@ async function simpleImageHash(imageUrl: string): Promise<string> {
  * Generates a test image using Fal.ai with character identity applied
  */
 export async function testCharacterIdentity(request: {
-    characterId: string;
-    identity: CharacterIdentity;
-    testType: CharacterIdentityTestType;
-    onProgress?: (progress: number, status: string) => void;
+  characterId: string
+  identity: CharacterIdentity
+  testType: CharacterIdentityTestType
+  onProgress?: (progress: number, status: string) => void
 }): Promise<CharacterIdentityTest> {
-    const { characterId, identity, testType, onProgress } = request;
+  const { characterId, identity, testType, onProgress } = request
 
-    try {
-        // Validate identity is ready
-        if (identity.status !== 'ready') {
-            throw new Error('Character identity must be ready before testing');
-        }
-
-        const falCharacterId = identity.technologyData?.falCharacterId;
-        if (!falCharacterId) {
-            throw new Error('Character identity does not have Fal.ai character ID');
-        }
-
-        // Generate test prompt based on type
-        const prompt = generateTestPrompt(testType);
-
-        // Generate image using Fal.ai with character identity
-        onProgress?.(20, 'Generating test image...');
-        const imageUrl = await generateWithFalCharacter(
-            falCharacterId,
-            prompt,
-            (prog) => onProgress?.((prog * 0.5) + 20, 'Generating test image...')
-        );
-
-        // Calculate similarity score
-        onProgress?.(70, 'Calculating similarity...');
-        const similarityScore = await calculateSimilarity(
-            identity.referenceImages,
-            imageUrl
-        );
-
-        // Create test record
-        const test: CharacterIdentityTest = {
-            id: `test-${Date.now()}`,
-            testType,
-            generatedImageUrl: imageUrl,
-            similarityScore,
-            timestamp: new Date().toISOString(),
-        };
-
-        onProgress?.(100, 'Test complete');
-        return test;
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Character identity test failed:', errorMessage);
-
-        throw new Error(`Test generation failed: ${errorMessage}`);
+  try {
+    // Validate identity is ready
+    if (identity.status !== 'ready') {
+      throw new Error('Character identity must be ready before testing')
     }
+
+    const falCharacterId = identity.technologyData?.falCharacterId
+    if (!falCharacterId) {
+      throw new Error('Character identity does not have Fal.ai character ID')
+    }
+
+    // Generate test prompt based on type
+    const prompt = generateTestPrompt(testType)
+
+    // Generate image using Fal.ai with character identity
+    onProgress?.(20, 'Generating test image...')
+    const imageUrl = await generateWithFalCharacter(falCharacterId, prompt, (prog) =>
+      onProgress?.(prog * 0.5 + 20, 'Generating test image...')
+    )
+
+    // Calculate similarity score
+    onProgress?.(70, 'Calculating similarity...')
+    const similarityScore = await calculateSimilarity(identity.referenceImages, imageUrl)
+
+    // Create test record
+    const test: CharacterIdentityTest = {
+      id: `test-${Date.now()}`,
+      testType,
+      generatedImageUrl: imageUrl,
+      similarityScore,
+      timestamp: new Date().toISOString(),
+    }
+
+    onProgress?.(100, 'Test complete')
+    return test
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Character identity test failed:', errorMessage)
+
+    throw new Error(`Test generation failed: ${errorMessage}`)
+  }
 }
 
 /**
@@ -751,43 +769,43 @@ export async function testCharacterIdentity(request: {
  * Story 2.2, AC1, AC2
  */
 export async function generateAllTests(request: {
-    characterId: string;
-    identity: CharacterIdentity;
-    onProgress?: (overallProgress: number, currentTest: string) => void;
+  characterId: string
+  identity: CharacterIdentity
+  onProgress?: (overallProgress: number, currentTest: string) => void
 }): Promise<CharacterIdentityTest[]> {
-    const { characterId, identity, onProgress } = request;
+  const { characterId, identity, onProgress } = request
 
-    const testTypes: CharacterIdentityTestType[] = [
-        'portrait',
-        'fullbody',
-        'profile',
-        'lighting',
-        'expression'
-    ];
+  const testTypes: CharacterIdentityTestType[] = [
+    'portrait',
+    'fullbody',
+    'profile',
+    'lighting',
+    'expression',
+  ]
 
-    const tests: CharacterIdentityTest[] = [];
+  const tests: CharacterIdentityTest[] = []
 
-    for (let i = 0; i < testTypes.length; i++) {
-        const testType = testTypes[i];
-        const overallProgress = (i / testTypes.length) * 100;
+  for (let i = 0; i < testTypes.length; i++) {
+    const testType = testTypes[i]
+    const overallProgress = (i / testTypes.length) * 100
 
-        onProgress?.(overallProgress, `Generating ${testType} test...`);
+    onProgress?.(overallProgress, `Generating ${testType} test...`)
 
-        const test = await testCharacterIdentity({
-            characterId,
-            identity,
-            testType,
-            onProgress: (testProgress, status) => {
-                const combinedProgress = overallProgress + (testProgress / testTypes.length);
-                onProgress?.(combinedProgress, status);
-            }
-        });
+    const test = await testCharacterIdentity({
+      characterId,
+      identity,
+      testType,
+      onProgress: (testProgress, status) => {
+        const combinedProgress = overallProgress + testProgress / testTypes.length
+        onProgress?.(combinedProgress, status)
+      },
+    })
 
-        tests.push(test);
-    }
+    tests.push(test)
+  }
 
-    onProgress?.(100, 'All tests complete');
-    return tests;
+  onProgress?.(100, 'All tests complete')
+  return tests
 }
 
 /**
@@ -795,73 +813,75 @@ export async function generateAllTests(request: {
  * CLIP provides semantic understanding of image similarity beyond visual hash
  */
 async function calculateCLIPSimilarity(
-    referenceImages: string[],
-    generatedImage: string
+  referenceImages: string[],
+  generatedImage: string
 ): Promise<number> {
-    try {
-        const REPLICATE_API_TOKEN = import.meta.env.VITE_REPLICATE_API_TOKEN;
+  try {
+    const REPLICATE_API_TOKEN = import.meta.env.VITE_REPLICATE_API_TOKEN
 
-        if (!REPLICATE_API_TOKEN) {
-            console.warn('[CharacterIdentity] No REPLICATE_API_TOKEN found, skipping CLIP similarity');
-            return 50; // Neutral score
-        }
-
-        // Use the first reference image for comparison
-        const referenceImage = referenceImages[0];
-
-        // Replicate CLIP similarity model
-        const response = await fetch('https://api.replicate.com/v1/predictions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                version: '75e33f563e284433b787665e3eb421f05a2ba9ecc41de6568a0b64ecf083a636',
-                input: {
-                    image1: referenceImage,
-                    image2: generatedImage
-                }
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`CLIP API error: ${response.status} ${response.statusText}`);
-        }
-
-        const prediction = await response.json();
-
-        // Wait for the prediction to complete if it's still processing
-        if (prediction.status === 'processing') {
-            // Poll for completion (max 30 seconds)
-            const startTime = Date.now();
-            while (prediction.status === 'processing' && Date.now() - startTime < 30000) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
-                    headers: {
-                        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-                    }
-                });
-                const pollResult = await pollResponse.json();
-                if (pollResult.status === 'succeeded') {
-                    return Math.round(pollResult.output[0] * 100); // CLIP returns 0-1, convert to 0-100
-                }
-                if (pollResult.status === 'failed') {
-                    throw new Error('CLIP prediction failed');
-                }
-            }
-        }
-
-        if (prediction.status === 'succeeded') {
-            return Math.round(prediction.output[0] * 100); // CLIP returns 0-1, convert to 0-100
-        }
-
-        throw new Error('CLIP prediction timed out');
-
-    } catch (error) {
-        console.warn('[CharacterIdentity] CLIP similarity calculation failed:', error);
-        return 50; // Return neutral score on failure
+    if (!REPLICATE_API_TOKEN) {
+      console.warn('[CharacterIdentity] No REPLICATE_API_TOKEN found, skipping CLIP similarity')
+      return 50 // Neutral score
     }
+
+    // Use the first reference image for comparison
+    const referenceImage = referenceImages[0]
+
+    // Replicate CLIP similarity model
+    const response = await fetch('https://api.replicate.com/v1/predictions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Token ${REPLICATE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        version: '75e33f563e284433b787665e3eb421f05a2ba9ecc41de6568a0b64ecf083a636',
+        input: {
+          image1: referenceImage,
+          image2: generatedImage,
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`CLIP API error: ${response.status} ${response.statusText}`)
+    }
+
+    const prediction = await response.json()
+
+    // Wait for the prediction to complete if it's still processing
+    if (prediction.status === 'processing') {
+      // Poll for completion (max 30 seconds)
+      const startTime = Date.now()
+      while (prediction.status === 'processing' && Date.now() - startTime < 30000) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        const pollResponse = await fetch(
+          `https://api.replicate.com/v1/predictions/${prediction.id}`,
+          {
+            headers: {
+              Authorization: `Token ${REPLICATE_API_TOKEN}`,
+            },
+          }
+        )
+        const pollResult = await pollResponse.json()
+        if (pollResult.status === 'succeeded') {
+          return Math.round(pollResult.output[0] * 100) // CLIP returns 0-1, convert to 0-100
+        }
+        if (pollResult.status === 'failed') {
+          throw new Error('CLIP prediction failed')
+        }
+      }
+    }
+
+    if (prediction.status === 'succeeded') {
+      return Math.round(prediction.output[0] * 100) // CLIP returns 0-1, convert to 0-100
+    }
+
+    throw new Error('CLIP prediction timed out')
+  } catch (error) {
+    console.warn('[CharacterIdentity] CLIP similarity calculation failed:', error)
+    return 50 // Return neutral score on failure
+  }
 }
 
 /**
@@ -871,37 +891,37 @@ async function calculateCLIPSimilarity(
  * Uses CLIP (70%) + pHash (30%) weighted scoring
  */
 export async function calculateSimilarity(
-    referenceImages: string[],
-    generatedImage: string
+  referenceImages: string[],
+  generatedImage: string
 ): Promise<number> {
+  try {
+    // Calculate both pHash and CLIP similarity for comprehensive analysis
+    const pHashScore = await calculatePHashSimilarity(referenceImages[0], generatedImage)
+
+    // Add CLIP similarity via Replicate for better semantic understanding
+    let clipScore = 50 // Default neutral score if CLIP fails
+    let clipFailed = false
+
     try {
-        // Calculate both pHash and CLIP similarity for comprehensive analysis
-        const pHashScore = await calculatePHashSimilarity(referenceImages[0], generatedImage);
-
-        // Add CLIP similarity via Replicate for better semantic understanding
-        let clipScore = 50; // Default neutral score if CLIP fails
-        let clipFailed = false;
-
-        try {
-            clipScore = await calculateCLIPSimilarity(referenceImages, generatedImage);
-        } catch (clipError) {
-            console.warn('[CharacterIdentity] CLIP similarity failed, using pHash only:', clipError);
-            clipFailed = true;
-        }
-
-        // If both methods failed, return neutral score
-        if (clipFailed && pHashScore === 75) {
-            return 75;
-        }
-
-        // Weighted combination: CLIP (semantic) + pHash (visual)
-        // CLIP is more important for character identity (70%), pHash provides visual confirmation (30%)
-        return Math.round((clipScore * 0.7) + (pHashScore * 0.3));
-    } catch (error) {
-        console.error('Similarity calculation failed:', error);
-        // Return neutral score on error
-        return 75;
+      clipScore = await calculateCLIPSimilarity(referenceImages, generatedImage)
+    } catch (clipError) {
+      console.warn('[CharacterIdentity] CLIP similarity failed, using pHash only:', clipError)
+      clipFailed = true
     }
+
+    // If both methods failed, return neutral score
+    if (clipFailed && pHashScore === 75) {
+      return 75
+    }
+
+    // Weighted combination: CLIP (semantic) + pHash (visual)
+    // CLIP is more important for character identity (70%), pHash provides visual confirmation (30%)
+    return Math.round(clipScore * 0.7 + pHashScore * 0.3)
+  } catch (error) {
+    console.error('Similarity calculation failed:', error)
+    // Return neutral score on error
+    return 75
+  }
 }
 
 /**
@@ -911,94 +931,94 @@ export async function calculateSimilarity(
  * Browser-based similarity using canvas and simple hash comparison
  */
 async function calculatePHashSimilarity(
-    referenceImage: string,
-    generatedImage: string
+  referenceImage: string,
+  generatedImage: string
 ): Promise<number> {
-    try {
-        // Load both images
-        const refImg = await loadImage(referenceImage);
-        const genImg = await loadImage(generatedImage);
+  try {
+    // Load both images
+    const refImg = await loadImage(referenceImage)
+    const genImg = await loadImage(generatedImage)
 
-        // Calculate simple perceptual hashes
-        const refHash = await simplePerceptualHash(refImg);
-        const genHash = await simplePerceptualHash(genImg);
+    // Calculate simple perceptual hashes
+    const refHash = await simplePerceptualHash(refImg)
+    const genHash = await simplePerceptualHash(genImg)
 
-        // Calculate Hamming distance
-        const distance = hammingDistance(refHash, genHash);
+    // Calculate Hamming distance
+    const distance = hammingDistance(refHash, genHash)
 
-        // Convert to similarity score (0-100)
-        const maxDistance = 64; // 64-bit hash
-        const similarity = ((maxDistance - distance) / maxDistance) * 100;
+    // Convert to similarity score (0-100)
+    const maxDistance = 64 // 64-bit hash
+    const similarity = ((maxDistance - distance) / maxDistance) * 100
 
-        return Math.max(0, Math.min(100, similarity));
-    } catch (error) {
-        console.error('pHash calculation failed:', error);
-        return 75; // Neutral score on error
-    }
+    return Math.max(0, Math.min(100, similarity))
+  } catch (error) {
+    console.error('pHash calculation failed:', error)
+    return 75 // Neutral score on error
+  }
 }
 
 /**
  * Load image from URL
  */
 function loadImage(url: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
-    });
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = url
+  })
 }
 
 /**
  * Calculate simple perceptual hash
  */
 async function simplePerceptualHash(img: HTMLImageElement): Promise<string> {
-    // Create canvas
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas context not available');
+  // Create canvas
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas context not available')
 
-    // Resize to 8x8 grayscale
-    canvas.width = 8;
-    canvas.height = 8;
-    ctx.drawImage(img, 0, 0, 8, 8);
+  // Resize to 8x8 grayscale
+  canvas.width = 8
+  canvas.height = 8
+  ctx.drawImage(img, 0, 0, 8, 8)
 
-    // Get image data
-    const imageData = ctx.getImageData(0, 0, 8, 8);
-    const pixels = imageData.data;
+  // Get image data
+  const imageData = ctx.getImageData(0, 0, 8, 8)
+  const pixels = imageData.data
 
-    // Convert to grayscale
-    const grayscale: number[] = [];
-    for (let i = 0; i < pixels.length; i += 4) {
-        const avg = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
-        grayscale.push(avg);
-    }
+  // Convert to grayscale
+  const grayscale: number[] = []
+  for (let i = 0; i < pixels.length; i += 4) {
+    const avg = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3
+    grayscale.push(avg)
+  }
 
-    // Calculate average
-    const average = grayscale.reduce((sum, val) => sum + val, 0) / grayscale.length;
+  // Calculate average
+  const average = grayscale.reduce((sum, val) => sum + val, 0) / grayscale.length
 
-    // Generate hash (1 if above average, 0 otherwise)
-    let hash = '';
-    for (const val of grayscale) {
-        hash += val > average ? '1' : '0';
-    }
+  // Generate hash (1 if above average, 0 otherwise)
+  let hash = ''
+  for (const val of grayscale) {
+    hash += val > average ? '1' : '0'
+  }
 
-    return hash;
+  return hash
 }
 
 /**
  * Calculate Hamming distance between two bit strings
  */
 function hammingDistance(hash1: string, hash2: string): number {
-    let distance = 0;
-    const len = Math.min(hash1.length, hash2.length);
+  let distance = 0
+  const len = Math.min(hash1.length, hash2.length)
 
-    for (let i = 0; i < len; i++) {
-        if (hash1[i] !== hash2[i]) distance++;
-    }
+  for (let i = 0; i < len; i++) {
+    if (hash1[i] !== hash2[i]) distance++
+  }
 
-    return distance;
+  return distance
 }
 
 /**
@@ -1007,36 +1027,35 @@ function hammingDistance(hash1: string, hash2: string): number {
  * Story 2.2, AC5
  */
 export async function approveCharacterIdentity(
-    characterId: string,
-    identity: CharacterIdentity
+  characterId: string,
+  identity: CharacterIdentity
 ): Promise<CharacterIdentity> {
-    // Update approval status
-    const updatedIdentity: CharacterIdentity = {
-        ...identity,
-        approvalStatus: 'approved',
-        lastUpdated: new Date().toISOString(),
-    };
+  // Update approval status
+  const updatedIdentity: CharacterIdentity = {
+    ...identity,
+    approvalStatus: 'approved',
+    lastUpdated: new Date().toISOString(),
+  }
 
-    // Save to Supabase if configured
-    const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL;
-    if (isSupabaseConfigured) {
-        try {
-
-            const userId = await getCurrentUserId();
-            if (userId) {
-                await supabase
-                    .from('character_identities')
-                    .update({ approval_status: 'approved' })
-                    .eq('user_id', userId)
-                    .eq('character_id', characterId);
-            }
-        } catch (error) {
-            console.error('Failed to update approval status in Supabase:', error);
-            // Continue anyway - localStorage will be updated
-        }
+  // Save to Supabase if configured
+  const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL
+  if (isSupabaseConfigured) {
+    try {
+      const userId = await getCurrentUserId()
+      if (userId) {
+        await supabase
+          .from('character_identities')
+          .update({ approval_status: 'approved' })
+          .eq('user_id', userId)
+          .eq('character_id', characterId)
+      }
+    } catch (error) {
+      console.error('Failed to update approval status in Supabase:', error)
+      // Continue anyway - localStorage will be updated
     }
+  }
 
-    return updatedIdentity;
+  return updatedIdentity
 }
 
 /**
@@ -1045,47 +1064,48 @@ export async function approveCharacterIdentity(
  * Story 2.2, AC6
  */
 export async function bulkTestCharacters(request: {
-    characters: Array<{ id: string; identity: CharacterIdentity }>;
-    onProgress?: (overallProgress: number, currentCharacter: string) => void;
+  characters: Array<{ id: string; identity: CharacterIdentity }>
+  onProgress?: (overallProgress: number, currentCharacter: string) => void
 }): Promise<Map<string, CharacterIdentityTest[]>> {
-    const { characters, onProgress } = request;
-    const results = new Map<string, CharacterIdentityTest[]>();
+  const { characters, onProgress } = request
+  const results = new Map<string, CharacterIdentityTest[]>()
 
-    for (let i = 0; i < characters.length; i++) {
-        const char = characters[i];
-        const overallProgress = (i / characters.length) * 100;
+  for (let i = 0; i < characters.length; i++) {
+    const char = characters[i]
+    const overallProgress = (i / characters.length) * 100
 
-        onProgress?.(overallProgress, `Testing character ${i + 1}/${characters.length}`);
+    onProgress?.(overallProgress, `Testing character ${i + 1}/${characters.length}`)
 
-        const tests = await generateAllTests({
-            characterId: char.id,
-            identity: char.identity,
-            onProgress: (testProgress, status) => {
-                const combinedProgress = overallProgress + (testProgress / characters.length);
-                onProgress?.(combinedProgress, status);
-            }
-        });
+    const tests = await generateAllTests({
+      characterId: char.id,
+      identity: char.identity,
+      onProgress: (testProgress, status) => {
+        const combinedProgress = overallProgress + testProgress / characters.length
+        onProgress?.(combinedProgress, status)
+      },
+    })
 
-        results.set(char.id, tests);
-    }
+    results.set(char.id, tests)
+  }
 
-    onProgress?.(100, 'All characters tested');
-    return results;
+  onProgress?.(100, 'All characters tested')
+  return results
 }
 
 /**
  * Generate test prompt based on test type
  */
 function generateTestPrompt(testType: CharacterIdentityTestType): string {
-    const prompts: Record<CharacterIdentityTestType, string> = {
-        portrait: 'professional headshot, neutral expression, studio lighting, front-facing, high quality',
-        fullbody: 'full body shot, standing neutral pose, even lighting, front view, high quality',
-        profile: 'side profile shot, neutral expression, studio lighting, professional, high quality',
-        lighting: 'cinematic lighting, dramatic shadows, moody atmosphere, high quality',
-        expression: 'natural smile, candid expression, soft lighting, high quality',
-    };
+  const prompts: Record<CharacterIdentityTestType, string> = {
+    portrait:
+      'professional headshot, neutral expression, studio lighting, front-facing, high quality',
+    fullbody: 'full body shot, standing neutral pose, even lighting, front view, high quality',
+    profile: 'side profile shot, neutral expression, studio lighting, professional, high quality',
+    lighting: 'cinematic lighting, dramatic shadows, moody atmosphere, high quality',
+    expression: 'natural smile, candid expression, soft lighting, high quality',
+  }
 
-    return prompts[testType];
+  return prompts[testType]
 }
 
 /**
@@ -1097,168 +1117,172 @@ function generateTestPrompt(testType: CharacterIdentityTestType): string {
  * 3. Returns generated image URL
  */
 async function generateWithFalCharacter(
-    falCharacterId: string, // Either LoRA model URL or character signature
-    prompt: string,
-    onProgress?: (progress: number) => void
+  falCharacterId: string, // Either LoRA model URL or character signature
+  prompt: string,
+  onProgress?: (progress: number) => void
 ): Promise<string> {
-    onProgress?.(10);
+  onProgress?.(10)
 
-    // Check if this is a Fal.ai LoRA URL (ends with common file extensions)
-    const isLoraUrl = /\.(safetensors|bin|pth)$/.test(falCharacterId) || falCharacterId.includes('fal.ai');
+  // Check if this is a Fal.ai LoRA URL (ends with common file extensions)
+  const isLoraUrl =
+    /\.(safetensors|bin|pth)$/.test(falCharacterId) || falCharacterId.includes('fal.ai')
 
-    if (isLoraUrl) {
-        try {
-            // Try Fal.ai Flux LoRA API with trained LoRA model
-            const response = await fetch('/api/fal-proxy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    endpoint: '/fal-ai/flux-lora',
-                    method: 'POST',
-                    body: {
-                        prompt,
-                        loras: [
-                            {
-                                path: falCharacterId, // LoRA model URL from training
-                                scale: 1.0, // Full strength
-                            }
-                        ],
-                        num_images: 1,
-                        image_size: { width: 1024, height: 1024 },
-                        num_inference_steps: 28,
-                        guidance_scale: 3.5,
-                        enable_safety_checker: false,
-                    }
-                })
-            });
+  if (isLoraUrl) {
+    try {
+      // Try Fal.ai Flux LoRA API with trained LoRA model
+      const response = await fetch('/api/fal-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: '/fal-ai/flux-lora',
+          method: 'POST',
+          body: {
+            prompt,
+            loras: [
+              {
+                path: falCharacterId, // LoRA model URL from training
+                scale: 1.0, // Full strength
+              },
+            ],
+            num_images: 1,
+            image_size: { width: 1024, height: 1024 },
+            num_inference_steps: 28,
+            guidance_scale: 3.5,
+            enable_safety_checker: false,
+          },
+        }),
+      })
 
-            if (response.ok) {
-                onProgress?.(80);
-                const data = await response.json();
-                const imageUrl = data.images?.[0]?.url || data.image?.url || data.output?.url;
+      if (response.ok) {
+        onProgress?.(80)
+        const data = await response.json()
+        const imageUrl = data.images?.[0]?.url || data.image?.url || data.output?.url
 
-                if (imageUrl) {
-                    onProgress?.(100);
-                    return imageUrl;
-                }
-            }
-        } catch (error) {
-            console.warn('[Character Identity] Fal.ai generation failed, using fallback:', error);
+        if (imageUrl) {
+          onProgress?.(100)
+          return imageUrl
         }
+      }
+    } catch (error) {
+      console.warn('[Character Identity] Fal.ai generation failed, using fallback:', error)
     }
+  }
 
-    // Fallback: Use Pollinations with character-consistent prompting
-    return generateWithReferenceBasedCharacter(falCharacterId, prompt, onProgress);
+  // Fallback: Use Pollinations with character-consistent prompting
+  return generateWithReferenceBasedCharacter(falCharacterId, prompt, onProgress)
 }
 
 /**
  * Generate image using reference-based character identity with Pollinations/Gemini
  */
 async function generateWithReferenceBasedCharacter(
-    characterSignature: string,
-    prompt: string,
-    onProgress?: (progress: number) => void
+  characterSignature: string,
+  prompt: string,
+  onProgress?: (progress: number) => void
 ): Promise<string> {
-    onProgress?.(30);
+  onProgress?.(30)
 
+  try {
+    // Decode the character signature to get reference images
+    let characterData
     try {
-        // Decode the character signature to get reference images
-        let characterData;
-        try {
-            characterData = JSON.parse(atob(characterSignature));
-        } catch (error) {
-            // If we can't decode, use a simpler approach
-            characterData = { referenceImages: [], styleEmbedding: 'default' };
-        }
-
-        onProgress?.(50, 'Creating character-consistent prompt...');
-
-        // Enhance the prompt with character consistency instructions
-        const enhancedPrompt = createCharacterConsistentPrompt(prompt, characterData);
-
-        onProgress?.(70, 'Generating image with character consistency...');
-
-        // Use Pollinations for generation (it's working in your logs)
-        const { generateImageWithPollinations } = await import('./pollinationsService');
-
-        // Try different models for best results
-        const models: PollinationsImageModel[] = ['flux', 'flux-dev', 'flux-schnell'];
-
-        for (const model of models) {
-            try {
-                const imageUrl = await generateImageWithPollinations(enhancedPrompt, {
-                    model,
-                    width: 1024,
-                    height: 1024,
-                    seed: characterData.styleEmbedding ? parseInt(characterData.styleEmbedding.replace(/\D/g, '')) || undefined : undefined
-                });
-
-                if (imageUrl) {
-                    onProgress?.(100);
-                    return imageUrl;
-                }
-            } catch (modelError) {
-                console.warn(`[Character Identity] Model ${model} failed:`, modelError);
-                continue;
-            }
-        }
-
-        throw new Error('All Pollinations models failed');
-
-    } catch (error) {
-        onProgress?.(90);
-        console.error('[Character Identity] Reference-based generation failed:', error);
-
-        // Final fallback: Use Gemini for image generation
-        try {
-            const { generateVisual } = await import('./aiService');
-            const result = await generateVisual({
-                prompt,
-                modelPreference: 'imagen-4.0',
-                numImages: 1,
-                aspectRatio: '1:1',
-                style: 'photorealistic',
-                referenceImages: characterData?.referenceImages || []
-            });
-
-            if (result.success && result.generations.length > 0) {
-                onProgress?.(100);
-                return result.generations[0].url || '';
-            }
-        } catch (geminiError) {
-            console.warn('[Character Identity] Gemini fallback failed:', geminiError);
-        }
-
-        throw new Error('Character identity generation failed. Please try again.');
+      characterData = JSON.parse(atob(characterSignature))
+    } catch (_error) {
+      // If we can't decode, use a simpler approach
+      characterData = { referenceImages: [], styleEmbedding: 'default' }
     }
+
+    onProgress?.(50, 'Creating character-consistent prompt...')
+
+    // Enhance the prompt with character consistency instructions
+    const enhancedPrompt = createCharacterConsistentPrompt(prompt, characterData)
+
+    onProgress?.(70, 'Generating image with character consistency...')
+
+    // Use Pollinations for generation (it's working in your logs)
+    const { generateImageWithPollinations } = await import('./pollinationsService')
+
+    // Try different models for best results
+    const models: PollinationsImageModel[] = ['flux', 'flux-dev', 'flux-schnell']
+
+    for (const model of models) {
+      try {
+        const imageUrl = await generateImageWithPollinations(enhancedPrompt, {
+          model,
+          width: 1024,
+          height: 1024,
+          seed: characterData.styleEmbedding
+            ? parseInt(characterData.styleEmbedding.replace(/\D/g, ''), 10) || undefined
+            : undefined,
+        })
+
+        if (imageUrl) {
+          onProgress?.(100)
+          return imageUrl
+        }
+      } catch (modelError) {
+        console.warn(`[Character Identity] Model ${model} failed:`, modelError)
+      }
+    }
+
+    throw new Error('All Pollinations models failed')
+  } catch (error) {
+    onProgress?.(90)
+    console.error('[Character Identity] Reference-based generation failed:', error)
+
+    // Final fallback: Use Gemini for image generation
+    try {
+      const { generateVisual } = await import('./aiService')
+      const result = await generateVisual({
+        prompt,
+        modelPreference: 'imagen-4.0',
+        numImages: 1,
+        aspectRatio: '1:1',
+        style: 'photorealistic',
+        referenceImages: characterData?.referenceImages || [],
+      })
+
+      if (result.success && result.generations.length > 0) {
+        onProgress?.(100)
+        return result.generations[0].url || ''
+      }
+    } catch (geminiError) {
+      console.warn('[Character Identity] Gemini fallback failed:', geminiError)
+    }
+
+    throw new Error('Character identity generation failed. Please try again.')
+  }
 }
 
 /**
  * Create a character-consistent prompt using reference image analysis
  */
 function createCharacterConsistentPrompt(originalPrompt: string, characterData: any): string {
-    const basePrompt = originalPrompt;
+  const basePrompt = originalPrompt
 
-    // Add character consistency instructions
-    const consistencyInstructions = [
-        'maintain consistent facial features',
-        'preserve exact same person across all images',
-        'same eye color, hair color, face shape',
-        'consistent clothing style and appearance',
-        'photorealistic portrait photography'
-    ];
+  // Add character consistency instructions
+  const consistencyInstructions = [
+    'maintain consistent facial features',
+    'preserve exact same person across all images',
+    'same eye color, hair color, face shape',
+    'consistent clothing style and appearance',
+    'photorealistic portrait photography',
+  ]
 
-    // Add style guidance based on character data
-    const styleGuidance = characterData.styleEmbedding ?
-        `style signature: ${characterData.styleEmbedding}` : '';
+  // Add style guidance based on character data
+  const styleGuidance = characterData.styleEmbedding
+    ? `style signature: ${characterData.styleEmbedding}`
+    : ''
 
-    // Combine all elements
-    const enhancedPrompt = [
-        basePrompt,
-        ...consistencyInstructions,
-        styleGuidance,
-        'high detail, professional photography'
-    ].filter(Boolean).join(', ');
+  // Combine all elements
+  const enhancedPrompt = [
+    basePrompt,
+    ...consistencyInstructions,
+    styleGuidance,
+    'high detail, professional photography',
+  ]
+    .filter(Boolean)
+    .join(', ')
 
-    return enhancedPrompt;
+  return enhancedPrompt
 }

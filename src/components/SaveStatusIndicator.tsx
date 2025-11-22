@@ -5,103 +5,111 @@
  * unsaved changes indicator, and conflict resolution.
  */
 
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSaveManager, SaveState, saveManager } from '../services/saveManager';
-import Button from './Button';
-import { CheckIcon, SaveIcon, XIcon, AlertTriangleIcon, RefreshCwIcon, ClockIcon } from './icons/Icons';
+import { AnimatePresence, motion } from 'framer-motion'
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { saveManager, useSaveManager } from '../services/saveManager'
+import Button from './Button'
+import {
+  AlertTriangleIcon,
+  CheckIcon,
+  ClockIcon,
+  RefreshCwIcon,
+  SaveIcon,
+  XIcon,
+} from './icons/Icons'
 
 interface SaveStatusIndicatorProps {
-  projectId: string | null;
-  userId: string | null;
+  projectId: string | null
+  userId: string | null
 }
 
 const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, userId }) => {
-  const saveState = useSaveManager();
-  const [showDetails, setShowDetails] = useState(false);
-  const [showConflictModal, setShowConflictModal] = useState(false);
+  const saveState = useSaveManager()
+  const [showDetails, setShowDetails] = useState(false)
+  const [showConflictModal, setShowConflictModal] = useState(false)
 
   // Initialize save manager when project/user changes
   useEffect(() => {
     if (projectId && userId) {
-      saveManager.initialize(projectId, userId);
+      saveManager.initialize(projectId, userId)
     }
-  }, [projectId, userId]);
+  }, [projectId, userId])
 
   // Show conflict modal when conflict detected
   useEffect(() => {
     if (saveState.conflictData) {
-      setShowConflictModal(true);
+      setShowConflictModal(true)
     }
-  }, [saveState.conflictData]);
+  }, [saveState.conflictData])
 
   // Keyboard shortcut for save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
+        e.preventDefault()
+        handleSave()
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleSave])
 
   const handleSave = async () => {
-    await saveState.saveNow({ showNotification: true, createVersion: false });
-  };
+    await saveState.saveNow({ showNotification: true, createVersion: false })
+  }
 
   const handleSaveWithVersion = async () => {
-    await saveState.saveNow({ showNotification: true, createVersion: true });
-  };
+    await saveState.saveNow({ showNotification: true, createVersion: true })
+  }
 
   const handleDiscard = () => {
     if (window.confirm('Are you sure you want to discard all unsaved changes?')) {
-      saveState.discardChanges();
+      saveState.discardChanges()
     }
-  };
+  }
 
   const formatTimeAgo = (date: Date | null) => {
-    if (!date) return 'Never';
+    if (!date) return 'Never'
 
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
 
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
-  };
+    if (seconds < 60) return 'Just now'
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+    return `${Math.floor(seconds / 86400)}d ago`
+  }
 
   const getStatusColor = () => {
-    if (saveState.isSaving) return 'text-[var(--color-accent-primary)]';
-    if (saveState.saveError) return 'text-red-500';
-    if (saveState.hasUnsavedChanges) return 'text-[var(--color-accent-primary)]';
-    return 'text-[#DFEC2D]';
-  };
+    if (saveState.isSaving) return 'text-[var(--color-accent-primary)]'
+    if (saveState.saveError) return 'text-red-500'
+    if (saveState.hasUnsavedChanges) return 'text-[var(--color-accent-primary)]'
+    return 'text-[#DFEC2D]'
+  }
 
   const getStatusIcon = () => {
     if (saveState.isSaving) {
-      return <RefreshCwIcon className="w-4 h-4 animate-spin" />;
+      return <RefreshCwIcon className="w-4 h-4 animate-spin" />
     }
     if (saveState.saveError) {
-      return <XIcon className="w-4 h-4" />;
+      return <XIcon className="w-4 h-4" />
     }
     if (saveState.hasUnsavedChanges) {
-      return <AlertTriangleIcon className="w-4 h-4" />;
+      return <AlertTriangleIcon className="w-4 h-4" />
     }
-    return <CheckIcon className="w-4 h-4" />;
-  };
+    return <CheckIcon className="w-4 h-4" />
+  }
 
   const getStatusText = () => {
-    if (saveState.isSaving) return 'Saving...';
-    if (saveState.saveError) return 'Save failed';
-    if (saveState.hasUnsavedChanges) return 'Unsaved changes';
-    return 'All changes saved';
-  };
+    if (saveState.isSaving) return 'Saving...'
+    if (saveState.saveError) return 'Save failed'
+    if (saveState.hasUnsavedChanges) return 'Unsaved changes'
+    return 'All changes saved'
+  }
 
   if (!projectId || !userId) {
-    return null; // Don't show for anonymous users
+    return null // Don't show for anonymous users
   }
 
   return (
@@ -188,7 +196,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
                   <div className="space-y-1">
                     <p className="text-xs text-gray-500 font-semibold">Modified:</p>
                     <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                      {Array.from(saveState.pendingChanges.keys()).map(field => (
+                      {Array.from(saveState.pendingChanges.keys()).map((field) => (
                         <div key={field} className="text-xs text-gray-400 pl-2">
                           • {field.replace(/([A-Z])/g, ' $1').trim()}
                         </div>
@@ -200,9 +208,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
                 {/* Error Details */}
                 {saveState.saveError && (
                   <div className="bg-red-900/20 border border-red-900/50 rounded-lg p-2">
-                    <p className="text-xs text-red-400">
-                      {saveState.saveError.message}
-                    </p>
+                    <p className="text-xs text-red-400">{saveState.saveError.message}</p>
                   </div>
                 )}
 
@@ -236,7 +242,8 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
                 <div>
                   <h3 className="text-lg font-bold text-white">Conflicting Changes Detected</h3>
                   <p className="text-sm text-gray-400 mt-1">
-                    Another user or session has modified this project. How would you like to resolve this?
+                    Another user or session has modified this project. How would you like to resolve
+                    this?
                   </p>
                 </div>
               </div>
@@ -244,32 +251,36 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
               <div className="space-y-3">
                 <button
                   onClick={() => {
-                    saveState.saveNow({ forceSave: true });
-                    setShowConflictModal(false);
+                    saveState.saveNow({ forceSave: true })
+                    setShowConflictModal(false)
                   }}
                   className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors"
                 >
                   <p className="font-semibold text-white">Keep My Changes</p>
-                  <p className="text-xs text-gray-400">Overwrite remote changes with your local edits</p>
+                  <p className="text-xs text-gray-400">
+                    Overwrite remote changes with your local edits
+                  </p>
                 </button>
 
                 <button
                   onClick={() => {
-                    saveState.discardChanges();
-                    setShowConflictModal(false);
-                    window.location.reload(); // Reload to get remote changes
+                    saveState.discardChanges()
+                    setShowConflictModal(false)
+                    window.location.reload() // Reload to get remote changes
                   }}
                   className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors"
                 >
                   <p className="font-semibold text-white">Keep Remote Changes</p>
-                  <p className="text-xs text-gray-400">Discard your local edits and use the remote version</p>
+                  <p className="text-xs text-gray-400">
+                    Discard your local edits and use the remote version
+                  </p>
                 </button>
 
                 <button
                   onClick={() => {
-                    setShowConflictModal(false);
+                    setShowConflictModal(false)
                     // TODO: Implement merge UI
-                    alert('Merge functionality coming soon!');
+                    alert('Merge functionality coming soon!')
                   }}
                   className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors"
                 >
@@ -301,7 +312,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({ projectId, us
         </motion.div>
       )}
     </>
-  );
-};
+  )
+}
 
-export default SaveStatusIndicator;
+export default SaveStatusIndicator

@@ -1,77 +1,93 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { isSupabaseConfigured, supabase } from './supabase'
 
 export interface UsageLog {
-  id: string;
-  user_id: string;
-  project_id?: string | null;
-  action: string;
-  tokens_used?: number | null;
-  cost_usd?: number | null;
-  metadata?: any;
-  created_at: string;
+  id: string
+  user_id: string
+  project_id?: string | null
+  action: string
+  tokens_used?: number | null
+  cost_usd?: number | null
+  metadata?: any
+  created_at: string
 }
 
 export interface UsageService {
-  logUsage: (userId: string, action: string, data?: {
-    projectId?: string;
-    tokensUsed?: number;
-    costUsd?: number;
-    metadata?: any;
-  }) => Promise<{ error: any }>;
-  getUserUsage: (userId: string, startDate?: Date, endDate?: Date) => Promise<{ logs: UsageLog[] | null; error: any }>;
+  logUsage: (
+    userId: string,
+    action: string,
+    data?: {
+      projectId?: string
+      tokensUsed?: number
+      costUsd?: number
+      metadata?: any
+    }
+  ) => Promise<{ error: any }>
+  getUserUsage: (
+    userId: string,
+    startDate?: Date,
+    endDate?: Date
+  ) => Promise<{ logs: UsageLog[] | null; error: any }>
   getUserTotalUsage: (userId: string) => Promise<{
-    totalTokens: number;
-    totalCost: number;
-    logs: UsageLog[] | null;
+    totalTokens: number
+    totalCost: number
+    logs: UsageLog[] | null
     error: any
-  }>;
-  getProjectUsage: (projectId: string) => Promise<{ logs: UsageLog[] | null; error: any }>;
-  deleteUsageLogs: (userId: string, olderThanDays?: number) => Promise<{ error: any }>;
+  }>
+  getProjectUsage: (projectId: string) => Promise<{ logs: UsageLog[] | null; error: any }>
+  deleteUsageLogs: (userId: string, olderThanDays?: number) => Promise<{ error: any }>
 }
 
 class UsageServiceImpl implements UsageService {
-  private isConfigured: boolean;
+  private isConfigured: boolean
 
   constructor() {
-    this.isConfigured = isSupabaseConfigured();
+    this.isConfigured = isSupabaseConfigured()
   }
 
-  async logUsage(userId: string, action: string, data?: {
-    projectId?: string;
-    tokensUsed?: number;
-    costUsd?: number;
-    metadata?: any;
-  }): Promise<{ error: any }> {
+  async logUsage(
+    userId: string,
+    action: string,
+    data?: {
+      projectId?: string
+      tokensUsed?: number
+      costUsd?: number
+      metadata?: any
+    }
+  ): Promise<{ error: any }> {
     if (!this.isConfigured) {
       // Fallback: just log to console
-      console.log('Usage:', { userId, action, data });
-      return { error: null };
+      console.log('Usage:', { userId, action, data })
+      return { error: null }
     }
 
     try {
-      const { error } = await supabase
-        .from('usage_logs')
-        .insert([{
+      const { error } = await supabase.from('usage_logs').insert([
+        {
           user_id: userId,
           project_id: data?.projectId || null,
           action,
           tokens_used: data?.tokensUsed || null,
           cost_usd: data?.costUsd || null,
           metadata: data?.metadata || {},
-        }]);
+        },
+      ])
 
-      if (error) throw error;
+      if (error) throw error
 
-      return { error: null };
+      return { error: null }
     } catch (error) {
-      console.error('Error logging usage:', error);
-      return { error };
+      console.error('Error logging usage:', error)
+      return { error }
     }
   }
 
-  async getUserUsage(userId: string, startDate?: Date, endDate?: Date): Promise<{ logs: UsageLog[] | null; error: any }> {
+  async getUserUsage(
+    userId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{ logs: UsageLog[] | null; error: any }> {
     if (!this.isConfigured) {
-      return { logs: null, error: new Error('Supabase is not configured') };
+      return { logs: null, error: new Error('Supabase is not configured') }
     }
 
     try {
@@ -79,59 +95,64 @@ class UsageServiceImpl implements UsageService {
         .from('usage_logs')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
 
       // Add date filters if provided
       if (startDate) {
-        query = query.gte('created_at', startDate.toISOString());
+        query = query.gte('created_at', startDate.toISOString())
       }
       if (endDate) {
-        query = query.lte('created_at', endDate.toISOString());
+        query = query.lte('created_at', endDate.toISOString())
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query
 
-      if (error) throw error;
+      if (error) throw error
 
-      return { logs: data, error: null };
+      return { logs: data, error: null }
     } catch (error) {
-      console.error('Error getting user usage:', error);
-      return { logs: null, error };
+      console.error('Error getting user usage:', error)
+      return { logs: null, error }
     }
   }
 
   async getUserTotalUsage(userId: string): Promise<{
-    totalTokens: number;
-    totalCost: number;
-    logs: UsageLog[] | null;
+    totalTokens: number
+    totalCost: number
+    logs: UsageLog[] | null
     error: any
   }> {
     if (!this.isConfigured) {
-      return { totalTokens: 0, totalCost: 0, logs: null, error: new Error('Supabase is not configured') };
+      return {
+        totalTokens: 0,
+        totalCost: 0,
+        logs: null,
+        error: new Error('Supabase is not configured'),
+      }
     }
 
     try {
       // Get all logs for the user
-      const { logs, error } = await this.getUserUsage(userId);
+      const { logs, error } = await this.getUserUsage(userId)
 
       if (error || !logs) {
-        return { totalTokens: 0, totalCost: 0, logs: null, error };
+        return { totalTokens: 0, totalCost: 0, logs: null, error }
       }
 
       // Calculate totals
-      const totalTokens = logs.reduce((sum, log) => sum + (log.tokens_used || 0), 0);
-      const totalCost = logs.reduce((sum, log) => sum + (log.cost_usd || 0), 0);
+      const totalTokens = logs.reduce((sum, log) => sum + (log.tokens_used || 0), 0)
+      const totalCost = logs.reduce((sum, log) => sum + (log.cost_usd || 0), 0)
 
-      return { totalTokens, totalCost, logs, error: null };
+      return { totalTokens, totalCost, logs, error: null }
     } catch (error) {
-      console.error('Error getting user total usage:', error);
-      return { totalTokens: 0, totalCost: 0, logs: null, error };
+      console.error('Error getting user total usage:', error)
+      return { totalTokens: 0, totalCost: 0, logs: null, error }
     }
   }
 
   async getProjectUsage(projectId: string): Promise<{ logs: UsageLog[] | null; error: any }> {
     if (!this.isConfigured) {
-      return { logs: null, error: new Error('Supabase is not configured') };
+      return { logs: null, error: new Error('Supabase is not configured') }
     }
 
     try {
@@ -139,50 +160,49 @@ class UsageServiceImpl implements UsageService {
         .from('usage_logs')
         .select('*')
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
 
-      if (error) throw error;
+      if (error) throw error
 
-      return { logs: data, error: null };
+      return { logs: data, error: null }
     } catch (error) {
-      console.error('Error getting project usage:', error);
-      return { logs: null, error };
+      console.error('Error getting project usage:', error)
+      return { logs: null, error }
     }
   }
 
   async deleteUsageLogs(userId: string, olderThanDays: number = 90): Promise<{ error: any }> {
     if (!this.isConfigured) {
-      return { error: new Error('Supabase is not configured') };
+      return { error: new Error('Supabase is not configured') }
     }
 
     try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - olderThanDays)
 
       const { error } = await supabase
         .from('usage_logs')
         .delete()
         .eq('user_id', userId)
-        .lt('created_at', cutoffDate.toISOString());
+        .lt('created_at', cutoffDate.toISOString())
 
-      if (error) throw error;
+      if (error) throw error
 
-      return { error: null };
+      return { error: null }
     } catch (error) {
-      console.error('Error deleting usage logs:', error);
-      return { error };
+      console.error('Error deleting usage logs:', error)
+      return { error }
     }
   }
 }
 
 // LAZY EXPORT: Use getter to prevent TDZ errors in minified builds
-let _usageService: UsageService | undefined;
+let _usageService: UsageService | undefined
 function getUsageServiceInstance(): UsageService {
   if (!_usageService) {
-    _usageService = new UsageServiceImpl();
-
+    _usageService = new UsageServiceImpl()
   }
-  return _usageService;
+  return _usageService
 }
 
 // Predefined action types for consistency
@@ -212,12 +232,12 @@ export const USAGE_ACTIONS = {
   USER_SIGNED_UP: 'user_signed_up',
   USER_SIGNED_IN: 'user_signed_in',
   USER_UPDATED_PROFILE: 'user_updated_profile',
-} as const;
+} as const
 
 // Helper function to log AI usage with cost estimation
 export async function logAIUsage(
   userId: string,
-  action: typeof USAGE_ACTIONS[keyof typeof USAGE_ACTIONS],
+  action: (typeof USAGE_ACTIONS)[keyof typeof USAGE_ACTIONS],
   tokensUsed?: number,
   projectId?: string,
   metadata?: any
@@ -232,9 +252,9 @@ export async function logAIUsage(
     [USAGE_ACTIONS.VIDEO_UPSCALING]: 0.000002,
     [USAGE_ACTIONS.MOTION_TRANSFER]: 0.000008,
     [USAGE_ACTIONS.IMAGE_REFINEMENT]: 0.000002,
-  };
+  }
 
-  const costUsd = tokensUsed ? (tokensUsed * (TOKEN_COSTS[action] || 0.000001)) : undefined;
+  const costUsd = tokensUsed ? tokensUsed * (TOKEN_COSTS[action] || 0.000001) : undefined
 
   return getUsageServiceInstance().logUsage(userId, action, {
     projectId,
@@ -244,10 +264,10 @@ export async function logAIUsage(
       ...metadata,
       timestamp: new Date().toISOString(),
     },
-  });
-};
+  })
+}
 
 // Export the appropriate service based on configuration
 export function getUsageService(): UsageService | null {
-  return isSupabaseConfigured() ? getUsageServiceInstance() : null;
-};
+  return isSupabaseConfigured() ? getUsageServiceInstance() : null
+}

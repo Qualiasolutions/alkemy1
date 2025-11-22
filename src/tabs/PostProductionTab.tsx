@@ -1,29 +1,57 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Button from '../components/Button';
-import { SettingsIcon, SaveIcon, SparklesIcon, EyeIcon, EyeOffIcon } from '../components/icons/Icons';
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Button from '../components/Button'
+import {
+  EyeIcon,
+  EyeOffIcon,
+  SaveIcon,
+  SettingsIcon,
+  SparklesIcon,
+} from '../components/icons/Icons'
 
 interface ColorGradeSettings {
-  exposure: number;
-  contrast: number;
-  saturation: number;
-  temperature: number;
-  tint: number;
-  highlights: number;
-  shadows: number;
-  preset: 'none' | 'cinematic' | 'noir' | 'vintage' | 'bleach' | 'warm';
+  exposure: number
+  contrast: number
+  saturation: number
+  temperature: number
+  tint: number
+  highlights: number
+  shadows: number
+  preset: 'none' | 'cinematic' | 'noir' | 'vintage' | 'bleach' | 'warm'
 }
 
 const PRESET_CONFIGS: { [key: string]: Partial<ColorGradeSettings> } = {
-  cinematic: { exposure: 0.1, contrast: 0.15, saturation: -0.1, temperature: 0.05, shadows: -0.1, highlights: 0.05 },
-  noir: { exposure: -0.2, contrast: 0.4, saturation: -0.8, temperature: -0.1, shadows: -0.3, highlights: 0.2 },
-  vintage: { exposure: 0.05, contrast: -0.1, saturation: -0.2, temperature: 0.15, tint: 0.1, shadows: 0.1 },
+  cinematic: {
+    exposure: 0.1,
+    contrast: 0.15,
+    saturation: -0.1,
+    temperature: 0.05,
+    shadows: -0.1,
+    highlights: 0.05,
+  },
+  noir: {
+    exposure: -0.2,
+    contrast: 0.4,
+    saturation: -0.8,
+    temperature: -0.1,
+    shadows: -0.3,
+    highlights: 0.2,
+  },
+  vintage: {
+    exposure: 0.05,
+    contrast: -0.1,
+    saturation: -0.2,
+    temperature: 0.15,
+    tint: 0.1,
+    shadows: 0.1,
+  },
   bleach: { exposure: 0.3, contrast: -0.2, saturation: 0.3, highlights: 0.3, shadows: 0.2 },
   warm: { exposure: 0, contrast: 0.05, saturation: 0.1, temperature: 0.25, tint: 0.05 },
-};
+}
 
 const PostProductionTab: React.FC = () => {
-  const [sourceVideo, setSourceVideo] = useState<File | null>(null);
-  const [sourceVideoUrl, setSourceVideoUrl] = useState<string | null>(null);
+  const [_sourceVideo, setSourceVideo] = useState<File | null>(null)
+  const [sourceVideoUrl, setSourceVideoUrl] = useState<string | null>(null)
   const [settings, setSettings] = useState<ColorGradeSettings>({
     exposure: 0,
     contrast: 0,
@@ -33,333 +61,334 @@ const PostProductionTab: React.FC = () => {
     highlights: 0,
     shadows: 0,
     preset: 'none',
-  });
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showScopes, setShowScopes] = useState(true);
+  })
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [showScopes, setShowScopes] = useState(true)
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const animationFrameRef = useRef<number>();
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const animationFrameRef = useRef<number>()
 
   // Scope canvases
-  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
-  const vectorscopeCanvasRef = useRef<HTMLCanvasElement>(null);
-  const histogramCanvasRef = useRef<HTMLCanvasElement>(null);
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null)
+  const vectorscopeCanvasRef = useRef<HTMLCanvasElement>(null)
+  const histogramCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('video/')) {
-      if (sourceVideoUrl) URL.revokeObjectURL(sourceVideoUrl);
-      setSourceVideo(file);
-      const url = URL.createObjectURL(file);
-      setSourceVideoUrl(url);
+    const file = e.target.files?.[0]
+    if (file?.type.startsWith('video/')) {
+      if (sourceVideoUrl) URL.revokeObjectURL(sourceVideoUrl)
+      setSourceVideo(file)
+      const url = URL.createObjectURL(file)
+      setSourceVideoUrl(url)
     }
-    if (e.target) e.target.value = '';
-  };
+    if (e.target) e.target.value = ''
+  }
 
   const applyColorGrade = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current) return
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const data = imageData.data
 
-    const { exposure, contrast, saturation, temperature, tint, highlights, shadows } = settings;
+    const { exposure, contrast, saturation, temperature, tint, highlights, shadows } = settings
 
     for (let i = 0; i < data.length; i += 4) {
-      let r = data[i];
-      let g = data[i + 1];
-      let b = data[i + 2];
+      let r = data[i]
+      let g = data[i + 1]
+      let b = data[i + 2]
 
       // Exposure
-      r = r + (exposure * 255);
-      g = g + (exposure * 255);
-      b = b + (exposure * 255);
+      r = r + exposure * 255
+      g = g + exposure * 255
+      b = b + exposure * 255
 
       // Contrast
-      const contrastFactor = (1 + contrast);
-      r = ((r / 255 - 0.5) * contrastFactor + 0.5) * 255;
-      g = ((g / 255 - 0.5) * contrastFactor + 0.5) * 255;
-      b = ((b / 255 - 0.5) * contrastFactor + 0.5) * 255;
+      const contrastFactor = 1 + contrast
+      r = ((r / 255 - 0.5) * contrastFactor + 0.5) * 255
+      g = ((g / 255 - 0.5) * contrastFactor + 0.5) * 255
+      b = ((b / 255 - 0.5) * contrastFactor + 0.5) * 255
 
       // Saturation
-      const gray = 0.2989 * r + 0.5870 * g + 0.1140 * b;
-      r = gray + (r - gray) * (1 + saturation);
-      g = gray + (g - gray) * (1 + saturation);
-      b = gray + (b - gray) * (1 + saturation);
+      const gray = 0.2989 * r + 0.587 * g + 0.114 * b
+      r = gray + (r - gray) * (1 + saturation)
+      g = gray + (g - gray) * (1 + saturation)
+      b = gray + (b - gray) * (1 + saturation)
 
       // Temperature (shift toward orange/blue)
-      r += temperature * 50;
-      b -= temperature * 50;
+      r += temperature * 50
+      b -= temperature * 50
 
       // Tint (shift toward magenta/green)
-      r += tint * 30;
-      g -= tint * 30;
+      r += tint * 30
+      g -= tint * 30
 
       // Highlights (boost bright pixels)
-      const luminance = (r + g + b) / 3;
+      const luminance = (r + g + b) / 3
       if (luminance > 180) {
-        const boost = highlights * 50;
-        r += boost;
-        g += boost;
-        b += boost;
+        const boost = highlights * 50
+        r += boost
+        g += boost
+        b += boost
       }
 
       // Shadows (adjust dark pixels)
       if (luminance < 75) {
-        const adjustment = shadows * 50;
-        r += adjustment;
-        g += adjustment;
-        b += adjustment;
+        const adjustment = shadows * 50
+        r += adjustment
+        g += adjustment
+        b += adjustment
       }
 
       // Clamp values
-      data[i] = Math.max(0, Math.min(255, r));
-      data[i + 1] = Math.max(0, Math.min(255, g));
-      data[i + 2] = Math.max(0, Math.min(255, b));
+      data[i] = Math.max(0, Math.min(255, r))
+      data[i + 1] = Math.max(0, Math.min(255, g))
+      data[i + 2] = Math.max(0, Math.min(255, b))
     }
 
-    ctx.putImageData(imageData, 0, 0);
-  };
+    ctx.putImageData(imageData, 0, 0)
+  }
 
   const renderWaveform = () => {
-    if (!canvasRef.current || !waveformCanvasRef.current) return;
+    if (!canvasRef.current || !waveformCanvasRef.current) return
 
-    const sourceCanvas = canvasRef.current;
-    const waveformCanvas = waveformCanvasRef.current;
-    const ctx = waveformCanvas.getContext('2d');
-    if (!ctx) return;
+    const sourceCanvas = canvasRef.current
+    const waveformCanvas = waveformCanvasRef.current
+    const ctx = waveformCanvas.getContext('2d')
+    if (!ctx) return
 
-    const width = 300;
-    const height = 150;
-    waveformCanvas.width = width;
-    waveformCanvas.height = height;
+    const width = 300
+    const height = 150
+    waveformCanvas.width = width
+    waveformCanvas.height = height
 
     // Clear with dark background
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#0a0a0a'
+    ctx.fillRect(0, 0, width, height)
 
     // Draw grid
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#1a1a1a'
+    ctx.lineWidth = 1
     for (let i = 0; i <= 5; i++) {
-      const y = (i / 5) * height;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
+      const y = (i / 5) * height
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(width, y)
+      ctx.stroke()
     }
 
     // Get image data from main canvas
-    const sourceCtx = sourceCanvas.getContext('2d');
-    if (!sourceCtx) return;
+    const sourceCtx = sourceCanvas.getContext('2d')
+    if (!sourceCtx) return
 
-    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-    const data = imageData.data;
+    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height)
+    const data = imageData.data
 
     // Calculate luminance for each horizontal position
-    const samplesPerColumn = Math.ceil(sourceCanvas.width / width);
-    ctx.fillStyle = 'rgba(100, 255, 100, 0.3)';
+    const _samplesPerColumn = Math.ceil(sourceCanvas.width / width)
+    ctx.fillStyle = 'rgba(100, 255, 100, 0.3)'
 
     for (let x = 0; x < width; x++) {
-      const sourceX = Math.floor((x / width) * sourceCanvas.width);
-      const luminanceValues: number[] = [];
+      const sourceX = Math.floor((x / width) * sourceCanvas.width)
+      const luminanceValues: number[] = []
 
       // Sample column
       for (let y = 0; y < sourceCanvas.height; y += 2) {
-        const idx = (y * sourceCanvas.width + sourceX) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        luminanceValues.push(luma);
+        const idx = (y * sourceCanvas.width + sourceX) * 4
+        const r = data[idx]
+        const g = data[idx + 1]
+        const b = data[idx + 2]
+        const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        luminanceValues.push(luma)
       }
 
       // Draw column
-      luminanceValues.forEach(luma => {
-        const y = height - (luma * height);
-        ctx.fillRect(x, y, 1, 2);
-      });
+      luminanceValues.forEach((luma) => {
+        const y = height - luma * height
+        ctx.fillRect(x, y, 1, 2)
+      })
     }
-  };
+  }
 
   const renderVectorscope = () => {
-    if (!canvasRef.current || !vectorscopeCanvasRef.current) return;
+    if (!canvasRef.current || !vectorscopeCanvasRef.current) return
 
-    const sourceCanvas = canvasRef.current;
-    const vectorCanvas = vectorscopeCanvasRef.current;
-    const ctx = vectorCanvas.getContext('2d');
-    if (!ctx) return;
+    const sourceCanvas = canvasRef.current
+    const vectorCanvas = vectorscopeCanvasRef.current
+    const ctx = vectorCanvas.getContext('2d')
+    if (!ctx) return
 
-    const size = 150;
-    vectorCanvas.width = size;
-    vectorCanvas.height = size;
+    const size = 150
+    vectorCanvas.width = size
+    vectorCanvas.height = size
 
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const radius = size / 2 - 10;
+    const centerX = size / 2
+    const centerY = size / 2
+    const radius = size / 2 - 10
 
     // Clear with dark background
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#0a0a0a'
+    ctx.fillRect(0, 0, size, size)
 
     // Draw circle guides
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#1a1a1a'
+    ctx.lineWidth = 1
     for (let i = 1; i <= 3; i++) {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, (radius / 3) * i, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, (radius / 3) * i, 0, Math.PI * 2)
+      ctx.stroke()
     }
 
     // Draw crosshairs
-    ctx.beginPath();
-    ctx.moveTo(0, centerY);
-    ctx.lineTo(size, centerY);
-    ctx.moveTo(centerX, 0);
-    ctx.lineTo(centerX, size);
-    ctx.stroke();
+    ctx.beginPath()
+    ctx.moveTo(0, centerY)
+    ctx.lineTo(size, centerY)
+    ctx.moveTo(centerX, 0)
+    ctx.lineTo(centerX, size)
+    ctx.stroke()
 
     // Get image data
-    const sourceCtx = sourceCanvas.getContext('2d');
-    if (!sourceCtx) return;
+    const sourceCtx = sourceCanvas.getContext('2d')
+    if (!sourceCtx) return
 
-    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-    const data = imageData.data;
+    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height)
+    const data = imageData.data
 
     // Plot colors
-    ctx.fillStyle = 'rgba(100, 255, 100, 0.1)';
-    for (let i = 0; i < data.length; i += 40) { // Sample every 10 pixels for performance
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
+    ctx.fillStyle = 'rgba(100, 255, 100, 0.1)'
+    for (let i = 0; i < data.length; i += 40) {
+      // Sample every 10 pixels for performance
+      const r = data[i]
+      const g = data[i + 1]
+      const b = data[i + 2]
 
       // Convert RGB to U and V (chroma)
-      const u = 0.492 * (b - (0.299 * r + 0.587 * g + 0.114 * b));
-      const v = 0.877 * (r - (0.299 * r + 0.587 * g + 0.114 * b));
+      const u = 0.492 * (b - (0.299 * r + 0.587 * g + 0.114 * b))
+      const v = 0.877 * (r - (0.299 * r + 0.587 * g + 0.114 * b))
 
-      const x = centerX + (u * radius / 128);
-      const y = centerY - (v * radius / 128);
+      const x = centerX + (u * radius) / 128
+      const y = centerY - (v * radius) / 128
 
-      ctx.fillRect(x, y, 2, 2);
+      ctx.fillRect(x, y, 2, 2)
     }
-  };
+  }
 
   const renderHistogram = () => {
-    if (!canvasRef.current || !histogramCanvasRef.current) return;
+    if (!canvasRef.current || !histogramCanvasRef.current) return
 
-    const sourceCanvas = canvasRef.current;
-    const histogramCanvas = histogramCanvasRef.current;
-    const ctx = histogramCanvas.getContext('2d');
-    if (!ctx) return;
+    const sourceCanvas = canvasRef.current
+    const histogramCanvas = histogramCanvasRef.current
+    const ctx = histogramCanvas.getContext('2d')
+    if (!ctx) return
 
-    const width = 300;
-    const height = 150;
-    histogramCanvas.width = width;
-    histogramCanvas.height = height;
+    const width = 300
+    const height = 150
+    histogramCanvas.width = width
+    histogramCanvas.height = height
 
     // Clear with dark background
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#0a0a0a'
+    ctx.fillRect(0, 0, width, height)
 
     // Get image data
-    const sourceCtx = sourceCanvas.getContext('2d');
-    if (!sourceCtx) return;
+    const sourceCtx = sourceCanvas.getContext('2d')
+    if (!sourceCtx) return
 
-    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
-    const data = imageData.data;
+    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height)
+    const data = imageData.data
 
     // Calculate histograms for R, G, B
-    const histR = new Array(256).fill(0);
-    const histG = new Array(256).fill(0);
-    const histB = new Array(256).fill(0);
+    const histR = new Array(256).fill(0)
+    const histG = new Array(256).fill(0)
+    const histB = new Array(256).fill(0)
 
     for (let i = 0; i < data.length; i += 4) {
-      histR[data[i]]++;
-      histG[data[i + 1]]++;
-      histB[data[i + 2]]++;
+      histR[data[i]]++
+      histG[data[i + 1]]++
+      histB[data[i + 2]]++
     }
 
     // Find max value for normalization
-    const maxR = Math.max(...histR);
-    const maxG = Math.max(...histG);
-    const maxB = Math.max(...histB);
-    const max = Math.max(maxR, maxG, maxB);
+    const maxR = Math.max(...histR)
+    const maxG = Math.max(...histG)
+    const maxB = Math.max(...histB)
+    const max = Math.max(maxR, maxG, maxB)
 
     // Draw histograms
     const drawHist = (hist: number[], color: string) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
+      ctx.strokeStyle = color
+      ctx.lineWidth = 1
+      ctx.beginPath()
 
       for (let i = 0; i < 256; i++) {
-        const x = (i / 256) * width;
-        const barHeight = (hist[i] / max) * height;
-        const y = height - barHeight;
+        const x = (i / 256) * width
+        const barHeight = (hist[i] / max) * height
+        const y = height - barHeight
 
         if (i === 0) {
-          ctx.moveTo(x, y);
+          ctx.moveTo(x, y)
         } else {
-          ctx.lineTo(x, y);
+          ctx.lineTo(x, y)
         }
       }
-      ctx.stroke();
-    };
+      ctx.stroke()
+    }
 
-    drawHist(histR, 'rgba(255, 100, 100, 0.7)');
-    drawHist(histG, 'rgba(100, 255, 100, 0.7)');
-    drawHist(histB, 'rgba(100, 150, 255, 0.7)');
-  };
+    drawHist(histR, 'rgba(255, 100, 100, 0.7)')
+    drawHist(histG, 'rgba(100, 255, 100, 0.7)')
+    drawHist(histB, 'rgba(100, 150, 255, 0.7)')
+  }
 
   const renderScopes = () => {
-    if (!showScopes) return;
-    renderWaveform();
-    renderVectorscope();
-    renderHistogram();
-  };
+    if (!showScopes) return
+    renderWaveform()
+    renderVectorscope()
+    renderHistogram()
+  }
 
   useEffect(() => {
     if (sourceVideoUrl && videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
+      const video = videoRef.current
 
       const renderLoop = () => {
         if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
-          applyColorGrade();
-          renderScopes();
-          animationFrameRef.current = requestAnimationFrame(renderLoop);
+          applyColorGrade()
+          renderScopes()
+          animationFrameRef.current = requestAnimationFrame(renderLoop)
         }
-      };
+      }
 
       const renderSingleFrame = () => {
-        applyColorGrade();
-        renderScopes();
-      };
+        applyColorGrade()
+        renderScopes()
+      }
 
-      video.addEventListener('play', renderLoop);
-      video.addEventListener('pause', renderSingleFrame);
-      video.addEventListener('seeked', renderSingleFrame);
+      video.addEventListener('play', renderLoop)
+      video.addEventListener('pause', renderSingleFrame)
+      video.addEventListener('seeked', renderSingleFrame)
 
       return () => {
-        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-        video.removeEventListener('play', renderLoop);
-        video.removeEventListener('pause', renderSingleFrame);
-        video.removeEventListener('seeked', renderSingleFrame);
-      };
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+        video.removeEventListener('play', renderLoop)
+        video.removeEventListener('pause', renderSingleFrame)
+        video.removeEventListener('seeked', renderSingleFrame)
+      }
     }
-  }, [sourceVideoUrl, settings, showScopes]);
+  }, [sourceVideoUrl, applyColorGrade, renderScopes])
 
   const handleSliderChange = (key: keyof ColorGradeSettings, value: number) => {
-    setSettings(prev => ({ ...prev, [key]: value, preset: 'none' }));
-  };
+    setSettings((prev) => ({ ...prev, [key]: value, preset: 'none' }))
+  }
 
   const applyPreset = (preset: ColorGradeSettings['preset']) => {
     if (preset === 'none') {
@@ -372,46 +401,52 @@ const PostProductionTab: React.FC = () => {
         highlights: 0,
         shadows: 0,
         preset: 'none',
-      });
+      })
     } else {
-      setSettings(prev => ({ ...prev, ...PRESET_CONFIGS[preset], preset }));
+      setSettings((prev) => ({ ...prev, ...PRESET_CONFIGS[preset], preset }))
     }
-  };
+  }
 
-  const handleReset = () => applyPreset('none');
+  const handleReset = () => applyPreset('none')
 
   const handleExport = async () => {
-    if (!canvasRef.current || !videoRef.current) return;
-    setIsProcessing(true);
+    if (!canvasRef.current || !videoRef.current) return
+    setIsProcessing(true)
 
     try {
       // Simulated export (in production, you'd use MediaRecorder or FFmpeg.wasm)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      const dataUrl = canvasRef.current.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = 'graded-frame.png';
-      link.href = dataUrl;
-      link.click();
+      const dataUrl = canvasRef.current.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.download = 'graded-frame.png'
+      link.href = dataUrl
+      link.click()
 
-      alert('Frame exported! (Full video export requires FFmpeg.wasm integration)');
+      alert('Frame exported! (Full video export requires FFmpeg.wasm integration)')
     } catch (error) {
-      alert('Export failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   return (
     <div className="w-full h-full flex flex-col bg-zinc-950 text-white p-6">
       <header className="mb-6">
-        <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Post-Production</h2>
-        <p className={`text-md text-[var(--color-text-secondary)]`}>Real-time color grading and visual effects for your footage.</p>
+        <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>
+          Post-Production
+        </h2>
+        <p className={`text-md text-[var(--color-text-secondary)]`}>
+          Real-time color grading and visual effects for your footage.
+        </p>
       </header>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
         {/* Left: Source Video Upload */}
-        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}>
+        <div
+          className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}
+        >
           <h3 className="text-lg font-semibold mb-4">Source Video</h3>
 
           {!sourceVideoUrl ? (
@@ -435,9 +470,9 @@ const PostProductionTab: React.FC = () => {
               />
               <Button
                 onClick={() => {
-                  if (sourceVideoUrl) URL.revokeObjectURL(sourceVideoUrl);
-                  setSourceVideo(null);
-                  setSourceVideoUrl(null);
+                  if (sourceVideoUrl) URL.revokeObjectURL(sourceVideoUrl)
+                  setSourceVideo(null)
+                  setSourceVideoUrl(null)
                 }}
                 variant="secondary"
                 className="!w-full"
@@ -446,19 +481,27 @@ const PostProductionTab: React.FC = () => {
               </Button>
             </div>
           )}
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="video/*" className="hidden" />
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="video/*"
+            className="hidden"
+          />
         </div>
 
         {/* Center: Preview with Color Grade and Scopes */}
-        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}>
+        <div
+          className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Graded Preview</h3>
             <Button
               onClick={() => setShowScopes(!showScopes)}
-              variant={showScopes ? "primary" : "secondary"}
+              variant={showScopes ? 'primary' : 'secondary'}
               className="!px-3 !py-1.5"
               disabled={!sourceVideoUrl}
-              title={showScopes ? "Hide Scopes" : "Show Scopes"}
+              title={showScopes ? 'Hide Scopes' : 'Show Scopes'}
             >
               {showScopes ? <EyeIcon className="w-4 h-4" /> : <EyeOffIcon className="w-4 h-4" />}
               <span className="ml-2 text-xs">Scopes</span>
@@ -492,11 +535,22 @@ const PostProductionTab: React.FC = () => {
           )}
 
           <div className="flex gap-2">
-            <Button onClick={handleReset} variant="secondary" className="flex-1" disabled={!sourceVideoUrl}>
+            <Button
+              onClick={handleReset}
+              variant="secondary"
+              className="flex-1"
+              disabled={!sourceVideoUrl}
+            >
               <SettingsIcon className="w-4 h-4" />
               Reset
             </Button>
-            <Button onClick={handleExport} variant="primary" className="flex-1" disabled={!sourceVideoUrl} isLoading={isProcessing}>
+            <Button
+              onClick={handleExport}
+              variant="primary"
+              className="flex-1"
+              disabled={!sourceVideoUrl}
+              isLoading={isProcessing}
+            >
               <SaveIcon className="w-4 h-4" />
               Export Frame
             </Button>
@@ -504,26 +558,30 @@ const PostProductionTab: React.FC = () => {
         </div>
 
         {/* Right: Color Grading Controls */}
-        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 overflow-y-auto`}>
+        <div
+          className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 overflow-y-auto`}
+        >
           <h3 className="text-lg font-semibold mb-4">Color Grading</h3>
 
           {/* Presets */}
           <div className="mb-6">
             <label className="block text-sm font-medium mb-2">Presets</label>
             <div className="grid grid-cols-2 gap-2">
-              {(['none', 'cinematic', 'noir', 'vintage', 'bleach', 'warm'] as const).map(preset => (
-                <button
-                  key={preset}
-                  onClick={() => applyPreset(preset)}
-                  className={`px-3 py-2 text-xs rounded-lg border transition-colors ${
-                    settings.preset === preset
-                      ? 'bg-teal-500/20 border-teal-500 text-teal-300'
-                      : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-600'
-                  }`}
-                >
-                  {preset.charAt(0).toUpperCase() + preset.slice(1)}
-                </button>
-              ))}
+              {(['none', 'cinematic', 'noir', 'vintage', 'bleach', 'warm'] as const).map(
+                (preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => applyPreset(preset)}
+                    className={`px-3 py-2 text-xs rounded-lg border transition-colors ${
+                      settings.preset === preset
+                        ? 'bg-teal-500/20 border-teal-500 text-teal-300'
+                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                    }`}
+                  >
+                    {preset.charAt(0).toUpperCase() + preset.slice(1)}
+                  </button>
+                )
+              )}
             </div>
           </div>
 
@@ -551,7 +609,9 @@ const PostProductionTab: React.FC = () => {
                   max={max}
                   step={step}
                   value={settings[key as keyof ColorGradeSettings] as number}
-                  onChange={e => handleSliderChange(key as keyof ColorGradeSettings, parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    handleSliderChange(key as keyof ColorGradeSettings, parseFloat(e.target.value))
+                  }
                   className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer slider-thumb"
                   disabled={!sourceVideoUrl}
                 />
@@ -580,7 +640,7 @@ const PostProductionTab: React.FC = () => {
         }
       `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default PostProductionTab;
+export default PostProductionTab

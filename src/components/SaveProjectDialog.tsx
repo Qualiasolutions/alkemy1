@@ -1,36 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { AlertCircle, Calendar, Check, Copy, FileText, Save, SaveAll, Tag } from 'lucide-react'
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { getProjectService } from '@/services/projectService'
+import type { Project } from '@/types'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Badge } from './ui/badge';
-import {
-  Save,
-  SaveAll,
-  Copy,
-  FileText,
-  Tag,
-  Calendar,
-  AlertCircle,
-  Check
-} from 'lucide-react';
-import { Project } from '@/types';
-import { getProjectService } from '@/services/projectService';
+  DialogTitle,
+} from './ui/dialog'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Textarea } from './ui/textarea'
 
 interface SaveProjectDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  project: Project | null;
-  mode: 'save' | 'save-as';
-  onSave: (project: Project) => void;
+  isOpen: boolean
+  onClose: () => void
+  project: Project | null
+  mode: 'save' | 'save-as'
+  onSave: (project: Project) => void
 }
 
 export default function SaveProjectDialog({
@@ -38,56 +30,56 @@ export default function SaveProjectDialog({
   onClose,
   project,
   mode,
-  onSave
+  onSave,
 }: SaveProjectDialogProps) {
-  const [projectName, setProjectName] = useState('');
-  const [description, setDescription] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [projectName, setProjectName] = useState('')
+  const [description, setDescription] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
-  const projectService = getProjectService();
+  const projectService = getProjectService()
 
   useEffect(() => {
     if (project && isOpen) {
-      setProjectName(mode === 'save-as' ? `${project.title} (Copy)` : project.title);
-      setDescription(project.description || '');
-      setTags(project.tags || []);
-      setError(null);
-      setSaveSuccess(false);
+      setProjectName(mode === 'save-as' ? `${project.title} (Copy)` : project.title)
+      setDescription(project.description || '')
+      setTags(project.tags || [])
+      setError(null)
+      setSaveSuccess(false)
     }
-  }, [project, isOpen, mode]);
+  }, [project, isOpen, mode])
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput('');
+      setTags([...tags, tagInput.trim()])
+      setTagInput('')
     }
-  };
+  }
 
   const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter(t => t !== tag));
-  };
+    setTags(tags.filter((t) => t !== tag))
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag();
+      e.preventDefault()
+      handleAddTag()
     }
-  };
+  }
 
   const handleSave = async () => {
-    if (!project) return;
+    if (!project) return
 
     if (!projectName.trim()) {
-      setError('Project name is required');
-      return;
+      setError('Project name is required')
+      return
     }
 
-    setIsSaving(true);
-    setError(null);
+    setIsSaving(true)
+    setError(null)
 
     try {
       if (mode === 'save') {
@@ -95,69 +87,65 @@ export default function SaveProjectDialog({
         const { error } = await projectService.updateProject(project.id, {
           title: projectName,
           description,
-          tags
-        });
+          tags,
+        })
 
-        if (error) throw error;
+        if (error) throw error
 
         // Update the project object and notify parent
         const updatedProject = {
           ...project,
           title: projectName,
           description,
-          tags
-        };
+          tags,
+        }
 
         await projectService.logActivity(project.id, 'manual_saved', {
           title: projectName,
           description,
-          tags
-        });
+          tags,
+        })
 
-        onSave(updatedProject);
-        setSaveSuccess(true);
+        onSave(updatedProject)
+        setSaveSuccess(true)
 
         // Close dialog after a brief success message
         setTimeout(() => {
-          onClose();
-        }, 1500);
-
+          onClose()
+        }, 1500)
       } else {
         // Save As - create a copy with new name
-        const { project: newProject, error } = await projectService.saveAs(
-          project.id,
-          projectName
-        );
+        const { project: newProject, error } = await projectService.saveAs(project.id, projectName)
 
-        if (error) throw error;
-        if (!newProject) throw new Error('Failed to create project copy');
+        if (error) throw error
+        if (!newProject) throw new Error('Failed to create project copy')
 
         // Update metadata for the new copy
         await projectService.updateProjectMetadata(newProject.id, {
           description,
-          tags
-        });
+          tags,
+        })
 
         await projectService.logActivity(newProject.id, 'duplicated', {
           originalId: project.id,
-          originalTitle: project.title
-        });
+          originalTitle: project.title,
+        })
 
-        onSave(newProject);
-        setSaveSuccess(true);
+        onSave(newProject)
+        setSaveSuccess(true)
 
         // Close dialog after a brief success message
         setTimeout(() => {
-          onClose();
-        }, 1500);
+          onClose()
+        }, 1500)
       }
     } catch (err) {
-      console.error('Error saving project:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save project');
+      console.error('Error saving project:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save project')
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -291,11 +279,7 @@ export default function SaveProjectDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button
@@ -305,24 +289,20 @@ export default function SaveProjectDialog({
           >
             {isSaving ? (
               <>Saving...</>
+            ) : mode === 'save' ? (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </>
             ) : (
               <>
-                {mode === 'save' ? (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Save As
-                  </>
-                )}
+                <Copy className="h-4 w-4 mr-2" />
+                Save As
               </>
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

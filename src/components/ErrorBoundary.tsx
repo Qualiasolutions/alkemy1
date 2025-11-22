@@ -3,98 +3,95 @@
  * Catches React component errors and provides fallback UI
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import type React from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
 
 interface Props {
-    children: ReactNode;
-    fallback?: ReactNode;
-    onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
 }
 
 interface State {
-    hasError: boolean;
-    error?: Error;
-    errorInfo?: ErrorInfo;
+  hasError: boolean
+  error?: Error
+  errorInfo?: ErrorInfo
 }
 
 class ErrorBoundary extends Component<Props, State> {
-    constructor(props: Props) {
-        super(props);
-        this.state = { hasError: false };
+  constructor(props: Props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[ErrorBoundary] Caught error:', error, errorInfo)
+
+    this.setState({
+      error,
+      errorInfo,
+    })
+
+    // Call custom error handler if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo)
     }
 
-    static getDerivedStateFromError(error: Error): State {
-        return { hasError: true, error };
+    // Log error to monitoring service (in production)
+    if (process.env.NODE_ENV === 'production') {
+      // TODO: Integrate with error monitoring service like Sentry
+      console.error('Production error:', {
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+      })
     }
+  }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error('[ErrorBoundary] Caught error:', error, errorInfo);
+  handleRetry = () => {
+    this.setState({ hasError: false, error: undefined, errorInfo: undefined })
+  }
 
-        this.setState({
-            error,
-            errorInfo
-        });
+  render() {
+    if (this.state.hasError) {
+      // Custom fallback UI
+      if (this.props.fallback) {
+        return this.props.fallback
+      }
 
-        // Call custom error handler if provided
-        if (this.props.onError) {
-            this.props.onError(error, errorInfo);
-        }
+      return (
+        <div className="error-boundary">
+          <div className="error-content">
+            <h2>Something went wrong</h2>
+            <p>
+              We apologize for the inconvenience. The application encountered an unexpected error.
+            </p>
 
-        // Log error to monitoring service (in production)
-        if (process.env.NODE_ENV === 'production') {
-            // TODO: Integrate with error monitoring service like Sentry
-            console.error('Production error:', {
-                message: error.message,
-                stack: error.stack,
-                componentStack: errorInfo.componentStack
-            });
-        }
-    }
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <details className="error-details">
+                <summary>Error Details (Development Only)</summary>
+                <pre className="error-stack">
+                  {this.state.error.toString()}
+                  {this.state.errorInfo?.componentStack}
+                </pre>
+              </details>
+            )}
 
-    handleRetry = () => {
-        this.setState({ hasError: false, error: undefined, errorInfo: undefined });
-    };
+            <div className="error-actions">
+              <button onClick={this.handleRetry} className="retry-button">
+                Try Again
+              </button>
+              <button onClick={() => window.location.reload()} className="reload-button">
+                Reload Page
+              </button>
+            </div>
+          </div>
 
-    render() {
-        if (this.state.hasError) {
-            // Custom fallback UI
-            if (this.props.fallback) {
-                return this.props.fallback;
-            }
-
-            return (
-                <div className="error-boundary">
-                    <div className="error-content">
-                        <h2>Something went wrong</h2>
-                        <p>We apologize for the inconvenience. The application encountered an unexpected error.</p>
-
-                        {process.env.NODE_ENV === 'development' && this.state.error && (
-                            <details className="error-details">
-                                <summary>Error Details (Development Only)</summary>
-                                <pre className="error-stack">
-                                    {this.state.error.toString()}
-                                    {this.state.errorInfo && this.state.errorInfo.componentStack}
-                                </pre>
-                            </details>
-                        )}
-
-                        <div className="error-actions">
-                            <button
-                                onClick={this.handleRetry}
-                                className="retry-button"
-                            >
-                                Try Again
-                            </button>
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="reload-button"
-                            >
-                                Reload Page
-                            </button>
-                        </div>
-                    </div>
-
-                    <style jsx>{`
+          <style jsx>{`
                         .error-boundary {
                             display: flex;
                             justify-content: center;
@@ -180,19 +177,19 @@ class ErrorBoundary extends Component<Props, State> {
                             background: var(--background-hover);
                         }
                     `}</style>
-                </div>
-            );
-        }
-
-        return this.props.children;
+        </div>
+      )
     }
+
+    return this.props.children
+  }
 }
 
 // Functional wrapper for easier usage
 export const ErrorBoundaryWrapper: React.FC<{
-    children: ReactNode;
-    fallback?: ReactNode;
-    onError?: (error: Error, errorInfo: ErrorInfo) => void;
-}> = (props) => <ErrorBoundary {...props} />;
+  children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
+}> = (props) => <ErrorBoundary {...props} />
 
-export default ErrorBoundary;
+export default ErrorBoundary

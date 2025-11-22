@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Production Workflow</title>
+    <style>
+        /* GLOBAL RESET & STYLES */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            border-radius: 0; /* Strict 0 radius */
+        }
+
+        body {
+            background-color: #000000;
+            color: #FFFF00;
+            font-family: 'Courier New', Courier, monospace; /* Monospaced for technical feel */
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        /* LAYOUT CONTAINER */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 2px solid #FFFF00;
+            padding: 2rem;
+        }
+
+        /* TYPOGRAPHY */
+        h1 {
+            text-transform: uppercase;
+            border-bottom: 4px solid #FFFF00;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        h2 {
+            background-color: #FFFF00;
+            color: #000000;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+            font-size: 1.2rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        ul {
+            margin-left: 2rem;
+            margin-bottom: 1.5rem;
+            list-style-type: square;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* SECTIONS */
+        .phase {
+            border: 1px solid #FFFF00;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .phase:last-child {
+            margin-bottom: 0;
+        }
+
+        .important-note {
+            border: 2px dashed #FFFF00;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* UTILITY */
+        .highlight {
+            color: #FFFFFF; /* White accent for emphasis against yellow */
+            font-weight: bold;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #333;
+            margin: 2rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Production Workflow</h1>
+
+        <!-- PHASE 1 -->
+        <div class="phase">
+            <h2>01. Initialization</h2>
+            
+            <h3>A. Script Creation</h3>
+            <p>The workflow begins with the script, established via one of three methods:</p>
+            <ul>
+                <li>Import an existing file.</li>
+                <li>AI-generate a script.</li>
+                <li>Manually write the script within the app.</li>
+            </ul>
+
+            <h3>B. Moodboard Generation</h3>
+            <p>Curate a visual style by importing images or using the embedded web search.</p>
+            <ul>
+                <li><strong>Outcome:</strong> After selecting/importing 10 images or videos, the system auto-generates the project aesthetic.</li>
+            </ul>
+        </div>
+
+        <!-- PHASE 2 -->
+        <div class="phase">
+            <h2>02. Asset Proposal</h2>
+            <p>Based on the Script and Moodboard, the system automatically generates:</p>
+            
+            <h3>Auto-Generated Assets</h3>
+            <ul>
+                <li><strong>Actors:</strong> 10 different proposed personas (including casting videos) derived from the script characters.</li>
+                <li><strong>Locations:</strong> 10 different environment options for each scene to serve as the base for the 3D world.</li>
+            </ul>
+
+            <h3>Customization</h3>
+            <p>The user can select a proposed asset, define a new persona, or manually edit the proposed items.</p>
+        </div>
+
+        <!-- PHASE 3 -->
+        <div class="phase">
+            <h2>03. LoRA File Creation</h2>
+            <p>Finalized choices are trained into LoRA files to ensure consistency.</p>
+
+            <h3>Character LoRA</h3>
+            <ul>
+                <li>User triggers auto-generation.</li>
+                <li>System captures the persona in various angles, lighting, and aspects.</li>
+                <li>Resulting file is automatically imported to Composite/Presentation.</li>
+            </ul>
+
+            <h3>Location LoRA (3D World)</h3>
+            <ul>
+                <li>User selects a generated location to enter the 3D world.</li>
+                <li><strong>Capture Process:</strong>
+                    <ul>
+                        <li><em>Auto:</em> System generates dataset images.</li>
+                        <li><em>Manual:</em> User navigates using Unreal Engine tools (angles/lenses) to take snapshots.</li>
+                    </ul>
+                </li>
+                <li>User reviews and finalizes the dataset.</li>
+                <li>Resulting file is automatically imported to Composite/Presentation.</li>
+            </ul>
+        </div>
+
+        <!-- PHASE 4 -->
+        <div class="phase">
+            <h2>04. Composition</h2>
+            <p>The Composite tab serves as the staging ground.</p>
+            <ul>
+                <li><strong>Auto-Setup:</strong> System reads the script and places suitable LoRA Personas and Locations together.</li>
+                <li><strong>Prompting:</strong> User prompts the model to produce keyframes.</li>
+                <li><strong>Keyframe Requirements:</strong>
+                    <ul>
+                        <li>First Frame (Required).</li>
+                        <li>End Frame (Optional).</li>
+                    </ul>
+                </li>
+                <li><strong>Action:</strong> Upscale the chosen frame to proceed to Animation.</li>
+            </ul>
+        </div>
+
+        <!-- PHASE 5 -->
+        <div class="phase">
+            <h2>05. Animation</h2>
+            <ul>
+                <li><strong>Input:</strong> Upscaled shot from the Composite step.</li>
+                <li><strong>Process:</strong> User selects a model and writes a prompt to animate the static shot.</li>
+                <li><strong>Completion:</strong> Once satisfied, the user upscales the generated video to prepare for the timeline.</li>
+            </ul>
+        </div>
+
+        <!-- PHASE 6 -->
+        <div class="phase">
+            <h2>06. Timeline & Assembly</h2>
+            
+            <h3>Import Logic</h3>
+            <p>User can send a single specific video or all generated variations to the timeline.</p>
+
+            <h3>Timeline System</h3>
+            <p>The timeline automatically organizes clips in sequential order based on data from the Composite tab and Script.</p>
+
+            <h3>Editing Feature</h3>
+            <p><strong>Regenerate Shot:</strong> A specific clip can be regenerated, automatically replacing the old shot on the timeline.</p>
+        </div>
+
+        <div class="important-note">
+            END OF WORKFLOW DOCUMENTATION
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+generated: "2025-11-22T14:05:00+02:00"
+project: Alkemy
+project_key: alkemy
+tracking_system: file-system
+story_location: "/home/qualiasolutions/Desktop/Projects/platforms/alkemy/docs/sprint-artifacts"
+
+development_status:
+  epic-1: contexted
+  1-1-cyberpunk-shell-navigation: done
+  1-2-project-management-crud: done
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-script-editor: done
+  2-2-ai-script-breakdown: done
+  epic-2-retrospective: optional
+
+  epic-3: in-progress
+  3-1-async-job-queue-implementation: backlog
+  1-4-assets-phase: done
+  3-2-character-creator-flux-pulid: done
+  3-3-location-scout-text-to-image: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-r3f-scene-setup: backlog
+  4-2-asset-placement: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-image-to-image-composition: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-video-generation-i2v: backlog
+  6-2-timeline-assembly: backlog
+  epic-6-retrospective: optional

@@ -1,0 +1,519 @@
+api/replicate-proxy.ts:82:14 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━━━━
+
+  i The computed expression can be simplified without the use of a string literal.
+  
+    81 │     if (payload.webhook) {
+  > 82 │         body['webhook'] = payload.webhook;
+       │              ^^^^^^^^^
+    83 │         body['webhook_events_filter'] = ['completed'];
+    84 │     }
+  
+  i Unsafe fix: Use a literal key instead.
+  
+     80  80 │   
+     81  81 │       if (payload.webhook) {
+     82     │ - ········body['webhook']·=·payload.webhook;
+         82 │ + ········body.webhook·=·payload.webhook;
+     83  83 │           body['webhook_events_filter'] = ['completed'];
+     84  84 │       }
+  
+
+api/replicate-proxy.ts:83:14 lint/complexity/useLiteralKeys  FIXABLE  ━━━━━━━━━━━━━
+
+  i The computed expression can be simplified without the use of a string literal.
+  
+    81 │     if (payload.webhook) {
+    82 │         body['webhook'] = payload.webhook;
+  > 83 │         body['webhook_events_filter'] = ['completed'];
+       │              ^^^^^^^^^^^^^^^^^^^^^^^
+    84 │     }
+    85 │ 
+  
+  i Unsafe fix: Use a literal key instead.
+  
+     81  81 │       if (payload.webhook) {
+     82  82 │           body['webhook'] = payload.webhook;
+     83     │ - ········body['webhook_events_filter']·=·['completed'];
+         83 │ + ········body.webhook_events_filter·=·['completed'];
+     84  84 │       }
+     85  85 │   
+  
+
+vitest.config.ts:3:18 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+    1 │ import { defineConfig } from 'vitest/config';
+    2 │ import react from '@vitejs/plugin-react';
+  > 3 │ import path from 'path';
+      │                  ^^^^^^
+    4 │ 
+    5 │ export default defineConfig({
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+     1  1 │   import { defineConfig } from 'vitest/config';
+     2  2 │   import react from '@vitejs/plugin-react';
+     3    │ - import·path·from·'path';
+        3 │ + import·path·from·'node:path';
+     4  4 │   
+     5  5 │   export default defineConfig({
+  
+
+vitest.setup.ts:1:10 lint/correctness/noUnusedImports  FIXABLE  ━━━━━━━━━━━━━━━━━━━
+
+  ! Several of these imports are unused.
+  
+  > 1 │ import { expect, afterEach, vi } from 'vitest';
+      │          ^^^^^^
+    2 │ import { cleanup } from '@testing-library/react';
+    3 │ import '@testing-library/jest-dom/vitest';
+  
+  i Unused imports might be the result of an incomplete refactoring.
+  
+  i Unsafe fix: Remove the unused imports.
+  
+    1 │ import·{·expect,·afterEach,·vi·}·from·'vitest';
+      │          --------                              
+
+vitest.setup.ts:26:16 lint/correctness/noUnusedFunctionParameters  FIXABLE  ━━━━━━━━━━
+
+  ! This parameter is unused.
+  
+    25 │   drawImage() { /* intentional */ }
+  > 26 │   getImageData(sx: number, sy: number, sw: number, sh: number) {
+       │                ^^
+    27 │     // Return mock ImageData with mock pixel data
+    28 │     const data = new Uint8ClampedArray(sw * sh * 4);
+  
+  i Unused parameters might be the result of an incomplete refactoring.
+  
+  i Unsafe fix: If this is intentional, prepend sx with an underscore.
+  
+    24 24 │   
+    25 25 │     drawImage() { /* intentional */ }
+    26    │ - ··getImageData(sx:·number,·sy:·number,·sw:·number,·sh:·number)·{
+       26 │ + ··getImageData(_sx:·number,·sy:·number,·sw:·number,·sh:·number)·{
+    27 27 │       // Return mock ImageData with mock pixel data
+    28 28 │       const data = new Uint8ClampedArray(sw * sh * 4);
+  
+
+vitest.setup.ts:26:28 lint/correctness/noUnusedFunctionParameters  FIXABLE  ━━━━━━━━━━
+
+  ! This parameter is unused.
+  
+    25 │   drawImage() { /* intentional */ }
+  > 26 │   getImageData(sx: number, sy: number, sw: number, sh: number) {
+       │                            ^^
+    27 │     // Return mock ImageData with mock pixel data
+    28 │     const data = new Uint8ClampedArray(sw * sh * 4);
+  
+  i Unused parameters might be the result of an incomplete refactoring.
+  
+  i Unsafe fix: If this is intentional, prepend sy with an underscore.
+  
+    24 24 │   
+    25 25 │     drawImage() { /* intentional */ }
+    26    │ - ··getImageData(sx:·number,·sy:·number,·sw:·number,·sh:·number)·{
+       26 │ + ··getImageData(sx:·number,·_sy:·number,·sw:·number,·sh:·number)·{
+    27 27 │       // Return mock ImageData with mock pixel data
+    28 28 │       const data = new Uint8ClampedArray(sw * sh * 4);
+  
+
+overviews/3d-worlds.html:26:138 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `;`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                          ^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove ;
+  
+
+overviews/3d-worlds.html:26:140 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `font-weight`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                            ^^^^^^^^^^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove font-weight
+  
+
+overviews/3d-worlds.html:26:153 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected value or character.
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                         ^^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Expected one of:
+  
+  - hover
+  - focus
+  - active
+  - first-child
+  - last-child
+  - nth-child
+  - nth-last-child
+  - first-of-type
+  - last-of-type
+  - nth-of-type
+  - nth-last-of-type
+  - only-child
+  - only-of-type
+  - checked
+  - disabled
+  - enabled
+  - required
+  - optional
+  - valid
+  - invalid
+  - in-range
+  - out-of-range
+  - read-only
+  - read-write
+  - placeholder-shown
+  - default
+  - checked
+  - indeterminate
+  - blank
+  - empty
+  - root
+  - target
+  - lang
+  - not
+  - is
+  - where
+  - fullscreen
+  - link
+  - visited
+  - any-link
+  - local-link
+  - scope
+  - state
+  - current
+  - past
+  - future
+  
+
+overviews/3d-worlds.html:26:158 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `font-size`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                              ^^^^^^^^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove font-size
+  
+
+overviews/3d-worlds.html:26:169 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected value or character.
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                         ^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Expected one of:
+  
+  - hover
+  - focus
+  - active
+  - first-child
+  - last-child
+  - nth-child
+  - nth-last-child
+  - first-of-type
+  - last-of-type
+  - nth-of-type
+  - nth-last-of-type
+  - only-child
+  - only-of-type
+  - checked
+  - disabled
+  - enabled
+  - required
+  - optional
+  - valid
+  - invalid
+  - in-range
+  - out-of-range
+  - read-only
+  - read-write
+  - placeholder-shown
+  - default
+  - checked
+  - indeterminate
+  - blank
+  - empty
+  - root
+  - target
+  - lang
+  - not
+  - is
+  - where
+  - fullscreen
+  - link
+  - visited
+  - any-link
+  - local-link
+  - scope
+  - state
+  - current
+  - past
+  - future
+  
+
+overviews/3d-worlds.html:26:171 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `px`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                           ^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove px
+  
+
+overviews/3d-worlds.html:26:173 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `;`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                             ^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove ;
+  
+
+overviews/3d-worlds.html:26:175 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `margin-right`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                               ^^^^^^^^^^^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove margin-right
+  
+
+overviews/3d-worlds.html:26:189 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected value or character.
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                                             ^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Expected one of:
+  
+  - hover
+  - focus
+  - active
+  - first-child
+  - last-child
+  - nth-child
+  - nth-last-child
+  - first-of-type
+  - last-of-type
+  - nth-of-type
+  - nth-last-of-type
+  - only-child
+  - only-of-type
+  - checked
+  - disabled
+  - enabled
+  - required
+  - optional
+  - valid
+  - invalid
+  - in-range
+  - out-of-range
+  - read-only
+  - read-write
+  - placeholder-shown
+  - default
+  - checked
+  - indeterminate
+  - blank
+  - empty
+  - root
+  - target
+  - lang
+  - not
+  - is
+  - where
+  - fullscreen
+  - link
+  - visited
+  - any-link
+  - local-link
+  - scope
+  - state
+  - current
+  - past
+  - future
+  
+
+overviews/3d-worlds.html:26:191 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `px`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                                               ^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove px
+  
+
+overviews/3d-worlds.html:26:193 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `;`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                                                 ^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove ;
+  
+
+overviews/3d-worlds.html:26:195 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `flex-shrink`
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                                                   ^^^^^^^^^^^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Remove flex-shrink
+  
+
+overviews/3d-worlds.html:26:208 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unexpected value or character.
+  
+    24 │         .workflow-step { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+  > 26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+       │                                                                                                                                                                                                                ^
+    27 │         .step-content { flex: 1; }
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  
+  i Expected one of:
+  
+  - hover
+  - focus
+  - active
+  - first-child
+  - last-child
+  - nth-child
+  - nth-last-child
+  - first-of-type
+  - last-of-type
+  - nth-of-type
+  - nth-last-of-type
+  - only-child
+  - only-of-type
+  - checked
+  - disabled
+  - enabled
+  - required
+  - optional
+  - valid
+  - invalid
+  - in-range
+  - out-of-range
+  - read-only
+  - read-write
+  - placeholder-shown
+  - default
+  - checked
+  - indeterminate
+  - blank
+  - empty
+  - root
+  - target
+  - lang
+  - not
+  - is
+  - where
+  - fullscreen
+  - link
+  - visited
+  - any-link
+  - local-link
+  - scope
+  - state
+  - current
+  - past
+  - future
+  
+
+overviews/3d-worlds.html:27:9 parse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × expected `,` but instead found `.`
+  
+    25 │         .workflow-step:last-child { margin-bottom: 0; }
+    26 │         .step-number { background: #10A37F; color: #0B0B0B; width: 24px; height: 24px; display: flex; align-items: center; justify-center; font-weight: 700; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
+  > 27 │         .step-content { flex: 1; }
+       │         ^
+    28 │         .step-title { color: #FFFFFF; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    29 │         .step-desc { color: #A0A0A0; font-size: 13px; }
+  
+  i Remove .
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 1466.
+Checked 265 files in 379ms. No fixes applied.
+Found 696 errors.
+Found 763 warnings.
+Found 27 infos.
+lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+

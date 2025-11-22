@@ -1,101 +1,109 @@
-import { defineConfig, loadEnv, type Plugin } from 'vite';
-import { fileURLToPath } from 'url';
-import path, { dirname } from 'path';
-import react from '@vitejs/plugin-react';
-import wasm from 'vite-plugin-wasm';
-import topLevelAwait from 'vite-plugin-top-level-await';
+import path from 'node:path'
+import react from '@vitejs/plugin-react'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
+import topLevelAwait from 'vite-plugin-top-level-await'
+import wasm from 'vite-plugin-wasm'
 
 const createBraveProxyDevPlugin = (apiKey: string | undefined): Plugin => ({
   name: 'alkemy-dev-brave-proxy',
   apply: 'serve',
   configureServer(server) {
-    server.middlewares.use('/api/brave-proxy', async (req, res, next) => {
+    server.middlewares.use('/api/brave-proxy', async (req, res, _next) => {
       if (req.method === 'OPTIONS') {
-        res.statusCode = 204;
-        res.setHeader('Access-Control-Allow-Origin', req.headers.origin ?? '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-        res.end();
-        return;
+        res.statusCode = 204
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin ?? '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        res.end()
+        return
       }
 
       if (req.method !== 'GET') {
-        res.statusCode = 405;
-        res.end(JSON.stringify({ error: 'Method not allowed' }));
-        return;
+        res.statusCode = 405
+        res.end(JSON.stringify({ error: 'Method not allowed' }))
+        return
       }
 
       if (!apiKey) {
-        res.statusCode = 500;
-        res.end(JSON.stringify({ error: 'BRAVE_SEARCH_API_KEY is not configured for dev proxy' }));
-        return;
+        res.statusCode = 500
+        res.end(JSON.stringify({ error: 'BRAVE_SEARCH_API_KEY is not configured for dev proxy' }))
+        return
       }
 
       try {
-        const requestUrl = new URL(req.url ?? '', 'http://localhost');
-        const query = requestUrl.searchParams.get('query');
-        const count = requestUrl.searchParams.get('count') ?? '4';
-        const safesearch = requestUrl.searchParams.get('safesearch') ?? 'moderate';
+        const requestUrl = new URL(req.url ?? '', 'http://localhost')
+        const query = requestUrl.searchParams.get('query')
+        const count = requestUrl.searchParams.get('count') ?? '4'
+        const safesearch = requestUrl.searchParams.get('safesearch') ?? 'moderate'
 
         if (!query) {
-          res.statusCode = 400;
-          res.end(JSON.stringify({ error: 'Missing required parameter: query' }));
-          return;
+          res.statusCode = 400
+          res.end(JSON.stringify({ error: 'Missing required parameter: query' }))
+          return
         }
 
-        const braveUrl = `https://api.search.brave.com/res/v1/images/search?q=${encodeURIComponent(query)}&count=${count}&safesearch=${safesearch}`;
+        const braveUrl = `https://api.search.brave.com/res/v1/images/search?q=${encodeURIComponent(query)}&count=${count}&safesearch=${safesearch}`
         const braveResponse = await fetch(braveUrl, {
           method: 'GET',
           headers: {
-            'Accept': 'application/json',
+            Accept: 'application/json',
             'Accept-Encoding': 'gzip',
-            'X-Subscription-Token': apiKey
-          }
-        });
+            'X-Subscription-Token': apiKey,
+          },
+        })
 
-        const body = await braveResponse.text();
-        res.statusCode = braveResponse.status;
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Access-Control-Allow-Origin', req.headers.origin ?? '*');
-        res.end(body);
+        const body = await braveResponse.text()
+        res.statusCode = braveResponse.status
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin ?? '*')
+        res.end(body)
       } catch (error) {
-        console.error('[dev-brave-proxy] Failed:', error);
-        res.statusCode = 500;
-        res.end(JSON.stringify({ error: 'Failed to reach Brave API' }));
+        console.error('[dev-brave-proxy] Failed:', error)
+        res.statusCode = 500
+        res.end(JSON.stringify({ error: 'Failed to reach Brave API' }))
       }
-    });
-  }
-});
+    })
+  },
+})
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+  const env = loadEnv(mode, '.', '')
 
   // Vercel automatically exposes environment variables at build time
   // Prioritize Vercel's env vars, fall back to local .env
   // Sanitize all API keys to remove newlines and whitespace
-  const geminiKey = (process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '').trim().replace(/\n/g, '');
+  const geminiKey = (process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '')
+    .trim()
+    .replace(/\n/g, '')
   // Black Forest Labs FLUX API (Official)
-  const bflApiKey = (process.env.BFL_API_KEY || env.BFL_API_KEY || '').trim().replace(/\n/g, '');
-  const togetherKey = (process.env.TOGETHER_AI_API_KEY || env.TOGETHER_AI_API_KEY || '').trim().replace(/\n/g, '');
-  const wanKey = (process.env.WAN_API_KEY || env.WAN_API_KEY || '').trim().replace(/\n/g, '');
-  const falKey = (process.env.FAL_API_KEY || env.FAL_API_KEY || '').trim().replace(/\n/g, '');
-  const lumaKey = (process.env.LUMA_API_KEY || env.LUMA_API_KEY || '').trim().replace(/\n/g, '');
-  const braveSearchKey = process.env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY || '';
-  const braveProxyUrl = process.env.BRAVE_PROXY_URL || env.BRAVE_PROXY_URL || '/api/brave-proxy';
+  const bflApiKey = (process.env.BFL_API_KEY || env.BFL_API_KEY || '').trim().replace(/\n/g, '')
+  const togetherKey = (process.env.TOGETHER_AI_API_KEY || env.TOGETHER_AI_API_KEY || '')
+    .trim()
+    .replace(/\n/g, '')
+  const wanKey = (process.env.WAN_API_KEY || env.WAN_API_KEY || '').trim().replace(/\n/g, '')
+  const falKey = (process.env.FAL_API_KEY || env.FAL_API_KEY || '').trim().replace(/\n/g, '')
+  const lumaKey = (process.env.LUMA_API_KEY || env.LUMA_API_KEY || '').trim().replace(/\n/g, '')
+  const braveSearchKey = process.env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY || ''
+  const braveProxyUrl = process.env.BRAVE_PROXY_URL || env.BRAVE_PROXY_URL || '/api/brave-proxy'
 
   // HunyuanWorld configuration
-  const hunyuanApiUrl = process.env.VITE_HUNYUAN_API_URL || env.VITE_HUNYUAN_API_URL || 'https://api.hunyuan-3d.com';
-  const hunyuanApiKey = process.env.HUNYUAN_API_KEY || env.HUNYUAN_API_KEY || '';
+  const hunyuanApiUrl =
+    process.env.VITE_HUNYUAN_API_URL || env.VITE_HUNYUAN_API_URL || 'https://api.hunyuan-3d.com'
+  const hunyuanApiKey = process.env.HUNYUAN_API_KEY || env.HUNYUAN_API_KEY || ''
 
   // Video and audio generation APIs
-  const kieApiKey = process.env.VITE_KIE_API_KEY || env.VITE_KIE_API_KEY || '';
-  const segmindApiKey = process.env.VITE_SEGMIND_API_KEY || env.VITE_SEGMIND_API_KEY || '';
-  const vertexAiApiKey = process.env.VITE_VERTEX_AI_API_KEY || env.VITE_VERTEX_AI_API_KEY || '';
+  const kieApiKey = process.env.VITE_KIE_API_KEY || env.VITE_KIE_API_KEY || ''
+  const segmindApiKey = process.env.VITE_SEGMIND_API_KEY || env.VITE_SEGMIND_API_KEY || ''
+  const vertexAiApiKey = process.env.VITE_VERTEX_AI_API_KEY || env.VITE_VERTEX_AI_API_KEY || ''
 
   // Supabase configuration
   // Trim all keys to remove any accidental whitespace or newlines that break WebSocket connections
-  const supabaseUrl = (process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '').trim();
-  const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '').trim();
+  const supabaseUrl = (process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '').trim()
+  const supabaseAnonKey = (
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    env.VITE_SUPABASE_ANON_KEY ||
+    ''
+  ).trim()
 
   // Log configuration status (without exposing keys)
   console.log('[Vite Config] API Keys Status:', {
@@ -108,23 +116,27 @@ export default defineConfig(({ mode }) => {
     HUNYUAN: !!hunyuanApiKey,
     SUPABASE_URL: !!supabaseUrl,
     SUPABASE_ANON_KEY: !!supabaseAnonKey,
-    mode: mode
-  });
+    mode: mode,
+  })
 
   // Warn if critical keys are missing
   if (!falKey && mode === 'production') {
-    console.warn('[Vite Config] WARNING: FAL_API_KEY not set - Character Identity training will fail');
+    console.warn(
+      '[Vite Config] WARNING: FAL_API_KEY not set - Character Identity training will fail'
+    )
   }
   if (!geminiKey && mode === 'production') {
-    console.warn('[Vite Config] WARNING: GEMINI_API_KEY not set - Script analysis will fail');
+    console.warn('[Vite Config] WARNING: GEMINI_API_KEY not set - Script analysis will fail')
   }
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[Vite Config] WARNING: Supabase configuration missing - Authentication and persistence will fail');
+    console.warn(
+      '[Vite Config] WARNING: Supabase configuration missing - Authentication and persistence will fail'
+    )
   }
 
   // Explicitly set demo mode to false (only enable via env var if needed)
-  const forceDemoMode = process.env.FORCE_DEMO_MODE || env.FORCE_DEMO_MODE || 'false';
-  const useFallbackMode = process.env.USE_FALLBACK_MODE || env.USE_FALLBACK_MODE || 'false';
+  const forceDemoMode = process.env.FORCE_DEMO_MODE || env.FORCE_DEMO_MODE || 'false'
+  const useFallbackMode = process.env.USE_FALLBACK_MODE || env.USE_FALLBACK_MODE || 'false'
 
   return {
     server: {
@@ -135,7 +147,7 @@ export default defineConfig(({ mode }) => {
       react(),
       wasm(),
       topLevelAwait(),
-      ...(mode === 'development' ? [createBraveProxyDevPlugin(braveSearchKey)] : [])
+      ...(mode === 'development' ? [createBraveProxyDevPlugin(braveSearchKey)] : []),
     ],
     build: {
       rollupOptions: {
@@ -144,36 +156,46 @@ export default defineConfig(({ mode }) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
               // Bundle React + UI libraries together to avoid dependency issues
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') ||
-                id.includes('framer-motion') || id.includes('@radix-ui')) {
-                return 'react-ui-vendor';
+              if (
+                id.includes('react') ||
+                id.includes('react-dom') ||
+                id.includes('react-router') ||
+                id.includes('framer-motion') ||
+                id.includes('@radix-ui')
+              ) {
+                return 'react-ui-vendor'
               }
               if (id.includes('three') || id.includes('@react-three') || id.includes('gaussian')) {
-                return 'three-vendor';
+                return 'three-vendor'
               }
               if (id.includes('supabase')) {
-                return 'supabase-vendor';
+                return 'supabase-vendor'
               }
               if (id.includes('recharts')) {
-                return 'recharts-vendor';
+                return 'recharts-vendor'
               }
               if (id.includes('d3')) {
-                return 'd3-vendor';
+                return 'd3-vendor'
               }
               if (id.includes('ffmpeg')) {
-                return 'ffmpeg-vendor';
+                return 'ffmpeg-vendor'
               }
             }
             // Service chunks - keep core services together
             if (id.includes('/services/')) {
               if (id.includes('aiService') || id.includes('directorKnowledge')) {
-                return 'ai-services';
+                return 'ai-services'
               }
               if (id.includes('supabase') || id.includes('characterIdentity')) {
-                return 'data-services';
+                return 'data-services'
               }
-              if (id.includes('wanService') || id.includes('fluxService') || id.includes('lumaService') || id.includes('hunyuanWorld')) {
-                return 'generation-services';
+              if (
+                id.includes('wanService') ||
+                id.includes('fluxService') ||
+                id.includes('lumaService') ||
+                id.includes('hunyuanWorld')
+              ) {
+                return 'generation-services'
               }
             }
           },
@@ -220,11 +242,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-      }
+      },
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
       exclude: ['@dimforge/rapier3d', '@mkkellogg/gaussian-splats-3d'],
     },
-  };
-});
+  }
+})

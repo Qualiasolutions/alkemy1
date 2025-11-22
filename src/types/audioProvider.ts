@@ -10,39 +10,39 @@
 // ========================================================================================
 
 export interface AudioProvider {
-  readonly name: string;
-  readonly type: AudioProviderType;
-  readonly capabilities: AudioCapabilities;
+  readonly name: string
+  readonly type: AudioProviderType
+  readonly capabilities: AudioCapabilities
 
   /**
    * Initialize the provider with API keys and configuration
    */
-  initialize(config: AudioProviderConfig): Promise<void>;
+  initialize(config: AudioProviderConfig): Promise<void>
 
   /**
    * Clone voice from reference audio sample
    */
-  cloneVoice(request: VoiceCloneRequest): Promise<VoiceCloneResponse>;
+  cloneVoice(request: VoiceCloneRequest): Promise<VoiceCloneResponse>
 
   /**
    * Generate speech from text with optional emotion/style
    */
-  generateSpeech(request: SpeechGenerationRequest): Promise<SpeechGenerationResponse>;
+  generateSpeech(request: SpeechGenerationRequest): Promise<SpeechGenerationResponse>
 
   /**
    * Edit existing audio (emotion, style, paralinguistics)
    */
-  editAudio(request: AudioEditRequest): Promise<AudioEditResponse>;
+  editAudio(request: AudioEditRequest): Promise<AudioEditResponse>
 
   /**
    * Get available voices/models
    */
-  getVoices(): Promise<Voice[]>;
+  getVoices(): Promise<Voice[]>
 
   /**
    * Check if provider is available and configured
    */
-  isAvailable(): Promise<boolean>;
+  isAvailable(): Promise<boolean>
 }
 
 // ========================================================================================
@@ -53,16 +53,16 @@ export enum AudioProviderType {
   OPENVOICE = 'openvoice',
   ELEVENLABS = 'elevenlabs',
   COQUI_TTS = 'coqui_tts',
-  HUGGINGFACE = 'huggingface'
+  HUGGINGFACE = 'huggingface',
 }
 
 export interface AudioProviderConfig {
-  provider: AudioProviderType;
-  apiKey?: string;
-  baseUrl?: string;
-  model?: string;
-  voiceId?: string;
-  options?: Record<string, any>;
+  provider: AudioProviderType
+  apiKey?: string
+  baseUrl?: string
+  model?: string
+  voiceId?: string
+  options?: Record<string, any>
 }
 
 // ========================================================================================
@@ -70,16 +70,16 @@ export interface AudioProviderConfig {
 // ========================================================================================
 
 export interface AudioCapabilities {
-  voiceCloning: boolean;
-  emotionEditing: boolean;
-  styleEditing: boolean;
-  paralinguistics: boolean;
-  multilingual: boolean;
-  realTimeGeneration: boolean;
-  maxAudioLength: number; // seconds
-  supportedLanguages: string[];
-  supportedEmotions: string[];
-  supportedStyles: string[];
+  voiceCloning: boolean
+  emotionEditing: boolean
+  styleEditing: boolean
+  paralinguistics: boolean
+  multilingual: boolean
+  realTimeGeneration: boolean
+  maxAudioLength: number // seconds
+  supportedLanguages: string[]
+  supportedEmotions: string[]
+  supportedStyles: string[]
 }
 
 // ========================================================================================
@@ -88,93 +88,93 @@ export interface AudioCapabilities {
 
 // Voice Cloning
 export interface VoiceCloneRequest {
-  referenceAudio: File | Blob; // Audio sample (6+ seconds for OpenVoice)
-  voiceName?: string;
-  description?: string;
-  language?: string;
+  referenceAudio: File | Blob // Audio sample (6+ seconds for OpenVoice)
+  voiceName?: string
+  description?: string
+  language?: string
 }
 
 export interface VoiceCloneResponse {
-  voiceId: string;
-  voiceName: string;
-  status: 'success' | 'error';
-  message?: string;
-  sampleAudio?: string; // Base64 audio URL
+  voiceId: string
+  voiceName: string
+  status: 'success' | 'error'
+  message?: string
+  sampleAudio?: string // Base64 audio URL
   metadata?: {
-    quality: number; // 0-100
-    confidence: number; // 0-100
-    processingTime: number; // ms
-  };
+    quality: number // 0-100
+    confidence: number // 0-100
+    processingTime: number // ms
+  }
 }
 
 // Speech Generation
 export interface SpeechGenerationRequest {
-  text: string;
-  voiceId?: string;
-  emotion?: string;
-  style?: string;
-  speed?: number; // 0.5 - 2.0
-  pitch?: number; // 0 - 2
-  language?: string;
-  model?: string;
-  outputFormat?: 'mp3' | 'wav' | 'ogg';
+  text: string
+  voiceId?: string
+  emotion?: string
+  style?: string
+  speed?: number // 0.5 - 2.0
+  pitch?: number // 0 - 2
+  language?: string
+  model?: string
+  outputFormat?: 'mp3' | 'wav' | 'ogg'
 }
 
 export interface SpeechGenerationResponse {
-  audioUrl: string;
-  audioBuffer?: ArrayBuffer;
-  status: 'success' | 'error';
-  message?: string;
+  audioUrl: string
+  audioBuffer?: ArrayBuffer
+  status: 'success' | 'error'
+  message?: string
   metadata?: {
-    duration: number; // seconds
-    sampleRate: number;
-    characters: number;
-    processingTime: number; // ms
-  };
+    duration: number // seconds
+    sampleRate: number
+    characters: number
+    processingTime: number // ms
+  }
 }
 
 // Audio Editing
 export interface AudioEditRequest {
-  inputAudio: File | Blob;
-  editType: 'emotion' | 'style' | 'paralinguistic' | 'speed' | 'denoise';
+  inputAudio: File | Blob
+  editType: 'emotion' | 'style' | 'paralinguistic' | 'speed' | 'denoise'
   editParams: {
-    emotion?: string; // happy, sad, angry, etc.
-    style?: string; // whisper, child, older, etc.
-    paralinguistic?: string[]; // [Breathing], [Laughter], etc.
-    speed?: number;
-    removeNoise?: boolean;
-    removeSilence?: boolean;
-  };
-  targetText?: string; // For text-based editing
+    emotion?: string // happy, sad, angry, etc.
+    style?: string // whisper, child, older, etc.
+    paralinguistic?: string[] // [Breathing], [Laughter], etc.
+    speed?: number
+    removeNoise?: boolean
+    removeSilence?: boolean
+  }
+  targetText?: string // For text-based editing
 }
 
 export interface AudioEditResponse {
-  audioUrl: string;
-  audioBuffer?: ArrayBuffer;
-  status: 'success' | 'error';
-  message?: string;
+  audioUrl: string
+  audioBuffer?: ArrayBuffer
+  status: 'success' | 'error'
+  message?: string
   metadata?: {
-    originalDuration: number;
-    newDuration: number;
-    processingTime: number; // ms
-  };
+    originalDuration: number
+    newDuration: number
+    processingTime: number // ms
+  }
 }
 
 // Voice Information
 export interface Voice {
-  id: string;
-  name: string;
-  language: string;
-  gender?: 'male' | 'female' | 'neutral';
-  age?: 'child' | 'young' | 'adult' | 'older';
-  description?: string;
-  previewUrl?: string;
-  isCustom?: boolean; // Cloned voice
+  id: string
+  name: string
+  language: string
+  gender?: 'male' | 'female' | 'neutral'
+  age?: 'child' | 'young' | 'adult' | 'older'
+  description?: string
+  previewUrl?: string
+  isCustom?: boolean // Cloned voice
   metadata?: {
-    quality?: number;
-    provider?: string;
-    model?: string;
-  };
+    quality?: number
+    provider?: string
+    model?: string
+  }
 }
 
 // ========================================================================================
@@ -182,44 +182,44 @@ export interface Voice {
 // ========================================================================================
 
 export interface CharacterVoice {
-  characterId: string;
-  voiceId: string;
-  provider: AudioProviderType;
-  referenceAudio?: string; // Supabase URL
-  cloneMetadata?: VoiceCloneResponse['metadata'];
+  characterId: string
+  voiceId: string
+  provider: AudioProviderType
+  referenceAudio?: string // Supabase URL
+  cloneMetadata?: VoiceCloneResponse['metadata']
   emotions: {
-    [emotion: string]: string; // emotion -> voiceId mapping
-  };
-  lastUsed?: string; // ISO timestamp
+    [emotion: string]: string // emotion -> voiceId mapping
+  }
+  lastUsed?: string // ISO timestamp
 }
 
 export interface DialogueGeneration {
-  characterId: string;
-  text: string;
-  emotion?: string;
-  style?: string;
-  sceneContext?: string;
-  outputAudio?: string; // Supabase URL
-  processingTime?: number;
+  characterId: string
+  text: string
+  emotion?: string
+  style?: string
+  sceneContext?: string
+  outputAudio?: string // Supabase URL
+  processingTime?: number
 }
 
 export interface AudioPostProduction {
-  timelineClipId: string;
-  originalAudio: string;
-  editedAudio?: string;
-  edits: AudioEdit[];
+  timelineClipId: string
+  originalAudio: string
+  editedAudio?: string
+  edits: AudioEdit[]
   metadata: {
-    duration: number;
-    quality: number;
-    lastModified: string;
-  };
+    duration: number
+    quality: number
+    lastModified: string
+  }
 }
 
 export interface AudioEdit {
-  type: 'emotion' | 'style' | 'paralinguistic' | 'speed' | 'denoise';
-  params: Record<string, any>;
-  timestamp: string;
-  provider: AudioProviderType;
+  type: 'emotion' | 'style' | 'paralinguistic' | 'speed' | 'denoise'
+  params: Record<string, any>
+  timestamp: string
+  provider: AudioProviderType
 }
 
 // ========================================================================================
@@ -237,7 +237,7 @@ export enum AudioErrorCode {
   RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
   NETWORK_ERROR = 'network_error',
   UNSUPPORTED_LANGUAGE = 'unsupported_language',
-  UNSUPPORTED_EMOTION = 'unsupported_emotion'
+  UNSUPPORTED_EMOTION = 'unsupported_emotion',
 }
 
 export class AudioError extends Error {
@@ -247,8 +247,8 @@ export class AudioError extends Error {
     public provider: AudioProviderType,
     public details?: any
   ) {
-    super(message);
-    this.name = 'AudioError';
+    super(message)
+    this.name = 'AudioError'
   }
 }
 
@@ -257,15 +257,15 @@ export class AudioError extends Error {
 // ========================================================================================
 
 export interface ProviderConfiguration {
-  active: AudioProviderType;
-  fallback?: AudioProviderType;
+  active: AudioProviderType
+  fallback?: AudioProviderType
   providers: {
     [key in AudioProviderType]: {
-      enabled: boolean;
-      config?: AudioProviderConfig;
-      priority: number; // 1 = highest
-    };
-  };
+      enabled: boolean
+      config?: AudioProviderConfig
+      priority: number // 1 = highest
+    }
+  }
 }
 
 export const DEFAULT_PROVIDER_CONFIG: ProviderConfiguration = {
@@ -273,23 +273,23 @@ export const DEFAULT_PROVIDER_CONFIG: ProviderConfiguration = {
   providers: {
     [AudioProviderType.OPENVOICE]: {
       enabled: true,
-      priority: 1
+      priority: 1,
     },
     [AudioProviderType.ELEVENLABS]: {
       enabled: false,
       priority: 2,
       config: {
         apiKey: '', // User must provide
-        baseUrl: 'https://api.elevenlabs.io'
-      }
+        baseUrl: 'https://api.elevenlabs.io',
+      },
     },
     [AudioProviderType.COQUI_TTS]: {
       enabled: false,
-      priority: 3
+      priority: 3,
     },
     [AudioProviderType.HUGGINGFACE]: {
       enabled: false,
-      priority: 4
-    }
-  }
-};
+      priority: 4,
+    },
+  },
+}

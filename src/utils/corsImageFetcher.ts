@@ -6,12 +6,12 @@
 /**
  * Test if an image URL is accessible without CORS issues
  */
-async function testCORS(url: string): Promise<boolean> {
+async function _testCORS(url: string): Promise<boolean> {
   try {
-    const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
-    return response.ok;
+    const response = await fetch(url, { method: 'HEAD', mode: 'cors' })
+    return response.ok
   } catch {
-    return false;
+    return false
   }
 }
 
@@ -23,42 +23,42 @@ async function testCORS(url: string): Promise<boolean> {
 export async function fetchImageWithCORS(imageUrl: string): Promise<string | null> {
   // First, try direct fetch
   try {
-    const response = await fetch(imageUrl);
+    const response = await fetch(imageUrl)
     if (response.ok) {
-      const blob = await response.blob();
+      const blob = await response.blob()
       return new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
     }
-  } catch (error) {
-    console.log(`Direct fetch failed for ${imageUrl}, trying alternative methods...`);
+  } catch (_error) {
+    console.log(`Direct fetch failed for ${imageUrl}, trying alternative methods...`)
   }
 
   // Try using a public CORS proxy (for production)
   const corsProxies = [
     `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`,
-  ];
+  ]
 
   for (const proxyUrl of corsProxies) {
     try {
-      const response = await fetch(proxyUrl);
+      const response = await fetch(proxyUrl)
       if (response.ok) {
-        const blob = await response.blob();
+        const blob = await response.blob()
 
         // Validate that we got an image
         if (blob.type.startsWith('image/')) {
           return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.readAsDataURL(blob)
+          })
         }
       }
-    } catch (error) {
-      console.log(`Proxy failed: ${proxyUrl}`);
+    } catch (_error) {
+      console.log(`Proxy failed: ${proxyUrl}`)
     }
   }
 
@@ -66,39 +66,39 @@ export async function fetchImageWithCORS(imageUrl: string): Promise<string | nul
   // This works for some CORS-restricted images that allow embedding
   try {
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
 
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d')
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0)
           try {
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-            resolve(dataUrl);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+            resolve(dataUrl)
           } catch (e) {
-            reject(e);
+            reject(e)
           }
         } else {
-          reject(new Error('Could not get canvas context'));
+          reject(new Error('Could not get canvas context'))
         }
-      };
+      }
 
-      img.onerror = () => reject(new Error('Image failed to load'));
-      img.src = imageUrl;
+      img.onerror = () => reject(new Error('Image failed to load'))
+      img.src = imageUrl
 
       // Timeout after 10 seconds
-      setTimeout(() => reject(new Error('Image load timeout')), 10000);
-    });
-  } catch (error) {
-    console.error(`All methods failed for ${imageUrl}`);
+      setTimeout(() => reject(new Error('Image load timeout')), 10000)
+    })
+  } catch (_error) {
+    console.error(`All methods failed for ${imageUrl}`)
   }
 
-  return null;
+  return null
 }
 
 /**
@@ -112,13 +112,13 @@ export function isLikelyCORSRestricted(url: string): boolean {
     'cdninstagram.com',
     'facebook.com',
     'fbcdn.net',
-  ];
+  ]
 
   try {
-    const urlObj = new URL(url);
-    return corsRestrictedDomains.some(domain => urlObj.hostname.includes(domain));
+    const urlObj = new URL(url)
+    return corsRestrictedDomains.some((domain) => urlObj.hostname.includes(domain))
   } catch {
-    return false;
+    return false
   }
 }
 
@@ -126,5 +126,5 @@ export function isLikelyCORSRestricted(url: string): boolean {
  * Filter out images that are likely to have CORS issues
  */
 export function filterCORSFriendlyImages(imageUrls: string[]): string[] {
-  return imageUrls.filter(url => !isLikelyCORSRestricted(url));
+  return imageUrls.filter((url) => !isLikelyCORSRestricted(url))
 }

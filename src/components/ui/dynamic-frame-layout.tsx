@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react"
-import { motion } from "framer-motion"
+import { motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 
 interface Frame {
   id: number
@@ -36,7 +36,7 @@ function FrameComponent({
   video,
   width,
   height,
-  className = "",
+  className = '',
   corner,
   edgeHorizontal,
   edgeVertical,
@@ -62,7 +62,7 @@ function FrameComponent({
       style={{
         width,
         height,
-        transition: "width 0.3s ease-in-out, height 0.3s ease-in-out",
+        transition: 'width 0.3s ease-in-out, height 0.3s ease-in-out',
       }}
     >
       <div className="relative w-full h-full overflow-hidden rounded-lg">
@@ -70,20 +70,20 @@ function FrameComponent({
           className="absolute inset-0 flex items-center justify-center"
           style={{
             zIndex: 1,
-            transition: "all 0.3s ease-in-out",
-            padding: showFrame ? `${borderThickness}px` : "0",
-            width: showFrame ? `${borderSize}%` : "100%",
-            height: showFrame ? `${borderSize}%` : "100%",
-            left: showFrame ? `${(100 - borderSize) / 2}%` : "0",
-            top: showFrame ? `${(100 - borderSize) / 2}%` : "0",
+            transition: 'all 0.3s ease-in-out',
+            padding: showFrame ? `${borderThickness}px` : '0',
+            width: showFrame ? `${borderSize}%` : '100%',
+            height: showFrame ? `${borderSize}%` : '100%',
+            left: showFrame ? `${(100 - borderSize) / 2}%` : '0',
+            top: showFrame ? `${(100 - borderSize) / 2}%` : '0',
           }}
         >
           <div
             className="w-full h-full overflow-hidden rounded-lg"
             style={{
               transform: `scale(${mediaSize})`,
-              transformOrigin: "center",
-              transition: "transform 0.3s ease-in-out",
+              transformOrigin: 'center',
+              transition: 'transform 0.3s ease-in-out',
             }}
           >
             <video
@@ -101,9 +101,7 @@ function FrameComponent({
         {title && (
           <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
             <div className="bg-gradient-to-t from-black/80 via-black/60 to-transparent px-4 py-3 backdrop-blur-sm">
-              <h3 className="text-white text-sm font-semibold tracking-wide">
-                {title}
-              </h3>
+              <h3 className="text-white text-sm font-semibold tracking-wide">{title}</h3>
             </div>
           </div>
         )}
@@ -116,49 +114,49 @@ function FrameComponent({
             />
             <div
               className="absolute top-0 right-0 w-16 h-16 bg-contain bg-no-repeat"
-              style={{ backgroundImage: `url(${corner})`, transform: "scaleX(-1)" }}
+              style={{ backgroundImage: `url(${corner})`, transform: 'scaleX(-1)' }}
             />
             <div
               className="absolute bottom-0 left-0 w-16 h-16 bg-contain bg-no-repeat"
-              style={{ backgroundImage: `url(${corner})`, transform: "scaleY(-1)" }}
+              style={{ backgroundImage: `url(${corner})`, transform: 'scaleY(-1)' }}
             />
             <div
               className="absolute bottom-0 right-0 w-16 h-16 bg-contain bg-no-repeat"
-              style={{ backgroundImage: `url(${corner})`, transform: "scale(-1, -1)" }}
+              style={{ backgroundImage: `url(${corner})`, transform: 'scale(-1, -1)' }}
             />
 
             <div
               className="absolute top-0 left-16 right-16 h-16"
               style={{
                 backgroundImage: `url(${edgeHorizontal})`,
-                backgroundSize: "auto 64px",
-                backgroundRepeat: "repeat-x",
+                backgroundSize: 'auto 64px',
+                backgroundRepeat: 'repeat-x',
               }}
             />
             <div
               className="absolute bottom-0 left-16 right-16 h-16"
               style={{
                 backgroundImage: `url(${edgeHorizontal})`,
-                backgroundSize: "auto 64px",
-                backgroundRepeat: "repeat-x",
-                transform: "rotate(180deg)",
+                backgroundSize: 'auto 64px',
+                backgroundRepeat: 'repeat-x',
+                transform: 'rotate(180deg)',
               }}
             />
             <div
               className="absolute left-0 top-16 bottom-16 w-16"
               style={{
                 backgroundImage: `url(${edgeVertical})`,
-                backgroundSize: "64px auto",
-                backgroundRepeat: "repeat-y",
+                backgroundSize: '64px auto',
+                backgroundRepeat: 'repeat-y',
               }}
             />
             <div
               className="absolute right-0 top-16 bottom-16 w-16"
               style={{
                 backgroundImage: `url(${edgeVertical})`,
-                backgroundSize: "64px auto",
-                backgroundRepeat: "repeat-y",
-                transform: "scaleX(-1)",
+                backgroundSize: '64px auto',
+                backgroundRepeat: 'repeat-y',
+                transform: 'scaleX(-1)',
               }}
             />
           </div>
@@ -181,28 +179,28 @@ export function DynamicFrameLayout({
   className,
   showFrames = false,
   hoverSize = 6,
-  gapSize = 4
+  gapSize = 4,
 }: DynamicFrameLayoutProps) {
   const [frames] = useState<Frame[]>(initialFrames)
   const [hovered, setHovered] = useState<{ row: number; col: number } | null>(null)
 
   const getRowSizes = () => {
-    if (hovered === null) return "4fr 4fr 4fr"
+    if (hovered === null) return '4fr 4fr 4fr'
     const { row } = hovered
     const nonHoveredSize = (12 - hoverSize) / 2
-    return [0, 1, 2].map((r) => (r === row ? `${hoverSize}fr` : `${nonHoveredSize}fr`)).join(" ")
+    return [0, 1, 2].map((r) => (r === row ? `${hoverSize}fr` : `${nonHoveredSize}fr`)).join(' ')
   }
 
   const getColSizes = () => {
-    if (hovered === null) return "4fr 4fr 4fr"
+    if (hovered === null) return '4fr 4fr 4fr'
     const { col } = hovered
     const nonHoveredSize = (12 - hoverSize) / 2
-    return [0, 1, 2].map((c) => (c === col ? `${hoverSize}fr` : `${nonHoveredSize}fr`)).join(" ")
+    return [0, 1, 2].map((c) => (c === col ? `${hoverSize}fr` : `${nonHoveredSize}fr`)).join(' ')
   }
 
   const getTransformOrigin = (x: number, y: number) => {
-    const vertical = y === 0 ? "top" : y === 4 ? "center" : "bottom"
-    const horizontal = x === 0 ? "left" : x === 4 ? "center" : "right"
+    const vertical = y === 0 ? 'top' : y === 4 ? 'center' : 'bottom'
+    const horizontal = x === 0 ? 'left' : x === 4 ? 'center' : 'right'
     return `${vertical} ${horizontal}`
   }
 
@@ -210,11 +208,11 @@ export function DynamicFrameLayout({
     <div
       className={`relative w-full h-full ${className}`}
       style={{
-        display: "grid",
+        display: 'grid',
         gridTemplateRows: getRowSizes(),
         gridTemplateColumns: getColSizes(),
         gap: `${gapSize}px`,
-        transition: "grid-template-rows 0.4s ease, grid-template-columns 0.4s ease",
+        transition: 'grid-template-rows 0.4s ease, grid-template-columns 0.4s ease',
       }}
     >
       {frames.map((frame) => {
@@ -228,7 +226,7 @@ export function DynamicFrameLayout({
             className="relative"
             style={{
               transformOrigin,
-              transition: "transform 0.4s ease",
+              transition: 'transform 0.4s ease',
             }}
             onMouseEnter={() => setHovered({ row, col })}
             onMouseLeave={() => setHovered(null)}

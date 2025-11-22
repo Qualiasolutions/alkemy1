@@ -1,20 +1,20 @@
-import React from 'react';
-import Button from './Button';
-import { PlusIcon, SearchIcon, RefreshCwIcon } from './icons/Icons';
-import { MoodboardTemplate } from '../types';
-import CompactMoodboardCard from './CompactMoodboardCard';
+import type React from 'react'
+import type { MoodboardTemplate } from '../types'
+import Button from './Button'
+import CompactMoodboardCard from './CompactMoodboardCard'
+import { PlusIcon, RefreshCwIcon, SearchIcon } from './icons/Icons'
 
 interface CompactMoodboardHeaderProps {
-  moodboardTemplates: MoodboardTemplate[];
-  activeId: string | null;
-  onSetActiveId: (id: string) => void;
-  onAddTemplate: () => void;
-  onDeleteTemplate: (id: string) => void;
-  getCoverImageUrl: (template: MoodboardTemplate) => string | null;
-  onWebSearch: () => void;
-  onRegenerateAI: () => void;
-  canRegenerate: boolean;
-  isGeneratingSummary: boolean;
+  moodboardTemplates: MoodboardTemplate[]
+  activeId: string | null
+  onSetActiveId: (id: string) => void
+  onAddTemplate: () => void
+  onDeleteTemplate: (id: string) => void
+  getCoverImageUrl: (template: MoodboardTemplate) => string | null
+  onWebSearch: () => void
+  onRegenerateAI: () => void
+  canRegenerate: boolean
+  isGeneratingSummary: boolean
 }
 
 const CompactMoodboardHeader: React.FC<CompactMoodboardHeaderProps> = ({
@@ -27,7 +27,7 @@ const CompactMoodboardHeader: React.FC<CompactMoodboardHeaderProps> = ({
   onWebSearch,
   onRegenerateAI,
   canRegenerate,
-  isGeneratingSummary
+  isGeneratingSummary,
 }) => {
   return (
     <div className="border-b border-gray-800 bg-gray-900/50 px-4 py-3">
@@ -73,13 +73,15 @@ const CompactMoodboardHeader: React.FC<CompactMoodboardHeaderProps> = ({
             disabled={!canRegenerate || isGeneratingSummary}
             className="!px-3 !py-2 !text-sm border-gray-700 hover:bg-gray-800"
           >
-            <RefreshCwIcon className={`w-3 h-3 mr-1 ${isGeneratingSummary ? 'animate-spin' : ''}`} />
+            <RefreshCwIcon
+              className={`w-3 h-3 mr-1 ${isGeneratingSummary ? 'animate-spin' : ''}`}
+            />
             {isGeneratingSummary ? '...' : 'AI'}
           </Button>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CompactMoodboardHeader;
+export default CompactMoodboardHeader

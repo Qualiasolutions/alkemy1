@@ -1,13 +1,14 @@
-import React, { useEffect, useRef, ReactNode } from 'react';
+import type React from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 
 interface GlowCardProps {
-  children: ReactNode;
-  className?: string;
-  glowColor?: 'blue' | 'purple' | 'green' | 'red' | 'orange';
-  size?: 'sm' | 'md' | 'lg';
-  width?: string | number;
-  height?: string | number;
-  customSize?: boolean; // When true, ignores size prop and uses width/height or className
+  children: ReactNode
+  className?: string
+  glowColor?: 'blue' | 'purple' | 'green' | 'red' | 'orange'
+  size?: 'sm' | 'md' | 'lg'
+  width?: string | number
+  height?: string | number
+  customSize?: boolean // When true, ignores size prop and uses width/height or className
 }
 
 const glowColorMap = {
@@ -15,14 +16,14 @@ const glowColorMap = {
   purple: { base: 280, spread: 300 },
   green: { base: 120, spread: 200 },
   red: { base: 0, spread: 200 },
-  orange: { base: 30, spread: 200 }
-};
+  orange: { base: 30, spread: 200 },
+}
 
 const sizeMap = {
   sm: 'w-48 h-64',
   md: 'w-64 h-80',
-  lg: 'w-80 h-96'
-};
+  lg: 'w-80 h-96',
+}
 
 const GlowCard: React.FC<GlowCardProps> = ({
   children,
@@ -31,36 +32,36 @@ const GlowCard: React.FC<GlowCardProps> = ({
   size = 'md',
   width,
   height,
-  customSize = false
+  customSize = false,
 }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const syncPointer = (e: PointerEvent) => {
-      const { clientX: x, clientY: y } = e;
+      const { clientX: x, clientY: y } = e
 
       if (cardRef.current) {
-        cardRef.current.style.setProperty('--x', x.toFixed(2));
-        cardRef.current.style.setProperty('--xp', (x / window.innerWidth).toFixed(2));
-        cardRef.current.style.setProperty('--y', y.toFixed(2));
-        cardRef.current.style.setProperty('--yp', (y / window.innerHeight).toFixed(2));
+        cardRef.current.style.setProperty('--x', x.toFixed(2))
+        cardRef.current.style.setProperty('--xp', (x / window.innerWidth).toFixed(2))
+        cardRef.current.style.setProperty('--y', y.toFixed(2))
+        cardRef.current.style.setProperty('--yp', (y / window.innerHeight).toFixed(2))
       }
-    };
+    }
 
-    document.addEventListener('pointermove', syncPointer);
-    return () => document.removeEventListener('pointermove', syncPointer);
-  }, []);
+    document.addEventListener('pointermove', syncPointer)
+    return () => document.removeEventListener('pointermove', syncPointer)
+  }, [])
 
-  const { base, spread } = glowColorMap[glowColor];
+  const { base, spread } = glowColorMap[glowColor]
 
   // Determine sizing
   const getSizeClasses = () => {
     if (customSize) {
-      return ''; // Let className or inline styles handle sizing
+      return '' // Let className or inline styles handle sizing
     }
-    return sizeMap[size];
-  };
+    return sizeMap[size]
+  }
 
   const getInlineStyles = () => {
     const baseStyles: React.CSSProperties & Record<string, any> = {
@@ -88,18 +89,18 @@ const GlowCard: React.FC<GlowCardProps> = ({
       border: 'var(--border-size) solid var(--backup-border)',
       position: 'relative' as const,
       touchAction: 'none' as const,
-    };
+    }
 
     // Add width and height if provided
     if (width !== undefined) {
-      baseStyles.width = typeof width === 'number' ? `${width}px` : width;
+      baseStyles.width = typeof width === 'number' ? `${width}px` : width
     }
     if (height !== undefined) {
-      baseStyles.height = typeof height === 'number' ? `${height}px` : height;
+      baseStyles.height = typeof height === 'number' ? `${height}px` : height
     }
 
-    return baseStyles;
-  };
+    return baseStyles
+  }
 
   const beforeAfterStyles = `
     [data-glow]::before,
@@ -155,7 +156,7 @@ const GlowCard: React.FC<GlowCardProps> = ({
       inset: -10px;
       border-width: 10px;
     }
-  `;
+  `
 
   return (
     <>
@@ -182,7 +183,7 @@ const GlowCard: React.FC<GlowCardProps> = ({
         {children}
       </div>
     </>
-  );
-};
+  )
+}
 
-export { GlowCard };
+export { GlowCard }

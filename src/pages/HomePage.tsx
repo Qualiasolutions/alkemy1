@@ -1,49 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Users, Zap, Palette, CreditCard, Share2, ArrowRight, Play, Sparkles } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import AuthModal from '@/components/auth/AuthModal';
-import { isSupabaseConfigured } from '@/services/supabase';
+import {
+  ArrowRight,
+  CreditCard,
+  FileText,
+  Palette,
+  Play,
+  Share2,
+  Sparkles,
+  Users,
+  Zap,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import AuthModal from '@/components/auth/AuthModal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { useAuth } from '@/contexts/AuthContext'
+import { isSupabaseConfigured } from '@/services/supabase'
 
 const HomePage = () => {
-  const navigate = useNavigate();
-  const supabaseConfigured = isSupabaseConfigured();
-  const authContext = supabaseConfigured ? useAuth() : null;
-  const { user, isAuthenticated, signOut } = authContext || { user: null, isAuthenticated: false, signOut: async () => {} };
+  const navigate = useNavigate()
+  const supabaseConfigured = isSupabaseConfigured()
+  const authContext = supabaseConfigured ? useAuth() : null
+  const { user, isAuthenticated, signOut } = authContext || {
+    user: null,
+    isAuthenticated: false,
+    signOut: async () => {},
+  }
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login');
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login')
 
   // Auto-redirect to /app if already authenticated
   useEffect(() => {
     if (isAuthenticated && supabaseConfigured) {
-      navigate('/app');
+      navigate('/app')
     }
-  }, [isAuthenticated, supabaseConfigured, navigate]);
+  }, [isAuthenticated, supabaseConfigured, navigate])
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
-      navigate('/app');
+      navigate('/app')
     } else if (supabaseConfigured) {
-      setAuthMode('register');
-      setShowAuthModal(true);
+      setAuthMode('register')
+      setShowAuthModal(true)
     } else {
-      navigate('/app');
+      navigate('/app')
     }
-  };
+  }
 
   const handleSignIn = () => {
-    setAuthMode('login');
-    setShowAuthModal(true);
-  };
+    setAuthMode('login')
+    setShowAuthModal(true)
+  }
 
   const handleAuthSuccess = () => {
-    setShowAuthModal(false);
+    setShowAuthModal(false)
     // Don't navigate immediately - let the useEffect handle it after auth state updates
-  };
+  }
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
@@ -133,8 +147,8 @@ const HomePage = () => {
 
             {/* Subheading */}
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              From script analysis to frame generation with character consistency.
-              Alkemy transforms your creative vision into stunning visuals in hours, not weeks.
+              From script analysis to frame generation with character consistency. Alkemy transforms
+              your creative vision into stunning visuals in hours, not weeks.
             </p>
 
             {/* CTA Buttons */}
@@ -165,9 +179,7 @@ const HomePage = () => {
       <section className="py-20 px-6 bg-gradient-to-b from-black to-gray-950">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Everything You Need to Create
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything You Need to Create</h2>
             <p className="text-gray-400 text-lg">
               Professional tools that adapt to your creative workflow
             </p>
@@ -215,9 +227,7 @@ const HomePage = () => {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Simple Workflow, Powerful Results
             </h2>
-            <p className="text-gray-400 text-lg">
-              From script to screen in four simple steps
-            </p>
+            <p className="text-gray-400 text-lg">From script to screen in four simple steps</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -237,9 +247,7 @@ const HomePage = () => {
       {/* CTA Section */}
       <section className="py-20 px-6 bg-gradient-to-b from-gray-950 to-black">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Transform Your Vision?
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Vision?</h2>
           <p className="text-gray-400 text-lg mb-8">
             Join creators who are revolutionizing film production with AI
           </p>
@@ -261,12 +269,20 @@ const HomePage = () => {
               <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#DFEC2D] to-[#FDE047] rounded-lg font-bold text-black">
                 A
               </div>
-              <span className="text-sm text-gray-400">© 2024 Alkemy Studio. All rights reserved.</span>
+              <span className="text-sm text-gray-400">
+                © 2024 Alkemy Studio. All rights reserved.
+              </span>
             </div>
             <div className="flex gap-6 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
-              <a href="#" className="hover:text-white transition-colors">Contact</a>
+              <a href="#" className="hover:text-white transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Terms
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Contact
+              </a>
             </div>
           </div>
         </div>
@@ -283,59 +299,60 @@ const HomePage = () => {
         />
       )}
     </div>
-  );
-};
+  )
+}
 
 const features = [
   {
     icon: FileText,
-    title: "AI Script Analysis",
-    description: "Automatically extract characters, locations, and scenes from any screenplay format."
+    title: 'AI Script Analysis',
+    description:
+      'Automatically extract characters, locations, and scenes from any screenplay format.',
   },
   {
     icon: Users,
-    title: "Consistent Characters",
-    description: "LoRA-trained models ensure perfect character consistency across all frames."
+    title: 'Consistent Characters',
+    description: 'LoRA-trained models ensure perfect character consistency across all frames.',
   },
   {
     icon: Zap,
-    title: "Fast Generation",
-    description: "Draft to production in hours with multi-tier quality levels."
+    title: 'Fast Generation',
+    description: 'Draft to production in hours with multi-tier quality levels.',
   },
   {
     icon: Palette,
-    title: "Look Bible System",
-    description: "Reference images that guide your film's visual style throughout."
+    title: 'Look Bible System',
+    description: "Reference images that guide your film's visual style throughout.",
   },
   {
     icon: CreditCard,
-    title: "Cost Tracking",
-    description: "Real-time budget tracking with intelligent caching for 40-60% savings."
+    title: 'Cost Tracking',
+    description: 'Real-time budget tracking with intelligent caching for 40-60% savings.',
   },
   {
     icon: Share2,
-    title: "Collaboration",
-    description: "Real-time multi-user editing with conflict resolution built-in."
-  }
-];
+    title: 'Collaboration',
+    description: 'Real-time multi-user editing with conflict resolution built-in.',
+  },
+]
 
 const workflow = [
   {
-    title: "Upload Script",
-    description: "Import your screenplay in any format"
+    title: 'Upload Script',
+    description: 'Import your screenplay in any format',
   },
   {
-    title: "AI Analysis",
-    description: "Extract scenes, characters, and locations"
+    title: 'AI Analysis',
+    description: 'Extract scenes, characters, and locations',
   },
   {
-    title: "Generate Frames",
-    description: "Create consistent visuals with AI"
+    title: 'Generate Frames',
+    description: 'Create consistent visuals with AI',
   },
   {
-    title: "Export & Share",
-    description: "Download your production-ready assets"
-  }
-];
+    title: 'Export & Share',
+    description: 'Download your production-ready assets',
+  },
+]
 
-export default HomePage;
+export default HomePage

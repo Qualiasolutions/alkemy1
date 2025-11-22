@@ -1,33 +1,33 @@
-import React, { useState } from 'react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  Archive,
+  Calendar,
+  FileText,
+  Trash2,
+  Undo2,
+} from 'lucide-react'
+import { useState } from 'react'
+import { getProjectService } from '@/services/projectService'
+import type { Project } from '@/types'
+import { Alert, AlertDescription } from './ui/alert'
+import { Button } from './ui/button'
+import { Checkbox } from './ui/checkbox'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from './ui/dialog';
-import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
-import { Alert, AlertDescription } from './ui/alert';
-import {
-  Trash2,
-  AlertTriangle,
-  Calendar,
-  FileText,
-  Undo2,
-  Archive,
-  AlertCircle
-} from 'lucide-react';
-import { Project } from '@/types';
-import { getProjectService } from '@/services/projectService';
+  DialogTitle,
+} from './ui/dialog'
 
 interface DeleteConfirmationDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  projects: Project[];
-  onDelete: (projectIds: string[], permanent: boolean) => void;
-  mode?: 'soft' | 'permanent' | 'empty-trash';
+  isOpen: boolean
+  onClose: () => void
+  projects: Project[]
+  onDelete: (projectIds: string[], permanent: boolean) => void
+  mode?: 'soft' | 'permanent' | 'empty-trash'
 }
 
 export default function DeleteConfirmationDialog({
@@ -35,95 +35,95 @@ export default function DeleteConfirmationDialog({
   onClose,
   projects,
   onDelete,
-  mode = 'soft'
+  mode = 'soft',
 }: DeleteConfirmationDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [permanentDelete, setPermanentDelete] = useState(mode === 'permanent');
-  const [confirmText, setConfirmText] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [permanentDelete, setPermanentDelete] = useState(mode === 'permanent')
+  const [confirmText, setConfirmText] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
-  const projectService = getProjectService();
+  const projectService = getProjectService()
 
-  const isSingleProject = projects.length === 1;
-  const requiresConfirmation = mode === 'permanent' || mode === 'empty-trash' || permanentDelete;
-  const confirmationWord = mode === 'empty-trash' ? 'EMPTY' : 'DELETE';
+  const isSingleProject = projects.length === 1
+  const requiresConfirmation = mode === 'permanent' || mode === 'empty-trash' || permanentDelete
+  const confirmationWord = mode === 'empty-trash' ? 'EMPTY' : 'DELETE'
 
   const handleDelete = async () => {
     if (requiresConfirmation && confirmText !== confirmationWord) {
-      setError(`Please type "${confirmationWord}" to confirm`);
-      return;
+      setError(`Please type "${confirmationWord}" to confirm`)
+      return
     }
 
-    setIsDeleting(true);
-    setError(null);
+    setIsDeleting(true)
+    setError(null)
 
     try {
-      const projectIds = projects.map(p => p.id);
+      const projectIds = projects.map((p) => p.id)
 
       if (mode === 'empty-trash') {
         // Empty trash - permanently delete all deleted projects
-        const { error } = await projectService.emptyTrash(projects[0]?.user_id || '');
-        if (error) throw error;
+        const { error } = await projectService.emptyTrash(projects[0]?.user_id || '')
+        if (error) throw error
       } else if (mode === 'permanent' || permanentDelete) {
         // Permanent delete
         if (isSingleProject) {
-          const { error } = await projectService.permanentlyDeleteProject(projectIds[0]);
-          if (error) throw error;
+          const { error } = await projectService.permanentlyDeleteProject(projectIds[0])
+          if (error) throw error
         } else {
           // Bulk permanent delete
           for (const id of projectIds) {
-            const { error } = await projectService.permanentlyDeleteProject(id);
-            if (error) console.error(`Failed to delete project ${id}:`, error);
+            const { error } = await projectService.permanentlyDeleteProject(id)
+            if (error) console.error(`Failed to delete project ${id}:`, error)
           }
         }
       } else {
         // Soft delete (move to trash)
         if (isSingleProject) {
-          const { error } = await projectService.softDeleteProject(projectIds[0]);
-          if (error) throw error;
+          const { error } = await projectService.softDeleteProject(projectIds[0])
+          if (error) throw error
 
           await projectService.logActivity(projectIds[0], 'deleted', {
             softDelete: true,
-            title: projects[0].title
-          });
+            title: projects[0].title,
+          })
         } else {
-          const { error } = await projectService.bulkDeleteProjects(projectIds);
-          if (error) throw error;
+          const { error } = await projectService.bulkDeleteProjects(projectIds)
+          if (error) throw error
         }
       }
 
-      onDelete(projectIds, mode === 'permanent' || permanentDelete);
-      onClose();
+      onDelete(projectIds, mode === 'permanent' || permanentDelete)
+      onClose()
     } catch (err) {
-      console.error('Error deleting project(s):', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete project(s)');
+      console.error('Error deleting project(s):', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete project(s)')
     } finally {
-      setIsDeleting(false);
+      setIsDeleting(false)
     }
-  };
+  }
 
   const getDialogTitle = () => {
-    if (mode === 'empty-trash') return 'Empty Trash';
-    if (mode === 'permanent') return 'Permanently Delete Project';
-    if (permanentDelete) return 'Permanently Delete Project';
-    return isSingleProject ? 'Delete Project' : `Delete ${projects.length} Projects`;
-  };
+    if (mode === 'empty-trash') return 'Empty Trash'
+    if (mode === 'permanent') return 'Permanently Delete Project'
+    if (permanentDelete) return 'Permanently Delete Project'
+    return isSingleProject ? 'Delete Project' : `Delete ${projects.length} Projects`
+  }
 
   const getDialogDescription = () => {
     if (mode === 'empty-trash') {
-      return 'This will permanently delete all projects in the trash. This action cannot be undone.';
+      return 'This will permanently delete all projects in the trash. This action cannot be undone.'
     }
 
     if (mode === 'permanent' || permanentDelete) {
       return isSingleProject
         ? 'This will permanently delete the project and all associated data. This action cannot be undone.'
-        : `This will permanently delete ${projects.length} projects and all associated data. This action cannot be undone.`;
+        : `This will permanently delete ${projects.length} projects and all associated data. This action cannot be undone.`
     }
 
     return isSingleProject
       ? 'This will move the project to trash. You can restore it within 30 days.'
-      : `This will move ${projects.length} projects to trash. You can restore them within 30 days.`;
-  };
+      : `This will move ${projects.length} projects to trash. You can restore them within 30 days.`
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -149,9 +149,7 @@ export default function DeleteConfirmationDialog({
                 <div className="flex-1">
                   <p className="font-medium">{projects[0].title}</p>
                   {projects[0].description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {projects[0].description}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">{projects[0].description}</p>
                   )}
                 </div>
               </div>
@@ -207,7 +205,8 @@ export default function DeleteConfirmationDialog({
               <AlertDescription>
                 <p className="font-medium mb-2">⚠️ This action cannot be undone!</p>
                 <p className="text-sm">
-                  All project data including scripts, generated media, and settings will be permanently deleted.
+                  All project data including scripts, generated media, and settings will be
+                  permanently deleted.
                 </p>
               </AlertDescription>
             </Alert>
@@ -263,11 +262,7 @@ export default function DeleteConfirmationDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isDeleting}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isDeleting}>
             Cancel
           </Button>
           <Button
@@ -284,13 +279,13 @@ export default function DeleteConfirmationDialog({
                 {mode === 'empty-trash'
                   ? 'Empty Trash'
                   : mode === 'permanent' || permanentDelete
-                  ? 'Delete Permanently'
-                  : 'Move to Trash'}
+                    ? 'Delete Permanently'
+                    : 'Move to Trash'}
               </>
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

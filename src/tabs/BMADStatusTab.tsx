@@ -1,57 +1,68 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/services/supabase';
-import { Progress } from '@/components/ui/Progress';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import {
-  CheckCircle2, Circle, XCircle, AlertCircle, Clock, TrendingUp,
-  Sparkles, Target, Rocket, Map, ChevronDown, ChevronRight, Calendar,
-  Users, Zap, Award
-} from 'lucide-react';
+  AlertCircle,
+  Award,
+  Calendar,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  Clock,
+  Map,
+  Rocket,
+  Sparkles,
+  Target,
+  Users,
+  XCircle,
+  Zap,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Badge } from '@/components/ui/Badge'
+import { Card, CardContent } from '@/components/ui/Card'
+import { supabase } from '@/services/supabase'
 
 interface Epic {
-  id: string;
-  epic_number: string;
-  title: string;
-  status: 'not_started' | 'in_progress' | 'complete' | 'blocked' | 'deferred';
-  progress_percentage: number;
-  created_at: string;
-  updated_at: string;
-  completed_at: string | null;
+  id: string
+  epic_number: string
+  title: string
+  status: 'not_started' | 'in_progress' | 'complete' | 'blocked' | 'deferred'
+  progress_percentage: number
+  created_at: string
+  updated_at: string
+  completed_at: string | null
 }
 
 interface Story {
-  id: string;
-  epic_id: string;
-  story_number: string;
-  title: string;
-  status: 'draft' | 'ready' | 'in_progress' | 'review' | 'complete' | 'blocked' | 'deferred';
-  progress_percentage: number;
-  assignee: string | null;
-  file_path: string;
-  epic?: Epic;
+  id: string
+  epic_id: string
+  story_number: string
+  title: string
+  status: 'draft' | 'ready' | 'in_progress' | 'review' | 'complete' | 'blocked' | 'deferred'
+  progress_percentage: number
+  assignee: string | null
+  file_path: string
+  epic?: Epic
 }
 
 interface AcceptanceCriterion {
-  id: string;
-  story_id: string;
-  criterion_number: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'passed' | 'failed' | 'blocked';
-  verified_at: string | null;
+  id: string
+  story_id: string
+  criterion_number: string
+  description: string
+  status: 'pending' | 'in_progress' | 'passed' | 'failed' | 'blocked'
+  verified_at: string | null
 }
 
 interface DashboardStats {
-  completed_epics: number;
-  in_progress_epics: number;
-  not_started_epics: number;
-  completed_stories: number;
-  in_progress_stories: number;
-  blocked_stories: number;
-  passed_criteria: number;
-  failed_criteria: number;
-  pending_criteria: number;
-  stories_in_current_sprint: number;
+  completed_epics: number
+  in_progress_epics: number
+  not_started_epics: number
+  completed_stories: number
+  in_progress_stories: number
+  blocked_stories: number
+  passed_criteria: number
+  failed_criteria: number
+  pending_criteria: number
+  stories_in_current_sprint: number
 }
 
 // Simplified roadmap data for non-technical users
@@ -63,10 +74,25 @@ const ROADMAP_PHASES = [
     icon: Rocket,
     color: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
     epics: [
-      { number: 'EPIC-1', name: 'Voice Control', description: 'Talk to the AI Director', status: 'complete' },
-      { number: 'EPIC-2', name: 'Character Identity', description: 'Keep characters looking the same', status: 'in_progress' },
-      { number: 'EPIC-5', name: 'Music & Sound', description: 'Add soundtrack and effects', status: 'not_started' },
-    ]
+      {
+        number: 'EPIC-1',
+        name: 'Voice Control',
+        description: 'Talk to the AI Director',
+        status: 'complete',
+      },
+      {
+        number: 'EPIC-2',
+        name: 'Character Identity',
+        description: 'Keep characters looking the same',
+        status: 'in_progress',
+      },
+      {
+        number: 'EPIC-5',
+        name: 'Music & Sound',
+        description: 'Add soundtrack and effects',
+        status: 'not_started',
+      },
+    ],
   },
   {
     id: 'v2.1',
@@ -75,9 +101,19 @@ const ROADMAP_PHASES = [
     icon: Map,
     color: 'bg-gradient-to-br from-amber-500 to-yellow-600',
     epics: [
-      { number: 'EPIC-3', name: '3D Locations', description: 'Explore film locations in 3D', status: 'not_started' },
-      { number: 'EPIC-4', name: 'Voice Acting', description: 'Give characters realistic voices', status: 'not_started' },
-    ]
+      {
+        number: 'EPIC-3',
+        name: '3D Locations',
+        description: 'Explore film locations in 3D',
+        status: 'not_started',
+      },
+      {
+        number: 'EPIC-4',
+        name: 'Voice Acting',
+        description: 'Give characters realistic voices',
+        status: 'not_started',
+      },
+    ],
   },
   {
     id: 'v2.2',
@@ -86,9 +122,19 @@ const ROADMAP_PHASES = [
     icon: Users,
     color: 'bg-gradient-to-br from-yellow-400 to-red-500',
     epics: [
-      { number: 'EPIC-6', name: 'Quality Analytics', description: 'Get AI feedback on your film', status: 'not_started' },
-      { number: 'EPIC-7a', name: 'Community Hub', description: 'Share films and compete', status: 'not_started' },
-    ]
+      {
+        number: 'EPIC-6',
+        name: 'Quality Analytics',
+        description: 'Get AI feedback on your film',
+        status: 'not_started',
+      },
+      {
+        number: 'EPIC-7a',
+        name: 'Community Hub',
+        description: 'Share films and compete',
+        status: 'not_started',
+      },
+    ],
   },
   {
     id: 'v3',
@@ -97,102 +143,119 @@ const ROADMAP_PHASES = [
     icon: Award,
     color: 'bg-gradient-to-br from-gray-600 to-gray-800',
     epics: [
-      { number: 'EPIC-7b', name: 'Asset Marketplace', description: 'Buy and sell creative assets', status: 'deferred' },
-      { number: 'EPIC-7c', name: 'Alkemy Academy', description: 'Learn from pro filmmakers', status: 'deferred' },
-    ]
-  }
-];
+      {
+        number: 'EPIC-7b',
+        name: 'Asset Marketplace',
+        description: 'Buy and sell creative assets',
+        status: 'deferred',
+      },
+      {
+        number: 'EPIC-7c',
+        name: 'Alkemy Academy',
+        description: 'Learn from pro filmmakers',
+        status: 'deferred',
+      },
+    ],
+  },
+]
 
 export function BMADStatusTab() {
-  const [epics, setEpics] = useState<Epic[]>([]);
-  const [stories, setStories] = useState<Story[]>([]);
-  const [selectedEpic, setSelectedEpic] = useState<string | null>(null);
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
-  const [acceptanceCriteria, setAcceptanceCriteria] = useState<AcceptanceCriterion[]>([]);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showFullRoadmap, setShowFullRoadmap] = useState(false);
-  const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
+  const [epics, setEpics] = useState<Epic[]>([])
+  const [stories, setStories] = useState<Story[]>([])
+  const [_selectedEpic, _setSelectedEpic] = useState<string | null>(null)
+  const [selectedStory, _setSelectedStory] = useState<Story | null>(null)
+  const [_acceptanceCriteria, setAcceptanceCriteria] = useState<AcceptanceCriterion[]>([])
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showFullRoadmap, setShowFullRoadmap] = useState(false)
+  const [expandedPhase, setExpandedPhase] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData()
 
     const epicSubscription = supabase
       .channel('epic-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'epics' }, fetchDashboardData)
-      .subscribe();
+      .subscribe()
 
     const storySubscription = supabase
       .channel('story-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, fetchDashboardData)
-      .subscribe();
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'stories' },
+        fetchDashboardData
+      )
+      .subscribe()
 
     const acSubscription = supabase
       .channel('ac-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'acceptance_criteria' }, () => {
-        if (selectedStory) {
-          fetchAcceptanceCriteria(selectedStory.id);
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'acceptance_criteria' },
+        () => {
+          if (selectedStory) {
+            fetchAcceptanceCriteria(selectedStory.id)
+          }
         }
-      })
-      .subscribe();
+      )
+      .subscribe()
 
     return () => {
-      epicSubscription.unsubscribe();
-      storySubscription.unsubscribe();
-      acSubscription.unsubscribe();
-    };
-  }, [selectedStory]);
+      epicSubscription.unsubscribe()
+      storySubscription.unsubscribe()
+      acSubscription.unsubscribe()
+    }
+  }, [selectedStory, fetchAcceptanceCriteria, fetchDashboardData])
 
   async function fetchDashboardData() {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
       const { data: epicsData, error: epicsError } = await supabase
         .from('epics')
         .select('*')
-        .order('epic_number');
+        .order('epic_number')
 
-      if (epicsError) throw epicsError;
-      setEpics(epicsData || []);
+      if (epicsError) throw epicsError
+      setEpics(epicsData || [])
 
       const { data: storiesData, error: storiesError } = await supabase
         .from('stories')
         .select('*, epic:epics(*)')
-        .order('story_number');
+        .order('story_number')
 
-      if (storiesError) throw storiesError;
-      setStories(storiesData || []);
+      if (storiesError) throw storiesError
+      setStories(storiesData || [])
 
       const { data: statsData, error: statsError } = await supabase
         .from('bmad_dashboard')
         .select('*')
-        .single();
+        .single()
 
       if (statsError) {
         const stats: DashboardStats = {
-          completed_epics: epicsData?.filter(e => e.status === 'complete').length || 0,
-          in_progress_epics: epicsData?.filter(e => e.status === 'in_progress').length || 0,
-          not_started_epics: epicsData?.filter(e => e.status === 'not_started').length || 0,
-          completed_stories: storiesData?.filter(s => s.status === 'complete').length || 0,
-          in_progress_stories: storiesData?.filter(s => s.status === 'in_progress').length || 0,
-          blocked_stories: storiesData?.filter(s => s.status === 'blocked').length || 0,
+          completed_epics: epicsData?.filter((e) => e.status === 'complete').length || 0,
+          in_progress_epics: epicsData?.filter((e) => e.status === 'in_progress').length || 0,
+          not_started_epics: epicsData?.filter((e) => e.status === 'not_started').length || 0,
+          completed_stories: storiesData?.filter((s) => s.status === 'complete').length || 0,
+          in_progress_stories: storiesData?.filter((s) => s.status === 'in_progress').length || 0,
+          blocked_stories: storiesData?.filter((s) => s.status === 'blocked').length || 0,
           passed_criteria: 0,
           failed_criteria: 0,
           pending_criteria: 0,
-          stories_in_current_sprint: 0
-        };
-        setDashboardStats(stats);
+          stories_in_current_sprint: 0,
+        }
+        setDashboardStats(stats)
       } else {
-        setDashboardStats(statsData);
+        setDashboardStats(statsData)
       }
-
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load development status');
+      console.error('Error fetching dashboard data:', err)
+      setError('Failed to load development status')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
@@ -201,10 +264,10 @@ export function BMADStatusTab() {
       .from('acceptance_criteria')
       .select('*')
       .eq('story_id', storyId)
-      .order('criterion_number');
+      .order('criterion_number')
 
     if (!error) {
-      setAcceptanceCriteria(data || []);
+      setAcceptanceCriteria(data || [])
     }
   }
 
@@ -212,27 +275,33 @@ export function BMADStatusTab() {
     switch (status) {
       case 'complete':
       case 'passed':
-        return <CheckCircle2 className="w-5 h-5 text-yellow-400" />;
+        return <CheckCircle2 className="w-5 h-5 text-yellow-400" />
       case 'in_progress':
-        return <Clock className="w-5 h-5 text-yellow-500 animate-pulse" />;
+        return <Clock className="w-5 h-5 text-yellow-500 animate-pulse" />
       case 'blocked':
       case 'failed':
-        return <XCircle className="w-5 h-5 text-red-400" />;
+        return <XCircle className="w-5 h-5 text-red-400" />
       case 'deferred':
-        return <AlertCircle className="w-5 h-5 text-gray-500" />;
+        return <AlertCircle className="w-5 h-5 text-gray-500" />
       default:
-        return <Circle className="w-5 h-5 text-gray-600" />;
+        return <Circle className="w-5 h-5 text-gray-600" />
     }
   }
 
   function getStatusLabel(status: string): string {
     switch (status) {
-      case 'complete': return 'Complete';
-      case 'in_progress': return 'In Progress';
-      case 'not_started': return 'Not Started';
-      case 'blocked': return 'Blocked';
-      case 'deferred': return 'Planned';
-      default: return status;
+      case 'complete':
+        return 'Complete'
+      case 'in_progress':
+        return 'In Progress'
+      case 'not_started':
+        return 'Not Started'
+      case 'blocked':
+        return 'Blocked'
+      case 'deferred':
+        return 'Planned'
+      default:
+        return status
     }
   }
 
@@ -247,7 +316,7 @@ export function BMADStatusTab() {
           <p className="text-yellow-100 text-lg font-medium">Loading Development Roadmap...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -261,7 +330,7 @@ export function BMADStatusTab() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -278,7 +347,9 @@ export function BMADStatusTab() {
               <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600">
                 Development Roadmap
               </h1>
-              <p className="text-yellow-100/70 text-sm mt-1">Building the future of AI filmmaking</p>
+              <p className="text-yellow-100/70 text-sm mt-1">
+                Building the future of AI filmmaking
+              </p>
             </div>
           </div>
         </div>
@@ -335,9 +406,7 @@ export function BMADStatusTab() {
                 </div>
               </div>
               <div className="text-yellow-100 font-medium">Current Sprint</div>
-              <div className="text-yellow-400/60 text-sm mt-1">
-                tasks in progress
-              </div>
+              <div className="text-yellow-400/60 text-sm mt-1">tasks in progress</div>
             </div>
           </div>
         </div>
@@ -365,8 +434,8 @@ export function BMADStatusTab() {
         {showFullRoadmap && (
           <div className="space-y-6 animate-in slide-in-from-top duration-500">
             {ROADMAP_PHASES.map((phase, index) => {
-              const PhaseIcon = phase.icon;
-              const isExpanded = expandedPhase === phase.id;
+              const PhaseIcon = phase.icon
+              const isExpanded = expandedPhase === phase.id
 
               return (
                 <div key={phase.id} className="group">
@@ -376,7 +445,9 @@ export function BMADStatusTab() {
                   >
                     <div className="flex items-start gap-6 mb-4">
                       <div className="flex-shrink-0">
-                        <div className={`w-16 h-16 rounded-2xl ${phase.color} shadow-xl flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300`}>
+                        <div
+                          className={`w-16 h-16 rounded-2xl ${phase.color} shadow-xl flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300`}
+                        >
                           <PhaseIcon className="w-8 h-8 text-white" />
                         </div>
                       </div>
@@ -411,16 +482,23 @@ export function BMADStatusTab() {
                                   <div className="text-yellow-400/60 text-sm">{epic.number}</div>
                                 </div>
                               </div>
-                              <Badge className={`${
-                                epic.status === 'complete' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' :
-                                epic.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' :
-                                epic.status === 'deferred' ? 'bg-gray-500/20 text-gray-400 border-gray-500/50' :
-                                'bg-gray-700/20 text-gray-400 border-gray-700/50'
-                              }`}>
+                              <Badge
+                                className={`${
+                                  epic.status === 'complete'
+                                    ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                    : epic.status === 'in_progress'
+                                      ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
+                                      : epic.status === 'deferred'
+                                        ? 'bg-gray-500/20 text-gray-400 border-gray-500/50'
+                                        : 'bg-gray-700/20 text-gray-400 border-gray-700/50'
+                                }`}
+                              >
                                 {getStatusLabel(epic.status)}
                               </Badge>
                             </div>
-                            <p className="text-yellow-100/70 text-sm leading-relaxed">{epic.description}</p>
+                            <p className="text-yellow-100/70 text-sm leading-relaxed">
+                              {epic.description}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -433,7 +511,7 @@ export function BMADStatusTab() {
                     </div>
                   )}
                 </div>
-              );
+              )
             })}
           </div>
         )}
@@ -442,9 +520,7 @@ export function BMADStatusTab() {
       {/* Footer */}
       <div className="mt-auto border-t border-yellow-900/30 bg-black/40 backdrop-blur px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-sm">
-          <div className="text-yellow-400/60">
-            Last synced: {new Date().toLocaleString()}
-          </div>
+          <div className="text-yellow-400/60">Last synced: {new Date().toLocaleString()}</div>
           <button
             onClick={fetchDashboardData}
             className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 rounded-lg border border-yellow-500/50 transition-colors"
@@ -454,5 +530,5 @@ export function BMADStatusTab() {
         </div>
       </div>
     </div>
-  );
+  )
 }

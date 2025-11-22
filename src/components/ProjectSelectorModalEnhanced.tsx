@@ -1,228 +1,222 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/theme/ThemeContext';
-import { Project, ProjectFilter } from '@/types';
-import { getProjectService, ProjectTemplate } from '@/services/projectService';
-import Button from './Button';
-import DeleteConfirmationDialog from './DeleteConfirmationDialog';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns'
+import { motion } from 'framer-motion'
 import {
-  Trash2,
   Archive,
-  RotateCcw,
-  Plus,
-  Search,
-  FileText,
-  Calendar,
-  Tag,
-  Grid,
-  List,
-  Filter,
   Download,
-  Upload,
-  Copy,
-  MoreVertical,
+  FileText,
   FolderOpen,
-  Layout
-} from 'lucide-react';
+  Grid,
+  Layout,
+  List,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+} from 'lucide-react'
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { getProjectService, type ProjectTemplate } from '@/services/projectService'
+import { useTheme } from '@/theme/ThemeContext'
+import type { Project, ProjectFilter } from '@/types'
+import Button from './Button'
+import DeleteConfirmationDialog from './DeleteConfirmationDialog'
 
 interface ProjectSelectorModalEnhancedProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelectProject: (project: Project) => void;
-  onCreateProject?: () => void;
-  currentProjectId?: string;
+  isOpen: boolean
+  onClose: () => void
+  onSelectProject: (project: Project) => void
+  onCreateProject?: () => void
+  currentProjectId?: string
 }
 
-type TabType = 'projects' | 'trash' | 'templates';
-type ViewMode = 'grid' | 'list';
+type TabType = 'projects' | 'trash' | 'templates'
+type ViewMode = 'grid' | 'list'
 
 const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> = ({
   isOpen,
   onClose,
   onSelectProject,
   onCreateProject,
-  currentProjectId
+  currentProjectId,
 }) => {
-  const { user } = useAuth();
-  const { colors, isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabType>('projects');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [deletedProjects, setDeletedProjects] = useState<Project[]>([]);
-  const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'updated' | 'created' | 'accessed'>('accessed');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteMode, setDeleteMode] = useState<'soft' | 'permanent' | 'empty-trash'>('soft');
-  const [projectsToDelete, setProjectsToDelete] = useState<Project[]>([]);
+  const { user } = useAuth()
+  const { colors, isDark } = useTheme()
+  const [activeTab, setActiveTab] = useState<TabType>('projects')
+  const [projects, setProjects] = useState<Project[]>([])
+  const [deletedProjects, setDeletedProjects] = useState<Project[]>([])
+  const [templates, setTemplates] = useState<ProjectTemplate[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'updated' | 'created' | 'accessed'>('accessed')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([])
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleteMode, setDeleteMode] = useState<'soft' | 'permanent' | 'empty-trash'>('soft')
+  const [projectsToDelete, setProjectsToDelete] = useState<Project[]>([])
 
-  const projectService = getProjectService();
+  const projectService = getProjectService()
 
   useEffect(() => {
-    if (!isOpen || !user) return;
-    loadData();
-  }, [isOpen, user, activeTab]);
+    if (!isOpen || !user) return
+    loadData()
+  }, [isOpen, user, loadData])
 
   const loadData = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
       if (activeTab === 'projects') {
         const filter: ProjectFilter = {
           includeDeleted: false,
           sortBy,
-          sortOrder: 'desc'
-        };
-        const { projects, error } = await projectService.getProjects(user!.id, filter);
-        if (error) throw error;
-        setProjects(projects || []);
+          sortOrder: 'desc',
+        }
+        const { projects, error } = await projectService.getProjects(user?.id, filter)
+        if (error) throw error
+        setProjects(projects || [])
       } else if (activeTab === 'trash') {
-        const { projects, error } = await projectService.getDeletedProjects(user!.id);
-        if (error) throw error;
-        setDeletedProjects(projects || []);
+        const { projects, error } = await projectService.getDeletedProjects(user?.id)
+        if (error) throw error
+        setDeletedProjects(projects || [])
       } else if (activeTab === 'templates') {
-        const { templates, error } = await projectService.getTemplates(true);
-        if (error) throw error;
-        setTemplates(templates || []);
+        const { templates, error } = await projectService.getTemplates(true)
+        if (error) throw error
+        setTemplates(templates || [])
       }
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('Failed to load data:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const getFilteredItems = () => {
-    const searchLower = searchQuery.toLowerCase();
+    const searchLower = searchQuery.toLowerCase()
 
     if (activeTab === 'projects') {
-      return projects.filter(project =>
-        project.title.toLowerCase().includes(searchLower) ||
-        project.description?.toLowerCase().includes(searchLower) ||
-        project.tags?.some(tag => tag.toLowerCase().includes(searchLower))
-      );
+      return projects.filter(
+        (project) =>
+          project.title.toLowerCase().includes(searchLower) ||
+          project.description?.toLowerCase().includes(searchLower) ||
+          project.tags?.some((tag) => tag.toLowerCase().includes(searchLower))
+      )
     } else if (activeTab === 'trash') {
-      return deletedProjects.filter(project =>
-        project.title.toLowerCase().includes(searchLower) ||
-        project.description?.toLowerCase().includes(searchLower)
-      );
+      return deletedProjects.filter(
+        (project) =>
+          project.title.toLowerCase().includes(searchLower) ||
+          project.description?.toLowerCase().includes(searchLower)
+      )
     } else {
-      return templates.filter(template =>
-        template.name.toLowerCase().includes(searchLower) ||
-        template.description.toLowerCase().includes(searchLower) ||
-        template.tags.some(tag => tag.toLowerCase().includes(searchLower))
-      );
+      return templates.filter(
+        (template) =>
+          template.name.toLowerCase().includes(searchLower) ||
+          template.description.toLowerCase().includes(searchLower) ||
+          template.tags.some((tag) => tag.toLowerCase().includes(searchLower))
+      )
     }
-  };
+  }
 
   const handleSelectProject = async (project: Project) => {
     if (activeTab === 'trash') {
       // Don't select deleted projects, show restore option instead
-      return;
+      return
     }
-    onSelectProject(project);
-    onClose();
-  };
+    onSelectProject(project)
+    onClose()
+  }
 
   const handleCreateFromTemplate = async (template: ProjectTemplate) => {
     try {
-      const name = prompt('Enter a name for your new project:', `New ${template.name}`);
-      if (!name) return;
+      const name = prompt('Enter a name for your new project:', `New ${template.name}`)
+      if (!name) return
 
-      const { project, error } = await projectService.createProjectFromTemplate(
-        template.id,
-        name
-      );
-      if (error) throw error;
+      const { project, error } = await projectService.createProjectFromTemplate(template.id, name)
+      if (error) throw error
       if (project) {
-        onSelectProject(project);
-        onClose();
+        onSelectProject(project)
+        onClose()
       }
     } catch (error) {
-      console.error('Failed to create project from template:', error);
+      console.error('Failed to create project from template:', error)
     }
-  };
+  }
 
   const handleDeleteProjects = (permanent: boolean = false) => {
-    const selected = activeTab === 'trash'
-      ? deletedProjects.filter(p => selectedProjects.includes(p.id))
-      : projects.filter(p => selectedProjects.includes(p.id));
+    const selected =
+      activeTab === 'trash'
+        ? deletedProjects.filter((p) => selectedProjects.includes(p.id))
+        : projects.filter((p) => selectedProjects.includes(p.id))
 
-    if (selected.length === 0) return;
+    if (selected.length === 0) return
 
-    setProjectsToDelete(selected);
-    setDeleteMode(activeTab === 'trash' ? 'permanent' : permanent ? 'permanent' : 'soft');
-    setShowDeleteDialog(true);
-  };
+    setProjectsToDelete(selected)
+    setDeleteMode(activeTab === 'trash' ? 'permanent' : permanent ? 'permanent' : 'soft')
+    setShowDeleteDialog(true)
+  }
 
-  const handleDeleteComplete = (projectIds: string[], permanent: boolean) => {
-    setSelectedProjects([]);
-    loadData(); // Reload the data
-  };
+  const handleDeleteComplete = (_projectIds: string[], _permanent: boolean) => {
+    setSelectedProjects([])
+    loadData() // Reload the data
+  }
 
   const handleRestoreProjects = async () => {
-    if (selectedProjects.length === 0) return;
+    if (selectedProjects.length === 0) return
 
     try {
-      const { error } = await projectService.bulkRestoreProjects(selectedProjects);
-      if (error) throw error;
-      setSelectedProjects([]);
-      loadData();
+      const { error } = await projectService.bulkRestoreProjects(selectedProjects)
+      if (error) throw error
+      setSelectedProjects([])
+      loadData()
     } catch (error) {
-      console.error('Failed to restore projects:', error);
+      console.error('Failed to restore projects:', error)
     }
-  };
+  }
 
   const handleEmptyTrash = () => {
-    setDeleteMode('empty-trash');
-    setProjectsToDelete(deletedProjects);
-    setShowDeleteDialog(true);
-  };
+    setDeleteMode('empty-trash')
+    setProjectsToDelete(deletedProjects)
+    setShowDeleteDialog(true)
+  }
 
   const handleBulkExport = async () => {
-    if (selectedProjects.length === 0) return;
+    if (selectedProjects.length === 0) return
 
     try {
-      const { data, error } = await projectService.bulkExportProjects(selectedProjects);
-      if (error) throw error;
+      const { data, error } = await projectService.bulkExportProjects(selectedProjects)
+      if (error) throw error
 
       // Create and download JSON file
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `alkemy-projects-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `alkemy-projects-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+      URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Failed to export projects:', error);
+      console.error('Failed to export projects:', error)
     }
-  };
+  }
 
   const toggleSelection = (projectId: string) => {
-    setSelectedProjects(prev =>
-      prev.includes(projectId)
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
-    );
-  };
+    setSelectedProjects((prev) =>
+      prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]
+    )
+  }
 
   const toggleSelectAll = () => {
-    const items = getFilteredItems();
+    const items = getFilteredItems()
     if (selectedProjects.length === items.length) {
-      setSelectedProjects([]);
+      setSelectedProjects([])
     } else {
-      setSelectedProjects(items.map((item: any) => item.id));
+      setSelectedProjects(items.map((item: any) => item.id))
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
-  const filteredItems = getFilteredItems();
-  const hasSelection = selectedProjects.length > 0;
+  const filteredItems = getFilteredItems()
+  const hasSelection = selectedProjects.length > 0
 
   return (
     <>
@@ -248,15 +242,23 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-[#2A2A2A]">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Project Manager
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Project Manager</h2>
               <button
                 onClick={onClose}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2A2A2A] transition-colors"
               >
-                <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5 text-gray-500 dark:text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -359,33 +361,25 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
             {hasSelection && activeTab !== 'templates' && (
               <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">
-                    {selectedProjects.length} selected
-                  </span>
+                  <span className="text-sm font-medium">{selectedProjects.length} selected</span>
                   <button
                     onClick={toggleSelectAll}
                     className="text-sm text-yellow-600 hover:text-yellow-700 dark:text-yellow-400"
                   >
-                    {selectedProjects.length === filteredItems.length ? 'Deselect all' : 'Select all'}
+                    {selectedProjects.length === filteredItems.length
+                      ? 'Deselect all'
+                      : 'Select all'}
                   </button>
                 </div>
 
                 <div className="flex items-center gap-2">
                   {activeTab === 'projects' && (
                     <>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleBulkExport}
-                      >
+                      <Button size="sm" variant="ghost" onClick={handleBulkExport}>
                         <Download className="w-4 h-4 mr-1" />
                         Export
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteProjects(false)}
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => handleDeleteProjects(false)}>
                         <Archive className="w-4 h-4 mr-1" />
                         Move to Trash
                       </Button>
@@ -393,11 +387,7 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
                   )}
                   {activeTab === 'trash' && (
                     <>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleRestoreProjects}
-                      >
+                      <Button size="sm" variant="ghost" onClick={handleRestoreProjects}>
                         <RotateCcw className="w-4 h-4 mr-1" />
                         Restore
                       </Button>
@@ -440,16 +430,13 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
                   {searchQuery
                     ? 'Try adjusting your search'
                     : activeTab === 'trash'
-                    ? 'Deleted projects will appear here'
-                    : activeTab === 'templates'
-                    ? 'Create templates from your projects'
-                    : 'Create your first project to get started'}
+                      ? 'Deleted projects will appear here'
+                      : activeTab === 'templates'
+                        ? 'Create templates from your projects'
+                        : 'Create your first project to get started'}
                 </p>
                 {activeTab === 'projects' && onCreateProject && (
-                  <Button
-                    onClick={onCreateProject}
-                    className="mt-4"
-                  >
+                  <Button onClick={onCreateProject} className="mt-4">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Project
                   </Button>
@@ -458,33 +445,35 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredItems.map((item: any) => {
-                  const isProject = 'user_id' in item;
-                  const isSelected = selectedProjects.includes(item.id);
-                  const isActive = isProject && item.id === currentProjectId;
-                  const isDeleted = isProject && item.deleted_at;
+                  const isProject = 'user_id' in item
+                  const isSelected = selectedProjects.includes(item.id)
+                  const isActive = isProject && item.id === currentProjectId
+                  const isDeleted = isProject && item.deleted_at
 
                   return (
                     <motion.div
                       key={item.id}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => isProject ? handleSelectProject(item) : handleCreateFromTemplate(item)}
+                      onClick={() =>
+                        isProject ? handleSelectProject(item) : handleCreateFromTemplate(item)
+                      }
                       className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         isActive
                           ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
                           : isSelected
-                          ? 'border-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10'
-                          : isDeleted
-                          ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10'
-                          : 'border-gray-200 dark:border-[#2A2A2A] hover:border-gray-300 dark:hover:border-[#3A3A3A]'
+                            ? 'border-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10'
+                            : isDeleted
+                              ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10'
+                              : 'border-gray-200 dark:border-[#2A2A2A] hover:border-gray-300 dark:hover:border-[#3A3A3A]'
                       }`}
                     >
                       {/* Selection Checkbox */}
                       {isProject && activeTab !== 'templates' && (
                         <div
                           onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSelection(item.id);
+                            e.stopPropagation()
+                            toggleSelection(item.id)
                           }}
                           className="absolute top-2 left-2"
                         >
@@ -555,32 +544,35 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
 
                       {isDeleted && item.permanently_delete_at && (
                         <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 rounded text-xs text-red-600 dark:text-red-400">
-                          Auto-deletes in {formatDistanceToNow(new Date(item.permanently_delete_at))}
+                          Auto-deletes in{' '}
+                          {formatDistanceToNow(new Date(item.permanently_delete_at))}
                         </div>
                       )}
                     </motion.div>
-                  );
+                  )
                 })}
               </div>
             ) : (
               // List View
               <div className="space-y-2">
                 {filteredItems.map((item: any) => {
-                  const isProject = 'user_id' in item;
-                  const isSelected = selectedProjects.includes(item.id);
-                  const isActive = isProject && item.id === currentProjectId;
-                  const isDeleted = isProject && item.deleted_at;
+                  const isProject = 'user_id' in item
+                  const isSelected = selectedProjects.includes(item.id)
+                  const isActive = isProject && item.id === currentProjectId
+                  const isDeleted = isProject && item.deleted_at
 
                   return (
                     <div
                       key={item.id}
-                      onClick={() => isProject ? handleSelectProject(item) : handleCreateFromTemplate(item)}
+                      onClick={() =>
+                        isProject ? handleSelectProject(item) : handleCreateFromTemplate(item)
+                      }
                       className={`flex items-center p-3 rounded-lg cursor-pointer transition-all ${
                         isActive
                           ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-500'
                           : isSelected
-                          ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-400'
-                          : 'hover:bg-gray-50 dark:hover:bg-[#1A1A1A] border border-transparent'
+                            ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-400'
+                            : 'hover:bg-gray-50 dark:hover:bg-[#1A1A1A] border border-transparent'
                       }`}
                     >
                       {isProject && activeTab !== 'templates' && (
@@ -588,8 +580,8 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
                           type="checkbox"
                           checked={isSelected}
                           onChange={(e) => {
-                            e.stopPropagation();
-                            toggleSelection(item.id);
+                            e.stopPropagation()
+                            toggleSelection(item.id)
                           }}
                           onClick={(e) => e.stopPropagation()}
                           className="mr-3"
@@ -622,7 +614,7 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
                           : `${item.usageCount} uses`}
                       </div>
                     </div>
-                  );
+                  )
                 })}
               </div>
             )}
@@ -632,7 +624,8 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
           <div className="px-6 py-4 border-t border-gray-200 dark:border-[#2A2A2A] bg-gray-50 dark:bg-[#0B0B0B]">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {filteredItems.length} {activeTab === 'templates' ? 'template' : 'project'}{filteredItems.length !== 1 ? 's' : ''}
+                {filteredItems.length} {activeTab === 'templates' ? 'template' : 'project'}
+                {filteredItems.length !== 1 ? 's' : ''}
                 {activeTab === 'trash' && deletedProjects.length > 0 && (
                   <button
                     onClick={handleEmptyTrash}
@@ -667,7 +660,7 @@ const ProjectSelectorModalEnhanced: React.FC<ProjectSelectorModalEnhancedProps> 
         mode={deleteMode}
       />
     </>
-  );
-};
+  )
+}
 
-export default ProjectSelectorModalEnhanced;
+export default ProjectSelectorModalEnhanced

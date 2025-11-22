@@ -6,93 +6,92 @@
  * Replaces all localStorage usage with proper database storage.
  */
 
-import { supabase, isSupabaseConfigured } from './supabase';
-import { User } from '../types';
+import { isSupabaseConfigured, supabase } from './supabase'
 
 export interface UserPreferences {
   // UI State
   uiState: {
-    activeTab: string;
-    isSidebarExpanded: boolean;
-  };
+    activeTab: string
+    isSidebarExpanded: boolean
+  }
 
   // Voice Settings
   voiceSettings: {
-    mode: 'push-to-talk' | 'always-listening' | 'text-only';
-    privacyWarningShown: boolean;
-    outputEnabled: boolean;
-    outputVoiceId: string | null;
-    speechRate: number;
-  };
+    mode: 'push-to-talk' | 'always-listening' | 'text-only'
+    privacyWarningShown: boolean
+    outputEnabled: boolean
+    outputVoiceId: string | null
+    speechRate: number
+  }
 
   // Style Learning
-  styleLearningEnabled: boolean;
-  styleOptInShown: boolean;
+  styleLearningEnabled: boolean
+  styleOptInShown: boolean
 
   // API Keys (encrypted)
   apiKeys: {
-    gemini?: string;
-    openai?: string;
-    anthropic?: string;
+    gemini?: string
+    openai?: string
+    anthropic?: string
     // Add other providers as needed
-  };
+  }
 
   // Timestamps
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string
+  updatedAt?: string
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   uiState: {
     activeTab: 'script',
-    isSidebarExpanded: true
+    isSidebarExpanded: true,
   },
   voiceSettings: {
     mode: 'push-to-talk',
     privacyWarningShown: false,
     outputEnabled: false,
     outputVoiceId: null,
-    speechRate: 1.0
+    speechRate: 1.0,
   },
   styleLearningEnabled: false,
   styleOptInShown: false,
-  apiKeys: {}
-};
+  apiKeys: {},
+}
 
 interface RequestQueue {
   [userId: string]: {
     operations: Array<{
-      id: string;
-      type: 'update' | 'batch';
-      data: any;
-      resolve: (value: any) => void;
-      reject: (error: any) => void;
-      timestamp: number;
-      retryCount: number;
-    }>;
-    processing: boolean;
-  };
+      id: string
+      type: 'update' | 'batch'
+      data: any
+      resolve: (value: any) => void
+      reject: (error: any) => void
+      timestamp: number
+      retryCount: number
+    }>
+    processing: boolean
+  }
 }
 
 class UserDataService {
-  private cache: Map<string, UserPreferences> = new Map();
-  private requestQueue: RequestQueue = {};
-  private offlineQueue: Array<{ userId: string; operation: any }> = [];
-  private isOnline: boolean = navigator.onLine;
-  private readonly SAVE_DELAY = 2000; // 2 second debounce (increased for better batching)
-  private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY_BASE = 1000; // 1 second base delay
+  private cache: Map<string, UserPreferences> = new Map()
+  private requestQueue: RequestQueue = {}
+  private offlineQueue: Array<{ userId: string; operation: any }> = []
+  private isOnline: boolean = navigator.onLine
+  private readonly SAVE_DELAY = 2000 // 2 second debounce (increased for better batching)
+  private readonly MAX_RETRIES = 3
+  private readonly RETRY_DELAY_BASE = 1000 // 1 second base delay
 
   constructor() {
     // Monitor online/offline status
     window.addEventListener('online', () => {
-      this.isOnline = true;
-      this.processOfflineQueue();
-    });
+      this.isOnline = true
+      this.processOfflineQueue()
+    })
 
     window.addEventListener('offline', () => {
-      this.isOnline = false;
-    });
+      this.isOnline = false
+    })
   }
 
   /**
@@ -100,13 +99,13 @@ class UserDataService {
    */
   async getUserPreferences(userId: string): Promise<UserPreferences> {
     if (!isSupabaseConfigured()) {
-      console.warn('[UserDataService] Supabase not configured, returning defaults');
-      return DEFAULT_PREFERENCES;
+      console.warn('[UserDataService] Supabase not configured, returning defaults')
+      return DEFAULT_PREFERENCES
     }
 
     // Check cache first
     if (this.cache.has(userId)) {
-      return this.cache.get(userId)!;
+      return this.cache.get(userId)!
     }
 
     try {
@@ -116,39 +115,40 @@ class UserDataService {
             .from('user_preferences')
             .select('*')
             .eq('user_id', userId)
-            .single();
+            .single()
 
           if (error) {
             if (error.code === 'PGRST116') {
               // No preferences found, create default ones
-              return await this.createDefaultPreferences(userId);
+              return await this.createDefaultPreferences(userId)
             }
-            throw error;
+            throw error
           }
 
-          return data;
+          return data
         },
         'getUserPreferences',
         userId
-      );
+      )
 
       const preferences: UserPreferences = {
         uiState: result.ui_state || DEFAULT_PREFERENCES.uiState,
         voiceSettings: result.voice_settings || DEFAULT_PREFERENCES.voiceSettings,
-        styleLearningEnabled: result.style_learning_enabled ?? DEFAULT_PREFERENCES.styleLearningEnabled,
+        styleLearningEnabled:
+          result.style_learning_enabled ?? DEFAULT_PREFERENCES.styleLearningEnabled,
         styleOptInShown: result.style_opt_in_shown ?? DEFAULT_PREFERENCES.styleOptInShown,
         apiKeys: result.api_keys || DEFAULT_PREFERENCES.apiKeys,
         createdAt: result.created_at,
-        updatedAt: result.updated_at
-      };
+        updatedAt: result.updated_at,
+      }
 
       // Cache the preferences
-      this.cache.set(userId, preferences);
+      this.cache.set(userId, preferences)
 
-      return preferences;
+      return preferences
     } catch (error) {
-      console.error('[UserDataService] Failed to get preferences:', error);
-      return DEFAULT_PREFERENCES;
+      console.error('[UserDataService] Failed to get preferences:', error)
+      return DEFAULT_PREFERENCES
     }
   }
 
@@ -161,14 +161,14 @@ class UserDataService {
     value: UserPreferences[K]
   ): Promise<void> {
     if (!isSupabaseConfigured()) {
-      console.warn('[UserDataService] Supabase not configured, changes not persisted');
-      return;
+      console.warn('[UserDataService] Supabase not configured, changes not persisted')
+      return
     }
 
     // Update cache immediately (optimistic update)
-    const cached = this.cache.get(userId) || DEFAULT_PREFERENCES;
-    const updated = { ...cached, [key]: value };
-    this.cache.set(userId, updated);
+    const cached = this.cache.get(userId) || DEFAULT_PREFERENCES
+    const updated = { ...cached, [key]: value }
+    this.cache.set(userId, updated)
 
     // Queue the update operation
     await this.queueOperation(userId, {
@@ -178,20 +178,17 @@ class UserDataService {
       resolve: () => {},
       reject: (error) => console.error('[UserDataService] Update failed:', error),
       timestamp: Date.now(),
-      retryCount: 0
-    });
+      retryCount: 0,
+    })
   }
 
   /**
    * Update UI state (activeTab, sidebarExpanded)
    */
-  async updateUIState(
-    userId: string,
-    updates: Partial<UserPreferences['uiState']>
-  ): Promise<void> {
-    const current = await this.getUserPreferences(userId);
-    const updatedUIState = { ...current.uiState, ...updates };
-    await this.updatePreference(userId, 'uiState', updatedUIState);
+  async updateUIState(userId: string, updates: Partial<UserPreferences['uiState']>): Promise<void> {
+    const current = await this.getUserPreferences(userId)
+    const updatedUIState = { ...current.uiState, ...updates }
+    await this.updatePreference(userId, 'uiState', updatedUIState)
   }
 
   /**
@@ -201,9 +198,9 @@ class UserDataService {
     userId: string,
     updates: Partial<UserPreferences['voiceSettings']>
   ): Promise<void> {
-    const current = await this.getUserPreferences(userId);
-    const updatedVoiceSettings = { ...current.voiceSettings, ...updates };
-    await this.updatePreference(userId, 'voiceSettings', updatedVoiceSettings);
+    const current = await this.getUserPreferences(userId)
+    const updatedVoiceSettings = { ...current.voiceSettings, ...updates }
+    await this.updatePreference(userId, 'voiceSettings', updatedVoiceSettings)
   }
 
   /**
@@ -214,17 +211,17 @@ class UserDataService {
     provider: keyof UserPreferences['apiKeys'],
     key: string | undefined
   ): Promise<void> {
-    const current = await this.getUserPreferences(userId);
-    const updatedKeys = { ...current.apiKeys };
+    const current = await this.getUserPreferences(userId)
+    const updatedKeys = { ...current.apiKeys }
 
     if (key) {
       // In production, encrypt the key before storing
-      updatedKeys[provider] = this.encryptKey(key);
+      updatedKeys[provider] = this.encryptKey(key)
     } else {
-      delete updatedKeys[provider];
+      delete updatedKeys[provider]
     }
 
-    await this.updatePreference(userId, 'apiKeys', updatedKeys);
+    await this.updatePreference(userId, 'apiKeys', updatedKeys)
   }
 
   /**
@@ -234,31 +231,28 @@ class UserDataService {
     userId: string,
     provider: keyof UserPreferences['apiKeys']
   ): Promise<string | undefined> {
-    const preferences = await this.getUserPreferences(userId);
-    const encryptedKey = preferences.apiKeys[provider];
+    const preferences = await this.getUserPreferences(userId)
+    const encryptedKey = preferences.apiKeys[provider]
 
-    if (!encryptedKey) return undefined;
+    if (!encryptedKey) return undefined
 
     // In production, decrypt the key
-    return await this.decryptKey(encryptedKey);
+    return await this.decryptKey(encryptedKey)
   }
 
   /**
    * Batch update multiple preferences
    */
-  async batchUpdate(
-    userId: string,
-    updates: Partial<UserPreferences>
-  ): Promise<void> {
+  async batchUpdate(userId: string, updates: Partial<UserPreferences>): Promise<void> {
     if (!isSupabaseConfigured()) {
-      console.warn('[UserDataService] Supabase not configured, changes not persisted');
-      return;
+      console.warn('[UserDataService] Supabase not configured, changes not persisted')
+      return
     }
 
     // Update cache
-    const cached = this.cache.get(userId) || DEFAULT_PREFERENCES;
-    const updated = { ...cached, ...updates };
-    this.cache.set(userId, updated);
+    const cached = this.cache.get(userId) || DEFAULT_PREFERENCES
+    const updated = { ...cached, ...updates }
+    this.cache.set(userId, updated)
 
     // Queue the batch update operation
     await this.queueOperation(userId, {
@@ -268,8 +262,8 @@ class UserDataService {
       resolve: () => {},
       reject: (error) => console.error('[UserDataService] Batch update failed:', error),
       timestamp: Date.now(),
-      retryCount: 0
-    });
+      retryCount: 0,
+    })
   }
 
   /**
@@ -280,16 +274,16 @@ class UserDataService {
     if (!this.requestQueue[userId]) {
       this.requestQueue[userId] = {
         operations: [],
-        processing: false
-      };
+        processing: false,
+      }
     }
 
     // Add operation to queue
-    this.requestQueue[userId].operations.push(operation);
+    this.requestQueue[userId].operations.push(operation)
 
     // Process queue if not already processing
     if (!this.requestQueue[userId].processing) {
-      this.processQueue(userId);
+      this.processQueue(userId)
     }
   }
 
@@ -297,99 +291,108 @@ class UserDataService {
    * Process the operation queue for a user
    */
   private async processQueue(userId: string): Promise<void> {
-    const queue = this.requestQueue[userId];
-    if (!queue || queue.processing) return;
+    const queue = this.requestQueue[userId]
+    if (!queue || queue.processing) return
 
-    queue.processing = true;
+    queue.processing = true
 
     while (queue.operations.length > 0) {
-      const operation = queue.operations[0];
+      const operation = queue.operations[0]
 
       try {
         // Wait for debounce delay if needed
-        const timeSinceLastOp = Date.now() - operation.timestamp;
+        const timeSinceLastOp = Date.now() - operation.timestamp
         if (timeSinceLastOp < this.SAVE_DELAY) {
-          await this.sleep(this.SAVE_DELAY - timeSinceLastOp);
+          await this.sleep(this.SAVE_DELAY - timeSinceLastOp)
         }
 
         // Process the operation
         if (operation.type === 'update') {
-          await this.processUpdate(userId, operation);
+          await this.processUpdate(userId, operation)
         } else if (operation.type === 'batch') {
-          await this.processBatchUpdate(userId, operation);
+          await this.processBatchUpdate(userId, operation)
         }
 
         // Remove processed operation
-        queue.operations.shift();
-        operation.resolve(undefined);
-
+        queue.operations.shift()
+        operation.resolve(undefined)
       } catch (error) {
-        console.error('[UserDataService] Operation failed:', error);
+        console.error('[UserDataService] Operation failed:', error)
 
         // Retry logic
-        operation.retryCount++;
+        operation.retryCount++
         if (operation.retryCount <= this.MAX_RETRIES) {
           // Exponential backoff
-          const delay = this.RETRY_DELAY_BASE * Math.pow(2, operation.retryCount - 1);
-          await this.sleep(delay);
+          const delay = this.RETRY_DELAY_BASE * 2 ** (operation.retryCount - 1)
+          await this.sleep(delay)
 
           // Move operation to end of queue for retry
-          queue.operations.push(queue.operations.shift()!);
+          queue.operations.push(queue.operations.shift()!)
         } else {
           // Max retries reached, fail the operation
-          queue.operations.shift();
-          operation.reject(error);
+          queue.operations.shift()
+          operation.reject(error)
         }
       }
     }
 
-    queue.processing = false;
+    queue.processing = false
   }
 
   /**
    * Process single update operation
    */
   private async processUpdate(userId: string, operation: any): Promise<void> {
-    await this.withRetry(async () => {
-      const { key, value } = operation.data;
-      const dbField = this.getDbField(key);
-      const dbValue = key === 'apiKeys' ? await this.encryptKeys(value) : value;
+    await this.withRetry(
+      async () => {
+        const { key, value } = operation.data
+        const dbField = this.getDbField(key)
+        const dbValue = key === 'apiKeys' ? await this.encryptKeys(value) : value
 
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userId,
-          [dbField]: dbValue,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        });
+        const { error } = await supabase.from('user_preferences').upsert(
+          {
+            user_id: userId,
+            [dbField]: dbValue,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id',
+            ignoreDuplicates: false,
+          }
+        )
 
-      if (error) throw error;
-    }, 'processUpdate', userId);
+        if (error) throw error
+      },
+      'processUpdate',
+      userId
+    )
   }
 
   /**
    * Process batch update operation
    */
   private async processBatchUpdate(userId: string, operation: any): Promise<void> {
-    await this.withRetry(async () => {
-      const dbData = await this.toDbFormat(operation.data);
+    await this.withRetry(
+      async () => {
+        const dbData = await this.toDbFormat(operation.data)
 
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userId,
-          ...dbData,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        });
+        const { error } = await supabase.from('user_preferences').upsert(
+          {
+            user_id: userId,
+            ...dbData,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id',
+            ignoreDuplicates: false,
+          }
+        )
 
-      if (error) throw error;
-    }, 'processBatchUpdate', userId);
+        if (error) throw error
+      },
+      'processBatchUpdate',
+      userId
+    )
   }
 
   /**
@@ -402,54 +405,53 @@ class UserDataService {
     retryCount: number = 0
   ): Promise<T> {
     try {
-      return await operation();
+      return await operation()
     } catch (error: any) {
       // Handle specific error types
       if (error.code === 'PGRST116' || error.code === '23505') {
         // No data found or duplicate key - handle gracefully
-        console.warn(`[UserDataService] ${operationName} conflict, attempting merge...`);
-        return await this.handleConflict(userId, operationName, error);
+        console.warn(`[UserDataService] ${operationName} conflict, attempting merge...`)
+        return await this.handleConflict(userId, operationName, error)
       }
 
       if (retryCount < this.MAX_RETRIES && this.isOnline) {
-        const delay = this.RETRY_DELAY_BASE * Math.pow(2, retryCount);
-        console.warn(`[UserDataService] ${operationName} failed, retrying in ${delay}ms...`);
-        await this.sleep(delay);
-        return this.withRetry(operation, operationName, userId, retryCount + 1);
+        const delay = this.RETRY_DELAY_BASE * 2 ** retryCount
+        console.warn(`[UserDataService] ${operationName} failed, retrying in ${delay}ms...`)
+        await this.sleep(delay)
+        return this.withRetry(operation, operationName, userId, retryCount + 1)
       }
 
-      throw error;
+      throw error
     }
   }
 
   /**
    * Handle database conflicts
    */
-  private async handleConflict(
-    userId: string,
-    operationName: string,
-    error: any
-  ): Promise<any> {
+  private async handleConflict(userId: string, operationName: string, error: any): Promise<any> {
     try {
       // For conflicts, try to fetch current state and merge
       const { data, error: fetchError } = await supabase
         .from('user_preferences')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .single()
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
           // No record exists, create it
-          return await this.createDefaultPreferences(userId);
+          return await this.createDefaultPreferences(userId)
         }
-        throw fetchError;
+        throw fetchError
       }
 
-      return data;
+      return data
     } catch (mergeError) {
-      console.error(`[UserDataService] Failed to resolve conflict for ${operationName}:`, mergeError);
-      throw error; // Throw original error
+      console.error(
+        `[UserDataService] Failed to resolve conflict for ${operationName}:`,
+        mergeError
+      )
+      throw error // Throw original error
     }
   }
 
@@ -457,24 +459,24 @@ class UserDataService {
    * Process offline queue when connection is restored
    */
   private async processOfflineQueue(): Promise<void> {
-    if (this.offlineQueue.length === 0) return;
+    if (this.offlineQueue.length === 0) return
 
-    console.log(`[UserDataService] Processing ${this.offlineQueue.length} offline operations`);
+    console.log(`[UserDataService] Processing ${this.offlineQueue.length} offline operations`)
 
-    const operations = [...this.offlineQueue];
-    this.offlineQueue = [];
+    const operations = [...this.offlineQueue]
+    this.offlineQueue = []
 
     for (const { userId, operation } of operations) {
       try {
         if (operation.type === 'update') {
-          await this.processUpdate(userId, operation);
+          await this.processUpdate(userId, operation)
         } else if (operation.type === 'batch') {
-          await this.processBatchUpdate(userId, operation);
+          await this.processBatchUpdate(userId, operation)
         }
       } catch (error) {
-        console.error('[UserDataService] Failed to process offline operation:', error);
+        console.error('[UserDataService] Failed to process offline operation:', error)
         // Re-queue for later attempt
-        this.offlineQueue.push({ userId, operation });
+        this.offlineQueue.push({ userId, operation })
       }
     }
   }
@@ -484,11 +486,11 @@ class UserDataService {
    */
   clearCache(userId?: string) {
     if (userId) {
-      this.cache.delete(userId);
-      delete this.requestQueue[userId];
+      this.cache.delete(userId)
+      delete this.requestQueue[userId]
     } else {
-      this.cache.clear();
-      this.requestQueue = {};
+      this.cache.clear()
+      this.requestQueue = {}
     }
   }
 
@@ -496,27 +498,27 @@ class UserDataService {
    * Migrate localStorage data to Supabase (one-time migration)
    */
   async migrateFromLocalStorage(userId: string): Promise<void> {
-    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (typeof window === 'undefined' || !window.localStorage) return
 
     try {
-      const migrations: Partial<UserPreferences> = {};
+      const migrations: Partial<UserPreferences> = {}
 
       // Migrate UI state
-      const uiStateRaw = localStorage.getItem('UI_STATE_STORAGE_KEY');
+      const uiStateRaw = localStorage.getItem('UI_STATE_STORAGE_KEY')
       if (uiStateRaw) {
         try {
-          migrations.uiState = JSON.parse(uiStateRaw);
+          migrations.uiState = JSON.parse(uiStateRaw)
         } catch (e) {
-          console.error('[UserDataService] Failed to parse UI state:', e);
+          console.error('[UserDataService] Failed to parse UI state:', e)
         }
       }
 
       // Migrate voice settings
-      const voiceMode = localStorage.getItem('alkemy_voice_mode_preference');
-      const voicePrivacy = localStorage.getItem('alkemy_voice_privacy_warning_shown');
-      const voiceOutput = localStorage.getItem('alkemy_voice_output_enabled');
-      const voiceId = localStorage.getItem('alkemy_voice_output_voice_id');
-      const voiceRate = localStorage.getItem('alkemy_voice_output_speech_rate');
+      const voiceMode = localStorage.getItem('alkemy_voice_mode_preference')
+      const voicePrivacy = localStorage.getItem('alkemy_voice_privacy_warning_shown')
+      const voiceOutput = localStorage.getItem('alkemy_voice_output_enabled')
+      const voiceId = localStorage.getItem('alkemy_voice_output_voice_id')
+      const voiceRate = localStorage.getItem('alkemy_voice_output_speech_rate')
 
       if (voiceMode || voicePrivacy || voiceOutput || voiceId || voiceRate) {
         migrations.voiceSettings = {
@@ -524,32 +526,31 @@ class UserDataService {
           privacyWarningShown: voicePrivacy === 'true',
           outputEnabled: voiceOutput === 'true',
           outputVoiceId: voiceId || null,
-          speechRate: voiceRate ? parseFloat(voiceRate) : 1.0
-        };
+          speechRate: voiceRate ? parseFloat(voiceRate) : 1.0,
+        }
       }
 
       // Migrate style learning
-      const styleLearning = localStorage.getItem('alkemy_style_learning_enabled');
-      const styleOptIn = localStorage.getItem('alkemy_style_opt_in_shown');
+      const styleLearning = localStorage.getItem('alkemy_style_learning_enabled')
+      const styleOptIn = localStorage.getItem('alkemy_style_opt_in_shown')
 
       if (styleLearning !== null) {
-        migrations.styleLearningEnabled = styleLearning === 'true';
+        migrations.styleLearningEnabled = styleLearning === 'true'
       }
       if (styleOptIn !== null) {
-        migrations.styleOptInShown = styleOptIn === 'true';
+        migrations.styleOptInShown = styleOptIn === 'true'
       }
 
       // Save migrated data
       if (Object.keys(migrations).length > 0) {
-        await this.batchUpdate(userId, migrations);
-        console.log('[UserDataService] Successfully migrated localStorage data');
+        await this.batchUpdate(userId, migrations)
+        console.log('[UserDataService] Successfully migrated localStorage data')
 
         // Clear localStorage after successful migration
-        this.clearLocalStorageKeys();
+        this.clearLocalStorageKeys()
       }
-
     } catch (error) {
-      console.error('[UserDataService] Migration failed:', error);
+      console.error('[UserDataService] Migration failed:', error)
     }
   }
 
@@ -557,136 +558,131 @@ class UserDataService {
 
   private async createDefaultPreferences(userId: string): Promise<UserPreferences> {
     try {
-      const result = await this.withRetry(async () => {
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .insert({
-            user_id: userId,
-            ui_state: DEFAULT_PREFERENCES.uiState,
-            voice_settings: DEFAULT_PREFERENCES.voiceSettings,
-            style_learning_enabled: DEFAULT_PREFERENCES.styleLearningEnabled,
-            style_opt_in_shown: DEFAULT_PREFERENCES.styleOptInShown,
-            api_keys: DEFAULT_PREFERENCES.apiKeys
-          })
-          .select()
-          .single();
+      const result = await this.withRetry(
+        async () => {
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .insert({
+              user_id: userId,
+              ui_state: DEFAULT_PREFERENCES.uiState,
+              voice_settings: DEFAULT_PREFERENCES.voiceSettings,
+              style_learning_enabled: DEFAULT_PREFERENCES.styleLearningEnabled,
+              style_opt_in_shown: DEFAULT_PREFERENCES.styleOptInShown,
+              api_keys: DEFAULT_PREFERENCES.apiKeys,
+            })
+            .select()
+            .single()
 
-        if (error) throw error;
-        return data;
-      }, 'createDefaultPreferences', userId);
+          if (error) throw error
+          return data
+        },
+        'createDefaultPreferences',
+        userId
+      )
 
       const preferences: UserPreferences = {
         ...DEFAULT_PREFERENCES,
         createdAt: result.created_at,
-        updatedAt: result.updated_at
-      };
+        updatedAt: result.updated_at,
+      }
 
-      this.cache.set(userId, preferences);
-      return preferences;
-
+      this.cache.set(userId, preferences)
+      return preferences
     } catch (error) {
-      console.error('[UserDataService] Failed to create default preferences:', error);
-      return DEFAULT_PREFERENCES;
+      console.error('[UserDataService] Failed to create default preferences:', error)
+      return DEFAULT_PREFERENCES
     }
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   private generateOperationId(): string {
-    return `op_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `op_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 
   private getDbField(key: string): string {
     const fieldMap: Record<string, string> = {
-      'uiState': 'ui_state',
-      'voiceSettings': 'voice_settings',
-      'styleLearningEnabled': 'style_learning_enabled',
-      'styleOptInShown': 'style_opt_in_shown',
-      'apiKeys': 'api_keys'
-    };
-    return fieldMap[key] || key;
+      uiState: 'ui_state',
+      voiceSettings: 'voice_settings',
+      styleLearningEnabled: 'style_learning_enabled',
+      styleOptInShown: 'style_opt_in_shown',
+      apiKeys: 'api_keys',
+    }
+    return fieldMap[key] || key
   }
 
   private async toDbFormat(preferences: Partial<UserPreferences>): Promise<Record<string, any>> {
-    const dbData: Record<string, any> = {};
+    const dbData: Record<string, any> = {}
 
-    if (preferences.uiState) dbData.ui_state = preferences.uiState;
-    if (preferences.voiceSettings) dbData.voice_settings = preferences.voiceSettings;
+    if (preferences.uiState) dbData.ui_state = preferences.uiState
+    if (preferences.voiceSettings) dbData.voice_settings = preferences.voiceSettings
     if (preferences.styleLearningEnabled !== undefined) {
-      dbData.style_learning_enabled = preferences.styleLearningEnabled;
+      dbData.style_learning_enabled = preferences.styleLearningEnabled
     }
     if (preferences.styleOptInShown !== undefined) {
-      dbData.style_opt_in_shown = preferences.styleOptInShown;
+      dbData.style_opt_in_shown = preferences.styleOptInShown
     }
-    if (preferences.apiKeys) dbData.api_keys = await this.encryptKeys(preferences.apiKeys);
+    if (preferences.apiKeys) dbData.api_keys = await this.encryptKeys(preferences.apiKeys)
 
-    return dbData;
+    return dbData
   }
 
   private async getEncryptionKey(): Promise<CryptoKey> {
     // Get or create encryption key from localStorage
-    const keyData = localStorage.getItem('encryption_key');
+    const keyData = localStorage.getItem('encryption_key')
 
     if (keyData) {
       // Import existing key
-      const keyBuffer = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
-      return await crypto.subtle.importKey(
-        'raw',
-        keyBuffer,
-        { name: 'AES-GCM' },
-        false,
-        ['encrypt', 'decrypt']
-      );
+      const keyBuffer = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0))
+      return await crypto.subtle.importKey('raw', keyBuffer, { name: 'AES-GCM' }, false, [
+        'encrypt',
+        'decrypt',
+      ])
     }
 
     // Generate new key
-    const key = await crypto.subtle.generateKey(
-      { name: 'AES-GCM', length: 256 },
-      true,
-      ['encrypt', 'decrypt']
-    );
+    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
+      'encrypt',
+      'decrypt',
+    ])
 
     // Export and store key
-    const exportedKey = await crypto.subtle.exportKey('raw', key);
-    const keyString = btoa(String.fromCharCode(...new Uint8Array(exportedKey)));
-    localStorage.setItem('encryption_key', keyString);
+    const exportedKey = await crypto.subtle.exportKey('raw', key)
+    const keyString = btoa(String.fromCharCode(...new Uint8Array(exportedKey)))
+    localStorage.setItem('encryption_key', keyString)
 
-    return key;
+    return key
   }
 
   private async encryptKey(key: string): Promise<string> {
     try {
       // Fallback to base64 if Web Crypto not available
       if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
-        console.warn('[UserService] Web Crypto not available, falling back to base64 encoding');
-        return typeof window !== 'undefined' && window.btoa ? window.btoa(key) : key;
+        console.warn('[UserService] Web Crypto not available, falling back to base64 encoding')
+        return typeof window !== 'undefined' && window.btoa ? window.btoa(key) : key
       }
 
-      const encryptionKey = await this.getEncryptionKey();
-      const encoder = new TextEncoder();
-      const data = encoder.encode(key);
+      const encryptionKey = await this.getEncryptionKey()
+      const encoder = new TextEncoder()
+      const data = encoder.encode(key)
 
       // Generate random IV
-      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const iv = crypto.getRandomValues(new Uint8Array(12))
 
       // Encrypt
-      const encrypted = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
-        encryptionKey,
-        data
-      );
+      const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, encryptionKey, data)
 
       // Combine IV + encrypted data
-      const combined = new Uint8Array(iv.length + new Uint8Array(encrypted).length);
-      combined.set(iv);
-      combined.set(new Uint8Array(encrypted), iv.length);
+      const combined = new Uint8Array(iv.length + new Uint8Array(encrypted).length)
+      combined.set(iv)
+      combined.set(new Uint8Array(encrypted), iv.length)
 
-      return btoa(String.fromCharCode(...combined));
+      return btoa(String.fromCharCode(...combined))
     } catch (error) {
-      console.warn('[UserService] Encryption failed, falling back to base64:', error);
-      return typeof window !== 'undefined' && window.btoa ? window.btoa(key) : key;
+      console.warn('[UserService] Encryption failed, falling back to base64:', error)
+      return typeof window !== 'undefined' && window.btoa ? window.btoa(key) : key
     }
   }
 
@@ -694,47 +690,43 @@ class UserDataService {
     try {
       // Fallback to base64 if Web Crypto not available
       if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
-        console.warn('[UserService] Web Crypto not available, falling back to base64 decoding');
+        console.warn('[UserService] Web Crypto not available, falling back to base64 decoding')
         if (typeof window !== 'undefined' && window.atob) {
           try {
-            return window.atob(encryptedKey);
+            return window.atob(encryptedKey)
           } catch {
-            return encryptedKey;
+            return encryptedKey
           }
         }
-        return encryptedKey;
+        return encryptedKey
       }
 
-      const encryptionKey = await this.getEncryptionKey();
-      const combined = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0));
+      const encryptionKey = await this.getEncryptionKey()
+      const combined = Uint8Array.from(atob(encryptedKey), (c) => c.charCodeAt(0))
 
       // Extract IV (first 12 bytes)
-      const iv = combined.slice(0, 12);
-      const data = combined.slice(12);
+      const iv = combined.slice(0, 12)
+      const data = combined.slice(12)
 
       // Decrypt
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv },
-        encryptionKey,
-        data
-      );
+      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, encryptionKey, data)
 
-      const decoder = new TextDecoder();
-      return decoder.decode(decrypted);
+      const decoder = new TextDecoder()
+      return decoder.decode(decrypted)
     } catch (error) {
-      console.warn('[UserService] Decryption failed, returning original:', error);
-      return encryptedKey;
+      console.warn('[UserService] Decryption failed, returning original:', error)
+      return encryptedKey
     }
   }
 
   private async encryptKeys(keys: UserPreferences['apiKeys']): Promise<UserPreferences['apiKeys']> {
-    const encrypted: UserPreferences['apiKeys'] = {};
+    const encrypted: UserPreferences['apiKeys'] = {}
     for (const [provider, key] of Object.entries(keys)) {
       if (key) {
-        encrypted[provider as keyof UserPreferences['apiKeys']] = await this.encryptKey(key);
+        encrypted[provider as keyof UserPreferences['apiKeys']] = await this.encryptKey(key)
       }
     }
-    return encrypted;
+    return encrypted
   }
 
   private clearLocalStorageKeys() {
@@ -748,16 +740,16 @@ class UserDataService {
       'alkemy_style_learning_enabled',
       'alkemy_style_opt_in_shown',
       'alkemy_style_profile',
-      'PROJECT_STORAGE_KEY'
-    ];
+      'PROJECT_STORAGE_KEY',
+    ]
 
-    keysToRemove.forEach(key => {
+    keysToRemove.forEach((key) => {
       try {
-        localStorage.removeItem(key);
-      } catch (e) {
+        localStorage.removeItem(key)
+      } catch (_e) {
         // Ignore errors
       }
-    });
+    })
   }
 
   /**
@@ -765,9 +757,9 @@ class UserDataService {
    */
   dispose() {
     // Clear all queues and cache
-    this.requestQueue = {};
-    this.offlineQueue = [];
-    this.cache.clear();
+    this.requestQueue = {}
+    this.offlineQueue = []
+    this.cache.clear()
   }
 
   /**
@@ -777,93 +769,96 @@ class UserDataService {
     return {
       isOnline: this.isOnline,
       cacheSize: this.cache.size,
-      queueSize: Object.keys(this.requestQueue).reduce((total, userId) =>
-        total + this.requestQueue[userId].operations.length, 0),
-      offlineQueueSize: this.offlineQueue.length
-    };
+      queueSize: Object.keys(this.requestQueue).reduce(
+        (total, userId) => total + this.requestQueue[userId].operations.length,
+        0
+      ),
+      offlineQueueSize: this.offlineQueue.length,
+    }
   }
 }
 
 // Add React import
-import * as React from 'react';
+import * as React from 'react'
 
 // Export singleton instance
-export const userDataService = new UserDataService();
+export const userDataService = new UserDataService()
 
 // React hook for easy component integration
 export function useUserPreferences(userId: string | null) {
-  const [preferences, setPreferences] = React.useState<UserPreferences>(DEFAULT_PREFERENCES);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [status, setStatus] = React.useState<'online' | 'offline' | 'syncing'>('online');
+  const [preferences, setPreferences] = React.useState<UserPreferences>(DEFAULT_PREFERENCES)
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [status, setStatus] = React.useState<'online' | 'offline' | 'syncing'>('online')
 
   React.useEffect(() => {
     // Update status based on online state
     const updateStatus = () => {
       if (!navigator.onLine) {
-        setStatus('offline');
+        setStatus('offline')
       } else {
-        setStatus('online');
+        setStatus('online')
       }
-    };
+    }
 
-    window.addEventListener('online', updateStatus);
-    window.addEventListener('offline', updateStatus);
+    window.addEventListener('online', updateStatus)
+    window.addEventListener('offline', updateStatus)
 
     return () => {
-      window.removeEventListener('online', updateStatus);
-      window.removeEventListener('offline', updateStatus);
-    };
-  }, []);
+      window.removeEventListener('online', updateStatus)
+      window.removeEventListener('offline', updateStatus)
+    }
+  }, [])
 
   React.useEffect(() => {
     if (!userId) {
-      setPreferences(DEFAULT_PREFERENCES);
-      setLoading(false);
-      setError(null);
-      return;
+      setPreferences(DEFAULT_PREFERENCES)
+      setLoading(false)
+      setError(null)
+      return
     }
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     // Load preferences with proper error handling
-    userDataService.getUserPreferences(userId)
+    userDataService
+      .getUserPreferences(userId)
       .then(setPreferences)
       .catch((err) => {
-        console.error('User preferences load failed:', err);
-        setError(err.message || 'Failed to load user preferences');
-        setPreferences(DEFAULT_PREFERENCES); // Fallback to defaults
+        console.error('User preferences load failed:', err)
+        setError(err.message || 'Failed to load user preferences')
+        setPreferences(DEFAULT_PREFERENCES) // Fallback to defaults
       })
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false))
 
     // Subscribe to changes (if we add real-time updates later)
     // const unsubscribe = userDataService.subscribe(userId, setPreferences);
     // return unsubscribe;
-  }, [userId]);
+  }, [userId])
 
   const updatePreference = React.useCallback(
     async <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
-      if (!userId) return;
+      if (!userId) return
 
       // Optimistic update
-      setPreferences(prev => ({ ...prev, [key]: value }));
+      setPreferences((prev) => ({ ...prev, [key]: value }))
 
       // Set syncing status
-      setStatus('syncing');
+      setStatus('syncing')
 
       // Persist to database
       try {
-        await userDataService.updatePreference(userId, key, value);
-        setStatus('online');
+        await userDataService.updatePreference(userId, key, value)
+        setStatus('online')
       } catch (error) {
-        console.error('Update failed:', error);
-        setStatus('offline');
-        setError('Failed to save preferences');
+        console.error('Update failed:', error)
+        setStatus('offline')
+        setError('Failed to save preferences')
       }
     },
     [userId]
-  );
+  )
 
   return {
     preferences,
@@ -881,6 +876,6 @@ export function useUserPreferences(userId: string | null) {
       userId ? userDataService.getAPIKey(userId, provider) : Promise.resolve(undefined),
     migrateFromLocalStorage: () =>
       userId ? userDataService.migrateFromLocalStorage(userId) : Promise.resolve(),
-    serviceStatus: userDataService.getStatus()
-  };
+    serviceStatus: userDataService.getStatus(),
+  }
 }

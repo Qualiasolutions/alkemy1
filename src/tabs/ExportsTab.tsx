@@ -1,72 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import Button from '../components/Button';
-import { SaveIcon, FilmIcon, AlertCircleIcon, CheckIcon, DownloadIcon } from '../components/icons/Icons';
-import { TimelineClip } from '../types';
-import { renderTimelineToVideo, loadFFmpeg, isFFmpegReady } from '../services/videoRenderingService';
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import Button from '../components/Button'
+import { AlertCircleIcon, CheckIcon, DownloadIcon, FilmIcon } from '../components/icons/Icons'
+import { isFFmpegReady, loadFFmpeg, renderTimelineToVideo } from '../services/videoRenderingService'
+import type { TimelineClip } from '../types'
 
 interface ExportSettings {
-  resolution: '720p' | '1080p' | '4K';
-  format: 'mp4' | 'mov' | 'webm';
-  codec: 'h264' | 'h265' | 'vp9';
-  quality: 'low' | 'medium' | 'high' | 'ultra';
-  aspectRatio: '16:9' | '9:16' | '1:1' | '4:3';
+  resolution: '720p' | '1080p' | '4K'
+  format: 'mp4' | 'mov' | 'webm'
+  codec: 'h264' | 'h265' | 'vp9'
+  quality: 'low' | 'medium' | 'high' | 'ultra'
+  aspectRatio: '16:9' | '9:16' | '1:1' | '4:3'
 }
 
 interface ExportJob {
-  id: string;
-  name: string;
-  settings: ExportSettings;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
-  progress: number;
-  startTime?: number;
-  endTime?: number;
-  outputUrl?: string;
+  id: string
+  name: string
+  settings: ExportSettings
+  status: 'queued' | 'processing' | 'completed' | 'failed'
+  progress: number
+  startTime?: number
+  endTime?: number
+  outputUrl?: string
 }
 
-const RESOLUTION_MAP = {
+const _RESOLUTION_MAP = {
   '720p': { width: 1280, height: 720 },
   '1080p': { width: 1920, height: 1080 },
   '4K': { width: 3840, height: 2160 },
-};
+}
 
 interface ExportsTabProps {
-  timelineClips: TimelineClip[];
+  timelineClips: TimelineClip[]
 }
 
 const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
-  const [exportJobs, setExportJobs] = useState<ExportJob[]>([]);
-  const [isFFmpegInitialized, setIsFFmpegInitialized] = useState(false);
-  const [initializingFFmpeg, setInitializingFFmpeg] = useState(false);
+  const [exportJobs, setExportJobs] = useState<ExportJob[]>([])
+  const [isFFmpegInitialized, setIsFFmpegInitialized] = useState(false)
+  const [initializingFFmpeg, setInitializingFFmpeg] = useState(false)
   const [settings, setSettings] = useState<ExportSettings>({
     resolution: '1080p',
     format: 'mp4',
     codec: 'h264',
     quality: 'high',
     aspectRatio: '16:9',
-  });
+  })
 
   useEffect(() => {
     // Pre-load FFmpeg when tab opens
     if (!isFFmpegReady() && !initializingFFmpeg) {
-      setInitializingFFmpeg(true);
+      setInitializingFFmpeg(true)
       loadFFmpeg((msg) => console.log('[FFmpeg Init]', msg))
         .then(() => {
-          setIsFFmpegInitialized(true);
-          setInitializingFFmpeg(false);
+          setIsFFmpegInitialized(true)
+          setInitializingFFmpeg(false)
         })
         .catch((error) => {
-          console.error('Failed to initialize FFmpeg:', error);
-          setInitializingFFmpeg(false);
-        });
+          console.error('Failed to initialize FFmpeg:', error)
+          setInitializingFFmpeg(false)
+        })
     } else if (isFFmpegReady()) {
-      setIsFFmpegInitialized(true);
+      setIsFFmpegInitialized(true)
     }
-  }, []);
+  }, [initializingFFmpeg])
 
   const handleStartExport = async () => {
     if (timelineClips.length === 0) {
-      alert('No clips in timeline. Please add clips to the timeline before exporting.');
-      return;
+      alert('No clips in timeline. Please add clips to the timeline before exporting.')
+      return
     }
 
     const newJob: ExportJob = {
@@ -76,125 +77,154 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
       status: 'queued',
       progress: 0,
       startTime: Date.now(),
-    };
+    }
 
-    setExportJobs(prev => [newJob, ...prev]);
+    setExportJobs((prev) => [newJob, ...prev])
 
     // Start processing immediately
-    setExportJobs(prev => prev.map(job =>
-      job.id === newJob.id ? { ...job, status: 'processing' as const } : job
-    ));
+    setExportJobs((prev) =>
+      prev.map((job) => (job.id === newJob.id ? { ...job, status: 'processing' as const } : job))
+    )
 
     try {
       // Render using FFmpeg.wasm
       const videoBlob = await renderTimelineToVideo(
         timelineClips,
         settings,
-        (progress, message) => {
-          setExportJobs(prev => prev.map(job =>
-            job.id === newJob.id ? { ...job, progress: Math.round(progress) } : job
-          ));
+        (progress, _message) => {
+          setExportJobs((prev) =>
+            prev.map((job) =>
+              job.id === newJob.id ? { ...job, progress: Math.round(progress) } : job
+            )
+          )
         }
-      );
+      )
 
       // Create object URL for download
-      const outputUrl = URL.createObjectURL(videoBlob);
+      const outputUrl = URL.createObjectURL(videoBlob)
 
-      setExportJobs(prev => prev.map(job =>
-        job.id === newJob.id
-          ? {
-              ...job,
-              status: 'completed' as const,
-              progress: 100,
-              endTime: Date.now(),
-              outputUrl,
-            }
-          : job
-      ));
+      setExportJobs((prev) =>
+        prev.map((job) =>
+          job.id === newJob.id
+            ? {
+                ...job,
+                status: 'completed' as const,
+                progress: 100,
+                endTime: Date.now(),
+                outputUrl,
+              }
+            : job
+        )
+      )
     } catch (error) {
-      console.error('Export failed:', error);
-      setExportJobs(prev => prev.map(job =>
-        job.id === newJob.id
-          ? {
-              ...job,
-              status: 'failed' as const,
-              progress: 0,
-            }
-          : job
-      ));
-      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Export failed:', error)
+      setExportJobs((prev) =>
+        prev.map((job) =>
+          job.id === newJob.id
+            ? {
+                ...job,
+                status: 'failed' as const,
+                progress: 0,
+              }
+            : job
+        )
+      )
+      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-  };
+  }
 
   const handleDownload = (job: ExportJob) => {
     if (job.outputUrl) {
-      const link = document.createElement('a');
-      link.href = job.outputUrl;
-      link.download = `${job.name}.${job.settings.format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const link = document.createElement('a')
+      link.href = job.outputUrl
+      link.download = `${job.name}.${job.settings.format}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     }
-  };
+  }
 
   const handleDeleteJob = (jobId: string) => {
-    setExportJobs(prev => prev.filter(job => job.id !== jobId));
-  };
+    setExportJobs((prev) => prev.filter((job) => job.id !== jobId))
+  }
 
   const getEstimatedSize = () => {
-    const resolutions = { '720p': 500, '1080p': 1500, '4K': 8000 };
-    const qualities = { low: 0.5, medium: 1, high: 1.5, ultra: 2.5 };
-    const baseSize = resolutions[settings.resolution] * qualities[settings.quality];
-    return `~${(baseSize / 1000).toFixed(1)} GB (for 10min video)`;
-  };
+    const resolutions = { '720p': 500, '1080p': 1500, '4K': 8000 }
+    const qualities = { low: 0.5, medium: 1, high: 1.5, ultra: 2.5 }
+    const baseSize = resolutions[settings.resolution] * qualities[settings.quality]
+    return `~${(baseSize / 1000).toFixed(1)} GB (for 10min video)`
+  }
 
   return (
     <div className="w-full h-full flex flex-col bg-zinc-950 text-white p-6">
       <header className="mb-6">
         <h2 className={`text-2xl font-bold mb-1 text-[var(--color-text-primary)]`}>Exports</h2>
-        <p className={`text-md text-[var(--color-text-secondary)]`}>Render your timeline to final video files in multiple formats and resolutions.</p>
+        <p className={`text-md text-[var(--color-text-secondary)]`}>
+          Render your timeline to final video files in multiple formats and resolutions.
+        </p>
       </header>
 
       {!isFFmpegInitialized && (
-        <div className="bg-[var(--color-accent-primary)]/10 border text-sm rounded-lg p-3 flex items-start gap-3 mb-6" style={{ borderColor: 'var(--color-accent-primary)', color: 'var(--color-accent-primary)' }}>
+        <div
+          className="bg-[var(--color-accent-primary)]/10 border text-sm rounded-lg p-3 flex items-start gap-3 mb-6"
+          style={{
+            borderColor: 'var(--color-accent-primary)',
+            color: 'var(--color-accent-primary)',
+          }}
+        >
           <AlertCircleIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
             <span className="font-semibold">
               {initializingFFmpeg ? 'Initializing FFmpeg...' : 'FFmpeg Loading'}
-            </span>
-            {' '}FFmpeg.wasm is loading in the background. Export functionality will be available shortly.
+            </span>{' '}
+            FFmpeg.wasm is loading in the background. Export functionality will be available
+            shortly.
           </div>
         </div>
       )}
 
       {isFFmpegInitialized && timelineClips.length === 0 && (
-        <div className={`bg-yellow-900/20 border border-yellow-700 text-yellow-300 text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
+        <div
+          className={`bg-yellow-900/20 border border-yellow-700 text-yellow-300 text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}
+        >
           <AlertCircleIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
-            <span className="font-semibold">No Timeline Clips:</span> Please add video clips to the Timeline tab before exporting. Go to Compositing → Transfer shots to Timeline.
+            <span className="font-semibold">No Timeline Clips:</span> Please add video clips to the
+            Timeline tab before exporting. Go to Compositing → Transfer shots to Timeline.
           </div>
         </div>
       )}
 
       {isFFmpegInitialized && timelineClips.length > 0 && (
-        <div className={`bg-[#DFEC2D]/10/20 border border-[#DFEC2D] text-[#DFEC2D] text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}>
+        <div
+          className={`bg-[#DFEC2D]/10/20 border border-[#DFEC2D] text-[#DFEC2D] text-sm rounded-lg p-3 flex items-start gap-3 mb-6`}
+        >
           <CheckIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
-            <span className="font-semibold">Ready to Export:</span> {timelineClips.length} clip{timelineClips.length !== 1 ? 's' : ''} loaded from timeline. FFmpeg.wasm is initialized and ready for rendering.
+            <span className="font-semibold">Ready to Export:</span> {timelineClips.length} clip
+            {timelineClips.length !== 1 ? 's' : ''} loaded from timeline. FFmpeg.wasm is initialized
+            and ready for rendering.
           </div>
         </div>
       )}
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
         {/* Left: Export Settings */}
-        <div className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 space-y-5`}>
+        <div
+          className={`bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 space-y-5`}
+        >
           <h3 className="text-lg font-semibold">Export Settings</h3>
 
           <div>
             <label className="block text-sm font-medium mb-2">Resolution</label>
             <select
               value={settings.resolution}
-              onChange={e => setSettings(prev => ({ ...prev, resolution: e.target.value as ExportSettings['resolution'] }))}
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  resolution: e.target.value as ExportSettings['resolution'],
+                }))
+              }
               className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="720p">720p (1280x720)</option>
@@ -207,7 +237,12 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
             <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
             <select
               value={settings.aspectRatio}
-              onChange={e => setSettings(prev => ({ ...prev, aspectRatio: e.target.value as ExportSettings['aspectRatio'] }))}
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  aspectRatio: e.target.value as ExportSettings['aspectRatio'],
+                }))
+              }
               className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="16:9">16:9 (Landscape)</option>
@@ -221,7 +256,12 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
             <label className="block text-sm font-medium mb-2">Format</label>
             <select
               value={settings.format}
-              onChange={e => setSettings(prev => ({ ...prev, format: e.target.value as ExportSettings['format'] }))}
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  format: e.target.value as ExportSettings['format'],
+                }))
+              }
               className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="mp4">MP4 (H.264)</option>
@@ -234,7 +274,12 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
             <label className="block text-sm font-medium mb-2">Codec</label>
             <select
               value={settings.codec}
-              onChange={e => setSettings(prev => ({ ...prev, codec: e.target.value as ExportSettings['codec'] }))}
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  codec: e.target.value as ExportSettings['codec'],
+                }))
+              }
               className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="h264">H.264 (Most Compatible)</option>
@@ -247,7 +292,12 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
             <label className="block text-sm font-medium mb-2">Quality</label>
             <select
               value={settings.quality}
-              onChange={e => setSettings(prev => ({ ...prev, quality: e.target.value as ExportSettings['quality'] }))}
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  quality: e.target.value as ExportSettings['quality'],
+                }))
+              }
               className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="low">Low (Fast, Small File)</option>
@@ -274,7 +324,9 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
         </div>
 
         {/* Right: Export Queue */}
-        <div className={`lg:col-span-2 bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}>
+        <div
+          className={`lg:col-span-2 bg-[var(--color-surface-card)] border border-[var(--color-border-color)] rounded-xl p-6 flex flex-col`}
+        >
           <h3 className="text-lg font-semibold mb-4">Export Queue ({exportJobs.length})</h3>
 
           <div className="flex-1 overflow-y-auto space-y-3">
@@ -287,40 +339,53 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
                 </div>
               </div>
             ) : (
-              exportJobs.map(job => (
+              exportJobs.map((job) => (
                 <div
                   key={job.id}
                   className={`bg-zinc-900/50 border rounded-lg p-4 ${
                     job.status === 'processing'
                       ? 'border-teal-500/50'
                       : job.status === 'completed'
-                      ? 'border-[#DFEC2D]/50'
-                      : job.status === 'failed'
-                      ? 'border-red-500/50'
-                      : 'border-zinc-700'
+                        ? 'border-[#DFEC2D]/50'
+                        : job.status === 'failed'
+                          ? 'border-red-500/50'
+                          : 'border-zinc-700'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h4 className="font-semibold text-sm">{job.name}</h4>
                       <p className="text-xs text-zinc-500">
-                        {job.settings.resolution} • {job.settings.format.toUpperCase()} • {job.settings.codec.toUpperCase()} • {job.settings.quality}
+                        {job.settings.resolution} • {job.settings.format.toUpperCase()} •{' '}
+                        {job.settings.codec.toUpperCase()} • {job.settings.quality}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {job.status === 'completed' && (
                         <>
-                          <Button onClick={() => handleDownload(job)} variant="primary" className="!text-xs !py-1 !px-3 flex items-center gap-1">
+                          <Button
+                            onClick={() => handleDownload(job)}
+                            variant="primary"
+                            className="!text-xs !py-1 !px-3 flex items-center gap-1"
+                          >
                             <DownloadIcon className="w-3 h-3" />
                             <span>Download</span>
                           </Button>
-                          <Button onClick={() => handleDeleteJob(job.id)} variant="secondary" className="!text-xs !py-1 !px-3 !text-red-400">
+                          <Button
+                            onClick={() => handleDeleteJob(job.id)}
+                            variant="secondary"
+                            className="!text-xs !py-1 !px-3 !text-red-400"
+                          >
                             Delete
                           </Button>
                         </>
                       )}
                       {job.status === 'queued' && (
-                        <Button onClick={() => handleDeleteJob(job.id)} variant="secondary" className="!text-xs !py-1 !px-3">
+                        <Button
+                          onClick={() => handleDeleteJob(job.id)}
+                          variant="secondary"
+                          className="!text-xs !py-1 !px-3"
+                        >
                           Cancel
                         </Button>
                       )}
@@ -346,12 +411,16 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
                   {job.status === 'completed' && (
                     <div className="flex items-center gap-2 text-xs text-[#DFEC2D]">
                       <CheckIcon className="w-4 h-4" />
-                      <span>Render complete • {((job.endTime! - job.startTime!) / 1000).toFixed(1)}s</span>
+                      <span>
+                        Render complete • {((job.endTime! - job.startTime!) / 1000).toFixed(1)}s
+                      </span>
                     </div>
                   )}
 
                   {job.status === 'failed' && (
-                    <div className="text-xs text-red-400">Export failed. Try again with different settings.</div>
+                    <div className="text-xs text-red-400">
+                      Export failed. Try again with different settings.
+                    </div>
                   )}
                 </div>
               ))
@@ -360,7 +429,7 @@ const ExportsTab: React.FC<ExportsTabProps> = ({ timelineClips }) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ExportsTab;
+export default ExportsTab

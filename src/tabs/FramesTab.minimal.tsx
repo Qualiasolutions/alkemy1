@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react'
 
 const FramesTabMinimal: React.FC<any> = () => {
   return (
@@ -6,7 +6,7 @@ const FramesTabMinimal: React.FC<any> = () => {
       <h1 className="text-2xl">Timeline Tab</h1>
       <p>This is a minimal timeline tab to test for circular dependencies.</p>
     </div>
-  );
-};
+  )
+}
 
-export default FramesTabMinimal;
+export default FramesTabMinimal

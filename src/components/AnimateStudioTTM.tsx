@@ -3,33 +3,32 @@
  * Enhanced animation studio with TTM motion control integration
  */
 
-import React, { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion'
+import React, { useCallback, useState } from 'react'
+import { animateFrame } from '../services/aiService'
+import { animateFrameWithTTM, checkTTMStatus, MotionType } from '../services/ttmService'
+import type { Frame } from '../types'
 import {
   ArrowLeftIcon,
+  DownloadIcon,
   FilmIcon,
   PlayIcon,
-  DownloadIcon,
-  SparklesIcon,
   Settings,
-  Zap
-} from './icons/Icons';
-
-import TTMGenerationPanel from './TTMGenerationPanel';
-import { animateFrameWithTTM, checkTTMStatus, MotionType, CameraMovementType } from '../services/ttmService';
-import { animateFrame } from '../services/aiService';
-import { Frame } from '../types';
+  SparklesIcon,
+  Zap,
+} from './icons/Icons'
+import TTMGenerationPanel from './TTMGenerationPanel'
 
 interface AnimateStudioTTMProps {
-  frame: Frame;
-  onBack: () => void;
-  onUpdateFrame: (frame: Frame) => void;
-  currentProject: any;
-  user: any;
-  scene: any;
+  frame: Frame
+  onBack: () => void
+  onUpdateFrame: (frame: Frame) => void
+  currentProject: any
+  user: any
+  scene: any
 }
 
-type AnimationMethod = 'ttm' | 'veo' | 'kling' | 'wan';
+type AnimationMethod = 'ttm' | 'veo' | 'kling' | 'wan'
 
 export default function AnimateStudioTTM({
   frame,
@@ -37,141 +36,141 @@ export default function AnimateStudioTTM({
   onUpdateFrame,
   currentProject,
   user,
-  scene
+  scene,
 }: AnimateStudioTTMProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
-  const [animationMethod, setAnimationMethod] = useState<AnimationMethod>('ttm');
-  const [isTTMAvailable, setIsTTMAvailable] = useState(false);
-  const [motionPrompt, setMotionPrompt] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationProgress, setGenerationProgress] = useState(0)
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null)
+  const [animationMethod, setAnimationMethod] = useState<AnimationMethod>('ttm')
+  const [isTTMAvailable, setIsTTMAvailable] = useState(false)
+  const [motionPrompt, setMotionPrompt] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   // Check TTM availability on mount
   React.useEffect(() => {
-    checkTTMStatus().then(setIsTTMAvailable);
-  }, []);
+    checkTTMStatus().then(setIsTTMAvailable)
+  }, [])
 
   // Generate motion prompt based on frame metadata
   React.useEffect(() => {
     if (frame.camera_package?.movement) {
-      const cam = frame.camera_package;
-      setMotionPrompt(`Camera ${cam.movement} across ${frame.description || 'the scene'}`);
+      const cam = frame.camera_package
+      setMotionPrompt(`Camera ${cam.movement} across ${frame.description || 'the scene'}`)
     } else {
-      setMotionPrompt(`Animate ${frame.description || 'the subject'} with controlled motion`);
+      setMotionPrompt(`Animate ${frame.description || 'the subject'} with controlled motion`)
     }
-  }, [frame]);
+  }, [frame])
 
-  const handleGenerateVideo = useCallback(async (
-    method: AnimationMethod,
-    videoUrl?: string,
-    motionType?: MotionType,
-    trajectory?: any[],
-    cameraMovement?: any
-  ) => {
-    if (isGenerating) return;
+  const handleGenerateVideo = useCallback(
+    async (
+      method: AnimationMethod,
+      _videoUrl?: string,
+      motionType?: MotionType,
+      trajectory?: any[],
+      cameraMovement?: any
+    ) => {
+      if (isGenerating) return
 
-    setIsGenerating(true);
-    setGenerationProgress(0);
+      setIsGenerating(true)
+      setGenerationProgress(0)
 
-    try {
-      let resultVideoUrl: string;
+      try {
+        let resultVideoUrl: string
 
-      switch (method) {
-        case 'ttm':
-          // Use TTM service for precise motion control
-          const response = await animateFrameWithTTM(
-            frame,
-            motionType || MotionType.CAMERA,
-            {
-              trajectory,
-              cameraMovement,
-              prompt: motionPrompt
-            },
-            setGenerationProgress
-          );
-          resultVideoUrl = response.videoUrl;
-          break;
+        switch (method) {
+          case 'ttm': {
+            // Use TTM service for precise motion control
+            const response = await animateFrameWithTTM(
+              frame,
+              motionType || MotionType.CAMERA,
+              {
+                trajectory,
+                cameraMovement,
+                prompt: motionPrompt,
+              },
+              setGenerationProgress
+            )
+            resultVideoUrl = response.videoUrl
+            break
+          }
 
-        case 'veo':
-          // Use existing Veo 3.1 service
-          resultVideoUrl = await animateFrame(
-            motionPrompt,
-            frame.media?.start_frame_url,
-            frame.media?.end_frame_url || frame.media?.start_frame_url,
-            (progress) => setGenerationProgress(progress * 100),
-            scene,
-            frame
-          );
-          break;
+          case 'veo':
+            // Use existing Veo 3.1 service
+            resultVideoUrl = await animateFrame(
+              motionPrompt,
+              frame.media?.start_frame_url,
+              frame.media?.end_frame_url || frame.media?.start_frame_url,
+              (progress) => setGenerationProgress(progress * 100),
+              scene,
+              frame
+            )
+            break
 
-        case 'kling':
-          // Use Kling service (if available)
-          // This would need to be implemented
-          throw new Error('Kling service not yet integrated');
+          case 'kling':
+            // Use Kling service (if available)
+            // This would need to be implemented
+            throw new Error('Kling service not yet integrated')
 
-        case 'wan':
-          // Use Wan service (if available)
-          // This would need to be implemented
-          throw new Error('Wan service not yet integrated');
+          case 'wan':
+            // Use Wan service (if available)
+            // This would need to be implemented
+            throw new Error('Wan service not yet integrated')
 
-        default:
-          throw new Error('Unknown animation method');
+          default:
+            throw new Error('Unknown animation method')
+        }
+
+        setGeneratedVideoUrl(resultVideoUrl)
+
+        // Update frame with generated video
+        const updatedFrame: Frame = {
+          ...frame,
+          media: {
+            ...frame.media,
+            animated_video_url: resultVideoUrl,
+          },
+          status: 'VideoReady' as any,
+        }
+
+        onUpdateFrame(updatedFrame)
+      } catch (error) {
+        console.error('[AnimateStudioTTM] Generation failed:', error)
+      } finally {
+        setIsGenerating(false)
+        setGenerationProgress(0)
       }
-
-      setGeneratedVideoUrl(resultVideoUrl);
-
-      // Update frame with generated video
-      const updatedFrame: Frame = {
-        ...frame,
-        media: {
-          ...frame.media,
-          animated_video_url: resultVideoUrl
-        },
-        status: 'VideoReady' as any
-      };
-
-      onUpdateFrame(updatedFrame);
-
-    } catch (error) {
-      console.error('[AnimateStudioTTM] Generation failed:', error);
-    } finally {
-      setIsGenerating(false);
-      setGenerationProgress(0);
-    }
-  }, [frame, motionPrompt, isGenerating, onUpdateFrame, scene]);
+    },
+    [frame, motionPrompt, isGenerating, onUpdateFrame, scene]
+  )
 
   const handleTTMVideoGenerated = (videoUrl: string, thumbnailUrl: string) => {
-    setGeneratedVideoUrl(videoUrl);
+    setGeneratedVideoUrl(videoUrl)
 
     // Update frame with TTM video
     const updatedFrame: Frame = {
       ...frame,
       media: {
         ...frame.media,
-        animated_video_url: videoUrl
+        animated_video_url: videoUrl,
       },
       status: 'VideoReady' as any,
       // Store TTM metadata for future reference
       ttm_metadata: {
         method: 'ttm',
         generatedAt: new Date().toISOString(),
-        thumbnailUrl
-      }
-    };
+        thumbnailUrl,
+      },
+    }
 
-    onUpdateFrame(updatedFrame);
-  };
+    onUpdateFrame(updatedFrame)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-          >
+          <button onClick={onBack} className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
             <ArrowLeftIcon className="w-5 h-5" />
           </button>
           <div>
@@ -186,10 +185,10 @@ export default function AnimateStudioTTM({
           {generatedVideoUrl && (
             <button
               onClick={() => {
-                const a = document.createElement('a');
-                a.href = generatedVideoUrl;
-                a.download = `frame-${frame.shot_number}-animated.mp4`;
-                a.click();
+                const a = document.createElement('a')
+                a.href = generatedVideoUrl
+                a.download = `frame-${frame.shot_number}-animated.mp4`
+                a.click()
               }}
               className="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center space-x-2 transition-colors"
             >
@@ -213,40 +212,42 @@ export default function AnimateStudioTTM({
                   name: 'TTM Motion',
                   icon: <Zap className="w-4 h-4" />,
                   description: 'Precise motion control',
-                  available: isTTMAvailable
+                  available: isTTMAvailable,
                 },
                 {
                   id: 'veo',
                   name: 'Veo 3.1',
                   icon: <FilmIcon className="w-4 h-4" />,
                   description: 'AI video generation',
-                  available: true
+                  available: true,
                 },
                 {
                   id: 'kling',
                   name: 'Kling AI',
                   icon: <SparklesIcon className="w-4 h-4" />,
                   description: 'High quality video',
-                  available: false
+                  available: false,
                 },
                 {
                   id: 'wan',
                   name: 'Wan Video',
                   icon: <FilmIcon className="w-4 h-4" />,
                   description: 'Text-to-video',
-                  available: false
-                }
+                  available: false,
+                },
               ].map((method) => (
                 <button
                   key={method.id}
-                  onClick={() => method.available && setAnimationMethod(method.id as AnimationMethod)}
+                  onClick={() =>
+                    method.available && setAnimationMethod(method.id as AnimationMethod)
+                  }
                   disabled={!method.available}
                   className={`p-3 rounded-lg border transition-all ${
                     animationMethod === method.id
                       ? 'bg-purple-600/20 border-purple-500 text-purple-300'
                       : method.available
-                      ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
-                      : 'bg-gray-900 border-gray-800 text-gray-600 cursor-not-allowed'
+                        ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
+                        : 'bg-gray-900 border-gray-800 text-gray-600 cursor-not-allowed'
                   }`}
                 >
                   <div className="flex flex-col items-center space-y-1">
@@ -292,11 +293,7 @@ export default function AnimateStudioTTM({
           {/* Traditional Animation Controls (if not TTM) */}
           <AnimatePresence>
             {animationMethod !== 'ttm' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button
                   onClick={() => handleGenerateVideo(animationMethod)}
                   disabled={isGenerating}
@@ -326,7 +323,9 @@ export default function AnimateStudioTTM({
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-gray-400">Progress</span>
-                        <span className="text-xs text-gray-400">{Math.round(generationProgress)}%</span>
+                        <span className="text-xs text-gray-400">
+                          {Math.round(generationProgress)}%
+                        </span>
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-2">
                         <div
@@ -416,5 +415,5 @@ export default function AnimateStudioTTM({
         </div>
       </div>
     </div>
-  );
+  )
 }

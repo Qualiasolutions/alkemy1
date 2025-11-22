@@ -1,16 +1,18 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeftIcon, XIcon } from './icons/Icons';
+import { AnimatePresence, motion } from 'framer-motion'
+import type React from 'react'
+import { useEffect } from 'react'
+import { ArrowLeftIcon, XIcon } from './icons/Icons'
+
 // Theme removed - always using dark mode
 
 interface FullScreenWorkspaceProps {
-    isOpen: boolean;
-    onClose: () => void;
-    children: React.ReactNode;
-    title?: string;
-    showBackButton?: boolean;
-    showCloseButton?: boolean;
-    className?: string;
+  isOpen: boolean
+  onClose: () => void
+  children: React.ReactNode
+  title?: string
+  showBackButton?: boolean
+  showCloseButton?: boolean
+  className?: string
 }
 
 /**
@@ -29,92 +31,88 @@ interface FullScreenWorkspaceProps {
  * </FullScreenWorkspace>
  */
 const FullScreenWorkspace: React.FC<FullScreenWorkspaceProps> = ({
-    isOpen,
-    onClose,
-    children,
-    title,
-    showBackButton = true,
-    showCloseButton = false,
-    className = ''
+  isOpen,
+  onClose,
+  children,
+  title,
+  showBackButton = true,
+  showCloseButton = false,
+  className = '',
 }) => {
-    // Always using dark theme
+  // Always using dark theme
 
-    // ESC key handler
-    useEffect(() => {
-        if (!isOpen) return;
+  // ESC key handler
+  useEffect(() => {
+    if (!isOpen) return
 
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                onClose();
-            }
-        };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
 
-        window.addEventListener('keydown', handleEscape);
-        return () => window.removeEventListener('keydown', handleEscape);
-    }, [isOpen, onClose]);
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
 
-    if (!isOpen) return null;
+  if (!isOpen) return null
 
-    return (
-        <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`fixed inset-0 bg-[#0B0B0B] z-50 flex flex-col ${className}`}
-            >
-                {/* Header with Back/Close Button */}
-                {(showBackButton || showCloseButton || title) && (
-                    <motion.div
-                        initial={{ y: -20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.1, duration: 0.3 }}
-                        className="sticky top-0 z-60 flex items-center gap-4 px-6 py-4 border-b border-zinc-800/50 bg-black/95 backdrop-blur-sm"
-                    >
-                        {/* Back/Close Button */}
-                        {(showBackButton || showCloseButton) && (
-                            <button
-                                onClick={onClose}
-                                className="p-2 rounded-lg transition-all hover:bg-zinc-800 text-zinc-400 hover:text-white"
-                                aria-label={showBackButton ? 'Go back' : 'Close'}
-                            >
-                                {showBackButton ? (
-                                    <ArrowLeftIcon className="w-5 h-5" />
-                                ) : (
-                                    <XIcon className="w-5 h-5" />
-                                )}
-                            </button>
-                        )}
-
-                        {/* Title */}
-                        {title && (
-                            <h2 className="text-xl font-bold text-white">
-                                {title}
-                            </h2>
-                        )}
-
-                        {/* ESC hint */}
-                        <div className="ml-auto">
-                            <kbd className="px-2 py-1 text-xs rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                ESC
-                            </kbd>
-                        </div>
-                    </motion.div>
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`fixed inset-0 bg-[#0B0B0B] z-50 flex flex-col ${className}`}
+      >
+        {/* Header with Back/Close Button */}
+        {(showBackButton || showCloseButton || title) && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+            className="sticky top-0 z-60 flex items-center gap-4 px-6 py-4 border-b border-zinc-800/50 bg-black/95 backdrop-blur-sm"
+          >
+            {/* Back/Close Button */}
+            {(showBackButton || showCloseButton) && (
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg transition-all hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                aria-label={showBackButton ? 'Go back' : 'Close'}
+              >
+                {showBackButton ? (
+                  <ArrowLeftIcon className="w-5 h-5" />
+                ) : (
+                  <XIcon className="w-5 h-5" />
                 )}
+              </button>
+            )}
 
-                {/* Workspace Content */}
-                <motion.div
-                    initial={{ scale: 0.98, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.15, duration: 0.3 }}
-                    className="flex-1 overflow-auto"
-                >
-                    {children}
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
-    );
-};
+            {/* Title */}
+            {title && <h2 className="text-xl font-bold text-white">{title}</h2>}
 
-export default FullScreenWorkspace;
+            {/* ESC hint */}
+            <div className="ml-auto">
+              <kbd className="px-2 py-1 text-xs rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                ESC
+              </kbd>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Workspace Content */}
+        <motion.div
+          initial={{ scale: 0.98, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.15, duration: 0.3 }}
+          className="flex-1 overflow-auto"
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+export default FullScreenWorkspace

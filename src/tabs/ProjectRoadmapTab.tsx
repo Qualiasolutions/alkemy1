@@ -1,27 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/services/supabase';
-import { Progress } from '@/components/ui/Progress';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import {
-  CheckCircle2,
-  Circle,
-  XCircle,
-  AlertCircle,
-  Clock,
-  TrendingUp,
   Calendar,
-  Target,
-  Users,
-  GitBranch,
-  Zap,
-  Sparkles,
-  Play,
-  ChevronRight,
+  CheckCircle2,
   ChevronDown,
+  ChevronRight,
+  Circle,
+  Clock,
+  FileText,
+  GitBranch,
+  Play,
   Rocket,
-  FileText
-} from 'lucide-react';
+  Sparkles,
+  Target,
+  TrendingUp,
+  XCircle,
+  Zap,
+} from 'lucide-react'
+import { useState } from 'react'
+import { Badge } from '@/components/ui/Badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Progress } from '@/components/ui/Progress'
 
 // Define comprehensive epic data based on documentation
 const EPIC_DATA = [
@@ -32,16 +29,17 @@ const EPIC_DATA = [
     status: 'complete',
     progress_percentage: 100,
     stories_complete: '4/4',
-    description: 'Voice-enabled AI cinematography assistant with TTS, style learning, and continuity checking',
+    description:
+      'Voice-enabled AI cinematography assistant with TTS, style learning, and continuity checking',
     features: [
       'Voice command integration via Web Speech API',
       'Text-to-speech responses with voice selection',
       'Creative pattern tracking and style learning',
-      'Timeline continuity analysis and detection'
+      'Timeline continuity analysis and detection',
     ],
     deployment_url: 'https://alkemy1-fbwrj76nt-qualiasolutionscy.vercel.app',
     qa_report: 'QA_REPORT_EPIC_1.md',
-    color: 'emerald'
+    color: 'emerald',
   },
   {
     id: 'epic-2',
@@ -55,11 +53,11 @@ const EPIC_DATA = [
       'Character reference image upload (3-5 images)',
       'FLUX LoRA model training (5-10 minutes)',
       'Identity testing with similarity scoring',
-      'Automatic LoRA integration in generation pipeline'
+      'Automatic LoRA integration in generation pipeline',
     ],
     deployment_url: 'https://alkemy1-nzitt6da5-qualiasolutionscy.vercel.app',
     critical_fix: '2025-11-12: Fixed Fal.ai API integration',
-    color: 'purple'
+    color: 'purple',
   },
   {
     id: 'epic-6',
@@ -73,10 +71,10 @@ const EPIC_DATA = [
       'Creative quality analysis and scoring',
       'Performance metrics tracking',
       'Cost optimization insights',
-      'Export analytics reports (PDF/CSV)'
+      'Export analytics reports (PDF/CSV)',
     ],
     next_sprint: 'Sprint 5: Complete remaining stories',
-    color: 'blue'
+    color: 'blue',
   },
   {
     id: 'epic-3',
@@ -91,11 +89,11 @@ const EPIC_DATA = [
       'Text-to-3D scene generation',
       'Camera path animation editor',
       '3D asset library management',
-      'Export to standard 3D formats'
+      'Export to standard 3D formats',
     ],
     planned_start: 'Sprint 6 (Feb 11, 2025)',
     estimated_completion: 'Sprint 8 (Mar 24, 2025)',
-    color: 'indigo'
+    color: 'indigo',
   },
   {
     id: 'epic-4',
@@ -109,11 +107,11 @@ const EPIC_DATA = [
       'Voice generation service (ElevenLabs/OpenAI)',
       'Character voice profiles and consistency',
       'Dialogue sync with lip animation',
-      'Multi-language support'
+      'Multi-language support',
     ],
     planned_start: 'Sprint 9 (Mar 25, 2025)',
     estimated_completion: 'Sprint 10 (Apr 17, 2025)',
-    color: 'amber'
+    color: 'amber',
   },
   {
     id: 'epic-5',
@@ -127,10 +125,10 @@ const EPIC_DATA = [
       'AI music composition',
       'Sound effects generation',
       'Audio mixing and mastering',
-      'Spatial audio support'
+      'Spatial audio support',
     ],
     planned_start: 'Q2 2025',
-    color: 'rose'
+    color: 'rose',
   },
   {
     id: 'epic-7a',
@@ -144,10 +142,10 @@ const EPIC_DATA = [
       'Public gallery and showcases',
       'User profiles and portfolios',
       'Competitions and challenges',
-      'Collaboration tools'
+      'Collaboration tools',
     ],
     planned_start: 'Q2 2025',
-    color: 'teal'
+    color: 'teal',
   },
   {
     id: 'epic-8',
@@ -161,12 +159,12 @@ const EPIC_DATA = [
       'E2E testing framework',
       'Performance benchmarking',
       'Automated CI/CD',
-      'Load testing'
+      'Load testing',
     ],
     planned_start: 'Ongoing',
-    color: 'slate'
-  }
-];
+    color: 'slate',
+  },
+]
 
 // Sprint data based on roadmap
 const SPRINT_DATA = [
@@ -183,9 +181,9 @@ const SPRINT_DATA = [
       'Synchronization scripts',
       'Frontend dashboard',
       'Git/CI integration',
-      'Story documentation updates'
+      'Story documentation updates',
     ],
-    current: true
+    current: true,
   },
   {
     id: 'sprint-5',
@@ -198,8 +196,8 @@ const SPRINT_DATA = [
     goals: [
       'Performance Metrics Tracking (50% → 100%)',
       'Analytics Dashboard UI (0% → 100%)',
-      'Export Analytics Reports (0% → 100%)'
-    ]
+      'Export Analytics Reports (0% → 100%)',
+    ],
   },
   {
     id: 'sprint-6',
@@ -214,8 +212,8 @@ const SPRINT_DATA = [
       'WebGL viewer component',
       'Basic .ply file loading',
       'Camera controls',
-      'Performance benchmarking'
-    ]
+      'Performance benchmarking',
+    ],
   },
   {
     id: 'sprint-7',
@@ -229,8 +227,8 @@ const SPRINT_DATA = [
       'Text-to-3D generation',
       'Camera path editor',
       'Basic asset management',
-      'Supabase storage integration'
-    ]
+      'Supabase storage integration',
+    ],
   },
   {
     id: 'sprint-8',
@@ -244,8 +242,8 @@ const SPRINT_DATA = [
       'Complete asset library UI',
       'Export to standard formats',
       'Performance optimization',
-      'Integration with compositing'
-    ]
+      'Integration with compositing',
+    ],
   },
   {
     id: 'sprint-9',
@@ -259,10 +257,10 @@ const SPRINT_DATA = [
       'Voice Generation Service',
       'Character Voice Profiles',
       'Dialogue Sync (partial)',
-      'ElevenLabs/OpenAI integration'
-    ]
-  }
-];
+      'ElevenLabs/OpenAI integration',
+    ],
+  },
+]
 
 // Roadmap phases
 const ROADMAP_PHASES = [
@@ -271,62 +269,62 @@ const ROADMAP_PHASES = [
     duration: 'Jan 17 - Feb 17, 2025',
     status: 'in_progress',
     sprints: [4, 5, 6],
-    description: 'Complete BMAD system, finish analytics, begin 3D infrastructure'
+    description: 'Complete BMAD system, finish analytics, begin 3D infrastructure',
   },
   {
     name: 'Phase 2: 3D Implementation',
     duration: 'Feb 18 - Mar 17, 2025',
     status: 'upcoming',
     sprints: [7, 8],
-    description: 'Full 3D world generation pipeline with camera animation and asset management'
+    description: 'Full 3D world generation pipeline with camera animation and asset management',
   },
   {
     name: 'Phase 3: Voice & Audio',
     duration: 'Mar 18 - Apr 17, 2025',
     status: 'upcoming',
     sprints: [9],
-    description: 'Voice acting system and dialogue generation foundation'
-  }
-];
+    description: 'Voice acting system and dialogue generation foundation',
+  },
+]
 
-interface ProjectRoadmapTabProps {
-  // Optional props for future integration
-}
+type ProjectRoadmapTabProps = {}
 
-export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
-  const [selectedEpic, setSelectedEpic] = useState<string | null>(null);
-  const [selectedSprint, setSelectedSprint] = useState<number | null>(4);
-  const [expandedPhase, setExpandedPhase] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<'roadmap' | 'epics' | 'sprints'>('roadmap');
-  const [loading, setLoading] = useState(false);
+export function ProjectRoadmapTab(_props: ProjectRoadmapTabProps) {
+  const [selectedEpic, setSelectedEpic] = useState<string | null>(null)
+  const [selectedSprint, setSelectedSprint] = useState<number | null>(4)
+  const [expandedPhase, setExpandedPhase] = useState<number>(0)
+  const [viewMode, setViewMode] = useState<'roadmap' | 'epics' | 'sprints'>('roadmap')
+  const [_loading, _setLoading] = useState(false)
 
   function getStatusIcon(status: string) {
     switch (status) {
       case 'complete':
-        return <CheckCircle2 className="w-4 h-4 text-[#DFEC2D]" />;
+        return <CheckCircle2 className="w-4 h-4 text-[#DFEC2D]" />
       case 'in_progress':
       case 'active':
-        return <Clock className="w-4 h-4 text-yellow-500" />;
+        return <Clock className="w-4 h-4 text-yellow-500" />
       case 'blocked':
-        return <XCircle className="w-4 h-4 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-red-500" />
       case 'upcoming':
-        return <Circle className="w-4 h-4 text-gray-400" />;
+        return <Circle className="w-4 h-4 text-gray-400" />
       default:
-        return <Circle className="w-4 h-4 text-gray-400" />;
+        return <Circle className="w-4 h-4 text-gray-400" />
     }
   }
 
-  function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  function getStatusBadgeVariant(
+    status: string
+  ): 'default' | 'secondary' | 'destructive' | 'outline' {
     switch (status) {
       case 'complete':
-        return 'default';
+        return 'default'
       case 'in_progress':
       case 'active':
-        return 'secondary';
+        return 'secondary'
       case 'blocked':
-        return 'destructive';
+        return 'destructive'
       default:
-        return 'outline';
+        return 'outline'
     }
   }
 
@@ -340,20 +338,20 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
       amber: 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20',
       rose: 'bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20',
       teal: 'bg-teal-500/10 border-teal-500/30 hover:bg-teal-500/20',
-      slate: 'bg-slate-500/10 border-slate-500/30 hover:bg-slate-500/20'
-    };
-    return colorMap[color] || colorMap.slate;
+      slate: 'bg-slate-500/10 border-slate-500/30 hover:bg-slate-500/20',
+    }
+    return colorMap[color] || colorMap.slate
   }
 
-  const completedEpics = EPIC_DATA.filter(e => e.status === 'complete').length;
+  const completedEpics = EPIC_DATA.filter((e) => e.status === 'complete').length
   const totalStories = EPIC_DATA.reduce((sum, epic) => {
-    const [complete] = epic.stories_complete.split('/').map(Number);
-    return sum + (complete || 0);
-  }, 0);
+    const [complete] = epic.stories_complete.split('/').map(Number)
+    return sum + (complete || 0)
+  }, 0)
   const totalPlannedStories = EPIC_DATA.reduce((sum, epic) => {
-    const [, total] = epic.stories_complete.split('/').map(Number);
-    return sum + (total || 0);
-  }, 0);
+    const [, total] = epic.stories_complete.split('/').map(Number)
+    return sum + (total || 0)
+  }, 0)
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-auto">
@@ -365,9 +363,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
               <Rocket className="w-8 h-8 text-[#10A37F]" />
               Alkemy AI Studio Roadmap
             </h1>
-            <p className="text-gray-400 mt-1">
-              90-Day Development Plan • Jan 17 - Apr 17, 2025
-            </p>
+            <p className="text-gray-400 mt-1">90-Day Development Plan • Jan 17 - Apr 17, 2025</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -422,7 +418,9 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
               <div className="flex items-center justify-between">
                 <Target className="w-8 h-8 text-[#10A37F]" />
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-white">{totalStories}/{totalPlannedStories}</div>
+                  <div className="text-2xl font-bold text-white">
+                    {totalStories}/{totalPlannedStories}
+                  </div>
                   <div className="text-xs text-gray-400">Stories Done</div>
                 </div>
               </div>
@@ -481,10 +479,11 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {expandedPhase === index ?
-                        <ChevronDown className="w-5 h-5 text-gray-400" /> :
+                      {expandedPhase === index ? (
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                      ) : (
                         <ChevronRight className="w-5 h-5 text-gray-400" />
-                      }
+                      )}
                       <div>
                         <CardTitle className="text-xl text-white">{phase.name}</CardTitle>
                         <p className="text-sm text-gray-400 mt-1">{phase.duration}</p>
@@ -501,16 +500,18 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                     <p className="text-gray-300 mb-4">{phase.description}</p>
 
                     <div className="space-y-3">
-                      {phase.sprints.map(sprintNum => {
-                        const sprint = SPRINT_DATA.find(s => s.number === sprintNum);
-                        if (!sprint) return null;
+                      {phase.sprints.map((sprintNum) => {
+                        const sprint = SPRINT_DATA.find((s) => s.number === sprintNum)
+                        if (!sprint) return null
 
                         return (
                           <div key={sprint.id} className="bg-gray-700/50 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 {getStatusIcon(sprint.status)}
-                                <span className="font-medium text-white">Sprint {sprint.number}: {sprint.name}</span>
+                                <span className="font-medium text-white">
+                                  Sprint {sprint.number}: {sprint.name}
+                                </span>
                               </div>
                               <span className="text-sm text-gray-400">{sprint.duration}</span>
                             </div>
@@ -526,7 +527,10 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
 
                             <ul className="space-y-1 mt-3">
                               {sprint.goals.slice(0, 3).map((goal, idx) => (
-                                <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                                <li
+                                  key={idx}
+                                  className="text-sm text-gray-300 flex items-start gap-2"
+                                >
                                   <span className="text-[#10A37F] mt-1">•</span>
                                   <span>{goal}</span>
                                 </li>
@@ -538,7 +542,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                               )}
                             </ul>
                           </div>
-                        );
+                        )
                       })}
                     </div>
                   </CardContent>
@@ -550,7 +554,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
 
         {viewMode === 'epics' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {EPIC_DATA.map(epic => (
+            {EPIC_DATA.map((epic) => (
               <Card
                 key={epic.id}
                 className={`border transition-all cursor-pointer ${getEpicColorClass(epic.color)}`}
@@ -616,7 +620,9 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                           <h4 className="text-sm font-semibold text-white mb-1">Timeline:</h4>
                           <p className="text-xs text-gray-400">Start: {epic.planned_start}</p>
                           {epic.estimated_completion && (
-                            <p className="text-xs text-gray-400">End: {epic.estimated_completion}</p>
+                            <p className="text-xs text-gray-400">
+                              End: {epic.estimated_completion}
+                            </p>
                           )}
                         </div>
                       )}
@@ -631,8 +637,11 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
         {viewMode === 'sprints' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Current Sprint Highlight */}
-            {SPRINT_DATA.filter(s => s.current).map(sprint => (
-              <Card key={sprint.id} className="lg:col-span-2 bg-gradient-to-r from-[#10A37F]/20 to-[#0E8C6D]/20 border-[#10A37F]/30">
+            {SPRINT_DATA.filter((s) => s.current).map((sprint) => (
+              <Card
+                key={sprint.id}
+                className="lg:col-span-2 bg-gradient-to-r from-[#10A37F]/20 to-[#0E8C6D]/20 border-[#10A37F]/30"
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
@@ -640,7 +649,9 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                         <Play className="w-6 h-6 text-[#10A37F]" />
                         Current Sprint: {sprint.name}
                       </CardTitle>
-                      <p className="text-gray-400 mt-1">Sprint {sprint.number} • {sprint.duration}</p>
+                      <p className="text-gray-400 mt-1">
+                        Sprint {sprint.number} • {sprint.duration}
+                      </p>
                     </div>
                     <Badge variant="secondary" className="bg-[#10A37F] text-white">
                       ACTIVE
@@ -662,9 +673,11 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
                     <ul className="space-y-2">
                       {sprint.goals.map((goal, idx) => (
                         <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
-                          <CheckCircle2 className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                            idx === 0 ? 'text-[#DFEC2D]' : 'text-gray-500'
-                          }`} />
+                          <CheckCircle2
+                            className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                              idx === 0 ? 'text-[#DFEC2D]' : 'text-gray-500'
+                            }`}
+                          />
                           <span>{goal}</span>
                         </li>
                       ))}
@@ -675,7 +688,7 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
             ))}
 
             {/* Other Sprints */}
-            {SPRINT_DATA.filter(s => !s.current).map(sprint => (
+            {SPRINT_DATA.filter((s) => !s.current).map((sprint) => (
               <Card
                 key={sprint.id}
                 className={`bg-gray-800/50 border-gray-700 transition-all cursor-pointer ${
@@ -756,5 +769,5 @@ export function ProjectRoadmapTab(props: ProjectRoadmapTabProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

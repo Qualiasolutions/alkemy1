@@ -1,52 +1,53 @@
-import React, { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { XIcon, CopyIcon, CheckIcon } from './icons/Icons';
+import { AnimatePresence, motion } from 'framer-motion'
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { CheckIcon, CopyIcon, XIcon } from './icons/Icons'
 
 interface PromptModalProps {
-  prompt: string;
-  onClose: () => void;
+  prompt: string
+  onClose: () => void
 }
 
 const PromptModal: React.FC<PromptModalProps> = ({ prompt, onClose }) => {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (!copied) return;
-    const timeout = setTimeout(() => setCopied(false), 2500);
-    return () => clearTimeout(timeout);
-  }, [copied]);
+    if (!copied) return
+    const timeout = setTimeout(() => setCopied(false), 2500)
+    return () => clearTimeout(timeout)
+  }, [copied])
 
   const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation()
     try {
-      await navigator.clipboard.writeText(prompt);
-      setCopied(true);
+      await navigator.clipboard.writeText(prompt)
+      setCopied(true)
     } catch (error) {
-      console.warn('Failed to copy prompt', error);
+      console.warn('Failed to copy prompt', error)
       // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = prompt;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-9999px';
-      document.body.appendChild(textArea);
-      textArea.select();
+      const textArea = document.createElement('textarea')
+      textArea.value = prompt
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-9999px'
+      document.body.appendChild(textArea)
+      textArea.select()
       try {
-        document.execCommand('copy');
-        setCopied(true);
+        document.execCommand('copy')
+        setCopied(true)
       } catch (err) {
-        console.error('Fallback copy failed', err);
+        console.error('Fallback copy failed', err)
       }
-      document.body.removeChild(textArea);
+      document.body.removeChild(textArea)
     }
-  };
+  }
 
   // Prevent body scroll when modal is open
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
+      document.body.style.overflow = 'unset'
+    }
+  }, [])
 
   return (
     <AnimatePresence>
@@ -87,7 +88,8 @@ const PromptModal: React.FC<PromptModalProps> = ({ prompt, onClose }) => {
           {/* Content */}
           <div className="relative px-6 py-6 space-y-4">
             <p className="text-sm text-white/60 leading-relaxed">
-              Click the prompt below to copy it to your clipboard. You can paste it directly into your image or video generation workflow.
+              Click the prompt below to copy it to your clipboard. You can paste it directly into
+              your image or video generation workflow.
             </p>
 
             {/* Prompt Display with Click-to-Copy */}
@@ -105,11 +107,13 @@ const PromptModal: React.FC<PromptModalProps> = ({ prompt, onClose }) => {
               <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-transparent transition-all group-hover:border-[rgba(16,163,127,0.2)]" />
 
               {/* Copy Badge */}
-              <span className={`absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] transition-all ${
-                copied
-                  ? 'border-#DFEC2D/50 bg-#DFEC2D/20 text-#DFEC2D shadow-[0_0_20px_rgba(223,236,45,0.3)]'
-                  : 'border-white/10 bg-black/50 text-white/60 group-hover:border-teal-400/50 group-hover:bg-teal-500/10 group-hover:text-teal-400'
-              }`}>
+              <span
+                className={`absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] transition-all ${
+                  copied
+                    ? 'border-#DFEC2D/50 bg-#DFEC2D/20 text-#DFEC2D shadow-[0_0_20px_rgba(223,236,45,0.3)]'
+                    : 'border-white/10 bg-black/50 text-white/60 group-hover:border-teal-400/50 group-hover:bg-teal-500/10 group-hover:text-teal-400'
+                }`}
+              >
                 {copied ? (
                   <>
                     <CheckIcon className="h-3.5 w-3.5" /> Copied!
@@ -136,7 +140,7 @@ const PromptModal: React.FC<PromptModalProps> = ({ prompt, onClose }) => {
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  );
-};
+  )
+}
 
-export default PromptModal;
+export default PromptModal

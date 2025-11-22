@@ -11,49 +11,49 @@
  * API Documentation: https://docs.kie.ai/veo3-api/quickstart
  */
 
-const KIE_API_BASE = 'https://api.kie.ai';
-const KIE_API_KEY = import.meta.env.VITE_KIE_API_KEY;
+const KIE_API_BASE = 'https://api.kie.ai'
+const KIE_API_KEY = import.meta.env.VITE_KIE_API_KEY
 
 export interface KieVideoGenerationOptions {
-  prompt: string;
-  imageUrls?: string[];
-  model?: 'veo3' | 'veo3_fast';
-  aspectRatio?: '16:9' | '9:16' | 'Auto';
-  seeds?: number;
-  callBackUrl?: string;
-  watermark?: string;
-  enableTranslation?: boolean;
-  generationType?: 'TEXT_2_VIDEO' | 'FIRST_AND_LAST_FRAMES_2_VIDEO' | 'REFERENCE_2_VIDEO';
+  prompt: string
+  imageUrls?: string[]
+  model?: 'veo3' | 'veo3_fast'
+  aspectRatio?: '16:9' | '9:16' | 'Auto'
+  seeds?: number
+  callBackUrl?: string
+  watermark?: string
+  enableTranslation?: boolean
+  generationType?: 'TEXT_2_VIDEO' | 'FIRST_AND_LAST_FRAMES_2_VIDEO' | 'REFERENCE_2_VIDEO'
 }
 
 export interface KieVideoGenerationResponse {
-  code: number;
-  msg: string;
+  code: number
+  msg: string
   data: {
-    taskId: string;
-  };
+    taskId: string
+  }
 }
 
 export interface KieVideoStatus {
-  code: number;
-  msg: string;
+  code: number
+  msg: string
   data: {
-    taskId: string;
-    successFlag: number; // 0=generating, 1=success, 2=failed, 3=generation failed
-    resultUrls?: string; // JSON array of video URLs
-    createTime?: string;
-    updateTime?: string;
-  };
+    taskId: string
+    successFlag: number // 0=generating, 1=success, 2=failed, 3=generation failed
+    resultUrls?: string // JSON array of video URLs
+    createTime?: string
+    updateTime?: string
+  }
 }
 
 export interface Kie1080pVideoResponse {
-  code: number;
-  msg: string;
+  code: number
+  msg: string
   data: {
-    taskId: string;
-    video1080pUrl?: string;
-    status: string;
-  };
+    taskId: string
+    video1080pUrl?: string
+    status: string
+  }
 }
 
 /**
@@ -63,11 +63,11 @@ export interface Kie1080pVideoResponse {
  * @returns Task ID for status polling
  * @throws Error if API key is missing or request fails
  */
-export async function generateKieVideo(
-  options: KieVideoGenerationOptions
-): Promise<string> {
+export async function generateKieVideo(options: KieVideoGenerationOptions): Promise<string> {
   if (!KIE_API_KEY) {
-    throw new Error('[Kie.ai Service] API key not configured. Set VITE_KIE_API_KEY environment variable.');
+    throw new Error(
+      '[Kie.ai Service] API key not configured. Set VITE_KIE_API_KEY environment variable.'
+    )
   }
 
   const {
@@ -80,20 +80,20 @@ export async function generateKieVideo(
     watermark,
     enableTranslation = true,
     generationType,
-  } = options;
+  } = options
 
   console.log('[Kie.ai Service] Generating video:', {
     model,
     aspectRatio,
     hasImages: !!imageUrls,
     imageCount: imageUrls?.length || 0,
-  });
+  })
 
   try {
     const response = await fetch(`${KIE_API_BASE}/api/v1/veo/generate`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${KIE_API_KEY}`,
+        Authorization: `Bearer ${KIE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -107,19 +107,19 @@ export async function generateKieVideo(
         enableTranslation,
         generationType,
       }),
-    });
+    })
 
-    const data: KieVideoGenerationResponse = await response.json();
+    const data: KieVideoGenerationResponse = await response.json()
 
     if (!response.ok || data.code !== 200) {
-      throw new Error(`Kie.ai API error: ${data.msg || 'Unknown error'}`);
+      throw new Error(`Kie.ai API error: ${data.msg || 'Unknown error'}`)
     }
 
-    console.log('[Kie.ai Service] Video generation task started:', data.data.taskId);
-    return data.data.taskId;
+    console.log('[Kie.ai Service] Video generation task started:', data.data.taskId)
+    return data.data.taskId
   } catch (error) {
-    console.error('[Kie.ai Service] Video generation failed:', error);
-    throw error;
+    console.error('[Kie.ai Service] Video generation failed:', error)
+    throw error
   }
 }
 
@@ -131,30 +131,27 @@ export async function generateKieVideo(
  */
 export async function getKieVideoStatus(taskId: string): Promise<KieVideoStatus> {
   if (!KIE_API_KEY) {
-    throw new Error('[Kie.ai Service] API key not configured.');
+    throw new Error('[Kie.ai Service] API key not configured.')
   }
 
   try {
-    const response = await fetch(
-      `${KIE_API_BASE}/api/v1/veo/record-info?taskId=${taskId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${KIE_API_KEY}`,
-        },
-      }
-    );
+    const response = await fetch(`${KIE_API_BASE}/api/v1/veo/record-info?taskId=${taskId}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${KIE_API_KEY}`,
+      },
+    })
 
-    const data: KieVideoStatus = await response.json();
+    const data: KieVideoStatus = await response.json()
 
     if (!response.ok || data.code !== 200) {
-      throw new Error(`Kie.ai status check failed: ${data.msg || 'Unknown error'}`);
+      throw new Error(`Kie.ai status check failed: ${data.msg || 'Unknown error'}`)
     }
 
-    return data;
+    return data
   } catch (error) {
-    console.error('[Kie.ai Service] Status check failed:', error);
-    throw error;
+    console.error('[Kie.ai Service] Status check failed:', error)
+    throw error
   }
 }
 
@@ -173,33 +170,33 @@ export async function waitForKieVideoCompletion(
   pollInterval: number = 30000, // 30 seconds
   onProgress?: (status: string) => void
 ): Promise<string[]> {
-  const startTime = Date.now();
+  const startTime = Date.now()
 
   while (Date.now() - startTime < maxWaitTime) {
-    const status = await getKieVideoStatus(taskId);
+    const status = await getKieVideoStatus(taskId)
 
     if (onProgress) {
-      const statusText = getStatusText(status.data.successFlag);
-      onProgress(statusText);
+      const statusText = getStatusText(status.data.successFlag)
+      onProgress(statusText)
     }
 
     // Success
     if (status.data.successFlag === 1 && status.data.resultUrls) {
-      const videoUrls = JSON.parse(status.data.resultUrls) as string[];
-      console.log('[Kie.ai Service] Video generation complete:', videoUrls);
-      return videoUrls;
+      const videoUrls = JSON.parse(status.data.resultUrls) as string[]
+      console.log('[Kie.ai Service] Video generation complete:', videoUrls)
+      return videoUrls
     }
 
     // Failed
     if (status.data.successFlag === 2 || status.data.successFlag === 3) {
-      throw new Error(`Video generation failed: ${status.msg}`);
+      throw new Error(`Video generation failed: ${status.msg}`)
     }
 
     // Still generating, wait and retry
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    await new Promise((resolve) => setTimeout(resolve, pollInterval))
   }
 
-  throw new Error('Video generation timeout - exceeded maximum wait time');
+  throw new Error('Video generation timeout - exceeded maximum wait time')
 }
 
 /**
@@ -211,35 +208,32 @@ export async function waitForKieVideoCompletion(
  */
 export async function getKie1080pVideo(taskId: string): Promise<string> {
   if (!KIE_API_KEY) {
-    throw new Error('[Kie.ai Service] API key not configured.');
+    throw new Error('[Kie.ai Service] API key not configured.')
   }
 
   try {
-    const response = await fetch(
-      `${KIE_API_BASE}/api/v1/veo/get-1080p-video?taskId=${taskId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${KIE_API_KEY}`,
-        },
-      }
-    );
+    const response = await fetch(`${KIE_API_BASE}/api/v1/veo/get-1080p-video?taskId=${taskId}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${KIE_API_KEY}`,
+      },
+    })
 
-    const data: Kie1080pVideoResponse = await response.json();
+    const data: Kie1080pVideoResponse = await response.json()
 
     if (!response.ok || data.code !== 200) {
-      throw new Error(`1080p video request failed: ${data.msg || 'Unknown error'}`);
+      throw new Error(`1080p video request failed: ${data.msg || 'Unknown error'}`)
     }
 
     if (!data.data.video1080pUrl) {
-      throw new Error('1080p video not available yet. Please wait a few minutes and retry.');
+      throw new Error('1080p video not available yet. Please wait a few minutes and retry.')
     }
 
-    console.log('[Kie.ai Service] 1080p video ready:', data.data.video1080pUrl);
-    return data.data.video1080pUrl;
+    console.log('[Kie.ai Service] 1080p video ready:', data.data.video1080pUrl)
+    return data.data.video1080pUrl
   } catch (error) {
-    console.error('[Kie.ai Service] 1080p video fetch failed:', error);
-    throw error;
+    console.error('[Kie.ai Service] 1080p video fetch failed:', error)
+    throw error
   }
 }
 
@@ -256,25 +250,20 @@ export async function animateImageWithKie(
   imageUrl: string,
   prompt: string,
   options: {
-    model?: 'veo3' | 'veo3_fast';
-    aspectRatio?: '16:9' | '9:16' | 'Auto';
-    onProgress?: (status: string) => void;
-    get1080p?: boolean;
+    model?: 'veo3' | 'veo3_fast'
+    aspectRatio?: '16:9' | '9:16' | 'Auto'
+    onProgress?: (status: string) => void
+    get1080p?: boolean
   } = {}
 ): Promise<string> {
-  const {
-    model = 'veo3_fast',
-    aspectRatio = '16:9',
-    onProgress,
-    get1080p = false,
-  } = options;
+  const { model = 'veo3_fast', aspectRatio = '16:9', onProgress, get1080p = false } = options
 
   console.log('[Kie.ai Service] Starting image animation:', {
     imageUrl,
     prompt,
     model,
     aspectRatio,
-  });
+  })
 
   // Step 1: Start generation
   const taskId = await generateKieVideo({
@@ -284,31 +273,31 @@ export async function animateImageWithKie(
     aspectRatio,
     enableTranslation: true,
     generationType: 'FIRST_AND_LAST_FRAMES_2_VIDEO',
-  });
+  })
 
   // Step 2: Wait for completion
-  const videoUrls = await waitForKieVideoCompletion(taskId, 600000, 30000, onProgress);
+  const videoUrls = await waitForKieVideoCompletion(taskId, 600000, 30000, onProgress)
 
   if (videoUrls.length === 0) {
-    throw new Error('No video URLs returned from Kie.ai');
+    throw new Error('No video URLs returned from Kie.ai')
   }
 
-  const videoUrl = videoUrls[0];
+  const videoUrl = videoUrls[0]
 
   // Step 3: Optionally get 1080p version (only for 16:9)
   if (get1080p && aspectRatio === '16:9') {
     try {
       // Wait a bit for 1080p processing
-      await new Promise(resolve => setTimeout(resolve, 60000)); // 1 minute
-      const hdUrl = await getKie1080pVideo(taskId);
-      return hdUrl;
+      await new Promise((resolve) => setTimeout(resolve, 60000)) // 1 minute
+      const hdUrl = await getKie1080pVideo(taskId)
+      return hdUrl
     } catch (error) {
-      console.warn('[Kie.ai Service] 1080p upgrade failed, using standard resolution:', error);
-      return videoUrl;
+      console.warn('[Kie.ai Service] 1080p upgrade failed, using standard resolution:', error)
+      return videoUrl
     }
   }
 
-  return videoUrl;
+  return videoUrl
 }
 
 /**
@@ -326,28 +315,28 @@ export function estimateKieCost(
   get1080p: boolean = false
 ): number {
   // Kie.ai credit pricing: $0.005 per credit
-  const CREDIT_COST = 0.005;
+  const CREDIT_COST = 0.005
 
   // Veo 3 Fast: 60-80 credits per 8-second video (recently reduced)
   // Veo 3 Quality: 250-400 credits per 8-second video (recently reduced)
-  let credits: number;
+  let credits: number
 
   if (model === 'veo3_fast') {
-    credits = 70; // Average: (60 + 80) / 2
+    credits = 70 // Average: (60 + 80) / 2
   } else {
-    credits = 325; // Average: (250 + 400) / 2
+    credits = 325 // Average: (250 + 400) / 2
   }
 
   // Scale by duration (8 seconds is base)
-  const durationMultiplier = duration / 8;
-  credits *= durationMultiplier;
+  const durationMultiplier = duration / 8
+  credits *= durationMultiplier
 
   // 1080p upgrade adds ~20% to cost (estimate)
   if (get1080p) {
-    credits *= 1.2;
+    credits *= 1.2
   }
 
-  return credits * CREDIT_COST;
+  return credits * CREDIT_COST
 }
 
 /**
@@ -356,14 +345,14 @@ export function estimateKieCost(
 function getStatusText(successFlag: number): string {
   switch (successFlag) {
     case 0:
-      return 'Generating video...';
+      return 'Generating video...'
     case 1:
-      return 'Video generation complete';
+      return 'Video generation complete'
     case 2:
-      return 'Video generation failed';
+      return 'Video generation failed'
     case 3:
-      return 'Task created but generation failed';
+      return 'Task created but generation failed'
     default:
-      return 'Unknown status';
+      return 'Unknown status'
   }
 }

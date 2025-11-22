@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Alkemy AI Studio is an AI-powered film generation platform that transforms scripts into complete visual productions. Built with React 19, TypeScript, Vite, and TailwindCSS, it integrates multiple AI services (Google Gemini, Fal.ai Flux LoRA, HuggingFace, Pollinations) and uses Supabase for authentication and persistence.
 
-**Latest Production**: https://alkemy1-7ait0xi2i-qualiasolutionscy.vercel.app (2025-11-19)
+
 
 ## 🎯 BMAD Project Tracking System
 
