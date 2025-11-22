@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { SceneList } from '@/components/editor/SceneList'
 import { ScriptEditor } from '@/components/editor/ScriptEditor'
+import { ScriptUpload } from '@/components/editor/ScriptUpload'
 import { Button } from '@/components/ui/button'
 import { type Project, projectService } from '@/services/projectService'
 import { type Scene, scriptAnalysisService } from '@/services/scriptAnalysisService'
@@ -71,6 +72,11 @@ export function ScriptPhase() {
     setTimeoutId(newTimeoutId)
   }
 
+  const handleUpload = (content: string) => {
+    updateMutation.mutate(content)
+    toast.success('Script content updated from file')
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -92,23 +98,26 @@ export function ScriptPhase() {
             <h2 className="text-3xl font-bold text-white">Script Phase</h2>
             <p className="text-white/60">Write your screenplay. AI will break it down.</p>
           </div>
-          <Button
-            onClick={() => analyzeMutation.mutate()}
-            disabled={analyzeMutation.isPending || !project?.script_content}
-            className="bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-black font-bold shadow-[var(--shadow-glow)]"
-          >
-            {analyzeMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <BrainCircuit className="w-4 h-4 mr-2" />
-                Analyze Script
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ScriptUpload onUpload={handleUpload} />
+            <Button
+              onClick={() => analyzeMutation.mutate()}
+              disabled={analyzeMutation.isPending || !project?.script_content}
+              className="bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-black font-bold shadow-[var(--shadow-glow)]"
+            >
+              {analyzeMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <BrainCircuit className="w-4 h-4 mr-2" />
+                  Analyze Script
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         <div className="flex-1 min-h-0">
